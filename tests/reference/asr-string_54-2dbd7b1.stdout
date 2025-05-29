@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             double:
                                 (ExternalSymbol
@@ -74,6 +75,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     string_54
@@ -127,6 +129,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -146,6 +149,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     double_
@@ -214,6 +218,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -233,6 +238,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     foo_sub

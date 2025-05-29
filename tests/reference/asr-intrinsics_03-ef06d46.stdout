@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -58,6 +59,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -77,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             r2:
                                 (Variable
@@ -96,6 +99,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -115,6 +119,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     intrinsics_03

@@ -37,6 +37,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             value2:
                                                 (Variable
@@ -63,6 +64,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~abstract_type:
                                                 (Struct

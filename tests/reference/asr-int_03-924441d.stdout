@@ -30,6 +30,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -77,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i8:
                                 (Variable
@@ -96,6 +99,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             w4:
                                 (Variable
@@ -115,6 +119,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             w8:
                                 (Variable
@@ -134,6 +139,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     int_03

@@ -25,6 +25,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -50,6 +51,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -74,6 +76,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -117,6 +121,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             u_ptr:
                                 (Variable
@@ -138,6 +143,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -162,6 +168,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -186,6 +193,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     open_close_read_write

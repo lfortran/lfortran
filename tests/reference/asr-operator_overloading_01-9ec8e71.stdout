@@ -41,6 +41,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -76,6 +77,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -353,6 +355,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -372,6 +375,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -391,6 +395,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     bin_add
@@ -485,6 +490,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -504,6 +510,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -523,6 +530,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     logical_and

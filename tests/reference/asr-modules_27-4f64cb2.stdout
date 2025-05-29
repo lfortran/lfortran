@@ -119,6 +119,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -138,6 +139,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -159,6 +161,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -178,6 +181,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_elem_array
@@ -235,6 +239,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -254,6 +259,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -275,6 +281,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -294,6 +301,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_elem_keyval
@@ -351,6 +359,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -370,6 +379,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -391,6 +401,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -410,6 +421,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_elem_table
@@ -555,6 +567,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -574,6 +587,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             val:
                                                 (Variable
@@ -593,6 +607,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_value_float_dp
@@ -646,6 +661,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -665,6 +681,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             val:
                                                 (Variable
@@ -684,6 +701,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_value_float_sp
@@ -732,6 +750,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     tomlf_build_keyval
