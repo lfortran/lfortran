@@ -5222,7 +5222,7 @@ public:
                     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
                 ASR::StructType_t* class_t = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::type_get_past_allocatable_pointer(value_type));
-                ASR::Struct_t* class_type_t = ASR::down_cast<ASR::Struct_t>(
+                [[maybe_unused]] ASR::Struct_t* class_type_t = ASR::down_cast<ASR::Struct_t>(
                     ASRUtils::symbol_get_past_external(class_t->m_derived_type));
                 LCOMPILERS_ASSERT(ASRUtils::is_derived_type_similar(struct_type_t, class_type_t));
                 llvm::Type* struct_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
