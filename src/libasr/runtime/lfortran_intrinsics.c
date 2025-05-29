@@ -502,26 +502,19 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     // integer_part = 11230000128, integer_length = 11
     // width = 10, decimal_digits = 2
 
-    #define MAX_SIZE 128
+    #define MAX_SIZE 512
     char val_str[MAX_SIZE] = "";
     int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
-    // TODO: This will work for up to `E65.60` but will fail for:
-    // print "(E67.62)", 1.23456789101112e-62_8
     sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
     // val_str = "11230000128.00..."
-
     int i = strlen(val_str) - 1;
-    while (val_str[i] == '0') {
-        val_str[i] = '\0';
-        i--;
+    if (val != 0.0) {
+        while (val_str[i] == '0') {
+            val_str[i] = '\0';
+            i--;
+        }
     }
     // val_str = "11230000128."
-
-    int exp = 2;
-    if (exp_digits != -1 && exp_digits != 0) {
-        exp = exp_digits;
-    }
-    // exp = 2;
 
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
@@ -546,28 +539,38 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         is_s_format = true;
         scale = 1;
     }
-    int exponent_value;
-    if (val != 0) {
-        exponent_value = (integer_length > 0 && integer_part != 0)
-            ? integer_length - scale
-            : decimal - scale;
+    int exponent_value = 0;
+    if (val == 0.0) {
+        exponent_value = 0;
+        strcpy(val_str, "0");
+        integer_length = 1;
     } else {
-        exponent_value = (integer_length > 0 && integer_part != 0)
-            ? integer_length - scale
-            : decimal;
+        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
     }
+
+    int exp = 2;
+    if (exp_digits > 0) {
+        exp = exp_digits;
+    } else if (is_s_format && abs(exponent_value) >= 10) {
+        int abs_exp = abs(exponent_value);
+        exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
+    }
+    // exp = 2;
+
     if (exp != -1 && abs(exponent_value) >= pow(10, exp)) {
         goto overflow;
     }
 
     char exponent[12];
     if (width_digits == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
+        sprintf(exponent, "%+02d", exponent_value);
     } else {
-        if (val != 0) {
-            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
-        } else {
-            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        int exp_width = exp + 1;
+        if (exp_width > 10) exp_width = 10;
+
+        int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+        if (len < 0 || len >= sizeof(exponent)) {
+            goto overflow;
         }
         // exponent = "+10"
     }
@@ -584,10 +587,16 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     if (decimal_digits > width - FIXED_CHARS_LENGTH) {
         goto overflow;
     }
-    int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
-    for(int i=0; i < zeroes_needed; i++) {
-        strcat(val_str, "0");
+    int val_str_len = strlen(val_str);
+    int zeroes_needed = decimal_digits - (val_str_len - integer_length);
+    if (zeroes_needed < 0) zeroes_needed = 0;
+    if (zeroes_needed > MAX_SIZE - val_str_len - 1) zeroes_needed = MAX_SIZE - val_str_len - 1;
+
+    int len = strlen(val_str);
+    for(int i = 0; i < zeroes_needed && len + i < MAX_SIZE - 1; i++) {
+        val_str[len + i] = '0';
     }
+    val_str[len + zeroes_needed] = '\0';
 
     char formatted_value[64] = "";
     int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
