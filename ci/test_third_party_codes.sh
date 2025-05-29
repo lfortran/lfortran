@@ -49,6 +49,7 @@ time_section "🧪 Testing fortran-regex" '
   git clone https://github.com/perazz/fortran-regex.git
   cd fortran-regex
   export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
 
   git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
