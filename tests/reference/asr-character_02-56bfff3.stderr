@@ -1,0 +1,5 @@
+warning: The LHS character len=1 and the RHS character len=2 are not equal.
+ --> tests/warnings/character_02.f90:2:5
+  |
+2 |     character(len=1, kind=1), parameter :: toml_base(4) = ["11", "21", "31", "$1"]
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ help: consider changing the RHS character len to match the LHS character len
