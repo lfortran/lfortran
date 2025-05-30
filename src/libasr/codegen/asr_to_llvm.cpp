@@ -5751,7 +5751,7 @@ public:
         }
         int ptr_loads_copy = ptr_loads;
         ptr_loads = 2 - (ASRUtils::is_character(*value_type) ||
-            ASRUtils::is_array(value_type));
+            ASRUtils::is_array(value_type) || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type)));
         this->visit_expr_wrapper(m_value, true);
         ptr_loads = ptr_loads_copy;
         if( ASR::is_a<ASR::Var_t>(*x.m_value) &&
@@ -5980,7 +5980,9 @@ public:
                 }
             }
 
-            target = llvm_utils->CreateLoad(target);
+            if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))) {
+                target = llvm_utils->CreateLoad(target);
+            }
             builder->CreateStore(value, target);
         } else {
             builder->CreateStore(value, target);
