@@ -33,9 +33,25 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
-        llvm-version: ["11.1.0", "20"]
+        include:
+          - os: macos-latest 
+            python-version: "3.10"
+            llvm-version: "11"
+            build-type: "Debug"
+          # we need to run with ubuntu in debug mode with LLVM 11 and 20 both
+          - os: ubuntu-latest
+            python-version: "3.10"
+            llvm-version: "11"
+            build-type: "Debug"
+          - os: ubuntu-latest
+            python-version: "3.10"
+            llvm-version: "20"
+            build-type: "Debug"
+          # we build LFortran on windows in release mode
+          - os: windows-2019
+            python-version: "3.10"
+            llvm-version: "11"
+            build-type: "Release"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -44,7 +60,7 @@ jobs:
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           micromamba-version: '2.0.4-0'
-          environment-file: ci/environment.yml
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
 
@@ -191,3 +207,97 @@ jobs:
             set -e
             exit $EXIT_CODE
 
+      # the below code is taken from earlier "Check SciPy Build and Test Run" CI job
+      # earlier also, we used to run this on ubuntu with LLVM version 11
+      - name: Test SciPy
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/scipy/scipy.git
+            cd scipy
+            git checkout 527f2ddcda98ebf4dae37abc38c85082218fcd6a
+            find . -name "*.f" > files.txt
+            files=$(<files.txt)
+            for file in $files; do
+                ../src/bin/lfortran --fixed-form fmt --no-color $file > $file.f90
+                gfortran -fallow-argument-mismatch -ffree-line-length-none -c $file.f90 -o $file.o
+                #if [[ "$file" == *"minpack"* ]]; then
+                #    if [[ "$file" != *"dpmpar.f"* ]]; then
+                #        ../src/bin/lfortran --show-asr --no-indent --no-color --fixed-form --implicit-typing --implicit-interface $file > $file.asr
+                #    fi
+                #fi
+
+            done
+
+            cd ..
+            rm -rf scipy/
+            git clone https://github.com/pranavchiku/scipy.git
+            cd scipy
+            git checkout -t origin/scipy1
+            git checkout a70f11a305edd024cb9a0e5048257eb0f51e29e1
+            find . -name "*.f" > files.txt
+            files=$(<files.txt)
+            for file in $files; do
+                ../src/bin/lfortran --fixed-form --implicit-typing --implicit-interface --implicit-argument-casting --show-asr --no-color $file > $file.f90
+            done
+            cd ..
+            rm -rf scipy/
+
+      - name: Build SciPy
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            git clone https://github.com/scipy/scipy
+            cd scipy
+            git remote add ondrej https://github.com/certik/scipy
+            git fetch ondrej
+            git checkout -t ondrej/merge_special_minpack_minpack2_fitpack_integrate_01
+            git checkout 503037097dad5a7d33c1445e8778a9cdf1f9ef11
+            micromamba env create -f environment.yml
+            micromamba activate scipy-dev
+            git submodule update --init
+            mkdir lfortran-build/
+            cd lfortran-build/
+            LIBRARY_PATH="`pwd`/../../src/runtime/"
+            FC=$(pwd)/../../src/bin/lfortran cmake \
+              -DCMAKE_Fortran_FLAGS=--verbose \
+              -DLFORTRAN_RUNTIME_LIBRARY_PATH=$LIBRARY_PATH \
+              ..
+            make install
+            cp ${{ github.workspace }}/src/runtime/liblfortran_runtime.*  $CONDA_PREFIX/lib
+            cd ../
+            python dev.py build
+
+      - name: Test SciPy Special (Specfun, Amos, Mach and Cdflib)
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.special -v
+
+      - name: Test SciPy Minpack & Minpack2
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.optimize -v
+
+      - name: Test SciPy Fitpack
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.interpolate -v
+
+      - name: Test SciPy Mach & Quadpack (Integrate)
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            cd scipy/
+            micromamba activate scipy-dev
+            python dev.py test -t scipy.integrate -v
+
+      # end of SciPy related testing
