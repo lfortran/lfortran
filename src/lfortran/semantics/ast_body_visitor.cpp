@@ -1595,13 +1595,27 @@ public:
                                 new_arg.m_dims = mold_array_type->m_dims;
                                 new_arg.n_dims = mold_array_type->n_dims;
                                 new_alloc_args_vec.push_back(al, new_arg);
-                                alloc_args_vec = new_alloc_args_vec;
                             } else {
-                                diag.add(Diagnostic("Runtime dimensions are not supported yet for mold.",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{mold->base.loc})
-                                    }));
-                                throw SemanticAbort();
+                                int n_dims = ASRUtils::extract_n_dims_from_ttype(mold_type);
+                                Vec<ASR::dimension_t> mold_dims_vec; mold_dims_vec.reserve(al, n_dims);
+                                ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
+                                for(int i=0; i<n_dims; i++) {
+                                    ASR::dimension_t dim;
+                                    dim.loc = x.base.base.loc;
+                                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                                        al, x.base.base.loc, 1, integer_type));
+                                    dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+                            al, x.base.base.loc, mold, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
+                                    mold_dims_vec.push_back(al, dim);
+                                }
+                                ASR::alloc_arg_t new_arg;
+                                new_arg.loc = alloc_args_vec[i].loc;
+                                new_arg.m_a = alloc_args_vec[i].m_a;
+                                new_arg.m_len_expr = nullptr;
+                                new_arg.m_type = nullptr;
+                                new_arg.m_dims = mold_dims_vec.p;
+                                new_arg.n_dims = mold_dims_vec.size();
+                                new_alloc_args_vec.push_back(al, new_arg);
                             }
                         } else {
                             diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
@@ -1622,6 +1636,7 @@ public:
                     new_alloc_args_vec.push_back(al, alloc_args_vec[i]);
                 }
             }
+            alloc_args_vec = new_alloc_args_vec;
         }
 
         if( !cond ) {
