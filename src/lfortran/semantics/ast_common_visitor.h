@@ -1653,7 +1653,8 @@ public:
 
         // The symbol `v` must be a Variable
         ASR::symbol_t *vpast = ASRUtils::symbol_get_past_external(v);
-        if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)) {
+        if (ASR::is_a<ASR::Variable_t>(*vpast) || ASR::is_a<ASR::Function_t>(*vpast)
+            || ASR::is_a<ASR::Namelist_t>(*vpast)) {
             return ASR::make_Var_t(al, loc, v);
         } else {
             std::string sym_type = ASRUtils::symbol_type_name(*vpast);
@@ -2888,13 +2889,27 @@ public:
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
-            //char *name = down_cast<AttrNamelist_t>(x.m_attributes[0])->m_name;
-            diag.add(Diagnostic(
-                "Namelists not implemented yet",
-                Level::Error, Stage::Semantic, {
-                    Label("",{x.base.base.loc})
-                }));
-            throw SemanticAbort();
+            char *namelist_group_name = AST::down_cast<AST::AttrNamelist_t>(x.m_attributes[0])->m_name;
+            Vec<ASR::symbol_t*> namelist_object_symbols;
+            namelist_object_symbols.reserve(al, x.n_syms);
+            for (size_t i=0; i < x.n_syms; i++) {
+                AST::var_sym_t& s = x.m_syms[i];
+                std::string sym = to_lower(s.m_name);
+                ASR::symbol_t* namelist_obj_symbol = current_scope->resolve_symbol(sym);
+                LCOMPILERS_ASSERT(namelist_obj_symbol != nullptr)
+                namelist_object_symbols.push_back(al, namelist_obj_symbol);
+            }
+            ASR::asr_t* namelist_asr_node = ASR::make_Namelist_t(
+                al, x.base.base.loc, current_scope, namelist_group_name,
+                namelist_object_symbols.p, namelist_object_symbols.size(),
+                ASR::accessType::Public
+            );
+            current_scope->add_symbol(
+                std::string(namelist_group_name),
+                ASR::down_cast<ASR::symbol_t>(namelist_asr_node)
+            );
+            tmp = namelist_asr_node;
+            return;
         }
         for (size_t i=0; i<x.n_attributes; i++) {
             if (AST::is_a<AST::AttrType_t>(*x.m_attributes[i])) {
