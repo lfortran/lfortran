@@ -604,7 +604,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
             if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
                 ASR::StructType_t *struct_type = ASR::down_cast<ASR::StructType_t>(v_variable_s->m_type);
-                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
+                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_type->m_derived_type));
                 std::string mem_name = ASRUtils::symbol_name(member);
                 // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
                 size_t i = 0;
