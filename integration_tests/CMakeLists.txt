@@ -2299,4 +2299,4 @@ RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input
 
 # LFortran extensions (lists, dicts, etc.) 
 RUN(NAME lp_list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
-RUN(NAME lp_set_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc NO_LLVM17_AND_UP) # No gfortran 
+RUN(NAME lp_set_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
