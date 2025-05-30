@@ -10,11 +10,24 @@ on:
     branches:
       - main
 
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || 'main' }}
+# which eventually evaluates to: CI-7488 and 'main' isn't used.
+# NOTE: `||` acts as a logical OR and a default operator both,
+# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
+# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
+# evaluate to CI-main but "cancel-in-progress" evaluates to false, so the CI on main
+# will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
+# and save runner for PR's but no previous CI will be cancelled on main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Check_for_Added_Binary_Files:
+  Print_Github_Concurrent_Group_and_Check_for_Added_Binary_Files:
     name: Check for Added Binary Files
     runs-on: ubuntu-latest
     steps:
@@ -22,8 +35,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Print github concurrent group name
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || 'main' }}"
+          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
+
       - name: Check for Added Binary Files
-        run: python3 check_binary_file_in_git_history.py
+        run: |
+          python3 check_binary_file_in_git_history.py
 
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -124,6 +143,58 @@ jobs:
             set ENABLE_RUNTIME_STACKTRACE=no
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             shell ci\test.sh
+
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
+      # ~/.bash_logout wanted to run `/usr/bin/clear_console -q` while exiting
+      # login shells which frequently erred on ubuntu-latest since the shell was
+      # not run interactively.
+      - name: Disable ~/.bash_logout (Linux)
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: mv -v ~/.bash_logout ~/.bash_logout.bak
+
+      - name: LSP Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        timeout-minutes: 5
+        env:
+            EXIT_SUCCESS: 0
+            EXIT_TIMEOUT: 124
+            EXIT_KILL: 137
+            MAX_ATTEMPTS: 3
+            SIGTERM_TIMEOUT: 60s
+            SIGKILL_TIMEOUT: 10s
+            PYTEST_TIMEOUT: 10
+        run: |
+            set -ex
+            pip install src/server/tests tests/server
+            timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                pytest -vv \
+                    --showlocals \
+                    --timeout=$PYTEST_TIMEOUT \
+                    --execution-strategy="concurrent" \
+                    tests/server
+            set +e
+            for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
+                echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
+                timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                    pytest -vv \
+                        --showlocals \
+                        --timeout=$PYTEST_TIMEOUT \
+                        --execution-strategy="parallel" \
+                        tests/server
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
+                    break
+                fi
+                echo "Command failed with exit code: $EXIT_CODE" 1>&2
+            done
+            set -e
+            exit $EXIT_CODE
 
   scipy:
     name: Check SciPy Build and Test Run

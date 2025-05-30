@@ -716,12 +716,6 @@ semantic error: `allocate` statement only accepts four keyword arguments: `stat`
 310 |     allocate(arr5, status=q1)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Runtime dimensions are not supported yet for mold.
-   --> tests/errors/continue_compilation_1.f90:311:27
-    |
-311 |     allocate(arr5, mold = arr4)
-    |                           ^^^^ 
-
 semantic error: Different `character` lengths 2 and 3 in array constructor
    --> tests/errors/continue_compilation_1.f90:313:21
     |

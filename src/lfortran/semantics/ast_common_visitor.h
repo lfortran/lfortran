@@ -2959,39 +2959,39 @@ public:
                         for (size_t i=0; i<x.n_syms; i++) {
                             AST::var_sym_t &s = x.m_syms[i];
                             if (s.m_name == nullptr) {
-				if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
-				    // Operator Overloading Encountered
-				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-				    } else {
-					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-				    }
-				} else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
-				    // Assignment Overloading Encountered
-				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					assgn[current_scope] = ASR::Public;
-				    } else {
-					assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
-				    }
-				} else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
-				    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
-				    // Custom Operator Overloading Encountered
-				    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
-					sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
-					overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
-				    } else {
-					overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
-				    }
-				} else {
-				    diag.add(Diagnostic(
-						 "Attribute type not implemented yet.",
-						 Level::Error, Stage::Semantic, {
-						     Label("",{x.base.base.loc})
-						 }));
-				    throw SemanticAbort();
-				}
+                                if (s.m_spec->type == AST::decl_attributeType::AttrIntrinsicOperator) {
+                                    // Operator Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                    } else {
+                                    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                    }
+                                } else if( s.m_spec->type == AST::decl_attributeType::AttrAssignment ) {
+                                    // Assignment Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                    assgn[current_scope] = ASR::Public;
+                                    } else {
+                                    assgn[current_scope] = get_asr_simple_attr(sa->m_attr);
+                                    }
+                                } else if (s.m_spec->type == AST::decl_attributeType::AttrDefinedOperator) {
+                                    //std::string op_name = to_lower(AST::down_cast<AST::AttrDefinedOperator_t>(s.m_spec)->m_op_name);
+                                    // Custom Operator Overloading Encountered
+                                    if( sa->m_attr != AST::simple_attributeType::AttrPublic &&
+                                    sa->m_attr != AST::simple_attributeType::AttrPrivate ) {
+                                    overloaded_ops[current_scope][s.m_spec] = AST::simple_attributeType::AttrPublic;
+                                    } else {
+                                    overloaded_ops[current_scope][s.m_spec] = sa->m_attr;
+                                    }
+                                } else {
+                                    diag.add(Diagnostic(
+                                        "Attribute type not implemented yet.",
+                                        Level::Error, Stage::Semantic, {
+                                            Label("",{x.base.base.loc})
+                                        }));
+                                    throw SemanticAbort();
+                                }
                             } else {
                                 std::string sym = to_lower(s.m_name);
                                 if (sa->m_attr == AST::simple_attributeType
@@ -3151,8 +3151,9 @@ public:
                                     throw SemanticAbort();
                                 }
                                 ASR::symbol_t* sym_ = current_scope->resolve_symbol(sym);
-                                if (!sym_ && compiler_options.implicit_typing && sa->m_attr != AST::simple_attributeType
-                                                        ::AttrExternal) {
+                                if (!sym_ && compiler_options.implicit_typing &&
+                                    sa->m_attr != AST::simple_attributeType::AttrExternal
+                                ) {
                                     ASR::expr_t* value = nullptr;
                                     if (sa->m_attr == AST::simple_attributeType::AttrParameter) {
                                         this->visit_expr(*s.m_initializer);

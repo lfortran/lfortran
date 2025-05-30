@@ -25,4 +25,11 @@ program format_24
   print "(3G0.17)", rvals                       ! Array of real numbers
   print "(G0.17)", 123456789012345.d+4
   print "(G0.17)", -123456789012345.d+7
+  print "(G0.7)", 0.00001234
+  print "(G15.7)", 1.0
+  print "(G15.7)", 1.23
+  print "(G15.7)", 1234567.8
+  print "(G15.7)", 0.0001234
+  print "(G15.7)", 1234567.8
+  print "(4G15.7)", 1.0, 1.23, 1234567.8, 0.0001234
 end program format_24
