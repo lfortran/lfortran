@@ -104,7 +104,7 @@ def get_args():
     parser.add_argument("-m", action='store_true',
                 help="Check that all module names are unique")
     parser.add_argument("-nl17", "--no_llvm17_and_up", action='store_true',
-                help="Don't run unsupported tests with --fast when LLVM < 17")
+                help="Don't run unsupported tests with LLVM >= 17")
     return parser.parse_args()
 
 def main():
