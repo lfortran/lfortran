@@ -3422,7 +3422,7 @@ public:
                         }
                     }
                     if (has_fixed_shape && sym_type->n_kind == ASR::string_length_kindType::DeferredLength
-                    && s.n_dim > 0) {
+                    ) {
                         diag.add(
                             Diagnostic("Allocatable array '" + std::string(x.m_syms[0].m_name)
                                            + "' at (1) must have a deferred shape or assumed rank",
