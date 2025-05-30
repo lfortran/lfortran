@@ -4562,6 +4562,8 @@ public:
 
             LCOMPILERS_ASSERT(sym_type->n_kind < 3)
 
+            bool is_length_missing = false;
+
             if (sym_type->n_kind == 1) {
                 const auto &item = sym_type->m_kind[0];
                 std::string id = item.m_id ? to_lower(item.m_id) : "";
@@ -4577,6 +4579,8 @@ public:
 
                 if (id == "kind") {
                     //TODO: Handle kind attribute on item (ideally should be a function call)
+
+                    is_length_missing = true;
                 } else {
                     determine_char_len(item, sym, str);
                 }
@@ -4636,6 +4640,18 @@ public:
 
                     //TODO: Handle kind attribute on item2 (ideally should be a function call)
                 }
+            }
+
+            if (is_length_missing) {
+                // Create a custom length expr with value 1
+                int ikind = compiler_options.po.default_integer_kind;
+                ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al,
+                sym_type->base.base.loc, ikind));
+                ASR::expr_t* len_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, sym_type->base.base.loc, 1, type));
+
+                _processing_char_len = true;
+                str->m_len = ASRUtils::is_const(len_expr) ? ASRUtils::expr_value(len_expr) : len_expr;
+                _processing_char_len = false;
             }
 
             type = ASRUtils::make_Array_t_util(
