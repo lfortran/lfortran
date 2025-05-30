@@ -2858,7 +2858,7 @@ public:
     }
 
     // pad (with ' ') or trim character string 'value'
-    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t& lhs_len, int64_t& rhs_len, const Location& loc, Allocator& al) {
+    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
         ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
         char* original_str = string_constant->m_s;
         size_t original_length = std::strlen(original_str);
@@ -2881,9 +2881,33 @@ public:
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
 
-        rhs_len = lhs_len; // Update the rhs_len to match lhs_len
         return ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, adjusted_str, value_type));
+    }
+
+    ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
+        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        Vec<ASR::expr_t*> body;
+        size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+
+        body.reserve(al, array_size);
+
+        for (size_t i = 0; i < array_size; i++) {
+            ASR::expr_t* item = ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+
+            if (ASR::is_a<ASR::ArrayConstant_t>(*item)) {
+                item = adjust_array_character_length(item, lhs_len, rhs_len,  al);
+            } else {
+                item = adjust_character_length(item, lhs_len, rhs_len, item->base.loc, al);
+            }
+
+            body.push_back(al, item);
+        }
+
+        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+
+        return (ASR::expr_t*) array_constant;
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
@@ -3928,8 +3952,13 @@ public:
                             if((lhs_len != rhs_len)) {
                                 // Adjust character string by padding or trimming
                                 // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                value = adjust_character_length(value, lhs_len,
-                                    rhs_len, init_expr->base.loc, al);
+                                if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                    value = adjust_array_character_length(value, lhs_len,
+                                        rhs_len, al);
+                                } else {
+                                    value = adjust_character_length(value, lhs_len,
+                                        rhs_len, init_expr->base.loc, al);
+                                }
                             }
                             
                         }
