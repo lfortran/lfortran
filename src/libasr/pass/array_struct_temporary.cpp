@@ -679,6 +679,47 @@ bool set_allocation_size(
                     }
                     break;
                 }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul): {
+                    ASRUtils::ASRBuilder b(al, intrinsic_array_function->base.base.loc);
+
+                    size_t n_dims_a = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(intrinsic_array_function->m_args[0])
+                    );
+                    size_t n_dims_b = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(intrinsic_array_function->m_args[1])
+                    );
+
+                    // matrix multiplication of a matrix and a vector is a vector
+                    if (n_dims_a == 2 && n_dims_b == 1) {
+                        allocate_dims.reserve(al, 1);
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(1), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim);
+                    } else if (n_dims_a == 1 && n_dims_b == 2) {
+                        // matrix multiplication of a vector and a matrix is a vector
+                        allocate_dims.reserve(al, 1);
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[1], b.i32(2), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim);
+                    } else if (n_dims_a == 2 && n_dims_b == 2) {
+                        // matrix multiplication of a matrix and a matrix is a matrix
+                        allocate_dims.reserve(al, 2);
+                        ASR::dimension_t allocate_dim1, allocate_dim2;
+                        allocate_dim1.loc = loc;
+                        allocate_dim1.m_start = int32_one;
+                        allocate_dim1.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(1), ASRUtils::expr_type(int32_one));
+                        allocate_dim2.loc = loc;
+                        allocate_dim2.m_start = int32_one;
+                        allocate_dim2.m_length = b.ArraySize(intrinsic_array_function->m_args[1], b.i32(2), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim1);
+                        allocate_dims.push_back(al, allocate_dim2);
+                    }
+                    break;
+                }
 
                 default: {
                     LCOMPILERS_ASSERT_MSG(false, "ASR::IntrinsicArrayFunctions::" +
