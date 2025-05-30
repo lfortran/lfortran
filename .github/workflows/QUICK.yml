@@ -301,3 +301,45 @@ jobs:
             python dev.py test -t scipy.integrate -v
 
       # end of SciPy related testing
+
+      # the below code is taken from "Check Out-of-Source Debug build" job
+      - name: Build in debug mode on linux
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        shell: bash -e -x -l {0}
+        run: |
+            ( cd src && ./build0.sh )
+            export CXXFLAGS="-Werror"
+            cmake -S src -B builddir -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_KOKKOS=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build builddir  -j16 --target install
+
+      - name: Test debug build on linux
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+        working-directory: builddir
+
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 expr2.F90
+          rm -rf src
+          inst.moved/bin/lfortran expr2.F90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+          ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+          ./expr2c
+      # end of Debug build on linux
+
