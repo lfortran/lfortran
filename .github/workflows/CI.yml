@@ -756,11 +756,7 @@ jobs:
             export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
             export WASMTIME_NEW_CLI=0
             cd integration_tests
-            if [[ "${{ matrix.llvm-version }}" == *"10"* ]]; then
-              ./run_tests.py -b llvm_wasm llvm_wasm_emcc
-            else 
-              ./run_tests.py -b llvm_wasm llvm_wasm_emcc -nl17
-            fi
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
       - name: Build Linux
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
@@ -796,9 +792,9 @@ jobs:
         run: |
             ctest --output-on-failure
             cd integration_tests
-            ./run_tests.py -b llvm -sc -nl17
-            ./run_tests.py -b llvm llvmImplicit -nl17
-            ./run_tests.py -b llvm llvmImplicit -f -nl17
+            ./run_tests.py -b llvm -sc
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f
 
       - name: Test third party codes
         shell: bash -e -x -l {0}
