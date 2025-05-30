@@ -326,10 +326,12 @@ jobs:
 
       - name: Test debug build on linux
         shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: ctest --output-on-failure
         working-directory: builddir
 
       - name: Test Moved Installation
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         shell: bash -e -l {0}
         run: |
           mv inst inst.moved
@@ -343,3 +345,96 @@ jobs:
           ./expr2c
       # end of Debug build on linux
 
+      # below code is from "Check Third Party Code Compilation"
+      # TODO: decide which configuration do we want to run this?
+      # ubuntu + llvm version 11 - yes
+      # ubuntu + llvm version 20 - yes
+      # macOS + llvm 11 - no
+      # macOS + llvm 19 - no
+      - name: Install libunwind
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
+        run: micromamba install -y -n lf libunwind=1.7.2
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      # TODO: if we don't want to run third party tests with macOS, then this isn't needed
+      - name: Build MacOS
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: |
+            ./build0.sh
+            ./build1.sh
+
+      - name: Test third party codes
+        shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
+
+      # The below projects are tested with a higher CMake version, so replace the current installed version
+      - name: Override cmake version to 3.31.2
+        if: contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf cmake=3.31.2
+
+      - name: Test Examples/Project 1
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project1
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project1
+
+      - name: Test Examples/Project 2
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project2
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./doconcurrent
+
+      - name: Test Examples/Project 3
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project3
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project3
+
+      - name: Test Lapack
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            git clone https://github.com/gxyd/lapack.git
+            cd lapack
+            git fetch origin lf_07
+            git checkout lf_07
+            git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+            cd build
+            micromamba create -f environment_unix.yml
+            micromamba activate lapack
+            ./build_lf.sh
+      # end of "Check Third Party Code Compilation"
+
+
+      # we need to add "Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
