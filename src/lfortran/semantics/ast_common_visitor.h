@@ -7282,7 +7282,7 @@ public:
         }
 
         if (x.n_args == 0) {
-            diag.add(Diagnostic("As of now _lfortran_set_constant expects atleast one argument",
+            diag.add(Diagnostic("_lfortran_set_constant expects at least one argument",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
