@@ -381,46 +381,46 @@ jobs:
 
       # TODO: Maybe we want to run this on ubuntu with both the LLVM versions?
       # the below code is taken from "Check Out-of-Source Debug build" job
-      - name: Build in debug mode on linux
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        shell: bash -e -x -l {0}
-        run: |
-            ( cd src && ./build0.sh )
-            export CXXFLAGS="-Werror"
-            cmake -S src -B builddir -GNinja \
-              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DWITH_KOKKOS=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+    #   - name: Build in debug mode on linux
+    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+    #     shell: bash -e -x -l {0}
+    #     run: |
+    #         ( cd src && ./build0.sh )
+    #         export CXXFLAGS="-Werror"
+    #         cmake -S src -B builddir -GNinja \
+    #           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+    #           -DWITH_LLVM=yes \
+    #           -DWITH_LSP=yes \
+    #           -DWITH_KOKKOS=yes \
+    #           -DLFORTRAN_BUILD_ALL=yes \
+    #           -DWITH_STACKTRACE=no \
+    #           -DWITH_RUNTIME_STACKTRACE=yes \
+    #           -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+    #           -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+    #           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+    #           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-            cmake --build builddir  -j16 --target install
+    #         cmake --build builddir  -j16 --target install
 
-      - name: Test debug build on linux
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        run: ctest --output-on-failure
-        working-directory: builddir
+    #   - name: Test debug build on linux
+    #     shell: bash -e -l {0}
+    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+    #     run: ctest --output-on-failure
+    #     working-directory: builddir
 
-      - name: Test Moved Installation
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-        shell: bash -e -l {0}
-        run: |
-          mv inst inst.moved
-          cp src/examples/expr2.f90 expr2.F90
-          rm -rf src
-          inst.moved/bin/lfortran expr2.F90 -o expr2
-          ./expr2
-          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-          ./expr2b
-          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-          ./expr2c
+    #   - name: Test Moved Installation
+    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+    #     shell: bash -e -l {0}
+    #     run: |
+    #       mv inst inst.moved
+    #       cp src/examples/expr2.f90 expr2.F90
+    #       rm -rf src
+    #       inst.moved/bin/lfortran expr2.F90 -o expr2
+    #       ./expr2
+    #       inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+    #       ./expr2b
+    #       inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+    #       ./expr2c
       # end of Debug build on linux
 
       # below code is from "Check Third Party Code Compilation"
@@ -489,5 +489,107 @@ jobs:
 
 
       ## Question - do we restore the version of cmake to 3.29.1 again now?
+      # The below projects are tested with a higher CMake version, so replace the current installed version
+      - name: Restore cmake version to 3.29.1
+        if: contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf cmake=3.29.1
 
-      # we need to add "Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
+      # below code is from CI job "Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
+      # Question: currently this is tested with LLVM version 11 - I think it should be 20?
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Build Linux
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Debug Build Linux
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f -nf16
+
+      - name: Test OpenMP
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm_omp
+
+      - name: Test Fortran Backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b fortran -j1
+            ./run_tests.py -b fortran -f -j1
+
+      - name: Test C/C++ Backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            mkdir build-kokkos
+            cd build-kokkos
+            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+            tar xaf 3.1.01.tar.gz
+            cd kokkos-3.1.01
+            mkdir build
+            cd build
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+            make
+            make install
+            cd ../../..
+
+            cd integration_tests
+            ./run_tests.py -b cpp c c_nopragma
+            ./run_tests.py -b cpp c c_nopragma -f
+
+      - name: Test CPP
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            xonsh ci/test_cpp_version.xsh
+
+      - name: Show Node Info
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+          set -ex
+          which node
+          node --version
+
+      - name: Test WASM backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
