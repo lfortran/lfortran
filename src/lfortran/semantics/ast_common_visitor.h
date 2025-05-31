@@ -1287,6 +1287,7 @@ public:
 
 
         // LFortran-specific intrinsics
+        {"_lfortran_set_item", IntrinsicSignature({"iterable", "index", "element"}, 3, 3)},
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
     };
