@@ -63,6 +63,13 @@ jobs:
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6
+            nodejs=18.20.4
 
       - uses: hendrikmuhs/ccache-action@main
         with:
@@ -155,6 +162,7 @@ jobs:
             call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
             shell ci\test.sh
 
+      # below code is taken from earlier "LSP Tests" CI job
       - name: Install Timeout (macOS)
         shell: bash -e -l {0}
         if: contains(matrix.os, 'macos')
@@ -206,6 +214,7 @@ jobs:
             done
             set -e
             exit $EXIT_CODE
+      # end of "LSP Tests" CI job
 
       # the below code is taken from earlier "Check SciPy Build and Test Run" CI job
       # earlier also, we used to run this on ubuntu with LLVM version 11
@@ -302,6 +311,7 @@ jobs:
 
       # end of SciPy related testing
 
+      # TODO: Maybe we want to run this on ubuntu with both the LLVM versions?
       # the below code is taken from "Check Out-of-Source Debug build" job
       - name: Build in debug mode on linux
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
@@ -350,7 +360,6 @@ jobs:
       # ubuntu + llvm version 11 - yes
       # ubuntu + llvm version 20 - yes
       # macOS + llvm 11 - no
-      # macOS + llvm 19 - no
       - name: Install libunwind
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
         run: micromamba install -y -n lf libunwind=1.7.2
