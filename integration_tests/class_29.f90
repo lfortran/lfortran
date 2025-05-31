@@ -9,6 +9,14 @@ module class_29_test_module
       class(Composed), allocatable :: obj
    end type
 
+   type :: Super
+      integer :: x
+   end type Super
+
+   type, extends(Super) :: Derived
+      integer :: y
+   end type
+
 end module class_29_test_module
 
 program class_29
@@ -20,6 +28,10 @@ program class_29
 
    class(Base), allocatable :: c_base
    class(Base), allocatable :: d_base
+
+   class(Super), allocatable :: c_super
+   class(Derived), allocatable :: d_derived
+
 
    ! test case 1: assignment of class var to class var
    allocate(c)
@@ -67,5 +79,24 @@ program class_29
    ! verify deep copy
    print *, "c_base%obj%x: ", c_base%obj%x
    if (c_base%obj%x == 20) error stop
+
+   ! test case 3: assignment of derived class var to base class var
+   allocate(c_super)
+   c_super%x = 1
+
+   print *, "c_super%x: ", c_super%x
+
+   allocate(d_derived)
+   d_derived%x = 42
+
+   print *, "d_derived%x: ", d_derived%x
+
+   c_super = d_derived
+   print *, "c_super%x after assignment: ", c_super%x
+
+   d_derived%x = 2
+   ! verify deep copy
+   print *, "c_super%x after assignment: ", c_super%x
+   if (c_super%x == 2) error stop
 
 end program class_29
