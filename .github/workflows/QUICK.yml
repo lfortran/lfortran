@@ -70,6 +70,7 @@ jobs:
             make=4.3
             openmpi=5.0.6
             nodejs=18.20.4
+            shell=0.2.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
