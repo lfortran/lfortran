@@ -8,6 +8,7 @@ program class_29
     type(toml_table), target :: temp_table
     temp_table%x = 42
     temp => temp_table
+    nullify(temp2)
     if (associated(temp2) .or. .not. associated(temp)) error stop
     
     if (allocated(temp3)) error stop
