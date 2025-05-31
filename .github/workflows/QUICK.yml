@@ -432,32 +432,6 @@ jobs:
         if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
         run: micromamba install -y -n lf libunwind=1.7.2
 
-      - name: Build Linux
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      # TODO: if we don't want to run third party tests with macOS, then this isn't needed
-      - name: Build MacOS
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            ./build0.sh
-            ./build1.sh
-
       - name: Test third party codes
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -513,5 +487,7 @@ jobs:
             ./build_lf.sh
       # end of "Check Third Party Code Compilation"
 
+
+      ## Question - do we restore the version of cmake to 3.29.1 again now?
 
       # we need to add "Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
