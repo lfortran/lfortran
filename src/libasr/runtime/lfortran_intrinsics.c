@@ -492,7 +492,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     int width_digits, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
-
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
@@ -554,10 +553,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
+    } else if (abs(exponent_value >= 100)) {
+        exp = 3;
     }
     // exp = 2;
-
-    if (exp != -1 && abs(exponent_value) >= pow(10, exp)) {
+    if (exp != -1 && exponent_value >= (pow(10, exp))) {
         goto overflow;
     }
 
@@ -660,7 +660,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     if (!(val >= 0 && val < 10 && is_s_format && exp_digits == 0)) {
-        strcat(formatted_value, c);
+        if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+            strcat(formatted_value, c);
+        }
         // formatted_value = "  1.12E"
         strcat(formatted_value, exponent);
         // formatted_value = "  1.12E+10"
