@@ -1544,6 +1544,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_StructConstructor(const ASR::StructConstructor_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_StructConstructor(x);
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_call_args(x_m_args, x.m_args, x.n_args,
             std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
