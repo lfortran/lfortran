@@ -5692,7 +5692,8 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                target = list_api->read_item(list, pos, compiler_options.enable_bounds_checking,
+                std::string type_code = ASRUtils::get_type_code(asr_target0->m_type);
+                target = list_api->read_item2(type_code, list, pos, compiler_options.enable_bounds_checking,
                                              module.get(), true);
             }
         } else {
