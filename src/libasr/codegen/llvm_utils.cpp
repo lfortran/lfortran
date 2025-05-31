@@ -5133,6 +5133,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMList::count(llvm::Value* list, llvm::Value* item,
                                 ASR::ttype_t* item_type, llvm::Module* module) {
+        std::string type_code = ASRUtils::get_type_code(item_type);
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
@@ -5173,7 +5174,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopbody);
         {
             // if occurrence found, increment cnt
-            llvm::Value* left_arg = read_item(list, llvm_utils->CreateLoad(i),
+            llvm::Value* left_arg = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* cond = llvm_utils->is_equal_by_value(left_arg, item, module, item_type);
             llvm_utils->create_if_else(cond, [&]() {
