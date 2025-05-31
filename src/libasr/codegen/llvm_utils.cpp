@@ -2189,7 +2189,8 @@ namespace LCompilers {
                     for( auto item: struct_sym->m_symtab->get_scope() ) {
                         if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
                             ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
-                            ASR::is_a<ASR::CustomOperator_t>(*item.second) ) {
+                            ASR::is_a<ASR::CustomOperator_t>(*item.second) ||
+                            (ASR::is_a<ASR::Struct_t>(*item.second) && std::string(ASR::down_cast<ASR::Struct_t>(item.second)->m_name) == "~abstract_type") ) {
                             continue ;
                         }
                         std::string mem_name = item.first;
