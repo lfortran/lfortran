@@ -1,5 +1,7 @@
 program lp_list_test_01
+    implicit none
     integer :: x
+    real :: eps = 1e-6
 
     type(_lfortran_list_integer) :: test_list 
     call _lfortran_list_append(test_list, 1)
@@ -7,7 +9,10 @@ program lp_list_test_01
     x = _lfortran_len(test_list)
     if (x /= 2) error stop
 
+    if (_lfortran_get_item(test_list, 1) /= 10) error stop
     test_list = _lfortran_list_constant(1, 2, 3, 4)
+    if (_lfortran_get_item(test_list, 1) /= 2) error stop
+    if (_lfortran_get_item(test_list, 2) /= 3) error stop
     if (_lfortran_len(test_list) /= 4) error stop
     
     call _lfortran_list_append(test_list, -50)
@@ -22,6 +27,8 @@ program lp_list_test_01
     call _lfortran_list_append(test_list_r, -110.12)
 
     if (_lfortran_len(test_list_r) /= 9) error stop
+    if (abs(_lfortran_get_item(test_list_r, 5) + 10.12) > eps) error stop
+    if (abs(_lfortran_get_item(test_list_r, 6) - 12.0) > eps) error stop
 
     type(_lfortran_list_real) :: test_list_r1  
     if (_lfortran_len(test_list_r1) /= 0) error stop
