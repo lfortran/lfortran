@@ -3567,6 +3567,19 @@ public:
 
                 return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
 
+            } else if (var_name == "_lfortran_list_reverse") {
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASRUtils::create_intrinsic_function create_function =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("list.reverse");
+                return create_function(al, x.base.base.loc, args, diag);
             } else if (var_name == "_lfortran_set_add") {
                 if (!ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
