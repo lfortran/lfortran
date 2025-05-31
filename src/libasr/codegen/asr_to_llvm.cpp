@@ -5006,7 +5006,12 @@ public:
             ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(p_type)), module.get());
 #endif
-        ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
+            // If the pointer is class, get its type pointer
+            ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(ptr, 1));
+        } else {
+            ptr = llvm_utils->CreateLoad2(p_type, ptr);
+        }
         if( ASRUtils::is_array(p_type) &&
             ASRUtils::extract_physical_type(p_type) ==
             ASR::array_physical_typeType::DescriptorArray) {
