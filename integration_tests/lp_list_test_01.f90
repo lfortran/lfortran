@@ -27,6 +27,11 @@ program lp_list_test_01
     if (_lfortran_get_item(test_list, 0) /= -50) error stop
     if (_lfortran_get_item(test_list, 3) /= 2) error stop
     if (_lfortran_get_item(test_list, 4) /= 10) error stop
+
+    call _lfortran_list_append(test_list, 1)
+    call _lfortran_list_append(test_list, 1)
+    if (_lfortran_list_count(test_list, 1) /= 2) error stop
+    if (_lfortran_list_count(test_list, -50) /= 1) error stop
      
     type(_lfortran_list_real) :: test_list_r  = _lfortran_list_constant(1.0, 2.0, 3.0, 4.0)
     if (_lfortran_len(test_list_r) /= 4) error stop
