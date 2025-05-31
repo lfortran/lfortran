@@ -511,6 +511,10 @@ namespace LCompilers {
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
+            void write_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+                            llvm::Value* item, bool enable_bounds_checking,
+                            llvm::Module* module);
+
             void append(llvm::Value* list, llvm::Value* item,
                         ASR::ttype_t* asr_type, llvm::Module* module,
                         std::map<std::string, std::map<std::string, int>>& name2memidx);
@@ -534,7 +538,7 @@ namespace LCompilers {
 
             void list_clear(llvm::Value* list);
 
-            void reverse(llvm::Value* list, llvm::Module* module);
+            void reverse(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* find_item_position(llvm::Value* list,
                 llvm::Value* item, ASR::ttype_t* item_type,

@@ -2991,6 +2991,19 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, item, element_ptr);
     }
 
+    void LLVMList::write_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+                              llvm::Value* item, bool enable_bounds_checking,
+                              llvm::Module* module) {
+        if( enable_bounds_checking ) {
+            check_index_within_bounds(list, pos, module);
+        }
+        llvm::Type* list_element_type = std::get<2>(typecode2listtype[type_code]);
+        llvm::Value* list_data = llvm_utils->CreateLoad2(list_element_type->getPointerTo(),
+                                                         get_pointer_to_list_data(list));
+        llvm::Value* element_ptr = llvm_utils->create_ptr_gep2(list_element_type, list_data, pos);
+        LLVM::CreateStore(*builder, item, element_ptr);
+    }
+
     llvm::Value* LLVMDict::get_pointer_to_keymask(llvm::Value* dict) {
         return llvm_utils->create_gep(dict, 3);
     }
@@ -4749,7 +4762,7 @@ namespace LCompilers {
         }
 
         llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
-        llvm::Type* list_element_type = llvm::cast<llvm::StructType>(list_type)->getElementType(1);
+        llvm::Type* list_element_type = std::get<2>(typecode2listtype[type_code]);
 
         llvm::Value* list_data = llvm_utils->CreateLoad2(list_element_type->getPointerTo(), 
                                                          get_pointer_to_list_data2(list_type, list));
@@ -4955,7 +4968,7 @@ namespace LCompilers {
         }, []() {});
     }
 
-    void LLVMList::reverse(llvm::Value* list, llvm::Module* module) {
+    void LLVMList::reverse(std::string& type_code, llvm::Value* list, llvm::Module* module) {
 
         /* Equivalent in C++:
          *
@@ -4999,13 +5012,13 @@ namespace LCompilers {
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            tmp = read_item(list, llvm_utils->CreateLoad(i),
+            tmp = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, false);    // tmp = list[i]
-            write_item(list, llvm_utils->CreateLoad(i),
-                        read_item(list, llvm_utils->CreateLoad(j),
+            write_item2(type_code, list, llvm_utils->CreateLoad(i),
+                        read_item2(type_code, list, llvm_utils->CreateLoad(j),
                         false, module, false),
                         false, module);    // list[i] = list[j]
-            write_item(list, llvm_utils->CreateLoad(j),
+            write_item2(type_code, list, llvm_utils->CreateLoad(j),
                         tmp, false, module);    // list[j] = tmp
 
             tmp = builder->CreateAdd(
@@ -5120,6 +5133,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMList::count(llvm::Value* list, llvm::Value* item,
                                 ASR::ttype_t* item_type, llvm::Module* module) {
+        std::string type_code = ASRUtils::get_type_code(item_type);
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
@@ -5160,7 +5174,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopbody);
         {
             // if occurrence found, increment cnt
-            llvm::Value* left_arg = read_item(list, llvm_utils->CreateLoad(i),
+            llvm::Value* left_arg = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* cond = llvm_utils->is_equal_by_value(left_arg, item, module, item_type);
             llvm_utils->create_if_else(cond, [&]() {
@@ -5358,7 +5372,7 @@ namespace LCompilers {
 
     void LLVMList::free_data2(std::string& type_code, llvm::Value* list, llvm::Module* module) {
         llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
-        llvm::Type* list_el_type = llvm::cast<llvm::StructType>(list_type)->getStructElementType(1);
+        llvm::Type* list_el_type = std::get<2>(typecode2listtype[type_code]);
         llvm::Value* data = llvm_utils->CreateLoad2(list_el_type->getPointerTo(), get_pointer_to_list_data2(list_type, list));
         LLVM::lfortran_free(context, *module, *builder, data);
     }
