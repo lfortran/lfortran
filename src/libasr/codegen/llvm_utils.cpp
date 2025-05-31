@@ -4749,7 +4749,7 @@ namespace LCompilers {
         }
 
         llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
-        llvm::Type* list_element_type = llvm::cast<llvm::StructType>(list_type)->getElementType(1);
+        llvm::Type* list_element_type = std::get<2>(typecode2listtype[type_code]);
 
         llvm::Value* list_data = llvm_utils->CreateLoad2(list_element_type->getPointerTo(), 
                                                          get_pointer_to_list_data2(list_type, list));
@@ -5358,7 +5358,7 @@ namespace LCompilers {
 
     void LLVMList::free_data2(std::string& type_code, llvm::Value* list, llvm::Module* module) {
         llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
-        llvm::Type* list_el_type = llvm::cast<llvm::StructType>(list_type)->getStructElementType(1);
+        llvm::Type* list_el_type = std::get<2>(typecode2listtype[type_code]);
         llvm::Value* data = llvm_utils->CreateLoad2(list_el_type->getPointerTo(), get_pointer_to_list_data2(list_type, list));
         LLVM::lfortran_free(context, *module, *builder, data);
     }

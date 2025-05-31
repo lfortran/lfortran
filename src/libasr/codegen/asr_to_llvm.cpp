@@ -1708,8 +1708,9 @@ public:
         this->visit_expr_wrapper(x.m_pos, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
-
-        tmp = list_api->read_item(plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        
+        std::string type_code = ASRUtils::get_type_code(el_type);
+        tmp = list_api->read_item2(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
