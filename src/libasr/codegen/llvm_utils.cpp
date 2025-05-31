@@ -2991,6 +2991,19 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, item, element_ptr);
     }
 
+    void LLVMList::write_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+                              llvm::Value* item, bool enable_bounds_checking,
+                              llvm::Module* module) {
+        if( enable_bounds_checking ) {
+            check_index_within_bounds(list, pos, module);
+        }
+        llvm::Type* list_element_type = std::get<2>(typecode2listtype[type_code]);
+        llvm::Value* list_data = llvm_utils->CreateLoad2(list_element_type->getPointerTo(),
+                                                         get_pointer_to_list_data(list));
+        llvm::Value* element_ptr = llvm_utils->create_ptr_gep2(list_element_type, list_data, pos);
+        LLVM::CreateStore(*builder, item, element_ptr);
+    }
+
     llvm::Value* LLVMDict::get_pointer_to_keymask(llvm::Value* dict) {
         return llvm_utils->create_gep(dict, 3);
     }
@@ -4955,7 +4968,7 @@ namespace LCompilers {
         }, []() {});
     }
 
-    void LLVMList::reverse(llvm::Value* list, llvm::Module* module) {
+    void LLVMList::reverse(std::string& type_code, llvm::Value* list, llvm::Module* module) {
 
         /* Equivalent in C++:
          *
@@ -4999,13 +5012,13 @@ namespace LCompilers {
         // body
         llvm_utils->start_new_block(loopbody);
         {
-            tmp = read_item(list, llvm_utils->CreateLoad(i),
+            tmp = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, false);    // tmp = list[i]
-            write_item(list, llvm_utils->CreateLoad(i),
-                        read_item(list, llvm_utils->CreateLoad(j),
+            write_item2(type_code, list, llvm_utils->CreateLoad(i),
+                        read_item2(type_code, list, llvm_utils->CreateLoad(j),
                         false, module, false),
                         false, module);    // list[i] = list[j]
-            write_item(list, llvm_utils->CreateLoad(j),
+            write_item2(type_code, list, llvm_utils->CreateLoad(j),
                         tmp, false, module);    // list[j] = tmp
 
             tmp = builder->CreateAdd(

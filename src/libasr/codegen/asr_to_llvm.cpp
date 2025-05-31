@@ -1975,7 +1975,9 @@ public:
 
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
-        list_api->reverse(plist, module.get());
+
+        std::string type_code = ASRUtils::get_type_code(asr_el_type);
+        list_api->reverse(type_code, plist, module.get());
     }
 
     void generate_ListPop_0(ASR::expr_t* m_arg) {
