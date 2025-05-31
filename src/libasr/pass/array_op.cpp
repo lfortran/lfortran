@@ -114,12 +114,16 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
 
     void visit_StructType(const ASR::StructType_t& x) {
         std::string derived_type_name = ASRUtils::symbol_name(x.m_derived_type);
-        if( x.m_derived_type == current_scope->resolve_symbol(derived_type_name) ) {
-            return ;
+        if (!x.m_is_cstruct && derived_type_name == "~abstract_type") {
+            // do nothing for class(*) type
+        } else {
+            if( x.m_derived_type == current_scope->resolve_symbol(derived_type_name) ) {
+                return ;
+            }
+    
+            ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
+            xx.m_derived_type = current_scope->resolve_symbol(derived_type_name);
         }
-
-        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
-        xx.m_derived_type = current_scope->resolve_symbol(derived_type_name);
     }
 
     void visit_Cast(const ASR::Cast_t& x) {

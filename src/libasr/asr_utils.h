@@ -4464,6 +4464,13 @@ class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
 
 static inline ASR::ttype_t* fix_scoped_type(Allocator& al,
     ASR::ttype_t* type, SymbolTable* scope) {
+    if (ASR::is_a<ASR::StructType_t>(*type)) {
+        ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+        if (!st->m_is_cstruct && ASRUtils::symbol_name(st->m_derived_type) == std::string("~abstract_type")) {
+            // do not fix scoped type for class(*) type
+            return type; 
+        }
+    }
     ASRUtils::ExprStmtDuplicator expr_duplicator(al);
     expr_duplicator.allow_procedure_calls = true;
     ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(type);
