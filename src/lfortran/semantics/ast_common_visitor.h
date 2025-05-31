@@ -7310,6 +7310,41 @@ public:
                                         ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));
     }
 
+    ASR::asr_t* create_ListCount(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0 || x.n_args != 2) {
+            diag.add(Diagnostic("_lfortran_list_count expects exactly two arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+            
+        
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* list = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(list));
+        
+        source = x.m_args[1].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+        if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+            std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+            diag.add(Diagnostic(
+                "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                Level::Error, Stage::Semantic, {
+                    Label("Types mismatch (found '" + 
+                arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                }));
+            throw SemanticAbort();
+        }         
+
+
+        return ASR::make_ListCount_t(al, x.base.base.loc, list, arg, arg_type, nullptr);
+    }
+
     ASR::asr_t* create_SetConstant(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_set_constant expects no keyword arguments",
@@ -8177,6 +8212,8 @@ public:
                     tmp = create_LFGetItem(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
+                else if ( var_name == "_lfortran_list_count")
+                    tmp = create_ListCount(x);
                 else if ( var_name == "_lfortran_set_constant")
                     tmp = create_SetConstant(x);
             } else {
