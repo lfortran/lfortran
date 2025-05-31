@@ -3414,25 +3414,31 @@ public:
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
-                  if (is_char_type) {
-                    bool has_fixed_shape = false;
-                    for (size_t d = 0; d < s.n_dim; d++) {
-                        if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
-                            has_fixed_shape = true;
-                            break;
-                        }
-                    }
-                    if (has_fixed_shape && sym_type->n_kind == ASR::string_length_kindType::DeferredLength
-                    && s.n_dim > 0) {
-                        diag.add(
-                            Diagnostic("Allocatable array '" + std::string(x.m_syms[0].m_name)
-                                           + "' at (1) must have a deferred shape or assumed rank",
-                                       Level::Error,
-                                       Stage::Semantic,
-                                       { Label("", { s.loc }) }));
-                        throw SemanticAbort();
-                    }
+                  if (s.m_spec && s.m_spec->type == AST::decl_attributeType::SimpleAttribute) {
+    if (s.m_spec->simple_attr == AST::simple_attributeType::AttrAllocatable) {
+        
+        if (is_char_type && sym_type->n_kind == ASR::string_length_kindType::DeferredLength) {
+            bool has_fixed_shape = false;
+            for (size_t d = 0; d < s.n_dim; d++) {
+                if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
+                    has_fixed_shape = true;
+                    break;
                 }
+            }
+            if (has_fixed_shape && s.n_dim > 0) {
+                diag.add(
+                    Diagnostic("Allocatable array '" + std::string(x.m_syms[0].m_name)
+                               + "' at (1) must have a deferred shape or assumed rank",
+                               Level::Error,
+                               Stage::Semantic,
+                               { Label("", { s.loc }) }));
+                throw SemanticAbort();
+            }
+        }
+    }
+}
+
+
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
