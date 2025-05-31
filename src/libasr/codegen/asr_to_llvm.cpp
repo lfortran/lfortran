@@ -5588,7 +5588,7 @@ public:
             ptr_loads = ptr_loads_copy;
             llvm::Type *i64 = llvm::Type::getInt64Ty(context);
 
-            // copy the class hash
+            // deepcopy the class hash
             llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_value_type, module.get());
             llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_target_type, module.get());
 
@@ -5599,24 +5599,26 @@ public:
             
             builder->CreateStore(value_class_hash, target_class_hash_ptr);
 
-            // copy the class ptr
+            // deepcopy the class ptr
             ASR::ttype_t* wrapped_value_struct_type = ASRUtils::TYPE(
                         ASRUtils::make_StructType_t_util(al, asr_value_type->base.loc,
                             ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_value_type))->m_derived_type));
-            llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_value_struct_type, module.get());
-
-            
-            llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
-            value_class_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(), value_class_ptr);
-            value_class_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, value_class_ptr);
+            llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_value_struct_type, module.get());
 
             ASR::ttype_t* wrapped_target_struct_type = ASRUtils::TYPE(
                         ASRUtils::make_StructType_t_util(al, asr_target_type->base.loc,
                             ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_target_type))->m_derived_type));
-            wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_target_struct_type, module.get());
+            llvm::Type* wrapper_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_target_struct_type, module.get());
+
+            
+            llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
+            value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
+            // bitcast to the correct type
+            value_class_ptr = builder->CreateBitCast(value_class_ptr, wrapper_target_llvm_type->getPointerTo());
+            value_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type, value_class_ptr);
 
             llvm::Value* target_class_ptr = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
-            target_class_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(), target_class_ptr);
+            target_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type->getPointerTo(), target_class_ptr);
             
             builder->CreateStore(value_class_ptr, target_class_ptr);
 
