@@ -5008,7 +5008,8 @@ public:
 #endif
         if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
             // If the pointer is class, get its type pointer
-            ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(ptr, 1));
+            ptr = llvm_utils->create_gep(ptr, 1);
+            ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get())->getPointerTo(), ptr);
         } else {
             ptr = llvm_utils->CreateLoad2(p_type, ptr);
         }
@@ -10646,10 +10647,19 @@ public:
     void handle_allocated(ASR::expr_t* arg) {
         ASR::ttype_t* asr_type = ASRUtils::expr_type(arg);
         int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 2 - LLVM::is_llvm_pointer(*asr_type);
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
+            ptr_loads = 0;
+        } else {
+            ptr_loads = 2 - LLVM::is_llvm_pointer(*asr_type);
+        }
         visit_expr_wrapper(arg, true);
         ptr_loads = ptr_loads_copy;
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
+        if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
+            // If the pointer is class, get its type pointer
+            tmp = llvm_utils->create_gep(tmp, 1);
+            tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(asr_type, module.get())->getPointerTo(), tmp);
+        }
         if( n_dims > 0 ) {
 #if LLVM_VERSION_MAJOR > 16
             llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
