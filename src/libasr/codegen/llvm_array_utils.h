@@ -283,6 +283,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false) = 0;
@@ -466,6 +467,7 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false);

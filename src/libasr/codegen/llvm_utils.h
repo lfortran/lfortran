@@ -83,7 +83,7 @@ namespace LCompilers {
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context)}, true);
@@ -326,15 +326,26 @@ namespace LCompilers {
              * Allocate heap memory for string.
              * Fill string with empty characters.
             */
-            void initialize_string_heap(llvm::Value* str, llvm::Value* len);
+            void initialize_string_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
             void initialize_string_heap(llvm::Value* str, int64_t len);
 
             /*
              * Allocate stack memory for string.
              * Fill string with empty characters.
             */
-            void initialize_string_stack(llvm::Value* str, llvm::Value* len){(void)str;(void)len;throw LCompilersException("Not Implemented Yet");};
-            void initialize_string_stack(llvm::Value* str, int64_t len){(void)str;(void)len;throw LCompilersException("Not Implemented Yet");};
+            void initialize_string_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+            void initialize_string_stack(llvm::Value* str, int64_t len);
+
+            /*
+             * Create an empty string descriptor with
+             * {data = nullptr, length = 0, capacity = 0}
+            */
+            llvm::Value* create_empty_string_descriptor(std::string name = "");
+
+            llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
+            llvm::Value* get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len=false);
+            std::pair<llvm::Value*, llvm::Value*> get_string_length_data(ASR::String_t* str_type, llvm::Value* str,
+                bool get_pointer_to_data=false, bool get_pointer_to_len=false);
 
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);

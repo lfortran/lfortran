@@ -665,7 +665,7 @@ public:
                         t = ASRUtils::TYPE(ASR::make_String_t(al, t->base.loc,
                                     tnew->m_kind, tnew->m_len,
                                     tnew->m_len_kind,
-                                    ASR::string_physical_typeType::PointerString));
+                                    ASR::string_physical_typeType::DescriptorString));
                         break;
                     }
                     case ASR::ttypeType::Complex: {

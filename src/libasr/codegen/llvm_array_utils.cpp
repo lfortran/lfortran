@@ -13,11 +13,12 @@ namespace LCompilers {
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getInt8Ty(context)->getPointerTo(), {
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }
+            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
         }
@@ -699,7 +700,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
             llvm::Value* tmp = nullptr;
@@ -710,10 +711,16 @@ namespace LCompilers {
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
-                if( is_fixed_size ) {
-                    tmp = llvm_utils->create_gep2(type, array, idx);
+                if(ASRUtils::is_character(*asr_type)){
+                    llvm::Value* string_len = llvm_utils->get_string_length(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array);
+                    llvm::Value
+                    llvm:
                 } else {
-                    tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    if( is_fixed_size ) {
+                        tmp = llvm_utils->create_gep2(type, array, idx);
+                    } else {
+                        tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    }
                 }
             } else {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);

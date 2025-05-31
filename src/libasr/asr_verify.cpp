@@ -706,7 +706,17 @@ public:
                         " must reduce to a compile time constant.");
             }
         }
+        if(ASRUtils::is_character(*x.m_type)){
+            String_t* str = down_cast<String_t>(ASRUtils::extract_type(x.m_type));
+            require(str->m_len_kind != ASR::ImplicitLength,
+                "Variable of string type can't have a length of kind \"ImplicitLength\"")
+            if(x.m_abi == abiType::BindC){
+                require(str->m_physical_type == CChar,
+                    "Cbind character variable must be of physical type \"CChar\"");
+            }
 
+
+        }
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);
         if (x.m_value)
@@ -1280,6 +1290,50 @@ public:
         }
         visit_ttype(*x.m_type);
     }
+
+    void visit_String(const String_t &x){
+/*General Check on the length*/ 
+        if(x.m_len){
+            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
+                "String length must be of type INTEGER,"
+                "found " + 
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len)));
+        }
+/*Check Valid String type state based on the physical type*/
+        if (x.m_physical_type == DescriptorString){
+            if(x.m_len){
+                require(x.m_len_kind == ExpressionLength,
+                    "String of physical type \"DescriptorString\" + existing length => must have length kind of \"ExpressionLength\".")
+            } else {
+                require(x.m_len_kind == AssumedLength ||
+                        x.m_len_kind == DeferredLength ||
+                        x.m_len_kind == ImplicitLength,
+                    "String of physical type \"DescriptorString\" + non-existing length => must have length kind of"
+                    " \"AssumedLength\" OR \"DeferredLength\" OR \"ImplicitLength\".")
+            }
+        } else if (x.m_physical_type == CChar) {
+            require(x.m_len &&
+                ASR::is_a<ASR::IntegerConstant_t>(*x.m_len) && 
+                ASR::down_cast<ASR::IntegerConstant_t>(x.m_len)->m_n == 1,
+                "CBind character that's of kind \"c_char\" should have a constant length of 1");
+        } else {
+            throw LCompilersException("PhysicalType not checked (Probably a new physical type).");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_String(x);   
+    }
+    void visit_StringPhysicalCast(const StringPhysicalCast_t &x){
+        require(x.m_type, "x.m_type cannot be nullptr");
+        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringPhysicalCast should be of string type");
+        // ASR::String_t* str = ASR::down_cast<ASR::String_t>(x.m_type);
+        // require(!str->m_len,
+        //     "StringPhysicalCast return type shouldn't have length "
+        //     "(Length should be implicit).")
+        // require(str->m_len_kind == ImplicitLength,
+        //     "StringPhysicalCast type that's a descriptorString should have length kind of \"ImplicitLength\".")
+        BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
+    }
+
+
 
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
