@@ -4551,6 +4551,9 @@ public:
 
                 if (id == "kind") {
                     //TODO: Handle kind attribute on item (ideally should be a function call)
+                    str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
                 } else {
                     determine_char_len(item, sym, str);
                 }
