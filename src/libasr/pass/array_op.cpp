@@ -905,6 +905,10 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
             pass_result.push_back(al, &(xx.base));
             // Pushing assignment statements to source
             for (size_t i = 0; i < x.n_args ; i++) {
+                if( !ASRUtils::is_array(
+                        ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                    continue;
+                }
                 ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                     al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs));
                 ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
