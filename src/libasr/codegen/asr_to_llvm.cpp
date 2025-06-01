@@ -8754,6 +8754,17 @@ public:
                         throw CodeGenError("Real arrays of kind 4 or 8 only supported for now. Found kind: "
                                             + std::to_string(a_kind));
                     }
+                } else if (ASR::is_a<ASR::Complex_t>(*type)) {
+                    if ( a_kind == 4 ) {
+                        runtime_func_name = "_lfortran_read_array_complex_float";
+                        type_arg = complex_type_4;
+                    } else if ( a_kind == 8 ) {
+                        runtime_func_name = "_lfortran_read_array_complex_double";
+                        type_arg = complex_type_8;
+                    } else {
+                        throw CodeGenError("Complex arrays of kind 4 or 8 only supported for now. Found kind: "
+                                            + std::to_string(a_kind));
+                    }
                 } else if (ASR::is_a<ASR::String_t>(*type)) {
                     int len;
                     if (ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(type)->m_len, len) && len != 1) {
