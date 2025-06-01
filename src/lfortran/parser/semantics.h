@@ -252,15 +252,6 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 
 #define DIV2(x) divide_int_by_2(x)
 
-/*
-make_AttrType_t(Allocator &al, const Location &a_loc, 
-        decl_typeType a_type, 
-        kind_item_t* a_kind, size_t n_kind, 
-        decl_attribute_t* a_attr, 
-        generic_type_param_t* a_parametrized_type, 
-        char* a_name, symbolType a_sym)
-*/
-
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
