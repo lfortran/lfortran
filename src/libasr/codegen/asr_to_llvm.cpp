@@ -1708,8 +1708,9 @@ public:
         this->visit_expr_wrapper(x.m_pos, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
-
-        tmp = list_api->read_item(plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        
+        std::string type_code = ASRUtils::get_type_code(el_type);
+        tmp = list_api->read_item2(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -1974,7 +1975,9 @@ public:
 
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
-        list_api->reverse(plist, module.get());
+
+        std::string type_code = ASRUtils::get_type_code(asr_el_type);
+        list_api->reverse(type_code, plist, module.get());
     }
 
     void generate_ListPop_0(ASR::expr_t* m_arg) {
@@ -5695,7 +5698,8 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                target = list_api->read_item(list, pos, compiler_options.enable_bounds_checking,
+                std::string type_code = ASRUtils::get_type_code(asr_target0->m_type);
+                target = list_api->read_item2(type_code, list, pos, compiler_options.enable_bounds_checking,
                                              module.get(), true);
             }
         } else {

@@ -3523,24 +3523,24 @@ public:
         } else if (startswith(var_name, "_lfortran_")) {
             // LFortran specific intrinsics
             
-            if (var_name == "_lfortran_list_append") {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                
-                if( !signature_matched ) {
-                    diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
+            IntrinsicSignature signature = get_intrinsic_signature(var_name);
+            Vec<ASR::expr_t*> args;
+            bool signature_matched = false;
+            signature_matched = handle_intrinsic_node_args(
+                x, args, signature.kwarg_names,
+                signature.positional_args, signature.max_args,
+                var_name, true);
 
+            if( !signature_matched ) {
+                diag.add(Diagnostic(
+                    "No matching signature found for intrinsic " + var_name,
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+
+            if (var_name == "_lfortran_list_append") {
                 if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
                         "First argument of " + var_name + " must be of list type",
@@ -3567,24 +3567,20 @@ public:
 
                 return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
 
-            } else if (var_name == "_lfortran_set_add") {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                
-                if( !signature_matched ) {
+            } else if (var_name == "_lfortran_list_reverse") {
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
+                        "First argument of " + var_name + " must be of list type",
                         Level::Error, Stage::Semantic, {
                             Label("",{x.base.base.loc})
                         }));
                     throw SemanticAbort();
                 }
 
+                ASRUtils::create_intrinsic_function create_function =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("list.reverse");
+                return create_function(al, x.base.base.loc, args, diag);
+            } else if (var_name == "_lfortran_set_add") {
                 if (!ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
                         "First argument of " + var_name + " must be of set type",
@@ -3612,6 +3608,47 @@ public:
                 ASRUtils::create_intrinsic_function create_function =
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("set.add");
                 return create_function(al, x.base.base.loc, args, diag);
+            }  else if (var_name == "_lfortran_set_item") {
+                if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
+                    ASR::ttype_t *index_type = ASRUtils::expr_type(args[1]);
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[2]);
+                    ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
+
+                    if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                        diag.add(Diagnostic(
+                            "Type mismatch in " + var_name + ", the types must be compatible",
+                            Level::Error, Stage::Semantic, {
+                                Label("Types mismatch (found '" + 
+                            arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    if (!ASR::is_a<ASR::Integer_t>(*index_type)) {
+                        std::string index_type_str = ASRUtils::type_to_str_fortran(index_type);
+                        diag.add(Diagnostic("Index of a list must be an integer not '" + index_type_str + "'",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
+
+                    return ASRUtils::make_Assignment_t_util(al, x.base.base.loc, 
+                                        ASRUtils::EXPR(ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
+                                                             contained_type, nullptr)), 
+                                        args[2], 
+                                        nullptr, false);
+                } else {
+                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+                    diag.add(Diagnostic(
+                        "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                return nullptr;
             }
         }
         return nullptr;
