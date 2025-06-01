@@ -420,7 +420,6 @@ jobs:
             ./build_lf.sh
       # end of "Check Third Party Code Compilation"
 
-
       ## Question - do we restore the version of cmake to 3.29.1 again now?
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Restore cmake version to 3.29.1
@@ -452,8 +451,8 @@ jobs:
               -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+              -DCMAKE_C_COMPILER_LAUNCHER=ccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
 
             cmake --build . -j16 --target install
 
