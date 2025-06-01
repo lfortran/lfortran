@@ -3752,7 +3752,7 @@ public:
                                 is_struct_const = true;
                             }
                         }
-                        if (is_derived_type) {
+                        if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
                             is_struct_const = true;
                         }
                         if (sym_found == nullptr) {
