@@ -514,6 +514,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'then' { KW(THEN) }
             'to' { KW(TO) }
             'type' { KW(TYPE) }
+            'typedef' { KW(TYPE_DEF) }
             'unformatted' { KW(UNFORMATTED) }
             'use' { KW(USE) }
             'value' { KW(VALUE) }

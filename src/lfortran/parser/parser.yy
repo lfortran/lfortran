@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    230 // shift/reduce conflicts
+%expect    229 // shift/reduce conflicts
 %expect-rr 224 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -357,6 +357,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_THEN
 %token <string> KW_TO
 %token <string> KW_TYPE
+%token <string> KW_TYPE_DEF
 %token <string> KW_UNFORMATTED
 %token <string> KW_USE
 %token <string> KW_VALUE
@@ -718,6 +719,8 @@ interface_item
         $$ = INTERFACE_PROC($1, @$); }
     | type_list sep {
         $$ = INTERFACE_TYPE_LIST($1, @$); }
+    | KW_TYPE_DEF "," KW_DEFERRED "::" id sep {
+        $$ = INTERFACE_TYPE_DEF($5, SIMPLE_ATTR(Deferred, @$), @$); }
     ;
 
 type_list
@@ -788,11 +791,9 @@ derived_type_decl
     | KW_TYPE var_modifiers id "(" id_list ")" sep var_decl_star
         derived_type_contains_opt end_type sep {
             $$ = DERIVED_TYPE1($2, $3, $5, TRIVIA($7, $11, @$), $8, $9, @$); }
-    | KW_TYPE var_modifiers KW_IMPLEMENTS "(" id_list ")" id "(" id_list ")" sep var_decl_star
+    | KW_TYPE var_modifiers id "{" generic_type_param_list "}" sep var_decl_star
         derived_type_contains_opt end_type sep {
-
-        }
-
+            $$ = DERIVED_TYPE3($2, $3, TRIVIA($7, $11, @$), $8, $5, $9, @$); }
     ;
 
 template_decl
@@ -1584,6 +1585,8 @@ var_type
     | KW_PROCEDURE "(" id ")" { $$ = ATTR_TYPE_NAME(Procedure, $3, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
+    | KW_CLASS "(" id "{" id "}" ")" { 
+        $$ = ATTR_GENERIC_TYPE_NAME(Class, GENERIC_TYPE_PARAM($3, $5, @$), @$); }
     ;
 
 var_sym_decl_list

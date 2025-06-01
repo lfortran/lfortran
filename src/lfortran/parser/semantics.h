@@ -252,34 +252,50 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 
 #define DIV2(x) divide_int_by_2(x)
 
+/*
+make_AttrType_t(Allocator &al, const Location &a_loc, 
+        decl_typeType a_type, 
+        kind_item_t* a_kind, size_t n_kind, 
+        decl_attribute_t* a_attr, 
+        generic_type_param_t* a_parametrized_type, 
+        char* a_name, symbolType a_sym)
+*/
+
 #define ATTR_TYPE(x, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, nullptr, \
+            nullptr, 0, nullptr, nullptr, \
             nullptr, None)
 
 #define ATTR_TYPE_INT(x, n, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, None)
 
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, nullptr, \
+            nullptr, 0, nullptr, nullptr, \
             name2char(name), None)
+
+#define ATTR_GENERIC_TYPE_NAME(x, generic_type_param, l) make_AttrType_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            nullptr, 0, nullptr, \
+            down_cast<generic_type_param_t>(generic_type_param), \
+            nullptr, None)
 
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
-            nullptr, 0, nullptr, \
+            nullptr, 0, nullptr, nullptr,\
             nullptr, sym)
 
 #define ATTR_TYPE_ATTR(x, attr, l) make_AttrType_t( \
@@ -287,7 +303,7 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             decl_typeType::Type##x, \
             nullptr, 0, \
             down_cast<decl_attribute_t>(attr), \
-            nullptr, None)
+            nullptr, nullptr, None)
 
 #define ATTR_NAME(x, l) make_AttrNamelist_t \
             (p.m_a, l, name2char(x))
@@ -2302,6 +2318,9 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         VEC_CAST(a_types, decl_attribute), \
         a_types.size())
 
+#define INTERFACE_TYPE_DEF(name, attr, l) make_InterfaceTypeDef_t(p.m_a, l, \
+        name2char(name), down_cast<decl_attribute_t>(attr))
+
 #define IMPLEMENTS(header, contains, l) make_Implements_t(p.m_a, l, \
         down_cast<implements_header_t>(header), \
         IMPLEMENTS_ITEMS(contains), contains.size())
@@ -2320,6 +2339,7 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         name2char(name), nullptr, 0, \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(),  \
+        nullptr, 0, \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
 #define DERIVED_TYPE1(attr, name, namelist, trivia, decl, contains, l) \
@@ -2327,6 +2347,7 @@ ast_t* COARRAY(Allocator &al, const ast_t *id,
         REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(),  \
+        nullptr, 0, \
         DECLS(decl), decl.size(), \
         VEC_CAST(contains, procedure_decl), contains.size())
 #define DERIVED_TYPE2(name, attr, trivia, l) \
@@ -2342,8 +2363,17 @@ ast_t* TYPEPARAMETER0(Allocator &al,
     v.push_back(al, down_cast<decl_attribute_t>(attr));
     return make_DerivedType_t(al, l,
         name2char(id), nullptr, 0, trivia_cast(trivia), v.p, v.size(),
-        nullptr, 0, nullptr, 0);
+        nullptr, 0, nullptr, 0, nullptr, 0);
 }
+
+#define DERIVED_TYPE3(attr, name, trivia, decl, type_params, contains, l) \
+        make_DerivedType_t(p.m_a, l, name2char(name), \
+        nullptr, 0, \
+        trivia_cast(trivia), \
+        VEC_CAST(attr, decl_attribute), attr.size(),  \
+        GENERIC_TYPE_PARAMS(type_params), type_params.size(), \
+        DECLS(decl), decl.size(), \
+        VEC_CAST(contains, procedure_decl), contains.size())
 
 #define TEMPLATE(name, namelist, decl, contains, l) \
         make_Template_t(p.m_a, l, name2char(name), \

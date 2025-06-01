@@ -65,7 +65,7 @@ unit_decl2
     | DeclarationPragma(pragma_type type, string text, trivia? trivia)
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
-        unit_decl2* items, procedure_decl* contains)
+        generic_type_param* generic_type_params, unit_decl2* items, procedure_decl* contains)
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
@@ -90,6 +90,7 @@ interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
     | InterfaceTypeList(decl_attribute* types)
+    | InterfaceTypeDef(identifier name, decl_attribute attribute)
 
 implements_header
     = ImplementsHeaderType(identifier interface_name, decl_attribute type_name)
@@ -295,7 +296,7 @@ decl_attribute
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
-        identifier? name, symbol sym)
+        generic_type_param? parametrized_type, identifier? name, symbol sym)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
