@@ -6407,6 +6407,9 @@ public:
 
                     std::vector<llvm::Value*>& class_sym_vtabs = class2vtab[class_sym][current_scope];
                     std::vector<llvm::Value*> conds;
+                    if (class_sym_vtabs.size() == 0) {
+                        class_sym_vtabs.push_back(type2vtab[class_sym][current_scope]);
+                    }
                     conds.reserve(class_sym_vtabs.size());
                     for( size_t i = 0; i < class_sym_vtabs.size(); i++ ) {
                         conds.push_back(builder->CreateICmpEQ(
