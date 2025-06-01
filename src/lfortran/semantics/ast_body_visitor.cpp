@@ -3657,74 +3657,6 @@ public:
         }
     }
 
-    void handle_MoveAlloc(const AST::SubroutineCall_t &x, std::string var_name) {
-        if (to_lower(var_name) == "move_alloc") {
-            if (ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name)) {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                if( !signature_matched ) {
-                    diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if (ASRUtils::expr_value(args[1]) != nullptr) {
-                    diag.add(Diagnostic(
-                        "`to` argument of `move_alloc` must be a variable",
-                        Level::Error, Stage::Semantic, {
-                            Label("",{args[1]->base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
-                if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
-                    fill_optional_kind_arg(var_name, args);
-
-                    ASRUtils::create_intrinsic_function create_func =
-                        ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function(var_name);
-                    ASR::asr_t* func_call = create_func(al, x.base.base.loc, args, diag);
-                    Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
-                    explicit_deallocate_args.push_back(al, args[0]);
-                    if (ASRUtils::is_array(ASRUtils::expr_type(args[0]))) {
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
-                        Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
-                        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
-                        for(int i=0; i<n_dims; i++) {
-                            ASR::dimension_t dim;
-                            dim.loc = x.base.base.loc;
-                            dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
-                                al, x.base.base.loc, 1, integer_type));
-                            dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
-                    al, x.base.base.loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, i+1, integer_type)), integer_type, nullptr));
-                            alloc_dims.push_back(al, dim);
-                        }
-                        Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
-                        ASR::alloc_arg_t alloc_arg;
-                        alloc_arg.loc = x.base.base.loc;
-                        alloc_arg.m_a = args[1];
-                        alloc_arg.m_dims = alloc_dims.p;
-                        alloc_arg.n_dims = alloc_dims.n;
-                        alloc_arg.m_len_expr = nullptr;
-                        alloc_arg.m_type = nullptr;
-                        alloc_args.push_back(al, alloc_arg);
-                        current_body->push_back(al, ASRUtils::STMT(ASR::make_Allocate_t(al, x.base.base.loc, alloc_args.p, alloc_args.n, nullptr, nullptr, nullptr)));
-                    }
-                    ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, x.base.base.loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
-                    tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, args[1], ASRUtils::EXPR(func_call), nullptr, compiler_options.po.realloc_lhs);
-                    current_body->push_back(al, ASRUtils::STMT(tmp));
-                    current_body->push_back(al, explicit_deallocate);
-                    tmp = nullptr;
-                }
-            }
-        }
-    }
-
     /*
         Function to convert 'FLUSH' subroutine call to 'FLUSH' ASR node
     */
@@ -3926,8 +3858,7 @@ public:
             tmp = intrinsic_subroutine;
             return;
         }
-        if (sub_name == "move_alloc" || sub_name == "mvbits") {
-            handle_MoveAlloc(x, sub_name);
+        if (sub_name == "mvbits") {
             handle_Mvbits(x, sub_name);
             return;
         }
