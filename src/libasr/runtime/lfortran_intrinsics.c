@@ -3820,24 +3820,31 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
     FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
-    if( fd == NULL ) {
-        printf("Specified UNIT %d in BACKSPACE is not created or connected.\n",
-            unit_num);
+    if (fd == NULL) {
+        fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
-    int n = ftell(fd);
-    for(int i = n; i >= 0; i --) {
-        char c = fgetc(fd);
-        if (i == n) {
-            // Skip previous record newline
-            fseek(fd, -3, SEEK_CUR);
-            continue;
-        } else  if (c == '\n') {
-            break;
-        } else {
-            fseek(fd, -2, SEEK_CUR);
+
+    fflush(fd);
+    long pos = ftell(fd);
+    if (pos <= 0) {
+        rewind(fd);
+        return;
+    }
+
+    int ch;
+    pos--;  // Step back from EOF
+    while (pos > 0) {
+        fseek(fd, --pos, SEEK_SET);
+        ch = fgetc(fd);
+        if (ch == '\n') {
+            fseek(fd, pos + 1, SEEK_SET);  // Move to just after the previous newline
+            return;
         }
     }
+
+    // If no newline found, rewind to beginning
+    rewind(fd);
 }
 
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)

@@ -723,6 +723,7 @@ RUN(NAME format_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_30 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_31 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME format_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME format_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
