@@ -913,24 +913,27 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_target)));
                 fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_value)));
 
-                Vec<ASR::expr_t**> vars1, vars2;
-                vars1.reserve(al, 1); vars2.reserve(al, 1);
+                Vec<ASR::expr_t**> vars1;
+                vars1.reserve(al, 1);
                 if( ASRUtils::is_array(
                         ASRUtils::expr_type(assignment_t->m_value)) ) {
                     vars1.push_back(al, &(assignment_t->m_value));
                 }
                 vars1.push_back(al, &(assignment_t->m_target));
 
-                vars2.push_back(al, &(assignment_t->m_target));
-                if( ASRUtils::is_array(
-                        ASRUtils::expr_type(assignment_t->m_value)) ) {
-                    vars2.push_back(al, &(assignment_t->m_value));
-                }
-
                 // TODO: Remove the following. Instead directly handle
                 // allocate with source in the backend.
-                insert_realloc_for_target(
-                    xx.m_args[i].m_a, xx.m_source, vars2);
+                if( xx.m_args[i].n_dims == 0 ) {
+                    Vec<ASR::expr_t**> vars2;
+                    vars2.reserve(al, 1);
+                    vars2.push_back(al, &(assignment_t->m_target));
+                    if( ASRUtils::is_array(
+                            ASRUtils::expr_type(assignment_t->m_value)) ) {
+                        vars2.push_back(al, &(assignment_t->m_value));
+                    }
+                    insert_realloc_for_target(
+                        xx.m_args[i].m_a, xx.m_source, vars2);
+                }
                 generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
             }
         }
