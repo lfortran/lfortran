@@ -2443,13 +2443,6 @@ public:
             array = tmp;
         }
 
-        if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
-            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
-                ASRUtils::extract_type(x.m_type));
-            current_der_type_name = ASRUtils::symbol_name(
-                ASRUtils::symbol_get_past_external(der_type->m_derived_type));
-        }
-
         ASR::dimension_t* m_dims;
         int n_dims = ASRUtils::extract_dimensions_from_ttype(x_mv_type, m_dims);
         if (ASRUtils::is_character(*x.m_type) && n_dims == 0) {
@@ -2562,6 +2555,12 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
             }
+        }
+        if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
+            ASR::StructType_t* der_type = ASR::down_cast<ASR::StructType_t>(
+                ASRUtils::extract_type(x.m_type));
+            current_der_type_name = ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(der_type->m_derived_type));
         }
     }
 
@@ -2846,6 +2845,11 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
+        if (ASR::is_a<ASR::StructType_t>(*x_m_v_type) && 
+            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type)) && 
+            ASRUtils::is_allocatable(x_m_v_type)) {
+            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+        }
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
