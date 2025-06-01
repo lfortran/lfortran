@@ -5164,7 +5164,7 @@ public:
             arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
             arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) {
             if( (arr_physical_type == ASR::array_physical_typeType::FixedSizeArray ||
-                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) && 
+                arr_physical_type == ASR::array_physical_typeType::StringArraySinglePointer) &&
                 !(is_parameter && dims == 1) ) {
                 llvm::Type *val_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable(
@@ -11712,7 +11712,7 @@ Result<std::unique_ptr<LLVMModule>> asr_to_llvm(ASR::TranslationUnit_t &asr,
     }
 
     // Uncomment for debugging the ASR after the transformation
-    // std::cout << LCompilers::pickle(asr, false, false, false) << std::endl;
+    // std::cout << LCompilers::pickle(asr, true, false, false) << std::endl;
 
     t1 = std::chrono::high_resolution_clock::now();
     try {
