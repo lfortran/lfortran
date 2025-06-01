@@ -143,7 +143,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -157,7 +157,7 @@
                                     identity
                                     (FunctionType
                                         [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
-                                        (String 1 () ExpressionLength PointerString)]
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         ()
                                         Source
                                         Implementation
