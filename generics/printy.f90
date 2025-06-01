@@ -7,7 +7,7 @@ module real64_module
        end subroutine output
     end interface IPrintable
  
-    implements IPrintable :: real(real64)
+    implements IPrintable :: real(real64) ! Consider not using AttrType for intrinsic types
        procedure, pass :: output
     end implements real(real64)
  
