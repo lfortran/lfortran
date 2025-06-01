@@ -1340,9 +1340,20 @@ public:
                     }
                 } 
 
-                int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
-                    [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m))];
-                llvm::Value* dt_1 = llvm_utils->create_gep2(dt_type, dt, dt_idx);
+                std::string curr_struct = ASRUtils::symbol_name(struct_sym);
+                std::string member_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m));
+                while( name2memidx[curr_struct].find(member_name) == name2memidx[curr_struct].end() ) {
+                    if( dertype2parent.find(curr_struct) == dertype2parent.end() ) {
+                        throw CodeGenError(curr_struct + " doesn't have any member named " + member_name,
+                                            x.base.base.loc);
+                    }
+                    dt = llvm_utils->create_gep2(name2dertype[curr_struct], dt, 0);
+                    curr_struct = dertype2parent[curr_struct];
+                }
+                int dt_idx = name2memidx[curr_struct][member_name];
+                std::vector<llvm::Value*> idx_vars = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                    llvm::ConstantInt::get(context, llvm::APInt(32, dt_idx))};
+                llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
 #if LLVM_VERSION_MAJOR > 16
                 llvm::Type *dt_1_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(

@@ -1,6 +1,7 @@
 program class_29
     type :: toml_table
         integer :: x
+        character(len=:), allocatable :: y
     end type
     class(toml_table), pointer :: temp
     class(toml_table), pointer :: temp2
@@ -14,4 +15,12 @@ program class_29
     if (allocated(temp3)) error stop
     allocate(temp3)
     if (.not. allocated(temp3)) error stop
+    temp3%y = "Hello, World!"
+    call destroy(temp3)
+    if (allocated(temp3%y)) error stop
+contains 
+    subroutine destroy(shlex)
+        class(toml_table), intent(inout) :: shlex
+        deallocate(shlex%y)
+    end subroutine destroy
 end program
