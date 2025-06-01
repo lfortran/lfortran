@@ -312,73 +312,6 @@ jobs:
 
       # end of SciPy related testing
 
-      # the below code is taken from "Build LFortran to WASM and Upload" CI job
-    #   - name : Build LFortran to WASM and Upload - Remove existing node
-    #     shell: bash -e -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run : |
-    #         which node
-    #         node -v
-    #         sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
-
-    #   - name: Build LFortran to WASM and Upload - Install Emscripten from Git
-    #     # TODO: This fails with "-e" for some reason:
-    #     shell: bash -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run: |
-    #         mkdir $HOME/ext
-    #         cd $HOME/ext
-
-    #         git clone https://github.com/emscripten-core/emsdk.git
-    #         cd emsdk
-
-    #         ./emsdk install 3.1.35
-
-    #         ./emsdk activate 3.1.35
-
-    #         ./emsdk install node-18.20.3-64bit
-
-    #         ./emsdk activate node-18.20.3-64bit
-
-    #   - name: Build LFortran to WASM and Upload - Show Emscripten and Node Info
-    #     shell: bash -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run: |
-    #         set -ex
-    #         # Activate PATH and other environment variables in the current terminal
-    #         source $HOME/ext/emsdk/emsdk_env.sh
-    #         emcc -v
-    #         em++ -v
-    #         which node
-    #         node -v
-
-    #   - name: Build LFortran to WASM and Upload - Build to WASM
-    #     shell: bash -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run: |
-    #         set -ex
-    #         source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-    #         ./build_to_wasm.sh
-
-    #   - name: Build LFortran to WASM and Upload - Test built lfortran.wasm
-    #     shell: bash -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run: |
-    #         set -ex
-    #         source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
-    #         which node
-    #         node -v
-    #         node src/lfortran/tests/test_lfortran.js
-
-    #   - name: Build LFortran to WASM and Upload - Upload to wasm_builds
-    #     shell: bash -l {0}
-    #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    #     run: |
-    #         ci/upload_lfortran_wasm.sh
-    #     env:
-    #       SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
-    #   # end of "Build LFortran to WASM and Upload" CI job
-
     #   # TODO: Maybe we want to run this on ubuntu with both the LLVM versions?
     #   # the below code is taken from "Check Out-of-Source Debug build" job
     # #   - name: Build in debug mode on linux
@@ -593,3 +526,82 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
+
+  build_to_wasm_and_upload:
+    name: Build LFortran to WASM and Upload
+    runs-on: "ubuntu-latest"
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name : Remove existing node
+        shell: bash -e -l {0}
+        run : |
+            which node
+            node -v
+            sudo rm -rf /usr/local/bin/node /usr/local/bin/npm
+
+      - name: Install Emscripten from Git
+        # TODO: This fails with "-e" for some reason:
+        shell: bash -l {0}
+        run: |
+            mkdir $HOME/ext
+            cd $HOME/ext
+
+            git clone https://github.com/emscripten-core/emsdk.git
+            cd emsdk
+
+            ./emsdk install 3.1.35
+
+            ./emsdk activate 3.1.35
+
+            ./emsdk install node-18.20.3-64bit
+
+            ./emsdk activate node-18.20.3-64bit
+
+      - name: Show Emscripten and Node Info
+        shell: bash -l {0}
+        run: |
+            set -ex
+            # Activate PATH and other environment variables in the current terminal
+            source $HOME/ext/emsdk/emsdk_env.sh
+            emcc -v
+            em++ -v
+            which node
+            node -v
+
+      - name: Build to WASM
+        shell: bash -l {0}
+        run: |
+            set -ex
+            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+            ./build_to_wasm.sh
+
+      - name: Test built lfortran.wasm
+        shell: bash -l {0}
+        run: |
+            set -ex
+            source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
+            which node
+            node -v
+            node src/lfortran/tests/test_lfortran.js
+
+      - name: Upload to wasm_builds
+        shell: bash -l {0}
+        run: |
+            ci/upload_lfortran_wasm.sh
+        env:
+          SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
