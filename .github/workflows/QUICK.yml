@@ -98,6 +98,10 @@ jobs:
         # explicitly specifying version of kokkos=4.4.1 causes failure in environment specs resolution
         run: micromamba install kokkos
 
+      - name: Install libunwind
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
+        run: micromamba install -y -n lf libunwind=1.7.2
+
       - name: Setup Platform
         shell: bash -e -l {0}
         run: |
@@ -362,10 +366,6 @@ jobs:
       # ubuntu + llvm version 11 - yes
       # ubuntu + llvm version 20 - yes
       # macOS + llvm 11 - no
-      - name: Install libunwind
-        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
-        run: micromamba install -y -n lf libunwind=1.7.2
-
       - name: Test third party codes
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
