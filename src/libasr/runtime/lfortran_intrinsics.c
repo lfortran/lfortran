@@ -4416,6 +4416,9 @@ LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32
                 char *comma = strchr(start, ',');
                 if (comma) {
                     *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
                     p[i].re = strtof(start, NULL);
                     p[i].im = strtof(comma + 1, NULL);
                 } else {
@@ -4472,6 +4475,9 @@ LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_6
                 char *comma = strchr(start, ',');
                 if (comma) {
                     *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
                     p[i].re = strtod(start, NULL);
                     p[i].im = strtod(comma + 1, NULL);
                 } else {
