@@ -1,14 +1,12 @@
+# https://docs.github.com/en/actions/managing-workflow-runs-and-deployments/managing-workflow-runs/manually-running-a-workflow
 name: Exhaustive check
 
 on:
-  push:
-    branches:
-      - main
-    tags:
-      - 'v*'
-  pull_request:
-    branches:
-      - main
+  workflow_dispatch:
+    inputs:
+      pr_number:
+        description: 'Pull Request number (optional, defaults to main)'
+        required: false
 
 # For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || 'main' }}
 # which eventually evaluates to: CI-7488 and 'main' isn't used.
@@ -19,8 +17,9 @@ on:
 # will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
 # and save runner for PR's but no previous CI will be cancelled on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || 'main' }}
-  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.pr_number || github.event.number || 'main' }}
+  cancel-in-progress: ${{ github.event.inputs.pr_number != '' || github.event_name == 'pull_request' }}
+
 
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
