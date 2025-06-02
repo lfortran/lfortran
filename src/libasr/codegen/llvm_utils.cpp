@@ -2219,12 +2219,10 @@ namespace LCompilers {
                         // If member is allocatable string, we need to check if it is allocated before copying
                         if (ASRUtils::is_allocatable(ASRUtils::symbol_type(item.second)) &&
                             ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(item.second)))) {
-                            llvm::Type *t = src_member->getType();
-                            t = t->getContainedType(0);
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-                            llvm::Value* src_member_char = builder->CreateGEP(t, src_member, idx_vec);;
+                            llvm::Value* src_member_char = builder->CreateGEP(mem_type, src_member, idx_vec);;
                             src_member_char = LLVMUtils::CreateLoad2(
                                 llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
                             is_allocated = builder->CreateICmpNE(
