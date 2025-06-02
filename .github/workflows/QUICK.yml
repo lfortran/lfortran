@@ -90,7 +90,13 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -e -l {0}
         # explicitly specifying version of kokkos=4.4.1 causes failure in environment specs resolution
-        run: micromamba install bison=3.4 openmpi=5.0.6 openblas=0.3.21 llvm-openmp=14.0.4 nodejs=18.20.4 pandoc=3.1.13 kokkos
+        run: micromamba install bison=3.4 openmpi=5.0.6 openblas=0.3.21 llvm-openmp=14.0.4 nodejs=18.20.4 pandoc=3.1.13
+
+      - name: Install Linux Packages
+        if: contains(matrix.os, 'ubuntu')
+        shell: bash -e -l {0}
+        # explicitly specifying version of kokkos=4.4.1 causes failure in environment specs resolution
+        run: micromamba install kokkos
 
       - name: Setup Platform
         shell: bash -e -l {0}
