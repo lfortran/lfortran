@@ -2214,9 +2214,28 @@ namespace LCompilers {
                             src_member = LLVMUtils::CreateLoad2(mem_type, src_member);
                         }
                         llvm::Value* dest_member = create_gep2(name2dertype[der_type_name], dest, mem_idx);
-                        deepcopy(src_member, dest_member,
+                        llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
+
+                        // If member is allocatable string, we need to check if it is allocated before copying
+                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(item.second)) &&
+                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(item.second)))) {
+                            llvm::Type *t = src_member->getType();
+                            t = t->getContainedType(0);
+                            std::vector<llvm::Value*> idx_vec = {
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                                llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
+                            llvm::Value* src_member_char = builder->CreateGEP(t, src_member, idx_vec);;
+                            src_member_char = LLVMUtils::CreateLoad2(
+                                llvm::Type::getInt8Ty(context)->getPointerTo(), src_member_char);
+                            is_allocated = builder->CreateICmpNE(
+                                builder->CreatePtrToInt(src_member_char, llvm::Type::getInt64Ty(context)),
+                                llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
+                        }
+                        create_if_else(is_allocated, [&]() {
+                            deepcopy(src_member, dest_member,
                             ASRUtils::symbol_type(item.second),
                             module, name2memidx);
+                        }, [=]() {});
                     }
                     if( struct_sym->m_parent != nullptr ) {
                         // gep the parent struct, which is the 0th member of the child struct
