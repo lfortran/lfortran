@@ -14,4 +14,8 @@ program format_30
     write(*,"(ES0.0E0)") 3.14159E+05
     ! print "(E67.62)", 1.23456789101112e-62_8
     print "(ES0.15)", 3.0d-100
+    print "(ES0.0)", 1.0
+    print "(ES300.0)", 1.0
+    print "(ES0.8)", tiny(1.0_8)
+    print "(ES0.8)", huge(1.0_8)
 end program format_30
