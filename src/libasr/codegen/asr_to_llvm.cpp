@@ -5482,7 +5482,7 @@ public:
         bool is_value_set = ASR::is_a<ASR::Set_t>(*asr_value_type);
         bool is_target_struct = ASR::is_a<ASR::StructType_t>(*asr_target_type) && !ASRUtils::is_class_type(asr_target_type);
         bool is_value_struct = ASR::is_a<ASR::StructType_t>(*asr_value_type) && !ASRUtils::is_class_type(asr_value_type);
-        // a class variable is always either allocatable or pointer
+        // a class variable is always either an allocatable, a pointer, or a dummy argument of a procedure
         bool is_target_class = ASR::is_a<ASR::StructType_t>(
                                    *ASRUtils::type_get_past_allocatable_pointer(asr_target_type))
                                && ASRUtils::is_class_type(
