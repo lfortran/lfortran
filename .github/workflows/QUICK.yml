@@ -64,10 +64,7 @@ jobs:
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            openblas=0.3.21
-            llvm-openmp=14.0.4
             make=4.3
-            nodejs=18.20.4
             shell=0.2.0
 
       - uses: hendrikmuhs/ccache-action@main
@@ -93,7 +90,7 @@ jobs:
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -e -l {0}
-        run: micromamba install bison=3.4 openmpi=5.0.6
+        run: micromamba install bison=3.4 openmpi=5.0.6 openblas=0.3.21 llvm-openmp=14.0.4 nodejs=18.20.4
 
       - name: Setup Platform
         shell: bash -e -l {0}
