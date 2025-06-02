@@ -1406,11 +1406,9 @@ public:
                         tmp = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)),
                             module.get()), tmp, 1);
-                        llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::extract_type(ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
-                                al, cur_type->base.loc, ASR::down_cast<ASR::StructType_t>(
-                                    ASRUtils::extract_type(cur_type))->m_derived_type))),
-                            module.get());
+                        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(cur_type))->m_derived_type);
+                        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                        llvm_data_type = get_llvm_struct_data_type(st, false);
                         tmp_ = tmp;
                         tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), tmp);
                     } else {
