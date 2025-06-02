@@ -160,11 +160,14 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         // The type of those Variable symbols shouldn’t be FunctionType.
         for( auto sym: function->m_symtab->get_scope() ) {
             if( !ASR::is_a<ASR::Variable_t>(*sym.second) ||
-                (ASR::is_a<ASR::StructType_t>(
-                    *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) || ASRUtils::is_class_type(
-                        ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type))) ||
+                ASR::is_a<ASR::StructType_t>(
+                    *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ||
+                ASRUtils::is_class_type(
+                    ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ||
                 ASR::is_a<ASR::String_t>(
-                    *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ) { // TODO: Remove this check as well, use pointers for arrays
+                    *ASRUtils::extract_type(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type)) ||  // TODO: Remove this check as well
+                ASRUtils::is_pointer(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type) ||
+                ASRUtils::is_allocatable(ASR::down_cast<ASR::Variable_t>(sym.second)->m_type) ) {
                 return false;
             }
 
@@ -177,7 +180,9 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
         }
 
         for( size_t i = 0; i < func_call->n_args; i++ ) {
-            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[i].m_value) ) {
+            if( ASR::is_a<ASR::ArrayPhysicalCast_t>(*func_call->m_args[i].m_value) ||
+                ASRUtils::is_pointer(ASRUtils::expr_type(func_call->m_args[i].m_value)) ||
+                ASRUtils::is_allocatable(ASRUtils::expr_type(func_call->m_args[i].m_value)) ) {
                 return false;
             }
         }
