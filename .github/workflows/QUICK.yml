@@ -60,15 +60,13 @@ jobs:
       - uses: mamba-org/setup-micromamba@v2.0.2
         with:
           micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
+          environment-file: ci/new_environment.yml
           create-args: >-
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
             make=4.3
-            openmpi=5.0.6
             nodejs=18.20.4
             shell=0.2.0
 
@@ -95,7 +93,7 @@ jobs:
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -e -l {0}
-        run: micromamba install bison=3.4
+        run: micromamba install bison=3.4 openmpi=5.0.6
 
       - name: Setup Platform
         shell: bash -e -l {0}
