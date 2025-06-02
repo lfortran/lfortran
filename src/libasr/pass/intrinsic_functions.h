@@ -73,7 +73,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     SameTypeAs,
     Merge,
     Mvbits,
-    MoveAlloc,
     Mergebits,
     Shiftr,
     Rshift,
@@ -4195,32 +4194,6 @@ namespace Mvbits {
     }
 
 } // namespace Mvbits
-
-namespace MoveAlloc {
-
-    static ASR::expr_t *eval_MoveAlloc(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
-    }
-
-    static inline ASR::expr_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-
-        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_python(arg_types[0]);
-        declare_basic_variables(new_name);
-        fill_func_arg("from", arg_types[0]);
-        fill_func_arg("to", arg_types[1]);
-        auto result = declare(new_name, arg_types[0], ReturnVar);
-        body.push_back(al, b.Assignment(result, args[0]));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace MoveAlloc
 
 namespace Mergebits {
 

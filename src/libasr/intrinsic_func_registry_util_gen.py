@@ -68,12 +68,6 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 3
         },
     ],
-    "MoveAlloc": [
-        {
-            "args": [("any", "any")],
-            "ret_type_arg_idx": 0
-        },
-    ],
     "Leadz": [
         {
             "args": [("int",)],

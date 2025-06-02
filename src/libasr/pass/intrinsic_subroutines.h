@@ -30,6 +30,7 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Srand,
     SystemClock,
     DateAndTime,
+    MoveAlloc,
     // ...
 };
 
@@ -902,6 +903,59 @@ namespace CpuTime {
     }
 
 } // namespace CpuTime
+
+namespace MoveAlloc {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args != 2) {
+            ASRUtils::require_impl(false, "MoveAlloc takes exactly 2 arguments", x.base.base.loc, diagnostics);
+        }
+        ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])), "First argument must be an allocatable type", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_python(arg_types[0]);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("from", arg_types[0], In);
+        fill_func_arg_sub("to", arg_types[1], InOut);
+        if (!ASRUtils::is_character(*arg_types[0])) {
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for(int i=0; i<n_dims; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, integer_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+        al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
+                alloc_dims.push_back(al, dim);
+            }
+            body.push_back(al, b.Allocate(args[1], alloc_dims));
+        }
+        body.push_back(al, b.Assignment(args[1], args[0]));
+        Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+                    explicit_deallocate_args.push_back(al, args[0]);
+        ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+        body.push_back(al, explicit_deallocate);
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+
+} // namespace MoveAlloc
+
 
 } // namespace LCompilers::ASRUtils
 

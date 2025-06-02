@@ -30,6 +30,7 @@ inline std::string get_intrinsic_subroutine_name(int x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
         INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
         INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
+        INTRINSIC_SUBROUTINE_NAME_CASE(MoveAlloc)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -65,6 +66,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&ExecuteCommandLine::instantiate_ExecuteCommandLine, &ExecuteCommandLine::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
             {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
+            {&MoveAlloc::instantiate_MoveAlloc, &MoveAlloc::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -90,6 +93,8 @@ namespace IntrinsicImpureSubroutineRegistry {
             "execute_command_line"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
             "cpu_time"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
+            "move_alloc"},
     };
 
 
@@ -106,6 +111,7 @@ namespace IntrinsicImpureSubroutineRegistry {
                 {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
                 {"cpu_time", &CpuTime::create_CpuTime},
                 {"date_and_time", &DateAndTime::create_DateAndTime},
+                {"move_alloc", &MoveAlloc::create_MoveAlloc},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
