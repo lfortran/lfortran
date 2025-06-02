@@ -75,6 +75,18 @@ time_section "🧪 Testing fortran-regex" '
   cd ..
 '
 
+time_section "🧪 Testing fortran-shlex" '
+  git clone https://github.com/perazz/fortran-shlex.git
+  cd fortran-shlex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+  git checkout 8116cf85301fa1d45c33577a3d21dfda6d46ca06
+  fpm --compiler=$FC build
+  fpm --compiler=$FC test
+  print_success "Done with fortran-shlex"
+  cd ..
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
