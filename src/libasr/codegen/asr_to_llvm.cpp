@@ -4500,6 +4500,14 @@ public:
             } else {
                 fn_name = mangle_prefix + sym_name;
             }
+            if ( parent_function != nullptr &&
+                 ASRUtils::get_FunctionType(x)->m_deftype != ASR::deftypeType::Interface &&
+                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic &&
+                 ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::BindC
+                ) {
+                std::string parent_function_name = std::string(parent_function->m_name);
+                fn_name = parent_function_name+ "." + fn_name;
+            }
             if (llvm_symtab_fn_names.find(fn_name) == llvm_symtab_fn_names.end()) {
                 llvm_symtab_fn_names[fn_name] = h;
                 F = llvm::Function::Create(function_type,
@@ -4523,6 +4531,8 @@ public:
             // Instantiate (pre-declare) all nested interfaces
             for (auto &item : x.m_symtab->get_scope()) {
                 if (is_a<ASR::Function_t>(*item.second)) {
+                    const ASR::Function_t* parent_function_copy = parent_function;
+                    parent_function = &x;
                     ASR::Function_t *v = down_cast<ASR::Function_t>(
                             item.second);
                     // check if item.second is present in x.m_args
@@ -4542,6 +4552,7 @@ public:
                     if (!interface_as_arg) {
                         instantiate_function(*v);
                     }
+                    parent_function = parent_function_copy;
                 } else if ( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(item.second)) && is_function_variable(ASRUtils::symbol_get_past_external(item.second)) ) {
                     ASR::Variable_t *v = down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(item.second));
                     bool interface_as_arg = false;
