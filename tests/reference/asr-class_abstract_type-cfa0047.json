@@ -1,0 +1,13 @@
+{
+    "basename": "asr-class_abstract_type-cfa0047",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/class_abstract_type.f90",
+    "infile_hash": "bcf4ae8d52701ac9c5fdb930678f57492b65a521f886916adf1f9851",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-class_abstract_type-cfa0047.stdout",
+    "stdout_hash": "ab6130c9bab9893449a86f61b27429d00622e742c2c22884757ba42a",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
