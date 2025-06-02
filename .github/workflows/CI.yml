@@ -10,16 +10,15 @@ on:
     branches:
       - main
 
-# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || 'main' }}
-# which eventually evaluates to: CI-7488 and 'main' isn't used.
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
+# which eventually evaluates to: CI-7488 and 'sha' isn't used.
 # NOTE: `||` acts as a logical OR and a default operator both,
 # see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
 # When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
 # evaluate to CI-main but "cancel-in-progress" evaluates to false, so the CI on main
-# will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
-# and save runner for PR's but no previous CI will be cancelled on main
+# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || 'main' }}
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
