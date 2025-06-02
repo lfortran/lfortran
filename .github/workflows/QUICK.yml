@@ -319,50 +319,6 @@ jobs:
 
       # end of SciPy related testing
 
-    #   # TODO: Maybe we want to run this on ubuntu with both the LLVM versions?
-    #   # the below code is taken from "Check Out-of-Source Debug build" job
-    # #   - name: Build in debug mode on linux
-    # #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    # #     shell: bash -e -x -l {0}
-    # #     run: |
-    # #         ( cd src && ./build0.sh )
-    # #         export CXXFLAGS="-Werror"
-    # #         cmake -S src -B builddir -GNinja \
-    # #           -DCMAKE_BUILD_TYPE=RelWithDebInfo \
-    # #           -DWITH_LLVM=yes \
-    # #           -DWITH_LSP=yes \
-    # #           -DWITH_KOKKOS=yes \
-    # #           -DLFORTRAN_BUILD_ALL=yes \
-    # #           -DWITH_STACKTRACE=no \
-    # #           -DWITH_RUNTIME_STACKTRACE=yes \
-    # #           -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-    # #           -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-    # #           -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-    # #           -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-    # #         cmake --build builddir  -j16 --target install
-
-    # #   - name: Test debug build on linux
-    # #     shell: bash -e -l {0}
-    # #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    # #     run: ctest --output-on-failure
-    # #     working-directory: builddir
-
-    # #   - name: Test Moved Installation
-    # #     if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
-    # #     shell: bash -e -l {0}
-    # #     run: |
-    # #       mv inst inst.moved
-    # #       cp src/examples/expr2.f90 expr2.F90
-    # #       rm -rf src
-    # #       inst.moved/bin/lfortran expr2.F90 -o expr2
-    # #       ./expr2
-    # #       inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
-    # #       ./expr2b
-    # #       inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
-    # #       ./expr2c
-      # end of Debug build on linux
-
       # below code is from "Check Third Party Code Compilation"
       # TODO: decide which configuration do we want to run this?
       # ubuntu + llvm version 11 - yes
@@ -471,14 +427,14 @@ jobs:
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f -nf16
 
-      - name: Test OpenMP
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
 
-      - name: Test Fortran Backend
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
@@ -486,7 +442,7 @@ jobs:
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
 
-      - name: Test C/C++ Backend
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
@@ -507,13 +463,13 @@ jobs:
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
 
-      - name: Test CPP
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test CPP
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             xonsh ci/test_cpp_version.xsh
 
-      - name: Show Node Info
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Show Node Info
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
@@ -521,7 +477,7 @@ jobs:
           which node
           node --version
 
-      - name: Test WASM backend
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test WASM backend
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
