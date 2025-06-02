@@ -926,6 +926,19 @@ public:
         return llvm_utils->CreateLoad(presult);
     }
 
+    llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
+        std::string struct_name = (std::string)st->m_name;
+        if (struct_name == "~abstract_type") {
+            if (is_pointer) {
+                return llvm::Type::getVoidTy(context)->getPointerTo();
+            } else {
+                return llvm::Type::getVoidTy(context);
+            }
+        } else {
+            return llvm_utils->getStructType(st, module.get(), is_pointer);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         module->setDataLayout("");
