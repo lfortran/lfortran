@@ -2,7 +2,7 @@
     (SymbolTable
         1
         {
-            test:
+            character_02:
                 (Program
                     (SymbolTable
                         2
@@ -52,7 +52,7 @@
                                     ()
                                 )
                         })
-                    test
+                    character_02
                     []
                     [(Print
                         (StringFormat
