@@ -76,7 +76,6 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
         INTRINSIC_NAME_CASE(SameTypeAs)
-        INTRINSIC_NAME_CASE(Mvbits)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
@@ -314,8 +313,6 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &SameTypeAs::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
-            {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -677,8 +674,6 @@ namespace IntrinsicElementalFunctionRegistry {
             "same_type_as"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             "merge"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
-            "mvbits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             "mergebits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -977,7 +972,6 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
-                {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
                 {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
