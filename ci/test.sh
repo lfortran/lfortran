@@ -38,8 +38,9 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 
 # Run all tests (does not work on Windows yet):
 cmake --version
+echo "LINUX=$LINUX, LFORTRAN_LLVM_VERSION=$LFORTRAN_LLVM_VERSION"
 if [[ $WIN != "1" ]]; then
-    if [[ $IS_LINUX != "1" || $LFORTRAN_LLVM_VERSION == "11" ]]; then
+    if [[ $LINUX != "1" || $LFORTRAN_LLVM_VERSION == "11" ]]; then
         ./run_tests.py
     fi
 
