@@ -474,6 +474,13 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_current_capacity(llvm::Value* list);
 
+
+            llvm::Value* get_pointer_to_list_data2(llvm::Type* list_type, llvm::Value* list);
+
+            llvm::Value* get_pointer_to_current_end_point2(llvm::Type* list_type, llvm::Value* list);
+
+            llvm::Value* get_pointer_to_current_capacity2(llvm::Type* list_type, llvm::Value* list);
+
             void list_deepcopy(llvm::Value* src, llvm::Value* dest,
                 ASR::List_t* list_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
@@ -483,6 +490,10 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
             llvm::Value* read_item(llvm::Value* list, llvm::Value* pos,
+                                   bool enable_bounds_checking,
+                                   llvm::Module* module, bool get_pointer=false);
+
+            llvm::Value* read_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
                                    bool enable_bounds_checking,
                                    llvm::Module* module, bool get_pointer=false);
 
@@ -497,6 +508,10 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
             void write_item(llvm::Value* list, llvm::Value* pos,
+                            llvm::Value* item, bool enable_bounds_checking,
+                            llvm::Module* module);
+
+            void write_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
@@ -523,7 +538,7 @@ namespace LCompilers {
 
             void list_clear(llvm::Value* list);
 
-            void reverse(llvm::Value* list, llvm::Module* module);
+            void reverse(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* find_item_position(llvm::Value* list,
                 llvm::Value* item, ASR::ttype_t* item_type,
@@ -538,6 +553,8 @@ namespace LCompilers {
                                 ASR::ttype_t* item_type, llvm::Module* module);
 
             void free_data(llvm::Value* list, llvm::Module* module);
+
+            void free_data2(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* check_list_equality(llvm::Value* l1, llvm::Value* l2, ASR::ttype_t *item_type,
                 llvm::LLVMContext& context, llvm::IRBuilder<>* builder, llvm::Module* module);
@@ -1017,6 +1034,12 @@ namespace LCompilers {
             virtual
             llvm::Value* get_pointer_to_capacity(llvm::Value* set) = 0;
 
+            virtual
+            llvm::Value* get_pointer_to_occupancy2(llvm::Type* set_type, llvm::Value* set) = 0;
+
+            virtual
+            llvm::Value* get_pointer_to_capacity2(std::string& type_code, llvm::Value* set) = 0;
+
             llvm::Value* get_el_hash(llvm::Value* capacity, llvm::Value* el,
                 ASR::ttype_t* el_asr_type, llvm::Module* module);
 
@@ -1094,6 +1117,10 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_capacity(llvm::Value* set);
 
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
+
+            llvm::Value* get_pointer_to_occupancy2(llvm::Type* set_type, llvm::Value* set);
+
+            llvm::Value* get_pointer_to_capacity2(std::string& type_code, llvm::Value* set);
 
             void resolve_collision(
                 llvm::Value* capacity, llvm::Value* el_hash,
@@ -1181,6 +1208,11 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_capacity(llvm::Value* set);
 
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
+
+
+            llvm::Value* get_pointer_to_occupancy2(llvm::Type* set_type, llvm::Value* set);
+
+            llvm::Value* get_pointer_to_capacity2(std::string& type_code, llvm::Value* set);
 
             void resolve_collision_for_write(
                 llvm::Value* set, llvm::Value* el_hash, llvm::Value* el,

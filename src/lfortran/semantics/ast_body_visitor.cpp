@@ -194,9 +194,9 @@ public:
     void process_format_statement(ASR::asr_t *old_tmp, int &label, Allocator &al, std::map<int64_t, std::string> &format_statements) {
         T *old_stmt = ASR::down_cast<T>(ASRUtils::STMT(old_tmp));
         ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, old_stmt->base.base.loc, 1, 
+            al, old_stmt->base.base.loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, old_stmt->base.base.loc, format_statements[label].size(),
-                ASRUtils::TYPE(ASR::make_Integer_t(al, old_stmt->base.base.loc, 4)))), 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, old_stmt->base.base.loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
         ASR::expr_t *fmt_constant = ASRUtils::EXPR(ASR::make_StringConstant_t(
@@ -977,7 +977,7 @@ public:
                 ASR::expr_t* adv_val_expr = ASRUtils::EXPR(tmp);
                 a_advance = adv_val_expr;
                 ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1, 
+                    al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                     ASR::string_length_kindType::ExpressionLength,
@@ -988,7 +988,7 @@ public:
                     al, loc, 1,
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    ASR::string_length_kindType::ExpressionLength, 
+                    ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::PointerString));
                 ASR::expr_t *newline = ASRUtils::EXPR(ASR::make_StringConstant_t(
                     al, loc, s2c(al, "\n"), str_type_len_1));
@@ -1013,7 +1013,7 @@ public:
                         static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::StringTrim),
                         trim_arg.p, trim_arg.n, 0, ASRUtils::expr_type(a_advance), nullptr));
                     ASR::ttype_t *str_type_len_3 = ASRUtils::TYPE(ASR::make_String_t(
-                        al, loc, 1, 
+                        al, loc, 1,
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 3,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
@@ -1080,7 +1080,7 @@ public:
             } else {
                 ASR::ttype_t* char_type = ASRUtils::TYPE(
                     ASR::make_String_t(
-                        al, loc, 1, 
+                        al, loc, 1,
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 12,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
@@ -1138,7 +1138,7 @@ public:
                 return;
             }
             ASR::ttype_t* a_fmt_type = ASRUtils::TYPE(ASR::make_String_t(
-                al, a_fmt->base.loc, 1, 
+                al, a_fmt->base.loc, 1,
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, a_fmt->base.loc, format_statements[label].size(),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, a_fmt->base.loc, 4)))),
@@ -1158,7 +1158,7 @@ public:
         } else if ( _type == AST::stmtType::Write ) { // If not the previous case, Wrap everything in stringFormat.
             if (formatted) {
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1, nullptr, 
+                    al, loc, 1, nullptr,
                     ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::CString));
                 ASR::expr_t* string_format = ASRUtils::EXPR(ASRUtils::make_StringFormat_t_util(al, a_fmt? a_fmt->base.loc : read_write_stmt.base.loc,
@@ -1715,15 +1715,8 @@ public:
                         }
                     }
                 }
-                if (ASRUtils::is_array(var_type) && !ASRUtils::is_array(source_type)) {
-                    ASRUtils::make_ArrayBroadcast_t_util(
-                        al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source);
-                }
-                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
-                    al, alloc_args_vec.p[i].m_a->base.loc, alloc_args_vec.p[i].m_a, source, nullptr, compiler_options.po.realloc_lhs));
-                current_body->push_back(al, assign);
             }
-            tmp = nullptr;   // Doing it nullptr as we have already pushed allocate
+            tmp = nullptr;
         } else {
             for( size_t i = 0; i < x.n_args; i++ ) {
                 if( ASRUtils::is_array(ASRUtils::expr_type(alloc_args_vec.p[i].m_a)) &&
@@ -3523,24 +3516,24 @@ public:
         } else if (startswith(var_name, "_lfortran_")) {
             // LFortran specific intrinsics
             
-            if (var_name == "_lfortran_list_append") {
-                IntrinsicSignature signature = get_intrinsic_signature(var_name);
-                Vec<ASR::expr_t*> args;
-                bool signature_matched = false;
-                signature_matched = handle_intrinsic_node_args(
-                    x, args, signature.kwarg_names,
-                    signature.positional_args, signature.max_args,
-                    var_name, true);
-                
-                if( !signature_matched ) {
-                    diag.add(Diagnostic(
-                        "No matching signature found for intrinsic " + var_name,
-                        Level::Error, Stage::Semantic, {
-                            Label("",{x.base.base.loc})
-                        }));
-                    throw SemanticAbort();
-                }
+            IntrinsicSignature signature = get_intrinsic_signature(var_name);
+            Vec<ASR::expr_t*> args;
+            bool signature_matched = false;
+            signature_matched = handle_intrinsic_node_args(
+                x, args, signature.kwarg_names,
+                signature.positional_args, signature.max_args,
+                var_name, true);
 
+            if( !signature_matched ) {
+                diag.add(Diagnostic(
+                    "No matching signature found for intrinsic " + var_name,
+                    Level::Error, Stage::Semantic, {
+                        Label("",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+
+            if (var_name == "_lfortran_list_append") {
                 if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
                         "First argument of " + var_name + " must be of list type",
@@ -3567,6 +3560,88 @@ public:
 
                 return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
 
+            } else if (var_name == "_lfortran_list_reverse") {
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASRUtils::create_intrinsic_function create_function =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("list.reverse");
+                return create_function(al, x.base.base.loc, args, diag);
+            } else if (var_name == "_lfortran_set_add") {
+                if (!ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of set type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASR::Set_t *set_type = ASR::down_cast<ASR::Set_t>(ASRUtils::expr_type(args[0]));
+                ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
+                ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)set_type);
+                if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch in " + var_name + ", the types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASRUtils::create_intrinsic_function create_function =
+                    ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("set.add");
+                return create_function(al, x.base.base.loc, args, diag);
+            }  else if (var_name == "_lfortran_set_item") {
+                if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
+                    ASR::ttype_t *index_type = ASRUtils::expr_type(args[1]);
+                    ASR::ttype_t *arg_type = ASRUtils::expr_type(args[2]);
+                    ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
+
+                    if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                        diag.add(Diagnostic(
+                            "Type mismatch in " + var_name + ", the types must be compatible",
+                            Level::Error, Stage::Semantic, {
+                                Label("Types mismatch (found '" + 
+                            arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    if (!ASR::is_a<ASR::Integer_t>(*index_type)) {
+                        std::string index_type_str = ASRUtils::type_to_str_fortran(index_type);
+                        diag.add(Diagnostic("Index of a list must be an integer not '" + index_type_str + "'",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                        throw SemanticAbort();
+                    }
+
+                    return ASRUtils::make_Assignment_t_util(al, x.base.base.loc, 
+                                        ASRUtils::EXPR(ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
+                                                             contained_type, nullptr)), 
+                                        args[2], 
+                                        nullptr, false);
+                } else {
+                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+                    diag.add(Diagnostic(
+                        "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                return nullptr;
             }
         }
         return nullptr;
@@ -3803,7 +3878,7 @@ public:
                 throw SemanticAbort();
             }
         }
-    
+
         // handle GenericProcedure
         if (ASR::is_a<ASR::GenericProcedure_t>(*f2)) {
             ASR::GenericProcedure_t* f3 = ASR::down_cast<ASR::GenericProcedure_t>(f2);
@@ -3826,7 +3901,7 @@ public:
                         }));
                     throw SemanticAbort();
                 }
-    
+
                 if (x.n_keywords > 0) {
                     ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(f4);
                     diag::Diagnostics diags;
@@ -4330,7 +4405,7 @@ public:
 
     ASR::asr_t* construct_leading_space(const Location &loc) {
         ASR::ttype_t *str_type_len_0 = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 
+            al, loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
@@ -4338,7 +4413,7 @@ public:
         ASR::expr_t *empty_string = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_0));
         ASR::ttype_t *str_type_len_1 = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, 
+            al, loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
@@ -4378,7 +4453,7 @@ public:
             int64_t label = f->m_n;
             if (format_statements.find(label) == format_statements.end()) {
                 ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-                    al, x.base.base.loc, 1, nullptr, 
+                    al, x.base.base.loc, 1, nullptr,
                     ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::CString));
                 tmp =  ASR::make_Print_t(al, x.base.base.loc,
@@ -4389,7 +4464,7 @@ public:
             }
             ASR::ttype_t *fmt_type = ASRUtils::TYPE(ASR::make_String_t(
                 al, fmt->base.loc, 1,
-                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, fmt->base.loc, 
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, fmt->base.loc,
                     format_statements[label].size(),
                     ASRUtils::TYPE(ASR::make_Integer_t(al, fmt->base.loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,

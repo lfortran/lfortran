@@ -492,7 +492,6 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
 
     int width_digits, decimal_digits, exp_digits;
     parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
-
     int width = width_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
@@ -554,10 +553,11 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     } else if (is_s_format && abs(exponent_value) >= 10) {
         int abs_exp = abs(exponent_value);
         exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
+    } else if (abs(exponent_value >= 100)) {
+        exp = 3;
     }
     // exp = 2;
-
-    if (exp != -1 && abs(exponent_value) >= pow(10, exp)) {
+    if (exp != -1 && exponent_value >= (pow(10, exp))) {
         goto overflow;
     }
 
@@ -660,7 +660,9 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     }
 
     if (!(val >= 0 && val < 10 && is_s_format && exp_digits == 0)) {
-        strcat(formatted_value, c);
+        if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+            strcat(formatted_value, c);
+        }
         // formatted_value = "  1.12E"
         strcat(formatted_value, exponent);
         // formatted_value = "  1.12E+10"
@@ -3818,24 +3820,31 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
     FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
-    if( fd == NULL ) {
-        printf("Specified UNIT %d in BACKSPACE is not created or connected.\n",
-            unit_num);
+    if (fd == NULL) {
+        fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
-    int n = ftell(fd);
-    for(int i = n; i >= 0; i --) {
-        char c = fgetc(fd);
-        if (i == n) {
-            // Skip previous record newline
-            fseek(fd, -3, SEEK_CUR);
-            continue;
-        } else  if (c == '\n') {
-            break;
-        } else {
-            fseek(fd, -2, SEEK_CUR);
+
+    fflush(fd);
+    long pos = ftell(fd);
+    if (pos <= 0) {
+        rewind(fd);
+        return;
+    }
+
+    int ch;
+    pos--;  // Step back from EOF
+    while (pos > 0) {
+        fseek(fd, --pos, SEEK_SET);
+        ch = fgetc(fd);
+        if (ch == '\n') {
+            fseek(fd, pos + 1, SEEK_SET);  // Move to just after the previous newline
+            return;
         }
     }
+
+    // If no newline found, rewind to beginning
+    rewind(fd);
 }
 
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)

@@ -854,9 +854,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 
     void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
+        bool array_copy = ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target);
         if( (realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
-            !(ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target) &&
-              ASRUtils::is_allocatable(target_type)) ) {
+            !(array_copy && ASRUtils::is_allocatable(target_type)) ) {
             return ;
         }
 
@@ -896,7 +896,51 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_args.push_back(al, alloc_arg);
 
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
-            al, loc, alloc_args.p, alloc_args.size())));
+                al, loc, alloc_args.p, alloc_args.size())));
+    }
+
+    void visit_Allocate(const ASR::Allocate_t& x) {
+        ASR::Allocate_t& xx = const_cast<ASR::Allocate_t&>(x);
+        if (xx.m_source) {
+            pass_result.push_back(al, &(xx.base));
+            // Pushing assignment statements to source
+            for (size_t i = 0; i < x.n_args ; i++) {
+                if( !ASRUtils::is_array(
+                        ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                    continue;
+                }
+                ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                    al, xx.m_args[i].m_a->base.loc, xx.m_args[i].m_a, xx.m_source, nullptr, realloc_lhs));
+                ASR::Assignment_t* assignment_t = ASR::down_cast<ASR::Assignment_t>(assign);
+                Vec<ASR::expr_t**> fix_type_args;
+                fix_type_args.reserve(al, 2);
+                fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_target)));
+                fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(assignment_t->m_value)));
+
+                Vec<ASR::expr_t**> vars1;
+                vars1.reserve(al, 1);
+                if( ASRUtils::is_array(
+                        ASRUtils::expr_type(assignment_t->m_value)) ) {
+                    vars1.push_back(al, &(assignment_t->m_value));
+                }
+                vars1.push_back(al, &(assignment_t->m_target));
+
+                // TODO: Remove the following. Instead directly handle
+                // allocate with source in the backend.
+                if( xx.m_args[i].n_dims == 0 ) {
+                    Vec<ASR::expr_t**> vars2;
+                    vars2.reserve(al, 1);
+                    vars2.push_back(al, &(assignment_t->m_target));
+                    if( ASRUtils::is_array(
+                            ASRUtils::expr_type(assignment_t->m_value)) ) {
+                        vars2.push_back(al, &(assignment_t->m_value));
+                    }
+                    insert_realloc_for_target(
+                        xx.m_args[i].m_a, xx.m_source, vars2);
+                }
+                generate_loop(*assignment_t, vars1, fix_type_args, x.base.base.loc);
+            }
+        }
     }
 
     void visit_Assignment(const ASR::Assignment_t& x) {

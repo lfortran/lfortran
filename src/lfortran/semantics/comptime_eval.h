@@ -29,7 +29,9 @@ struct IntrinsicProceduresAsASRNodes {
                 "iachar", "null", "associated", "len", "complex", "is_contiguous",
 
                 // LF specific
-                "_lfortran_list_len", "_lfortran_list_constant"};
+                "_lfortran_len", "_lfortran_get_item",
+                "_lfortran_list_constant", "_lfortran_list_count",
+                "_lfortran_set_constant"};
 
             kind_based_intrinsics = {};
         }

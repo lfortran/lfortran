@@ -17,6 +17,16 @@
                                     character_kinds
                                     Public
                                 ),
+                            character_storage_size:
+                                (ExternalSymbol
+                                    2
+                                    character_storage_size
+                                    4 character_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_storage_size
+                                    Public
+                                ),
                             compiler_version:
                                 (ExternalSymbol
                                     2
@@ -884,6 +894,16 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     character_kinds
+                                    Public
+                                ),
+                            character_storage_size:
+                                (ExternalSymbol
+                                    11
+                                    character_storage_size
+                                    4 character_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_storage_size
                                     Public
                                 ),
                             compiler_version:
