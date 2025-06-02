@@ -4379,6 +4379,124 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%f %f", &p[i].re, &p[i].im);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_32), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            // check if `(` is present, if yes, then we strip spaces for each line
+            // and then read (1.0, 2.0) (3.0, 4.0) etc.
+            char buffer[100];   // Long enough buffer to fit any complex float
+            if (fscanf(filep, "%s", buffer) != 1) {
+                fprintf(stderr, "Error: Invalid input for complex float from file.\n");
+                exit(1);
+            }
+            // Remove parentheses and split by comma
+            char *start = strchr(buffer, '(');
+            char *end = strchr(buffer, ')');
+            if (start && end && end > start) {
+                *end = '\0';  // Replace ')' with null terminator
+                start++;      // Move past '('
+                char *comma = strchr(start, ',');
+                if (comma) {
+                    *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
+                    p[i].re = strtof(start, NULL);
+                    p[i].im = strtof(comma + 1, NULL);
+                } else {
+                    fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
+                    exit(1);
+                }
+            } else {
+                // If no parentheses, read as two separate floats
+                (void)!fscanf(filep, "%f %f", &p[i].re, &p[i].im);
+                // Check if the read was successful
+                if (ferror(filep)) {
+                    fprintf(stderr, "Error: Failed to read complex float from file.\n");
+                    exit(1);
+                }
+            }
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%lf %lf", &p[i].re, &p[i].im);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_64), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            // check if `(` is present, if yes, then we strip spaces for each line
+            // and then read (1.0, 2.0) (3.0, 4.0) etc.
+            char buffer[100];   // Long enough buffer to fit any complex double
+            if (fscanf(filep, "%s", buffer) != 1) {
+                fprintf(stderr, "Error: Invalid input for complex double from file.\n");
+                exit(1);
+            }
+            // Remove parentheses and split by comma
+            char *start = strchr(buffer, '(');
+            char *end = strchr(buffer, ')');
+            if (start && end && end > start) {
+                *end = '\0';  // Replace ')' with null terminator
+                start++;      // Move past '('
+                char *comma = strchr(start, ',');
+                if (comma) {
+                    *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
+                    p[i].re = strtod(start, NULL);
+                    p[i].im = strtod(comma + 1, NULL);
+                } else {
+                    fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
+                    exit(1);
+                }
+            } else {
+                // If no parentheses, read as two separate doubles
+                (void)!fscanf(filep, "%lf %lf", &p[i].re, &p[i].im);
+                // Check if the read was successful
+                if (ferror(filep)) {
+                    fprintf(stderr, "Error: Failed to read complex double from file.\n");
+                    exit(1);
+                }
+            }
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
