@@ -89,7 +89,8 @@ jobs:
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -e -l {0}
-        run: micromamba install bison=3.4 openmpi=5.0.6 openblas=0.3.21 llvm-openmp=14.0.4 nodejs=18.20.4 pandoc=3.1.13 kokkos=4.4.01
+        # explicitly specifying version of kokkos=4.4.1 causes failure in environment specs resolution
+        run: micromamba install bison=3.4 openmpi=5.0.6 openblas=0.3.21 llvm-openmp=14.0.4 nodejs=18.20.4 pandoc=3.1.13 kokkos
 
       - name: Setup Platform
         shell: bash -e -l {0}
