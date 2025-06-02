@@ -4666,3 +4666,7 @@ run = true
 [[test]]
 filename = "errors/integer_overflow.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/intrinsics_334.f90"
+asr = true
