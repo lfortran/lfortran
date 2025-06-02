@@ -65,7 +65,6 @@ jobs:
             python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
             make=4.3
-            shell=0.2.0
 
       - uses: hendrikmuhs/ccache-action@main
         with:
