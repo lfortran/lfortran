@@ -39,7 +39,7 @@ declare void @f(float*, float*)
 define float @__module_callback_02_foo(float* %c, float* %d, float* %res) {
 .entry:
   %foo = alloca float, align 4
-  call void @__module_callback_02_cb(float* %res, float* %c, float* %d, void (float*, float*)* @__module_callback_02_f)
+  call void @__module_callback_02_cb(float* %res, float* %c, float* %d, void (float*, float*)* @foo.__module_callback_02_f)
   %0 = load float, float* %res, align 4
   store float %0, float* %foo, align 4
   br label %return
@@ -49,7 +49,7 @@ return:                                           ; preds = %.entry
   ret float %1
 }
 
-define void @__module_callback_02_f(float* %x, float* %res) {
+define void @foo.__module_callback_02_f(float* %x, float* %res) {
 .entry:
   %0 = load float, float* %x, align 4
   %1 = fmul float 2.000000e+00, %0

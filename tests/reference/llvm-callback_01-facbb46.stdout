@@ -27,7 +27,7 @@ declare float @f(float*)
 
 define void @__module_callback_01_foo(float* %c, float* %d) {
 .entry:
-  %0 = call float @__module_callback_01_cb(float (float*)* @__module_callback_01_f, float* %c, float* %d)
+  %0 = call float @__module_callback_01_cb(float (float*)* @foo.__module_callback_01_f, float* %c, float* %d)
   %1 = alloca float, align 4
   store float %0, float* %1, align 4
   %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %1)
@@ -38,7 +38,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define float @__module_callback_01_f(float* %x) {
+define float @foo.__module_callback_01_f(float* %x) {
 .entry:
   %f = alloca float, align 4
   %0 = load float, float* %x, align 4
