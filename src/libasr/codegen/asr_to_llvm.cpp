@@ -1115,7 +1115,7 @@ public:
                         // Store and bitcast allocated memory into polymorphic struct's struct pointer
                         ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(
                                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_derived_type));
-                        llvm::Type* src_struct_type = llvm_utils->getStructType(src_struct_sym, module.get(), true);
+                        llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
                         x_arr = llvm_utils->create_gep2(src_class_type, x_arr, 1);
                         builder->CreateStore(builder->CreateBitCast(
                                         malloc_ptr, src_struct_type), x_arr);
