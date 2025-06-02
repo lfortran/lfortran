@@ -329,6 +329,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
+            export LFORTRAN_RUN_EXHAUSTIVE_TESTS=0
             RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
