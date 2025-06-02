@@ -517,7 +517,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
         ASR::ttype_t* member_type_ = ASRUtils::type_get_past_array(member_type);
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(member_type, m_dims);
-        if (ASR::is_a<ASR::StructType_t>(*member_type_) && !ASRUtils::is_class_type(member_type_)) {
+        if (ASR::is_a<ASR::StructType_t>(*member_type_)) {
             ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(member_type_);
             std::string der_type_name = ASRUtils::symbol_name(der->m_derived_type);
             ASR::symbol_t* der_type_sym = current_scope->resolve_symbol(der_type_name);
@@ -567,10 +567,12 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 } else {
                     der_ext = current_scope->get_symbol(mangled_name);
                 }
-                ASR::asr_t* der_new = ASRUtils::make_StructType_t_util(al, loc, der_ext);
+                ASR::asr_t* der_new = ASRUtils::make_StructType_t_util(al, loc, der_ext,
+                            ASR::down_cast<ASR::StructType_t>(member_type_)->m_is_cstruct);
                 member_type_ = ASRUtils::TYPE(der_new);
             } else if(ASR::is_a<ASR::ExternalSymbol_t>(*der_type_sym)) {
-                member_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_type_sym));
+                member_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_type_sym,
+                            ASR::down_cast<ASR::StructType_t>(member_type_)->m_is_cstruct));
             }
             member_type = ASRUtils::make_Array_t_util(al, loc,
                 member_type_, m_dims, n_dims);
