@@ -17,7 +17,7 @@ on:
 # will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
 # and save runner for PR's but no previous CI will be cancelled on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.inputs.pr_number || github.event.number || 'main' }}
+  group: ${{ github.workflow }}-${{ github.event.inputs.pr_number || github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event.inputs.pr_number != '' || github.event_name == 'pull_request' }}
 
 
@@ -46,6 +46,12 @@ jobs:
           # the below key was ${{ github.job }}-${{ matrix.os }}, but doesn't have "matrix" at all in it
           # hence I substituted "ubuntu-latest" directly for it
           key: ${{ github.job }}-ubuntu-latest
+
+      # we need to run this only once for debugging purpose
+      - name: Print github concurrent group name
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.inputs.pr_number || github.event.number || github.sha }}"
+          echo "Cancel-in-progress: ${{ github.event.inputs.pr_number != '' || github.event_name == 'pull_request' }}"
 
       - name: Build Linux
         shell: bash -e -l {0}
