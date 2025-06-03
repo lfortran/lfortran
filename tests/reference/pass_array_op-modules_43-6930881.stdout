@@ -292,18 +292,16 @@
                                                 )]
                                                 2
                                                 (Allocatable
-                                                    (Allocatable
-                                                        (Array
-                                                            (StructType
-                                                                []
-                                                                []
-                                                                .true.
-                                                                2 srcfile_t
-                                                            )
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            2 srcfile_t
                                                         )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ()
@@ -422,18 +420,16 @@
                                                                 )]
                                                                 2
                                                                 (Allocatable
-                                                                    (Allocatable
-                                                                        (Array
-                                                                            (StructType
-                                                                                []
-                                                                                []
-                                                                                .true.
-                                                                                2 srcfile_t
-                                                                            )
-                                                                            [(()
-                                                                            ())]
-                                                                            DescriptorArray
+                                                                    (Array
+                                                                        (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
+                                                                            2 srcfile_t
                                                                         )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
                                                                     )
                                                                 )
                                                                 ()
@@ -495,18 +491,16 @@
                                                 )]
                                                 2
                                                 (Allocatable
-                                                    (Allocatable
-                                                        (Array
-                                                            (StructType
-                                                                []
-                                                                []
-                                                                .true.
-                                                                2 srcfile_t
-                                                            )
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            2 srcfile_t
                                                         )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ()
@@ -546,18 +540,16 @@
                                                         )]
                                                         2
                                                         (Allocatable
-                                                            (Allocatable
-                                                                (Array
-                                                                    (StructType
-                                                                        []
-                                                                        []
-                                                                        .true.
-                                                                        2 srcfile_t
-                                                                    )
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
+                                                            (Array
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    2 srcfile_t
                                                                 )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                         )
                                                         ()
