@@ -62,6 +62,7 @@ file(RELATIVE_PATH CMAKE_INSTALL_INCLUDEDIR_RELATIVE ${CMAKE_INSTALL_FULL_BINDIR
 if(WIN32)
   # avoid trying to install Windows system runtime libraries
   set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
+  set(MSVC_REDIST_DIR "")
 endif()
 include(InstallRequiredSystemLibraries)
 set(CPACK_GENERATOR "TBZ2")
