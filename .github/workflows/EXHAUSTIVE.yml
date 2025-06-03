@@ -39,6 +39,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -68,6 +69,7 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake --build . -j16 --target install
+
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
@@ -78,6 +80,7 @@ jobs:
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f -nf16
+
       - name: Test Installation
         shell: bash -e -l {0}
         run: |
@@ -113,6 +116,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.6
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -138,18 +142,21 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake --build . -j16 --target install
+
       - name: Build MacOS
         shell: bash -e -l {0}
         if: contains(matrix.os, 'macos')
         run: |
             ./build0.sh
             ./build1.sh
+
       - name: Test third party codes
         shell: bash -e -x -l {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             export LFORTRAN_RUN_EXHAUSTIVE_TESTS=1
             RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
+
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Override cmake version to 3.31.2
         if: contains(matrix.os, 'ubuntu')
@@ -163,6 +170,7 @@ jobs:
             FC=../../src/bin/lfortran cmake .
             cmake --build . -v
             ./project1
+
       - name: Test Examples/Project 2
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu')
@@ -171,6 +179,7 @@ jobs:
             FC=../../src/bin/lfortran cmake .
             cmake --build . -v
             ./doconcurrent
+
       - name: Test Examples/Project 3
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu')
@@ -179,6 +188,7 @@ jobs:
             FC=../../src/bin/lfortran cmake .
             cmake --build . -v
             ./project3
+
       - name: Test Lapack
         shell: bash -e -l {0}
         run: |
@@ -229,6 +239,7 @@ jobs:
             make=4.3
             nodejs=18.20.4
             openmpi=5.0.6
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '10')
         with:
@@ -243,6 +254,7 @@ jobs:
             make=4.3
             nodejs=18.20.2
             openmpi=5.0.6
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: contains(matrix.llvm-version, '12')
         with:
@@ -256,6 +268,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.3
+
       - uses: mamba-org/setup-micromamba@v2.0.2
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '12'))}}
         with:
@@ -269,6 +282,7 @@ jobs:
             llvm-openmp=14.0.4
             make=4.3
             openmpi=5.0.6
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -288,6 +302,7 @@ jobs:
           export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
           echo $WASI_SDK_PATH
           $WASI_SDK_PATH/bin/clang --version
+
       - name: Install wasmtime
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
@@ -297,6 +312,7 @@ jobs:
           tar -xvf wasmtime.tar.gz
           export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
           wasmtime --version
+
       - name: Setup EMSCRIPTEN SDK
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
@@ -309,6 +325,7 @@ jobs:
           cd $EMSDK_PATH
           ./emsdk install latest
           ./emsdk activate latest
+
       - name: Build Linux ( WASM )
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
@@ -328,6 +345,7 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake --build . -j16 --target install
+
       - name: Test Linux ( WASM )
         if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
@@ -338,6 +356,7 @@ jobs:
             export WASMTIME_NEW_CLI=0
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+
       - name: Build Linux
         if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
         shell: bash -e -l {0}
@@ -354,6 +373,7 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake --build . -j16 --target install
+
       # LLVM 10-19 all work in exactly the same way, so the test is identical
       - name: Test Linux LLVM 10-16
         if: ${{(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
@@ -363,6 +383,7 @@ jobs:
             ./run_tests.py -b llvm -sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f -nf16
+
       - name: Test Linux LLVM 17-20
         if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
         shell: bash -e -l {0}
@@ -372,6 +393,7 @@ jobs:
             ./run_tests.py -b llvm -sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
+
       - name: Test third party codes
         shell: bash -e -x -l {0}
         run: |
@@ -451,6 +473,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+
       - name: Upload Tarball
         shell: bash -e -l {0}
         run: |
@@ -485,6 +508,7 @@ jobs:
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
+
       - name: Test
         shell: bash -e -l {0}
         run: |
@@ -508,6 +532,7 @@ jobs:
             llvm=19.1.6
             llvm-openmp=19.1.6
             libunwind=1.7.2
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
@@ -529,6 +554,7 @@ jobs:
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
             cmake --build . -j16 --target install
+
       - name: Test Linux
         shell: bash -e -l {0}
         run: |
@@ -570,11 +596,13 @@ jobs:
           ninja install
           ctest --output-on-failure
           jupyter kernelspec list --json
+
       - name: Build Docs
         shell: bash -e -l {0}
         working-directory: doc
         run: |
           $(command -v python) build.py
+
       - name: Upload Docs
         shell: bash -e -l {0}
         working-directory: doc
