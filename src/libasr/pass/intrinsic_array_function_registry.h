@@ -4950,7 +4950,8 @@ namespace Pack {
             is_type_allocatable = true;
         }
         if (is_type_allocatable) {
-            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                ASRUtils::type_get_past_allocatable_pointer(ret_type)));
         }
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
         arg_values.push_back(al, expr_value(array)); arg_values.push_back(al, expr_value(mask));
