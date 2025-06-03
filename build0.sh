@@ -18,6 +18,9 @@ python src/libasr/wasm_instructions_visitor.py
 # Generate the intrinsic_function_registry_util.h (C++)
 python src/libasr/intrinsic_func_registry_util_gen.py
 
+# Generate file lfortran_intrinsic_iso_c_binding.f90 (Fortran)
+clang src/runtime/pure/generate_iso_c_binding.c && ./a.out
+
 # Generate the tokenizer and parser
 (cd src/lfortran && ${RE2C} -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
 (cd src/lfortran && ${RE2C} -W -b parser/preprocessor.re -o parser/preprocessor.cpp)

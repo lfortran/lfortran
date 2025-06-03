@@ -117,6 +117,7 @@ src/runtime/tests/test_abs
 src/runtime/tests/test_bit
 src/runtime/tests/test_cos
 src/runtime/tests/test_hyperbolics
+src/runtime/pure/lfortran_intrinsic_iso_c_binding.f90
 src/runtime/tests/test_iso_c_binding
 src/runtime/tests/test_iso_fortran_env
 src/runtime/tests/test_kind
