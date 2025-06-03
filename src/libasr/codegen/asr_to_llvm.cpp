@@ -5634,7 +5634,7 @@ public:
             value_class_hash = llvm_utils->CreateLoad2(i64, value_class_hash);
 
             llvm::Value* target_class_hash_ptr = llvm_utils->create_gep2(target_llvm_type, target_struct, 0);
-            
+
             builder->CreateStore(value_class_hash, target_class_hash_ptr);
 
             // deepcopy the class ptr
@@ -5648,7 +5648,7 @@ public:
                             ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_target_type))->m_derived_type));
             llvm::Type* wrapper_target_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_target_struct_type, module.get());
 
-            
+
             llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
             value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
             // bitcast to the correct type
@@ -5657,7 +5657,7 @@ public:
 
             llvm::Value* target_class_ptr = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
             target_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type->getPointerTo(), target_class_ptr);
-            
+
             builder->CreateStore(value_class_ptr, target_class_ptr);
 
             return;
@@ -9998,7 +9998,7 @@ public:
                                                                 ASRUtils::type_get_past_allocatable(arg->m_type),
                                                                 module.get()),
                                                             tmp, 1);
-                                    
+
                                     if (ASRUtils::is_class_type(
                                             ASRUtils::type_get_past_allocatable(arg->m_type))
                                         && !ASR::is_a<ASR::Allocatable_t>(*orig_arg->m_type)) {
