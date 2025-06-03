@@ -59,12 +59,9 @@ file(RELATIVE_PATH CMAKE_INSTALL_INCLUDEDIR_RELATIVE ${CMAKE_INSTALL_FULL_BINDIR
 #
 # cpack
 #
-if(WIN32)
-  # avoid trying to install Windows system runtime libraries
-  set(CMAKE_INSTALL_SYSTEM_RUNTIME_LIBS_SKIP TRUE)
-  set(MSVC_REDIST_DIR "")
+if(NOT WIN32)
+    include(InstallRequiredSystemLibraries)
 endif()
-include(InstallRequiredSystemLibraries)
 set(CPACK_GENERATOR "TBZ2")
 set(CPACK_STRIP_FILES YES)
 set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_VERSION}-${CMAKE_SYSTEM_NAME})
