@@ -29,5 +29,9 @@ function compiler_version() result(version)
     version = _lfortran_compiler_version() ! note: LFortran takes this and creates an IntrinsicElementalFunction
 end function compiler_version
 
+function compiler_options() result(options)
+    character(len=:), allocatable :: options
+    options = _lfortran_compiler_options() ! note: LFortran takes this and creates an IntrinsicElementalFunction
+end function compiler_options
 
 end module
