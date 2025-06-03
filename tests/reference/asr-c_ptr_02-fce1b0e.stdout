@@ -193,6 +193,106 @@
                                     c_int8_t
                                     Public
                                 ),
+                            c_int_fast16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast16_t
+                                    4 c_int_fast16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast16_t
+                                    Public
+                                ),
+                            c_int_fast32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast32_t
+                                    4 c_int_fast32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast32_t
+                                    Public
+                                ),
+                            c_int_fast64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast64_t
+                                    4 c_int_fast64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast64_t
+                                    Public
+                                ),
+                            c_int_fast8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_fast8_t
+                                    4 c_int_fast8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_fast8_t
+                                    Public
+                                ),
+                            c_int_least16_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least16_t
+                                    4 c_int_least16_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least16_t
+                                    Public
+                                ),
+                            c_int_least32_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least32_t
+                                    4 c_int_least32_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least32_t
+                                    Public
+                                ),
+                            c_int_least64_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least64_t
+                                    4 c_int_least64_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least64_t
+                                    Public
+                                ),
+                            c_int_least8_t:
+                                (ExternalSymbol
+                                    2
+                                    c_int_least8_t
+                                    4 c_int_least8_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int_least8_t
+                                    Public
+                                ),
+                            c_intmax_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intmax_t
+                                    4 c_intmax_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intmax_t
+                                    Public
+                                ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
                             c_loc:
                                 (ExternalSymbol
                                     2
@@ -283,6 +383,16 @@
                                     c_ptr
                                     Public
                                 ),
+                            c_ptrdiff_t:
+                                (ExternalSymbol
+                                    2
+                                    c_ptrdiff_t
+                                    4 c_ptrdiff_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptrdiff_t
+                                    Public
+                                ),
                             c_short:
                                 (ExternalSymbol
                                     2
@@ -291,6 +401,16 @@
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_short
+                                    Public
+                                ),
+                            c_signed_char:
+                                (ExternalSymbol
+                                    2
+                                    c_signed_char
+                                    4 c_signed_char
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_signed_char
                                     Public
                                 ),
                             c_size_t:
