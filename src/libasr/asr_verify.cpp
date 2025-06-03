@@ -1256,7 +1256,8 @@ public:
     }
 
     void visit_Allocatable(const Allocatable_t &x) {
-        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
+        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type) &&
+                !ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
