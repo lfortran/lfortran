@@ -40,4 +40,7 @@ program main
 
     allocate(Circle :: s)
 
+    print *, allocated(s)
+    if (allocated(s) .neqv. .true.) error stop
+
 end program main

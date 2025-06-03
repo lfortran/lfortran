@@ -926,6 +926,19 @@ public:
         return llvm_utils->CreateLoad(presult);
     }
 
+    llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
+        std::string struct_name = (std::string)st->m_name;
+        if (struct_name == "~abstract_type") {
+            if (is_pointer) {
+                return llvm::Type::getVoidTy(context)->getPointerTo();
+            } else {
+                return llvm::Type::getVoidTy(context);
+            }
+        } else {
+            return llvm_utils->getStructType(st, module.get(), is_pointer);
+        }
+    }
+
     void visit_TranslationUnit(const ASR::TranslationUnit_t &x) {
         module = std::make_unique<llvm::Module>("LFortran", context);
         module->setDataLayout("");
@@ -1102,7 +1115,7 @@ public:
                         // Store and bitcast allocated memory into polymorphic struct's struct pointer
                         ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(
                                 ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_derived_type));
-                        llvm::Type* src_struct_type = llvm_utils->getStructType(src_struct_sym, module.get(), true);
+                        llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
                         x_arr = llvm_utils->create_gep2(src_class_type, x_arr, 1);
                         builder->CreateStore(builder->CreateBitCast(
                                         malloc_ptr, src_struct_type), x_arr);
@@ -1393,11 +1406,9 @@ public:
                         tmp = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)),
                             module.get()), tmp, 1);
-                        llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::extract_type(ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
-                                al, cur_type->base.loc, ASR::down_cast<ASR::StructType_t>(
-                                    ASRUtils::extract_type(cur_type))->m_derived_type))),
-                            module.get());
+                        ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(cur_type))->m_derived_type);
+                        ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                        llvm_data_type = get_llvm_struct_data_type(st, false);
                         tmp_ = tmp;
                         tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), tmp);
                     } else {
@@ -3688,21 +3699,13 @@ public:
             } else if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) { \
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(v->m_type))->m_derived_type); \
                 ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym); \
-                std::string struct_name = st->m_name; \
-                ASR::ttype_t* wrapped_struct_type = ASRUtils::TYPE( \
-                            ASRUtils::make_StructType_t_util(al, v->m_type->base.loc, \
-                                struct_sym)); \
-                llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_struct_type, module.get()); \
+                llvm::Type* wrapper_struct_llvm_type = get_llvm_struct_data_type(st, false); \
                 llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), \
                                         llvm::APInt(64, get_class_hash(struct_sym))); \
                 llvm::Value* hash_ptr = llvm_utils->create_gep2(v->m_type, ptr, 0); \
                 builder->CreateStore(struct_hash, hash_ptr); \
                 llvm::Value* struct_ptr = llvm_utils->create_gep2(v->m_type, ptr, 1); \
-                if (struct_name == "~abstract_type") { \
-                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getVoidTy(context)->getPointerTo()), struct_ptr); \
-                } else { \
-                    builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); \
-                } \
+                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); \
             } else { \
                 builder->CreateStore(null_value, ptr); \
             }\
