@@ -62,18 +62,6 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 1
         },
     ],
-    "Mvbits": [
-        {
-            "args": [("int", "int", "int", "int", "int")],
-            "ret_type_arg_idx": 3
-        },
-    ],
-    "MoveAlloc": [
-        {
-            "args": [("any", "any")],
-            "ret_type_arg_idx": 0
-        },
-    ],
     "Leadz": [
         {
             "args": [("int",)],

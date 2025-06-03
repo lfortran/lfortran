@@ -1,0 +1,190 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            intrinsics_334:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            from:
+                                (Variable
+                                    2
+                                    from
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            to:
+                                (Variable
+                                    2
+                                    to
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    intrinsics_334
+                    []
+                    [(Allocate
+                        [((Var 2 from)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (Var 2 from)
+                        (ArrayConstant
+                            20
+                            [1, 2, 3, 4, 5]
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
+                        )
+                        ()
+                        .false.
+                    )
+                    (Allocate
+                        [((Var 2 to)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (IntrinsicImpureSubroutine
+                        MoveAlloc
+                        [(Var 2 from)
+                        (Var 2 to)]
+                        0
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 to)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(IntegerCompare
+                                (Var 2 to)
+                                NotEq
+                                (ArrayConstant
+                                    20
+                                    [1, 2, 3, 4, 5]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Logical 4)
+                                    [(()
+                                    ())]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicImpureFunction
+                                Allocated
+                                [(Var 2 from)]
+                                0
+                                (Logical 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (LogicalBinOp
+                            (IntrinsicImpureFunction
+                                Allocated
+                                [(Var 2 from)]
+                                0
+                                (Logical 4)
+                                ()
+                            )
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

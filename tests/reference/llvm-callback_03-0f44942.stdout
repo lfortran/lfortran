@@ -30,7 +30,7 @@ declare float @f(float*)
 
 define void @__module_callback_03_foo1(float* %c, float* %d) {
 .entry:
-  %0 = call float @__module_callback_03_cb(float (float*)* @__module_callback_03_f, float* %c, float* %d)
+  %0 = call float @__module_callback_03_cb(float (float*)* @foo1.__module_callback_03_f, float* %c, float* %d)
   %1 = alloca float, align 4
   store float %0, float* %1, align 4
   %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %1)
@@ -41,7 +41,7 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define float @__module_callback_03_f(float* %x) {
+define float @foo1.__module_callback_03_f(float* %x) {
 .entry:
   %f = alloca float, align 4
   %0 = load float, float* %x, align 4
@@ -52,22 +52,11 @@ define float @__module_callback_03_f(float* %x) {
 return:                                           ; preds = %.entry
   %2 = load float, float* %f, align 4
   ret float %2
-
-.entry1:                                          ; No predecessors!
-  %f2 = alloca float, align 4
-  %3 = load float, float* %x, align 4
-  %4 = fmul float -2.000000e+00, %3
-  store float %4, float* %f2, align 4
-  br label %return3
-
-return3:                                          ; preds = %.entry1
-  %5 = load float, float* %f2, align 4
-  ret float %5
 }
 
 define void @__module_callback_03_foo2(float* %c, float* %d) {
 .entry:
-  %0 = call float @__module_callback_03_cb(float (float*)* @__module_callback_03_f, float* %c, float* %d)
+  %0 = call float @__module_callback_03_cb(float (float*)* @foo2.__module_callback_03_f, float* %c, float* %d)
   %1 = alloca float, align 4
   store float %0, float* %1, align 4
   %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, float* %1)
@@ -76,6 +65,19 @@ define void @__module_callback_03_foo2(float* %c, float* %d) {
 
 return:                                           ; preds = %.entry
   ret void
+}
+
+define float @foo2.__module_callback_03_f(float* %x) {
+.entry:
+  %f = alloca float, align 4
+  %0 = load float, float* %x, align 4
+  %1 = fmul float -2.000000e+00, %0
+  store float %1, float* %f, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  %2 = load float, float* %f, align 4
+  ret float %2
 }
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
