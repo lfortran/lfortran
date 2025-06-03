@@ -148,6 +148,15 @@ time_section "🧪 Testing Fortran-Primes" '
   git clean -dfx
   FC="$FC --generate-object-code" ./build_and_run.sh
 
+  if [ "$LFORTRAN_RUN_EXHAUSTIVE_TESTS" = "1" ]; then
+    print_subsection "Building and running Fortran-Primes with f23 standard "
+    git clean -dfx
+    FC="$FC --std=f23" ./build_and_run.sh
+    print_subsection "Building Fortran-Primes with separate compilation and f23 standard"
+    git clean -dfx
+    FC="$FC --generate-object-code --std=f23" ./build_and_run.sh
+  fi
+
   print_success "Done with Fortran-Primes"
   cd ..
   rm -rf fortran-primes
