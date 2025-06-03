@@ -10912,21 +10912,25 @@ public:
             {
                 std::vector<llvm::Value*> args;
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
-                llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
-                llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
-                llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
-                llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
-                builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
-                builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
-                                     target_dt_data_ptr);
-                args.push_back(target_dt);
+                
                 ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
-                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc)->m_proc);
+                ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc);
+                if (!class_proc->m_is_nopass) {
+                    // add the self argument only when the class procedure has the `pass` attribute
+                    llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                    llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
+                    llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
+                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
+                    builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
+                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
+                    builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
+                                        target_dt_data_ptr);
+                    args.push_back(target_dt);
+                }
+                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                 uint32_t h = get_hash((ASR::asr_t*) s_proc);
                 llvm::Function* fn = llvm_symtab_fn[h];
-                std::vector<llvm::Value *> args2 = convert_call_args(x, true);
+                std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
                 args.insert(args.end(), args2.begin(), args2.end());
                 builder->CreateCall(fn, args);
             }
@@ -10998,23 +11002,26 @@ public:
             {
                 std::vector<llvm::Value*> args;
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
-                llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
-                llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
-                llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
-                llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
-                builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
-                builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
-                                     target_dt_data_ptr);
-                args.push_back(target_dt);
                 ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
-                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc)->m_proc);
+                ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc);
+                if (!class_proc->m_is_nopass) {
+                    // add the self argument only when the class procedure has the `pass` attribute
+                    llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                    llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
+                    llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
+                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
+                    builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
+                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
+                    builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
+                                        target_dt_data_ptr);
+                    args.push_back(target_dt);
+                }
+                ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                 uint32_t h = get_hash((ASR::asr_t*) s_proc);
                 llvm::Function* fn = llvm_symtab_fn[h];
                 ASR::Function_t* s = ASR::down_cast<ASR::Function_t>(s_proc);
                 LCOMPILERS_ASSERT(s != nullptr);
-                std::vector<llvm::Value *> args2 = convert_call_args(x, true);
+                std::vector<llvm::Value *> args2 = convert_call_args(x, !class_proc->m_is_nopass);
                 args.insert(args.end(), args2.begin(), args2.end());
                 ASR::ttype_t *return_var_type0 = EXPR2VAR(s->m_return_var)->m_type;
                 builder->CreateStore(CreateCallUtil(fn, args, return_var_type0), tmp);
