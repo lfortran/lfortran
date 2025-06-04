@@ -67,6 +67,17 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --output Variables_out.ipynb Variables.ipynb
 cd ../../..
 
+if [[ $WIN == "1" ]]; then # Windows
+    LFORTRAN_BINARY="lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe"
+    if [[ -f "$LFORTRAN_BINARY" ]]; then
+        echo "Binary $LFORTRAN_BINARY found."
+    else
+        echo "Error: Binary $LFORTRAN_BINARY not found."
+    fi
+    # echo "Listing files in lfortran-$lfortran_version/test-bld/src/bin:"
+    # dir "lfortran-$lfortran_version\test-bld\src\bin"
+fi
+
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
 if [[ $WIN == "1" ]]; then # Windows
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
