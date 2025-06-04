@@ -1,6 +1,7 @@
 #!/usr/bin/env shell
 
-set -ex
+# using debugging option i.e. `-x` causes a bug here, and hence is currently turned off
+set -e
 
 echo "Running SHELL"
 
