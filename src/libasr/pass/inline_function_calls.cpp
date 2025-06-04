@@ -317,7 +317,7 @@ class InlineFunctionCalls: public ASR::BaseExprReplacer<InlineFunctionCalls> {
             if( ASRUtils::is_pointer(ASRUtils::symbol_type(local_symbol)) ) {
                 init_stmt = ASRUtils::STMT(ASRUtils::make_Associate_t_util(
                     al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
-                    x->m_args[i].m_value, nullptr));
+                    x->m_args[i].m_value));
             } else {
                 init_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                     al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, local_symbol)),
