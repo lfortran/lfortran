@@ -68,22 +68,15 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
-    echo "We are here1"
-    LFORTRAN_BINARY="lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe"
-    echo "We are here2"
-    if [[ -f "$LFORTRAN_BINARY" ]]; then
-        echo "Binary $LFORTRAN_BINARY found."
-    else
-        echo "Error: Binary $LFORTRAN_BINARY not found."
-    fi
-    # echo "Listing files in lfortran-$lfortran_version/test-bld/src/bin:"
-    # dir "lfortran-$lfortran_version\test-bld\src\bin"
+    echo "Listing files in lfortran-$lfortran_version/test-bld/src/bin:"
+    dir "lfortran-$lfortran_version\test-bld\src\bin"
 fi
 
-cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
 if [[ $WIN == "1" ]]; then # Windows
+    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe src/bin
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else # Linux or macOS
+    cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
     cp lfortran-$lfortran_version/test-bld/src/runtime/liblfortran_runtime* src/runtime/
 fi
 cp lfortran-$lfortran_version/test-bld/src/runtime/*.mod src/runtime/
