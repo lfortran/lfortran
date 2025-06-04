@@ -775,13 +775,6 @@ enum_var_modifiers
     | var_modifier_list { $$ = $1; }
     ;
 
-// It seems var_modifier only covers simple_attribute, we need a new rule that
-// includes var_modifiers and decl_attribute (where AttrImplements is).
-// make_DerivedType_t(Allocator &al, const Location &a_loc, 
-//                    char* a_name, char** a_namelist, size_t n_namelist, 
-//                    trivia_t* a_trivia, decl_attribute_t** a_attrtype, 
-//                    size_t n_attrtype, unit_decl2_t** a_items, 
-//                    size_t n_items, procedure_decl_t** a_contains, size_t n_contains)
 derived_type_decl
     : KW_TYPE "," KW_DEFERRED "::" id sep {
             $$ = DERIVED_TYPE2($5, SIMPLE_ATTR(Deferred, @$), TRIVIA_AFTER($6, @$), @$); }

@@ -110,7 +110,9 @@ static inline T** vec_cast(const Vec<ast_t*> &x) {
 #define INTERFACE_ITEMS(x) VEC_CAST(x, interface_item)
 #define IMPLEMENTS_ITEMS(x) VEC_CAST(x, implements_item)
 #define GENERIC_TYPE_PARAMS(x) VEC_CAST(x, generic_type_param)
-#define GENERIC_TYPE_PARAM_INSTANTIATIONS(x) VEC_CAST(x, generic_type_param_instantiation)
+
+// Allocator &al, const Location &a_loc, char* a_name, decl_typeType a_type_name
+#define GENERIC_TYPE_PARAM(a_name, a_type_name, l) make_GenericTypeParameter_t(p.m_a, l, name2char(a_name), name2char(a_type_name))
 
 Vec<ast_t*> A2LIST(Allocator &al, ast_t *x) {
     Vec<ast_t*> v;
@@ -1344,10 +1346,6 @@ char *str_or_null(Allocator &al, const LCompilers::Str &s) {
         return s.c_str(al);
     }
 }
-
-// Allocator &al, const Location &a_loc, char* a_name, decl_typeType a_type_name
-#define GENERIC_TYPE_PARAM(a_name, a_type_name, l) make_GenericTypeParameter_t(p.m_a, l, name2char(a_name), name2char(a_type_name))
-#define GENERIC_TYPE_PARAM_INSTANTIATION(a_type_name, l) make_GenericTypeParamInstantiation_t(p.m_a, l, name2char(a_type_name))
 
 #define FUNCTION(fn_type, name, args, return_var, bind, trivia, use, import, implicit, decl, stmts, contains, name_opt, l) make_Function_t(p.m_a, l, \
         /*name*/ name2char_with_check(name, name_opt, l, "function"), \
