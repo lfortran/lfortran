@@ -2021,7 +2021,7 @@ class ParallelRegionVisitor :
             int collapse_levels=1;
             Vec<ASR::OMPReduction_t*> reduction_clauses;
             reduction_clauses.reserve(al,0);
-            // Step 1: Determine collapse levels from clauses (e.g., collapse(2))
+            // Step 1: Determine collapse levels from clauses (e.g., collapse(2)) and Reduction clauses too
             if(x.m_region == ASR::omp_region_typeType::Do) {
                 for(size_t i=0; i<x.n_clauses; i++){
                     clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
@@ -2031,6 +2031,8 @@ class ParallelRegionVisitor :
                 for(size_t j=0;j<clauses_heirarchial[i].size();j++) {
                     if(clauses_heirarchial[i][j]->type == ASR::omp_clauseType::OMPReduction) {
                         reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[i][j]));
+                    } else if(clauses_heirarchial[i][j]->type == ASR::omp_clauseType::OMPCollapse) {
+                        collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[i][j]))->m_count))->m_n;
                     }
                 }
             }
