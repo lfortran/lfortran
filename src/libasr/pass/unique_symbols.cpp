@@ -127,6 +127,13 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
             should_mangle = true;
         }
         for (auto &a : x.m_symtab->get_scope()) {
+            if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
+                // mangle functions / variables declared inside intrinsic modules
+                ASR::symbol_t *sym = a.second;
+                if (sym_to_renamed.find(sym) == sym_to_renamed.end()) {
+                    sym_to_renamed[sym] = update_name(ASRUtils::symbol_name(sym));
+                }
+            }
             visit_symbol(*a.second);
         }
         should_mangle = should_mangle_copy;
