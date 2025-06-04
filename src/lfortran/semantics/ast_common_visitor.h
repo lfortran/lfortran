@@ -23,7 +23,7 @@ using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
 using LCompilers::diag::Label;
 using LCompilers::diag::Diagnostic;
-
+using LCompilers::ASR::string_length_kindType;
 namespace LCompilers::LFortran {
 
 template <typename T>
@@ -3415,37 +3415,36 @@ public:
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                
-bool is_allocatable = false;
-for (size_t i = 0; i < x.n_attributes; i++) {
-    AST::decl_attribute_t *a = x.m_attributes[i];
-    if (AST::is_a<AST::SimpleAttribute_t>(*a)) {
-        AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(a);
-        if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
-            is_allocatable = true;
-            break;
+                bool is_allocatable = false;
+                for (size_t a = 0; a < x.n_attributes; a++) {
+                AST::decl_attribute_t *attr = x.m_attributes[a];
+                if (AST::is_a<AST::SimpleAttribute_t>(*attr)) {
+                AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(attr);
+                if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                is_allocatable = true;
+                break;
+                }
+            }
         }
-    }
-}
-if (is_char_type && sym_type->m_len_kind == AST::string_length_kindType::DeferredLength) {
-    bool has_fixed_shape = false;
-    for (size_t d = 0; d < s.n_dim; d++) {
-        if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
-            has_fixed_shape = true;
-            break;
+
+        if (is_char_type && sym_type->n_kind == ASR::string_length_kindType::DeferredLength &&  is_allocatable) {
+            bool has_fixed_shape = false;
+            for (size_t d = 0; d < s.n_dim; d++) {
+                if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
+                    has_fixed_shape = true;
+                    break;
+                }
+            }
+            if (has_fixed_shape && s.n_dim > 0) {
+                diag.add(
+                    Diagnostic("Allocatable array '" + std::string(x.m_syms[0].m_name)
+                               + "' at (1) must have a deferred shape or assumed rank",
+                               Level::Error,
+                               Stage::Semantic,
+                               { Label("", { s.loc }) }));
+                throw SemanticAbort();
+            }
         }
-    }
-
-    if (has_fixed_shape && s.n_dim > 0 && is_allocatable) {
-        diag.add(
-            Diagnostic("Allocatable array '" + std::string(x.m_syms[0].m_name)
-                       + "' at (1) must have a deferred shape or assumed rank",
-                       Level::Error,
-                       Stage::Semantic,
-                       { Label("", { s.loc }) }));
-        throw SemanticAbort();
-    }
-}
-
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
