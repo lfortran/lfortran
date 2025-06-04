@@ -102,14 +102,14 @@ jobs:
             call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
             call micromamba activate lf
             set LFORTRAN_CMAKE_GENERATOR=Ninja
-            set WIN=1
-            set MACOS=0
-            set ENABLE_RUNTIME_STACKTRACE=no
+            export WIN=1
+            export MACOS=0
+            export ENABLE_RUNTIME_STACKTRACE=no
             call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-            set CC=cl.exe
-            set CXX=cl.exe
-            set "PATH=%PATH:C:\mingw64\bin;=%"
-            xonsh ci\build_tmp.xsh
+            export CC=cl.exe
+            export CXX=cl.exe
+            export "PATH=%PATH:C:\mingw64\bin;=%"
+            shell ci\build_tmp.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
