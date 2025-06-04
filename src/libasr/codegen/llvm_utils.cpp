@@ -1621,13 +1621,13 @@ namespace LCompilers {
         return alloca;
     }
 
-    llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x) {
+    llvm::Value *LLVMUtils::CreateLoad(llvm::Value *x, bool is_volatile) {
 #if LLVM_VERSION_MAJOR <= 16
         llvm::Type *t = x->getType();
         LCOMPILERS_ASSERT(t->isPointerTy());
         LCOMPILERS_ASSERT(t->getNumContainedTypes() > 0);
         llvm::Type *t2 = t->getContainedType(0);
-        return builder->CreateLoad(t2, x);
+        return builder->CreateLoad(t2, x, is_volatile);
 #else
         llvm::Type *type = nullptr, *type_copy = nullptr;
         bool is_type_pointer = false;
@@ -1663,7 +1663,7 @@ namespace LCompilers {
             }
         }
 
-        llvm::Value *load = builder->CreateLoad(type, x);
+        llvm::Value *load = builder->CreateLoad(type, x, is_volatile);
         if (is_type_pointer) {
             ptr_type[load] = type_copy;
         }
@@ -1671,13 +1671,13 @@ namespace LCompilers {
 #endif
     }
 
-    llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x) {
-        return builder->CreateLoad(t, x);
+    llvm::Value *LLVMUtils::CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile) {
+        return builder->CreateLoad(t, x, is_volatile);
     }
 
-    llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x) {
+    llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x, bool is_volatile) {
         llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(type, module);
-        return builder->CreateLoad(el_type, x);
+        return builder->CreateLoad(el_type, x, is_volatile);
     }
 
     llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,

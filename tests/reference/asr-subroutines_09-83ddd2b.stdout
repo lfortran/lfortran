@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -50,6 +51,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             get_elem_table@get_value:
                                 (ExternalSymbol
@@ -119,6 +121,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ptr:
                                 (Variable
@@ -140,6 +143,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     main
@@ -192,6 +196,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -211,6 +216,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -232,6 +238,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -251,6 +258,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_elem_table
@@ -319,6 +327,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             def:
                                                 (Variable
@@ -338,6 +347,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -357,6 +367,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -378,6 +389,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -397,6 +409,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_elem_value_string

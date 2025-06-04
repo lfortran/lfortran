@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fcn:
                                 (Function
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fcn
@@ -114,6 +116,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     hybrd

@@ -502,6 +502,10 @@ filename = "warnings/character_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/character_02.f90"
+asr = true
+
+[[test]]
 filename = "warnings/preprocess_01.f90"
 asr = true
 
@@ -4678,3 +4682,11 @@ asr = true
 [[test]]
 filename = "class_abstract_type.f90"
 asr = true
+
+[[test]]
+filename = "../integration_tests/volatile_02.f90"
+llvm = true
+
+[[test]]
+filename = "../integration_tests/volatile_03.f90"
+llvm = true

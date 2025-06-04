@@ -60,6 +60,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             warnwrite:
                                 (ExternalSymbol
@@ -126,6 +127,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -150,6 +152,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     cmd_new
@@ -254,6 +257,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -293,6 +297,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
@@ -356,6 +361,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -375,6 +381,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     warnwrite

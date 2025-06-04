@@ -44,6 +44,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fullhex_digits:
                                 (Variable
@@ -69,6 +70,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             hex_digits:
                                 (Variable
@@ -107,6 +109,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             letters:
                                 (Variable
@@ -132,6 +135,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             lowercase:
                                 (Variable
@@ -170,6 +174,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             lowerhex_digits:
                                 (Variable
@@ -195,6 +200,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             octal_digits:
                                 (Variable
@@ -233,6 +239,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             string:
                                 (Variable
@@ -268,6 +275,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             uppercase:
                                 (Variable
@@ -306,6 +314,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     string_12

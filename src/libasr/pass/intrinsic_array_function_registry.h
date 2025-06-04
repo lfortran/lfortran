@@ -753,7 +753,7 @@ static inline ASR::asr_t* create_ArrIntrinsic(
         return_type = ASRUtils::duplicate_type(al, array_type, &dims, ASR::array_physical_typeType::DescriptorArray, true);
         if ( (int64_t) n_dims == 1 ) {
             // For the arrays of rank 1, we return a scalar value
-            // instead of an array. Currently `return_type` in case of 
+            // instead of an array. Currently `return_type` in case of
             // allocatable will be `Allocatable( integer 4 )` and hence
             // we need to remove the allocatable part.
             return_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_array(return_type));
@@ -3708,7 +3708,7 @@ namespace FindLoc {
                             b.If(b.And(found_value, b.Not(back)), {
                                 b.Exit()
                             }, {})
-                        }), 
+                        }),
                     })
                 }, {
                     b.DoLoop(i, b.i_t(1, type), UBound(array, 1), {
@@ -3722,7 +3722,7 @@ namespace FindLoc {
                                 b.Exit()
                             }, {})
                         }),
-    
+
                     })
                 })
             }));
@@ -4950,7 +4950,8 @@ namespace Pack {
             is_type_allocatable = true;
         }
         if (is_type_allocatable) {
-            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc, ret_type));
+            ret_type = TYPE(ASRUtils::make_Allocatable_t_util(al, loc,
+                ASRUtils::type_get_past_allocatable_pointer(ret_type)));
         }
         Vec<ASR::expr_t*> arg_values; arg_values.reserve(al, 3);
         arg_values.push_back(al, expr_value(array)); arg_values.push_back(al, expr_value(mask));

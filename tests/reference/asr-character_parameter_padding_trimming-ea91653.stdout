@@ -50,6 +50,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p_trim:
                                 (Variable
@@ -94,6 +95,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x_pad:
                                 (Variable
@@ -119,6 +121,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x_trim:
                                 (Variable
@@ -144,6 +147,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             y_pad:
                                 (Variable
@@ -169,6 +173,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             y_trim:
                                 (Variable
@@ -194,6 +199,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             z_pad:
                                 (Variable
@@ -233,6 +239,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             z_trim:
                                 (Variable
@@ -272,6 +279,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     character_parameter_padding_trimming
