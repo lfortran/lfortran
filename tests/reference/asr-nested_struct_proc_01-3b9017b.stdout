@@ -27,6 +27,16 @@
                                     character_storage_size
                                     Public
                                 ),
+                            compiler_options:
+                                (ExternalSymbol
+                                    2
+                                    compiler_options
+                                    4 compiler_options
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    compiler_options
+                                    Public
+                                ),
                             compiler_version:
                                 (ExternalSymbol
                                     2
@@ -120,18 +130,18 @@
                             integer32complex32orderedmap:
                                 (Struct
                                     (SymbolTable
-                                        8
+                                        9
                                         {
                                             insert:
                                                 (GenericProcedure
-                                                    8
+                                                    9
                                                     insert
-                                                    [8 insert_key_value]
+                                                    [9 insert_key_value]
                                                     Public
                                                 ),
                                             insert_key_value:
                                                 (ClassProcedure
-                                                    8
+                                                    9
                                                     insert_key_value
                                                     ()
                                                     omap_insert_key_value
@@ -142,7 +152,7 @@
                                                 ),
                                             map:
                                                 (Variable
-                                                    8
+                                                    9
                                                     map
                                                     []
                                                     Local
@@ -221,13 +231,13 @@
                             omap_i_at_rc:
                                 (Function
                                     (SymbolTable
-                                        9
+                                        10
                                         {
                                             1_omap_map_stored_value:
                                                 (ExternalSymbol
-                                                    9
+                                                    10
                                                     1_omap_map_stored_value
-                                                    7 stored_value
+                                                    8 stored_value
                                                     omap_map
                                                     []
                                                     stored_value
@@ -235,7 +245,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    9
+                                                    10
                                                     key
                                                     []
                                                     In
@@ -255,7 +265,7 @@
                                                 ),
                                             rc:
                                                 (Variable
-                                                    9
+                                                    10
                                                     rc
                                                     []
                                                     Out
@@ -275,7 +285,7 @@
                                                 ),
                                             res:
                                                 (Variable
-                                                    9
+                                                    10
                                                     res
                                                     []
                                                     ReturnVar
@@ -297,7 +307,7 @@
                                                 ),
                                             this:
                                                 (Variable
-                                                    9
+                                                    10
                                                     this
                                                     []
                                                     In
@@ -346,25 +356,25 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 9 this)
-                                    (Var 9 key)
-                                    (Var 9 rc)]
+                                    [(Var 10 this)
+                                    (Var 10 key)
+                                    (Var 10 rc)]
                                     [(Associate
-                                        (Var 9 res)
+                                        (Var 10 res)
                                         (StructInstanceMember
-                                            (Var 9 this)
-                                            9 1_omap_map_stored_value
+                                            (Var 10 this)
+                                            10 1_omap_map_stored_value
                                             (Complex 4)
                                             ()
                                         )
                                     )
                                     (Assignment
-                                        (Var 9 rc)
+                                        (Var 10 rc)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
                                         .false.
                                     )]
-                                    (Var 9 res)
+                                    (Var 10 res)
                                     Private
                                     .false.
                                     .false.
@@ -373,7 +383,7 @@
                             omap_i_set:
                                 (Struct
                                     (SymbolTable
-                                        6
+                                        7
                                         {
                                             
                                         })
@@ -392,13 +402,13 @@
                             omap_insert_key_value:
                                 (Function
                                     (SymbolTable
-                                        10
+                                        11
                                         {
                                             1_integer32complex32orderedmap_map:
                                                 (ExternalSymbol
-                                                    10
+                                                    11
                                                     1_integer32complex32orderedmap_map
-                                                    8 map
+                                                    9 map
                                                     integer32complex32orderedmap
                                                     []
                                                     map
@@ -406,9 +416,9 @@
                                                 ),
                                             1_omap_i_at_rc:
                                                 (ExternalSymbol
-                                                    10
+                                                    11
                                                     1_omap_i_at_rc
-                                                    7 at_rc
+                                                    8 at_rc
                                                     omap_map
                                                     []
                                                     at_rc
@@ -416,9 +426,9 @@
                                                 ),
                                             1_omap_map_stored_value:
                                                 (ExternalSymbol
-                                                    10
+                                                    11
                                                     1_omap_map_stored_value
-                                                    7 stored_value
+                                                    8 stored_value
                                                     omap_map
                                                     []
                                                     stored_value
@@ -426,7 +436,7 @@
                                                 ),
                                             key:
                                                 (Variable
-                                                    10
+                                                    11
                                                     key
                                                     []
                                                     In
@@ -446,7 +456,7 @@
                                                 ),
                                             status:
                                                 (Variable
-                                                    10
+                                                    11
                                                     status
                                                     []
                                                     Local
@@ -466,7 +476,7 @@
                                                 ),
                                             this:
                                                 (Variable
-                                                    10
+                                                    11
                                                     this
                                                     []
                                                     InOut
@@ -491,7 +501,7 @@
                                                 ),
                                             tmp:
                                                 (Variable
-                                                    10
+                                                    11
                                                     tmp
                                                     []
                                                     Local
@@ -513,7 +523,7 @@
                                                 ),
                                             tol:
                                                 (Variable
-                                                    10
+                                                    11
                                                     tol
                                                     []
                                                     Local
@@ -539,7 +549,7 @@
                                                 ),
                                             value:
                                                 (Variable
-                                                    10
+                                                    11
                                                     value
                                                     []
                                                     In
@@ -581,14 +591,14 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 10 this)
-                                    (Var 10 key)
-                                    (Var 10 value)]
+                                    [(Var 11 this)
+                                    (Var 11 key)
+                                    (Var 11 value)]
                                     [(Assignment
                                         (StructInstanceMember
                                             (StructInstanceMember
-                                                (Var 10 this)
-                                                10 1_integer32complex32orderedmap_map
+                                                (Var 11 this)
+                                                11 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     []
                                                     []
@@ -597,22 +607,22 @@
                                                 )
                                                 ()
                                             )
-                                            10 1_omap_map_stored_value
+                                            11 1_omap_map_stored_value
                                             (Complex 4)
                                             ()
                                         )
-                                        (Var 10 value)
+                                        (Var 11 value)
                                         ()
                                         .false.
                                     )
                                     (Associate
-                                        (Var 10 tmp)
+                                        (Var 11 tmp)
                                         (FunctionCall
-                                            10 1_omap_i_at_rc
-                                            7 at
+                                            11 1_omap_i_at_rc
+                                            8 at
                                             [((StructInstanceMember
-                                                (Var 10 this)
-                                                10 1_integer32complex32orderedmap_map
+                                                (Var 11 this)
+                                                11 1_integer32complex32orderedmap_map
                                                 (StructType
                                                     []
                                                     []
@@ -621,8 +631,8 @@
                                                 )
                                                 ()
                                             ))
-                                            ((Var 10 key))
-                                            ((Var 10 status))]
+                                            ((Var 11 key))
+                                            ((Var 11 status))]
                                             (Pointer
                                                 (Complex 4)
                                             )
@@ -638,7 +648,7 @@
                                                     [(RealBinOp
                                                         (IntrinsicElementalFunction
                                                             Real
-                                                            [(Var 10 tmp)]
+                                                            [(Var 11 tmp)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -646,7 +656,7 @@
                                                         Sub
                                                         (IntrinsicElementalFunction
                                                             Real
-                                                            [(Var 10 value)]
+                                                            [(Var 11 value)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -659,7 +669,7 @@
                                                     ()
                                                 )
                                                 Gt
-                                                (Var 10 tol)
+                                                (Var 11 tol)
                                                 (Logical 4)
                                                 ()
                                             )
@@ -670,7 +680,7 @@
                                                     [(RealBinOp
                                                         (IntrinsicElementalFunction
                                                             Aimag
-                                                            [(Var 10 tmp)]
+                                                            [(Var 11 tmp)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -678,7 +688,7 @@
                                                         Sub
                                                         (IntrinsicElementalFunction
                                                             Aimag
-                                                            [(Var 10 value)]
+                                                            [(Var 11 value)]
                                                             0
                                                             (Real 4)
                                                             ()
@@ -691,7 +701,7 @@
                                                     ()
                                                 )
                                                 Gt
-                                                (Var 10 tol)
+                                                (Var 11 tol)
                                                 (Logical 4)
                                                 ()
                                             )
@@ -718,18 +728,18 @@
                             omap_map:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        8
                                         {
                                             at:
                                                 (GenericProcedure
-                                                    7
+                                                    8
                                                     at
-                                                    [7 at_rc]
+                                                    [8 at_rc]
                                                     Public
                                                 ),
                                             at_rc:
                                                 (ClassProcedure
-                                                    7
+                                                    8
                                                     at_rc
                                                     ()
                                                     omap_i_at_rc
@@ -740,7 +750,7 @@
                                                 ),
                                             stored_value:
                                                 (Variable
-                                                    7
+                                                    8
                                                     stored_value
                                                     []
                                                     Local
@@ -760,7 +770,7 @@
                                                 ),
                                             tree:
                                                 (Variable
-                                                    7
+                                                    8
                                                     tree
                                                     []
                                                     Local
@@ -879,13 +889,13 @@
             nested_struct_proc_01:
                 (Program
                     (SymbolTable
-                        11
+                        12
                         {
                             1_insert:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     1_insert
-                                    8 insert
+                                    9 insert
                                     integer32complex32orderedmap
                                     []
                                     insert
@@ -893,9 +903,9 @@
                                 ),
                             1_omap_insert_key_value:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     1_omap_insert_key_value
-                                    8 insert_key_value
+                                    9 insert_key_value
                                     integer32complex32orderedmap
                                     []
                                     insert_key_value
@@ -903,7 +913,7 @@
                                 ),
                             character_kinds:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     character_kinds
                                     4 character_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -913,7 +923,7 @@
                                 ),
                             character_storage_size:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     character_storage_size
                                     4 character_storage_size
                                     lfortran_intrinsic_iso_fortran_env
@@ -921,9 +931,19 @@
                                     character_storage_size
                                     Public
                                 ),
+                            compiler_options:
+                                (ExternalSymbol
+                                    12
+                                    compiler_options
+                                    4 compiler_options
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    compiler_options
+                                    Public
+                                ),
                             compiler_version:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     compiler_version
                                     4 compiler_version
                                     lfortran_intrinsic_iso_fortran_env
@@ -933,7 +953,7 @@
                                 ),
                             error_unit:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     error_unit
                                     4 error_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -943,7 +963,7 @@
                                 ),
                             i32:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     i32
                                     2 i32
                                     gftl2_integer32complex32orderedmap
@@ -953,7 +973,7 @@
                                 ),
                             input_unit:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     input_unit
                                     4 input_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -963,7 +983,7 @@
                                 ),
                             int16:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     int16
                                     4 int16
                                     lfortran_intrinsic_iso_fortran_env
@@ -973,7 +993,7 @@
                                 ),
                             int32:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     int32
                                     4 int32
                                     lfortran_intrinsic_iso_fortran_env
@@ -983,7 +1003,7 @@
                                 ),
                             int64:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     int64
                                     4 int64
                                     lfortran_intrinsic_iso_fortran_env
@@ -993,7 +1013,7 @@
                                 ),
                             int8:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     int8
                                     4 int8
                                     lfortran_intrinsic_iso_fortran_env
@@ -1003,7 +1023,7 @@
                                 ),
                             integer32complex32orderedmap:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     integer32complex32orderedmap
                                     2 integer32complex32orderedmap
                                     gftl2_integer32complex32orderedmap
@@ -1013,7 +1033,7 @@
                                 ),
                             integer_kinds:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     integer_kinds
                                     4 integer_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1023,7 +1043,7 @@
                                 ),
                             iostat_end:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     iostat_end
                                     4 iostat_end
                                     lfortran_intrinsic_iso_fortran_env
@@ -1033,7 +1053,7 @@
                                 ),
                             key:
                                 (Variable
-                                    11
+                                    12
                                     key
                                     []
                                     Local
@@ -1053,7 +1073,7 @@
                                 ),
                             logical_kinds:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     logical_kinds
                                     4 logical_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1063,7 +1083,7 @@
                                 ),
                             my_map:
                                 (Variable
-                                    11
+                                    12
                                     my_map
                                     []
                                     Local
@@ -1074,7 +1094,7 @@
                                         []
                                         []
                                         .true.
-                                        11 integer32complex32orderedmap
+                                        12 integer32complex32orderedmap
                                     )
                                     ()
                                     Source
@@ -1088,7 +1108,7 @@
                                 ),
                             numeric_storage_size:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     numeric_storage_size
                                     4 numeric_storage_size
                                     lfortran_intrinsic_iso_fortran_env
@@ -1098,7 +1118,7 @@
                                 ),
                             omap_i_at_rc:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     omap_i_at_rc
                                     2 omap_i_at_rc
                                     gftl2_integer32complex32orderedmap
@@ -1108,7 +1128,7 @@
                                 ),
                             omap_i_set:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     omap_i_set
                                     2 omap_i_set
                                     gftl2_integer32complex32orderedmap
@@ -1118,7 +1138,7 @@
                                 ),
                             omap_insert_key_value:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     omap_insert_key_value
                                     2 omap_insert_key_value
                                     gftl2_integer32complex32orderedmap
@@ -1128,7 +1148,7 @@
                                 ),
                             omap_map:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     omap_map
                                     2 omap_map
                                     gftl2_integer32complex32orderedmap
@@ -1138,7 +1158,7 @@
                                 ),
                             output_unit:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     output_unit
                                     4 output_unit
                                     lfortran_intrinsic_iso_fortran_env
@@ -1148,7 +1168,7 @@
                                 ),
                             r32:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     r32
                                     2 r32
                                     gftl2_integer32complex32orderedmap
@@ -1158,7 +1178,7 @@
                                 ),
                             real128:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     real128
                                     4 real128
                                     lfortran_intrinsic_iso_fortran_env
@@ -1168,7 +1188,7 @@
                                 ),
                             real32:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     real32
                                     4 real32
                                     lfortran_intrinsic_iso_fortran_env
@@ -1178,7 +1198,7 @@
                                 ),
                             real64:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     real64
                                     4 real64
                                     lfortran_intrinsic_iso_fortran_env
@@ -1188,7 +1208,7 @@
                                 ),
                             real_kinds:
                                 (ExternalSymbol
-                                    11
+                                    12
                                     real_kinds
                                     4 real_kinds
                                     lfortran_intrinsic_iso_fortran_env
@@ -1198,7 +1218,7 @@
                                 ),
                             value:
                                 (Variable
-                                    11
+                                    12
                                     value
                                     []
                                     Local
@@ -1220,13 +1240,13 @@
                     nested_struct_proc_01
                     [gftl2_integer32complex32orderedmap]
                     [(Assignment
-                        (Var 11 key)
+                        (Var 12 key)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
                         .false.
                     )
                     (Assignment
-                        (Var 11 value)
+                        (Var 12 value)
                         (ComplexConstructor
                             (RealConstant
                                 2.000000
@@ -1247,11 +1267,11 @@
                         .false.
                     )
                     (SubroutineCall
-                        11 1_omap_insert_key_value
-                        11 1_insert
-                        [((Var 11 key))
-                        ((Var 11 value))]
-                        (Var 11 my_map)
+                        12 1_omap_insert_key_value
+                        12 1_insert
+                        [((Var 12 key))
+                        ((Var 12 value))]
+                        (Var 12 my_map)
                     )
                     (Print
                         (StringConstant
