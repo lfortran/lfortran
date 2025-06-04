@@ -32,8 +32,7 @@ python src/server/generator/generate_lsp_code.py --schema src/server/generator/m
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
 lfortran_version=$(cat version)
-dest="lfortran-$lfortran_version"
-dest=$dest bash ci/create_source_tarball0.sh
+bash ci/create_source_tarball.sh "$lfortran_version"
 tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
 
