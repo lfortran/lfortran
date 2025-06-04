@@ -3414,6 +3414,7 @@ public:
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
+               
 bool is_allocatable = false;
 for (size_t i = 0; i < x.n_attributes; i++) {
     AST::decl_attribute_t *a = x.m_attributes[i];
