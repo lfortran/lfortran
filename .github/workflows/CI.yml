@@ -977,7 +977,7 @@ jobs:
       - name: Test CPP
         shell: bash -e -l {0}
         run: |
-            xonsh ci/test_cpp_version.xsh
+            shell ci/test_cpp_version.sh
 
       - name: Show Node Info
         shell: bash -e -l {0}
@@ -1045,7 +1045,7 @@ jobs:
       - name: Test
         shell: bash -e -l {0}
         run: |
-          xonsh ci/test_without_llvm_backend.xsh
+          shell ci/test_without_llvm_backend.sh
 
   test_mlir:
     name: Test MLIR backend
