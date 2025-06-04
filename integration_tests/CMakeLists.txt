@@ -1729,6 +1729,7 @@ RUN(NAME class_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
