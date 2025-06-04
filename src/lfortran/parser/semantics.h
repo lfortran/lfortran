@@ -2396,8 +2396,6 @@ ast_t* TYPEPARAMETER0(Allocator &al,
         name2char(name), VEC_CAST(attr, decl_attribute), attr.size(), \
         USE_SYMBOLS(syms), syms.size(), \
         trivia_cast(trivia))
-#define BIND_PROC(name, attrs, l) make_BindProc_t(p.m_a, l, \
-        name2char(name), VEC_CAST(attrs, decl_attribute), attrs.size())
 #define GENERIC_OPERATOR(attr, optype, namelist, trivia, l) make_GenericOperator_t(p.m_a, l, \
         VEC_CAST(attr, decl_attribute), attr.size(), \
         optype, REDUCE_ARGS(p.m_a, namelist), namelist.size(), \
