@@ -68,11 +68,6 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
-    echo "Listing files in lfortran-$lfortran_version/test-bld/src/bin:"
-    dir "lfortran-$lfortran_version\test-bld\src\bin"
-fi
-
-if [[ $WIN == "1" ]]; then # Windows
     cp lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe src/bin
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else # Linux or macOS
