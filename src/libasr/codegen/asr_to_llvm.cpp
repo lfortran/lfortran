@@ -4682,7 +4682,11 @@ public:
             ASR::Variable_t *asr_retval = EXPR2VAR(x.m_return_var);
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
-            llvm::Value *ret_val2 = llvm_utils->CreateLoad2(asr_retval->m_type, ret_val);
+            llvm::Value *ret_val2 = ret_val;
+            if ( !(ASR::is_a<ASR::Pointer_t>(*asr_retval->m_type) && 
+                    ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_retval->m_type))) ) {
+                ret_val2 = llvm_utils->CreateLoad2(asr_retval->m_type, ret_val);
+            }
             // Handle Complex type return value for BindC:
             if (ASRUtils::get_FunctionType(x)->m_abi == ASR::abiType::BindC) {
                 ASR::ttype_t* arg_type = asr_retval->m_type;
