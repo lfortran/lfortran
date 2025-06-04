@@ -567,7 +567,7 @@ public:
     {
         dependencies.clear();
         std::string module = "module " + std::string(x.m_name) + "\n\n";
-        if (startswith(x.m_name, "lfortran_intrinsic_")) {
+        if (x.m_intrinsic) {
             intrinsic_module = true;
         } else {
             intrinsic_module = false;

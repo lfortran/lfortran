@@ -120,7 +120,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         module_name = std::string(x.m_name) + "_";
         if (all_symbols_mangling || module_name_mangling || should_mangle) {
             sym_to_renamed[sym] = update_name(x.m_name);
-        } else if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
+        } else if ( intrinsic_module_name_mangling && x.m_intrinsic ) {
             sym_to_renamed[sym] = update_name(x.m_name);
         }
         if ((global_symbols_mangling && startswith(x.m_name, "_global_symbols"))) {
