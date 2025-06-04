@@ -68,7 +68,9 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 if [[ $WIN == "1" ]]; then # Windows
+    echo "We are here1"
     LFORTRAN_BINARY="lfortran-$lfortran_version/test-bld/src/bin/lfortran.exe"
+    echo "We are here2"
     if [[ -f "$LFORTRAN_BINARY" ]]; then
         echo "Binary $LFORTRAN_BINARY found."
     else
