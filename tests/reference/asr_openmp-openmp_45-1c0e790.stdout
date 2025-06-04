@@ -766,7 +766,7 @@
                     [omp_lib
                     openmp_45_parallel_sections]
                     [(OMPRegion
-                        Sections
+                        ParallelSections
                         []
                         [(OMPRegion
                             Section
