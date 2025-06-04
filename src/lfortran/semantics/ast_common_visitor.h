@@ -4835,6 +4835,8 @@ public:
                             nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                             ASR::accessType::Private));
                 }
+                // set the variable's type declaration to the derived type
+                type_declaration = v;
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, nullptr, 0, nullptr, 0, true, v));
                 type = ASRUtils::make_Array_t_util(
