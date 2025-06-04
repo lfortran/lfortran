@@ -47,7 +47,7 @@ jobs:
             llvm-version: "20"
             build-type: "Debug"
           # we build LFortran on windows in release mode
-          - os: windows-2019
+          - os: windows-2025
             python-version: "3.10"
             llvm-version: "11"
             build-type: "Release"
@@ -127,7 +127,10 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
             xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
@@ -165,7 +168,10 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
             shell ci\test.sh
 
       # below code is taken from earlier "LSP Tests" CI job
