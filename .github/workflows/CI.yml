@@ -769,7 +769,7 @@ jobs:
         run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '20')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -780,7 +780,7 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '20')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -790,7 +790,7 @@ jobs:
           wasmtime --version
 
       - name: Setup EMSCRIPTEN SDK
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '20')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -803,7 +803,7 @@ jobs:
           ./emsdk activate latest
 
       - name: Build Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '20')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
@@ -824,7 +824,7 @@ jobs:
             cmake --build . -j16 --target install
 
       - name: Test Linux ( WASM )
-        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        if: contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '20')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
