@@ -246,7 +246,7 @@ arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
 
-omp_region_type = Parallel | Do | ParallelDo | Sections | Section | Single | Task | Simd | Teams | Target | TargetData
+omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Single | Task | Simd | Teams | Target | TargetData
 omp_clause
   = OMPPrivate(expr* vars)
   | OMPShared(expr* vars)
