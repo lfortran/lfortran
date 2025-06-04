@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             string_local:
                                                 (Variable
@@ -72,6 +74,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -109,6 +112,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     decodebase

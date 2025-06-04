@@ -40,6 +40,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -59,6 +60,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -83,6 +85,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     multiply
@@ -165,6 +168,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -184,6 +188,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -208,6 +213,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     sqrt_subtract
@@ -302,6 +308,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             multiply:
                                                 (ClassProcedure
@@ -432,6 +439,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     name

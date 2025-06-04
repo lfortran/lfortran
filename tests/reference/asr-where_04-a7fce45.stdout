@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             reldiff:
                                                 (Variable
@@ -54,6 +55,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     compare_solutions
@@ -341,6 +343,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     solution

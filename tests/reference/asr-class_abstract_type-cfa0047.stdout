@@ -45,6 +45,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_other_open_data
@@ -99,6 +100,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             other_type:
                                 (ExternalSymbol
@@ -180,6 +182,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~abstract_type:
                                                 (Struct

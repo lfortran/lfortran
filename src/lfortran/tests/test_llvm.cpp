@@ -378,7 +378,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false.)] (Var 2 f) Public .false. .false. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false.)] (Var 2 f) Public .false. .false. ())}) [])");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -420,7 +420,7 @@ end function)";
     LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
         diagnostics, nullptr, false, compiler_options, lm));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. ())}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false.)] (Var 4 f) Public .false. .false. ())}) [])");
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false.)] (Var 4 f) Public .false. .false. ())}) [])");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;

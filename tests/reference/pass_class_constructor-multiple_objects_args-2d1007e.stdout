@@ -46,6 +46,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -98,6 +99,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -122,6 +124,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     print_radius
@@ -211,6 +214,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -235,6 +239,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             was_called:
                                 (Variable
@@ -260,6 +265,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     main
