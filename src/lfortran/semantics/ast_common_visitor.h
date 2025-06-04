@@ -4889,6 +4889,8 @@ public:
                             nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                             ASR::accessType::Private));
                 }
+                // set the variable's type declaration to the derived type
+                type_declaration = v;
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));

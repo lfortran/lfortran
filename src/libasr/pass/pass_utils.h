@@ -678,9 +678,8 @@ namespace LCompilers {
             }
 
             std::deque<ASR::symbol_t*> constructor_arg_syms;
-            ASR::StructType_t* dt_der = ASR::down_cast<ASR::StructType_t>(x->m_type);
             ASR::Struct_t* dt_dertype = ASR::down_cast<ASR::Struct_t>(
-                                            ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
+                                            ASRUtils::symbol_get_past_external(x->m_dt_sym));
             while( dt_dertype ) {
                 for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
                     constructor_arg_syms.push_front(
