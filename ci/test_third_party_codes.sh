@@ -49,6 +49,7 @@ time_section "🧪 Testing splpak" '
   git clone https://github.com/Pranavchiku/splpak.git
   cd splpak
   export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
 
   git checkout 2aa36d4f9cd599879795f35e48184c951959009d
 
