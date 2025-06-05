@@ -91,7 +91,8 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            export WIN=0
+            shell ci/build_tmp.sh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
@@ -108,7 +109,7 @@ jobs:
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
-            xonsh ci\build_tmp.xsh
+            shell ci\build_tmp.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
@@ -976,7 +977,7 @@ jobs:
       - name: Test CPP
         shell: bash -e -l {0}
         run: |
-            xonsh ci/test_cpp_version.xsh
+            shell ci/test_cpp_version.sh
 
       - name: Show Node Info
         shell: bash -e -l {0}
@@ -1044,7 +1045,7 @@ jobs:
       - name: Test
         shell: bash -e -l {0}
         run: |
-          xonsh ci/test_without_llvm_backend.xsh
+          shell ci/test_without_llvm_backend.sh
 
   test_mlir:
     name: Test MLIR backend
