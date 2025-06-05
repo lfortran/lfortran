@@ -81,7 +81,7 @@ program continue_compilation_1
     character(len=10, len=20) :: str_c_2
     character(len=10, 1) :: str_c_3
     character(1, len=20) :: str_c_4
-
+    character(:), allocatable:: x(2) ! deferred length
 
 
 
