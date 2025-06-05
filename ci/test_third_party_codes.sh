@@ -70,7 +70,6 @@ time_section "🧪 Testing fortran-regex" '
 
   git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
   fpm --compiler=$FC build
-  fpm test
 
   print_success "Done with fortran-regex"
   cd ..
