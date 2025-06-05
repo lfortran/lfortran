@@ -10776,10 +10776,11 @@ public:
         int64_t ptr_loads_copy = ptr_loads;
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             ptr_loads = 0;
+            visit_expr_wrapper(arg, false);
         } else {
             ptr_loads = 2 - LLVM::is_llvm_pointer(*asr_type);
+            visit_expr_wrapper(arg, true);
         }
-        visit_expr_wrapper(arg, true);
         ptr_loads = ptr_loads_copy;
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
