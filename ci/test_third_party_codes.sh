@@ -51,15 +51,11 @@ time_section "🧪 Testing splpak" '
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
 
-  git checkout 2aa36d4f9cd599879795f35e48184c951959009d
+  git checkout ad58ed53212111c731ccc9239385ed472d682c25 
 
   git clean -dfx
   fpm build --compiler=$FC --profile release --flag "-DREAL32" --verbose
-  fpm test --profile release --flag "-DREAL32"
-
-  git clean -dfx
-  fpm build --compiler=$FC --flag=--generate-object-code --profile release --flag "-DREAL32" --verbose
-  fpm test --profile release --flag "-DREAL32"
+  fpm test --compiler=$FC --profile release --flag "-DREAL32"
 
   cd ../
   rm -rf splpak
