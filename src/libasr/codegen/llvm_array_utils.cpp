@@ -13,24 +13,26 @@ namespace LCompilers {
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getInt8Ty(context)->getPointerTo(), {
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }
+            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             std::vector<llvm::Value*> args = {arg_size};
             return builder.CreateCall(fn, args);
         }
 
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size) {
+            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             std::string func_name = "_lfortran_realloc";
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getInt8Ty(context)->getPointerTo(), {
                             llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
@@ -349,8 +351,8 @@ namespace LCompilers {
         };
 
         void SimpleCMODescriptor::fill_malloc_array_details(
-            llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, int n_dims,
-            std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+            llvm::Value* arr, llvm::Type* arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
+            std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
             llvm::Module* module, bool realloc) {
             arr = llvm_utils->CreateLoad2(arr_type->getPointerTo(), arr);
 #if LLVM_VERSION_MAJOR > 16
@@ -376,26 +378,35 @@ namespace LCompilers {
             }
             llvm::Value* ptr2firstptr = get_pointer_to_data(arr);
             llvm::AllocaInst *arg_size = llvm_utils->CreateAlloca(*builder, llvm::Type::getInt32Ty(context));
-            llvm::DataLayout data_layout(module->getDataLayout());
-            llvm::Type* ptr_type = llvm_data_type->getPointerTo();
-            uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
-            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
-            prod = builder->CreateMul(prod, llvm_size);
-            builder->CreateStore(prod, arg_size);
-            llvm::Value* ptr_as_char_ptr = nullptr;
-            if( realloc ) {
-                ptr_as_char_ptr = lfortran_realloc(context, *module,
-                    *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
-                    llvm_utils->CreateLoad(arg_size));
+            if(ASRUtils::is_character(*asr_type)){
+                llvm_utils->allocate_allocatable_array_of_strings(
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)),
+                    llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
+                    string_len,
+                    prod,
+                    realloc);
             } else {
-                ptr_as_char_ptr = lfortran_malloc(context, *module,
-                    *builder, llvm_utils->CreateLoad(arg_size));
-            }
-            llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
+                llvm::DataLayout data_layout(module->getDataLayout());
+                llvm::Type* ptr_type = llvm_data_type->getPointerTo();
+                uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+                prod = builder->CreateMul(prod, llvm_size);
+                builder->CreateStore(prod, arg_size);
+                llvm::Value* ptr_as_char_ptr = nullptr;
+                if( realloc ) {
+                    ptr_as_char_ptr = lfortran_realloc(context, *module,
+                        *builder, llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), ptr2firstptr),
+                        llvm_utils->CreateLoad(arg_size));
+                } else {
+                    ptr_as_char_ptr = lfortran_malloc(context, *module,
+                        *builder, llvm_utils->CreateLoad(arg_size));
+                }
+                llvm::Value* first_ptr = builder->CreateBitCast(ptr_as_char_ptr, ptr_type);
 #if LLVM_VERSION_MAJOR > 16
-            llvm_utils->ptr_type[first_ptr] = ptr_type;
+                llvm_utils->ptr_type[first_ptr] = ptr_type;
 #endif
-            builder->CreateStore(first_ptr, ptr2firstptr);
+                builder->CreateStore(first_ptr, ptr2firstptr);
+            }
         }
 
         void SimpleCMODescriptor::fill_dimension_descriptor(llvm::Value* arr, int n_dims) {
@@ -699,7 +710,7 @@ namespace LCompilers {
         }
 
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
-            std::vector<llvm::Value*>& m_args, int n_args, bool data_only,
+            std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
             llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
             llvm::Value* tmp = nullptr;
@@ -710,33 +721,59 @@ namespace LCompilers {
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
                 idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
-                if( is_fixed_size ) {
-                    tmp = llvm_utils->create_gep2(type, array, idx);
+                if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
+                    tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else {
-                    tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    if( is_fixed_size ) {
+                        tmp = llvm_utils->create_gep2(type, array, idx);
+                    } else {
+                        tmp = llvm_utils->create_ptr_gep2(type, array, idx);
+                    }
                 }
             } else {
                 idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
-                llvm::Value* full_array = get_pointer_to_data(array);
-                if( polymorphic ) {
-                    full_array = llvm_utils->create_gep2(type, llvm_utils->CreateLoad2(type->getPointerTo(), full_array), 1);
-                    full_array = builder->CreateBitCast(llvm_utils->CreateLoad2(llvm::Type::getVoidTy(context)->getPointerTo(), full_array), polymorphic_type->getPointerTo());
-                    tmp = llvm_utils->create_ptr_gep2(polymorphic_type, full_array, idx);
+                llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(array));
+                if(ASRUtils::is_character(*asr_type)){
+                    tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
                 } else {
-                    tmp = llvm_utils->create_ptr_gep2(type, llvm_utils->CreateLoad2(type->getPointerTo(), full_array), idx);
+                    if( polymorphic ) {
+                        full_array = llvm_utils->create_gep2(type, full_array, 1);
+                        full_array = builder->CreateBitCast(llvm_utils->CreateLoad2(llvm::Type::getVoidTy(context)->getPointerTo(), full_array), polymorphic_type->getPointerTo());
+                        tmp = llvm_utils->create_ptr_gep2(polymorphic_type, full_array, idx);
+                    } else {
+                        tmp = llvm_utils->create_ptr_gep2(type, full_array, idx);
+                    }
                 }
             }
             return tmp;
         }
 
         llvm::Value* SimpleCMODescriptor::get_is_allocated_flag(llvm::Value* array,
-            llvm::Type* llvm_data_type) {
+            llvm::Type* llvm_data_type, ASR::ttype_t* array_type) {
+            llvm::Value* memory_holder{}; // ptr_ptr_to_data
+            llvm::PointerType* memory_holder_type;
+
+            // Handle an array of strings
+            memory_holder_type = ASRUtils::is_character(*array_type) ?
+                llvm_utils->character_type
+                : llvm_data_type->getPointerTo();
+
+            if(ASRUtils::is_character(*array_type)){
+                llvm::Type* load_type = llvm_utils->get_type_from_ttype_t_util(
+                    ASRUtils::extract_type(array_type), llvm_utils->module)->getPointerTo();
+                ASR::String_t* str = ASRUtils::get_string_type(array_type);
+                memory_holder = llvm_utils->get_string_data(
+                        str,
+                        builder->CreateLoad(load_type, get_pointer_to_data(array)), true);
+            } else {
+                memory_holder = get_pointer_to_data(array);
+            }
+
             return builder->CreateICmpNE(
-                builder->CreatePtrToInt(llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), get_pointer_to_data(array)),
+                builder->CreatePtrToInt(llvm_utils->CreateLoad2(memory_holder_type, memory_holder),
                     llvm::Type::getInt64Ty(context)),
-                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()),
-                    llvm::Type::getInt64Ty(context))
-            );
+                builder->CreatePtrToInt(llvm::ConstantPointerNull::get(memory_holder_type),
+                    llvm::Type::getInt64Ty(context)));
         }
 
         void SimpleCMODescriptor::reset_is_allocated_flag(llvm::Value* array,

@@ -24,6 +24,8 @@ namespace LCompilers {
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
+        llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
 
         /*
         * This function checks whether the
@@ -149,8 +151,8 @@ namespace LCompilers {
                 */
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
                     llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
@@ -283,12 +285,13 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false) = 0;
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::ttype_t* array_type) = 0;
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
@@ -383,8 +386,8 @@ namespace LCompilers {
 
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
                     llvm::Module* module, bool realloc=false);
 
                 virtual
@@ -466,12 +469,13 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false);
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::ttype_t* array_type);
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);

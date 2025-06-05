@@ -109,7 +109,7 @@ class ASRBuilder {
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
                             al, loc, x, int32)),\
                             ASR::string_length_kindType::ExpressionLength,\
-                            ASR::string_physical_typeType::PointerString))
+                            ASR::string_physical_typeType::DescriptorString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
