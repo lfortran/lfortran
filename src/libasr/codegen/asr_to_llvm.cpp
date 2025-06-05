@@ -1793,7 +1793,10 @@ public:
             this->visit_expr(*x.m_arg);
             ptr_loads = ptr_loads_copy;
             llvm::Value* plist = tmp;
-            tmp = list_api->len(plist);
+
+            std::string type_code = ASRUtils::get_type_code(x.m_type);
+            llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
+            tmp = list_api->len2(list_type, plist);
         }
     }
 
