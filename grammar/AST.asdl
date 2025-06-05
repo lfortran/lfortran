@@ -336,6 +336,8 @@ decl_type
     | TypeProcedure
     | TypeReal
     | TypeType
+    | TypeLF_List
+    | TypeLF_Set
 
 event_attribute
     = AttrStat(identifier variable)

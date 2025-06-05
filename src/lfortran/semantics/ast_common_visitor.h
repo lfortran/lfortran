@@ -4685,16 +4685,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } else if (startswith(derived_type_name, "_lfortran_")) {
-                // LFortran-specific intrinsics 
-
-                if (derived_type_name == "_lfortran_list_integer") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-                else if (derived_type_name == "_lfortran_list_real") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
-                else if (derived_type_name == "_lfortran_set_integer") 
-                    return ASRUtils::TYPE(ASR::make_Set_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-            }
+            } 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -4739,6 +4730,14 @@ public:
                         type));
                 }
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
+            return ASRUtils::TYPE(ASR::make_List_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
+        }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
+            return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
