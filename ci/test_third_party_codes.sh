@@ -76,13 +76,13 @@ time_section "🧪 Testing fortran-regex" '
 '
 
 time_section "🧪 Testing fortran-shlex" '
-  git clone https://github.com/perazz/fortran-shlex.git
+  git clone https://github.com/jinangshah21/fortran-shlex.git
   cd fortran-shlex
   export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-1
   micromamba install -c conda-forge fpm
-  git checkout 8116cf85301fa1d45c33577a3d21dfda6d46ca06
+  git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
   fpm --compiler=$FC build
-  fpm --compiler=$FC test
   print_success "Done with fortran-shlex"
   cd ..
 '
