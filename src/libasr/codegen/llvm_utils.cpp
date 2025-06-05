@@ -3,7 +3,6 @@
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
 #include <llvm/IR/DerivedTypes.h>
-#include <llvm/IR/Type.h>
 #include <llvm/Support/Casting.h>
 
 namespace LCompilers {
