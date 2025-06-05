@@ -808,7 +808,7 @@
                         []
                     )
                     (OMPRegion
-                        Sections
+                        ParallelSections
                         [(OMPShared
                             [(Var 2 array)]
                         )]

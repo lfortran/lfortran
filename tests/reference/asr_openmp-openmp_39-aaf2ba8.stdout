@@ -898,49 +898,27 @@
                         ()
                         .false.
                     )
-                    (DoConcurrentLoop
-                        [((Var 2 ix)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nx)
-                        ())
-                        ((Var 2 iy)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 ny)
-                        ())]
-                        []
-                        [(Var 2 iy)
-                        (Var 2 ix)
-                        (Var 2 iz)]
-                        []
-                        [(Print
-                            (StringFormat
-                                ()
-                                [(StringConstant
-                                    "iy->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 iy)
-                                (StringConstant
-                                    "ix->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 ix)]
-                                FormatFortran
-                                (String 1 () ExpressionLength CString)
-                                ()
-                            )
+                    (OMPRegion
+                        ParallelDo
+                        [(OMPCollapse
+                            (IntegerConstant 2 (Integer 4) Decimal)
                         )
-                        (DoLoop
+                        (OMPPrivate
+                            [(Var 2 iy)
+                            (Var 2 ix)
+                            (Var 2 iz)]
+                        )]
+                        [(DoLoop
                             ()
-                            ((Var 2 iz)
+                            ((Var 2 ix)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (Var 2 nz)
+                            (Var 2 nx)
                             ())
                             [(DoLoop
                                 ()
-                                ((Var 2 ik)
+                                ((Var 2 iy)
                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 nk)
+                                (Var 2 ny)
                                 ())
                                 [(Print
                                     (StringFormat
@@ -954,21 +932,55 @@
                                             "ix->"
                                             (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
-                                        (Var 2 ix)
-                                        (StringConstant
-                                            "iz->"
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                        )
-                                        (Var 2 iz)
-                                        (StringConstant
-                                            "ik->"
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                        )
-                                        (Var 2 ik)]
+                                        (Var 2 ix)]
                                         FormatFortran
                                         (String 1 () ExpressionLength CString)
                                         ()
                                     )
+                                )
+                                (DoLoop
+                                    ()
+                                    ((Var 2 iz)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 nz)
+                                    ())
+                                    [(DoLoop
+                                        ()
+                                        ((Var 2 ik)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 2 nk)
+                                        ())
+                                        [(Print
+                                            (StringFormat
+                                                ()
+                                                [(StringConstant
+                                                    "iy->"
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (Var 2 iy)
+                                                (StringConstant
+                                                    "ix->"
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (Var 2 ix)
+                                                (StringConstant
+                                                    "iz->"
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (Var 2 iz)
+                                                (StringConstant
+                                                    "ik->"
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (Var 2 ik)]
+                                                FormatFortran
+                                                (String 1 () ExpressionLength CString)
+                                                ()
+                                            )
+                                        )]
+                                        []
+                                    )]
+                                    []
                                 )]
                                 []
                             )]

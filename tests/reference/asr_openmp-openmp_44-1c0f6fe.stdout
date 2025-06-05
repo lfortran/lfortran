@@ -766,7 +766,7 @@
                     [omp_lib
                     openmp_44_parallel_sections]
                     [(OMPRegion
-                        Sections
+                        ParallelSections
                         [(OMPReduction
                             ReduceAdd
                             [(Var 6 tid)]
