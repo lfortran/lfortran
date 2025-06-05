@@ -45,6 +45,22 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+time_section "🧪 Testing splpak" '
+  git clone https://github.com/Pranavchiku/splpak.git
+  cd splpak
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout ad58ed53212111c731ccc9239385ed472d682c25 
+
+  git clean -dfx
+  fpm build --compiler=$FC --profile release --flag "-DREAL32" --verbose
+  fpm test --compiler=$FC --profile release --flag "-DREAL32"
+
+  cd ../
+  rm -rf splpak
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
