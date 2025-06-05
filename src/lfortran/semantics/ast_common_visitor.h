@@ -9805,8 +9805,30 @@ public:
         ASR::ttype_t *left_type = ASRUtils::expr_type(left);
         ASR::ttype_t *right_type = ASRUtils::expr_type(right);
 
+        ASR::Struct_t *left_struct = nullptr;
+        if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
+            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(left)));
+            left_struct = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
+        }
+
         ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);
         ASR::symbol_t *op_sym = ASRUtils::symbol_get_past_external(sym);
+        if ( left_struct != nullptr && op_sym == nullptr) {
+            op_sym = left_struct->m_symtab->resolve_symbol(
+                "~def_op~" + std::string(x.m_op));
+            if (op_sym == nullptr) {
+                diag.add(Diagnostic("`" + std::string(x.m_op)
+                    + "` is not defined in the Struct: `" + left_struct->m_name
+                    + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
+        if (op_sym == nullptr) {
+            diag.add(Diagnostic("`" + std::string(x.m_op)
+                + "` is not defined or imported", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
 
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(op_sym);
         LCOMPILERS_ASSERT(gen_proc->n_procs == 1)
