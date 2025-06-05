@@ -45,6 +45,25 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+time_section "🧪 Testing splpak" '
+  git clone https://github.com/Pranavchiku/splpak.git
+  cd splpak
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  git checkout 2aa36d4f9cd599879795f35e48184c951959009d
+
+  git clean -dfx
+  fpm build --compiler=$FC --profile release --flag "-DREAL32" --verbose
+  fpm test --profile release --flag "-DREAL32"
+
+  git clean -dfx
+  fpm build --compiler=$FC --flag=--generate-object-code --profile release --flag "-DREAL32" --verbose
+  fpm test --profile release --flag "-DREAL32"
+
+  cd ../
+  rm -rf splpak
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
