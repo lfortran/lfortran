@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -119,6 +120,40 @@ std::vector<std::string> determine_class_procedure_declaration_order(
         }
     }
     return ASRUtils::order_deps(func_dep_graph);
+}
+
+ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
+{
+    // The idea behind this utility function is that every struct expression
+    // must eventually resolve to either `Var` or `StructInstanceMember`.
+    switch (expression->type) {
+        case ASR::exprType::Var: {
+            // The symbol m_v has to be `Variable` for a Struct expression.
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+            return ASR::down_cast<ASR::Var_t>(expression)->m_v;
+        } 
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
+            return struct_instance_member->m_m;
+        } 
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
+            return get_struct_symbol_from_expr(array_item->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
+            return get_struct_symbol_from_expr(array_section->m_v);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
+            // `func_call->m_dt` will be non-null for Struct expressions
+            LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
+            return get_struct_symbol_from_expr(func_call->m_dt);
+        }
+        default: {
+            return nullptr;
+        }
+    }
 }
 
 std::vector<std::string> determine_variable_declaration_order(
