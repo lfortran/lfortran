@@ -2,6 +2,7 @@
 
 set -ex
 
+dest="$1"
 cmake -E make_directory $dest
 
 # Remove files we do not want

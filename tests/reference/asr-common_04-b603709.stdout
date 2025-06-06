@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -73,6 +75,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     block_1
@@ -112,6 +115,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     file_common_block_block_1
@@ -182,6 +186,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             struct_instance_block_1:
                                 (ExternalSymbol

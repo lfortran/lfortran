@@ -283,10 +283,10 @@ namespace LCompilers {
             llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, int idx);
             llvm::Value* create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, llvm::Value* idx);
 
-            llvm::Value* CreateLoad(llvm::Value *x);
+            llvm::Value* CreateLoad(llvm::Value *x, bool is_volatile = false);
 
-            llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x);
-            llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x);
+            llvm::Value* CreateLoad2(llvm::Type *t, llvm::Value *x, bool is_volatile = false);
+            llvm::Value* CreateLoad2(ASR::ttype_t *type, llvm::Value *x, bool is_volatile = false);
 
             llvm::Value* CreateGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateGEP2(llvm::Type *t, llvm::Value *x,
@@ -450,7 +450,13 @@ namespace LCompilers {
                                   llvm::Value* capacity, int32_t type_size,
                                   llvm::Type* el_type, llvm::Module* module);
 
+            void resize_if_needed2(std::string& type_code, llvm::Value* list, llvm::Value* n,
+                                  llvm::Value* capacity, int32_t type_size,
+                                  llvm::Type* el_type, llvm::Module* module);
+
             void shift_end_point_by_one(llvm::Value* list);
+
+            void shift_end_point_by_one2(std::string& type_code, llvm::Value* list);
 
         public:
 
@@ -499,6 +505,8 @@ namespace LCompilers {
 
             llvm::Value* len(llvm::Value* list);
 
+            llvm::Value* len2(llvm::Type* list_type, llvm::Value* list);
+
             void check_index_within_bounds(llvm::Value* list, llvm::Value* pos,
                                            llvm::Module* module);
 
@@ -508,6 +516,10 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
             void write_item(llvm::Value* list, llvm::Value* pos,
+                            llvm::Value* item, bool enable_bounds_checking,
+                            llvm::Module* module);
+
+            void write_item2(std::string& type_code, llvm::Value* list, llvm::Value* pos,
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
@@ -534,7 +546,7 @@ namespace LCompilers {
 
             void list_clear(llvm::Value* list);
 
-            void reverse(llvm::Value* list, llvm::Module* module);
+            void reverse(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* find_item_position(llvm::Value* list,
                 llvm::Value* item, ASR::ttype_t* item_type,

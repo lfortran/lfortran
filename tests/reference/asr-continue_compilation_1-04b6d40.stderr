@@ -20,12 +20,6 @@ semantic error: Cannot convert LOGICAL to REAL
 70 |     real :: adwf = .true.
    |                    ^^^^^^ 
 
-warning: The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now
-  --> tests/errors/continue_compilation_1.f90:71:14
-   |
-71 |     integer, volatile :: volatile_var
-   |              ^^^^^^^^ 
-
 semantic error: Symbol is already declared in the same scope
   --> tests/errors/continue_compilation_1.f90:74:31
    |

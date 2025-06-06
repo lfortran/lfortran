@@ -1374,6 +1374,8 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Srand, "srand");
             SET_INTRINSIC_SUBROUTINE_NAME(SystemClock, "system_clock");
             SET_INTRINSIC_SUBROUTINE_NAME(DateAndTime, "date_and_time");
+            SET_INTRINSIC_SUBROUTINE_NAME(MoveAlloc, "move_alloc");
+            SET_INTRINSIC_SUBROUTINE_NAME(Mvbits, "mvbits")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)

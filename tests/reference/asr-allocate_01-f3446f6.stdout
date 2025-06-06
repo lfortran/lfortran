@@ -32,6 +32,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -60,6 +61,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -90,6 +92,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             d:
                                 (Variable
@@ -134,6 +137,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             e:
                                 (Variable
@@ -160,6 +164,67 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
+                                ),
+                            f:
+                                (Variable
+                                    2
+                                    f
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            g:
+                                (Variable
+                                    2
+                                    g
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Complex 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -179,6 +244,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ierr:
                                 (Variable
@@ -198,6 +264,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -217,6 +284,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             k:
                                 (Variable
@@ -236,6 +304,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -255,6 +324,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -274,6 +344,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             reduce_sum:
                                 (Function
@@ -307,6 +378,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -326,6 +398,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -345,6 +418,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -364,6 +438,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -383,6 +458,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     reduce_sum
@@ -548,6 +624,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -576,6 +653,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -606,6 +684,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c_copy:
                                                 (Variable
@@ -636,6 +715,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -655,6 +735,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -674,6 +755,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -693,6 +775,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     sum
@@ -1202,6 +1285,176 @@
                     )
                     (ExplicitDeallocate
                         [(Var 2 a)]
+                    )
+                    (Allocate
+                        [((Var 2 b)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 f)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 f)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 f)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 b)]
+                    )
+                    (Allocate
+                        [((Var 2 c)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 4 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 g)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (ArraySize
+                                        (Var 2 g)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                Or
+                                (IntegerCompare
+                                    (ArraySize
+                                        (Var 2 g)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 g)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 c)]
                     )
                     (Allocate
                         [((Var 2 a)

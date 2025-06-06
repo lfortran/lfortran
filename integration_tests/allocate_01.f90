@@ -1,8 +1,8 @@
 program allocate_01
 implicit none
 integer, allocatable :: a(:), e(:)
-real, allocatable :: b(:, :)
-complex, allocatable :: c(:, :, :)
+real, allocatable :: b(:, :), f(:, :)
+complex, allocatable :: c(:, :, :), g(:, :, :)
 integer :: d(5) = [1, 2, 3, 4, 5]
 complex :: r
 integer :: n, ierr
@@ -15,6 +15,16 @@ if (size(e) /= 5) error stop
 allocate(a, mold=e)
 if (size(a) /= 5) error stop
 deallocate(a)
+
+allocate(b(2, 3))
+allocate(f, mold=b)
+if (size(f, 1) /= 2 .or. size(f, 2) /= 3) error stop
+deallocate(b)
+
+allocate(c(2, 3, 4))
+allocate(g, mold=c)
+if (size(g, 1) /= 2 .or. size(g, 2) /= 3 .or. size(g, 3) /= 4) error stop
+deallocate(c)
 
 allocate(a(5:n + 5))
 allocate(b(n:2*n, n:3*n), stat=ierr)

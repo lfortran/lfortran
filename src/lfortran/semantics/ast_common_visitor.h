@@ -1286,7 +1286,9 @@ public:
 
 
         // LFortran-specific intrinsics
+        {"_lfortran_set_item", IntrinsicSignature({"iterable", "index", "element"}, 3, 3)},
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
+        {"_lfortran_list_reverse", IntrinsicSignature({"list"}, 1, 1)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
     };
 
@@ -2856,7 +2858,7 @@ public:
     }
 
     // pad (with ' ') or trim character string 'value'
-    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t& lhs_len, int64_t& rhs_len, const Location& loc, Allocator& al) {
+    ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
         ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
         char* original_str = string_constant->m_s;
         size_t original_length = std::strlen(original_str);
@@ -2879,9 +2881,33 @@ public:
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
 
-        rhs_len = lhs_len; // Update the rhs_len to match lhs_len
         return ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, adjusted_str, value_type));
+    }
+
+    ASR::expr_t* adjust_array_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, Allocator& al) {
+        ASR::ArrayConstant_t* array_constant = ASR::down_cast<ASR::ArrayConstant_t>(value);
+        Vec<ASR::expr_t*> body;
+        size_t array_size = ASRUtils::get_fixed_size_of_array(array_constant->m_type);
+
+        body.reserve(al, array_size);
+
+        for (size_t i = 0; i < array_size; i++) {
+            ASR::expr_t* item = ASRUtils::fetch_ArrayConstant_value(al, array_constant, i);
+
+            if (ASR::is_a<ASR::ArrayConstant_t>(*item)) {
+                item = adjust_array_character_length(item, lhs_len, rhs_len,  al);
+            } else {
+                item = adjust_character_length(item, lhs_len, rhs_len, item->base.loc, al);
+            }
+
+            body.push_back(al, item);
+        }
+
+        array_constant->m_data = ASRUtils::set_ArrayConstant_data(
+                body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+
+        return (ASR::expr_t*) array_constant;
     }
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
@@ -3139,7 +3165,7 @@ public:
                                         x.m_syms[i].m_name, nullptr, 0, ASR::intentType::Local,
                                         init_expr, init_expr_value, ASR::storage_typeType::Parameter,
                                         init_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
-                                        ASR::presenceType::Required, false));
+                                        ASR::presenceType::Required, false, false));
                                     current_scope->add_symbol(x.m_syms[i].m_name, sym);
                                     enum_init_val++;
                                 } else {
@@ -3411,6 +3437,7 @@ public:
                 bool contig_attr = false;
                 bool value_attr = false;
                 char *bindc_name = nullptr;
+                bool is_volatile = false;
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
@@ -3580,12 +3607,7 @@ public:
                             } else if(sa->m_attr == AST::simple_attributeType
                                 ::AttrNoPass) {
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
-                                // TODO: Implement volatile attribute
-                                diag.add(Diagnostic(
-                                    "The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now",
-                                    Level::Warning, Stage::Semantic, {
-                                        Label("",{sa->base.base.loc})
-                                }));
+                                is_volatile = true;
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -3748,7 +3770,7 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr, contig_attr, bindc_name
+                                value_attr, target_attr, contig_attr, bindc_name, is_volatile
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
@@ -3781,7 +3803,7 @@ public:
                                 is_struct_const = true;
                             }
                         }
-                        if (is_derived_type) {
+                        if (is_derived_type || storage_type == ASR::storage_typeType::Parameter) {
                             is_struct_const = true;
                         }
                         if (sym_found == nullptr) {
@@ -3957,8 +3979,13 @@ public:
                             if((lhs_len != rhs_len)) {
                                 // Adjust character string by padding or trimming
                                 // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                value = adjust_character_length(value, lhs_len,
-                                    rhs_len, init_expr->base.loc, al);
+                                if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                    value = adjust_array_character_length(value, lhs_len,
+                                        rhs_len, al);
+                                } else {
+                                    value = adjust_character_length(value, lhs_len,
+                                        rhs_len, init_expr->base.loc, al);
+                                }
                             }
                             
                         }
@@ -4580,6 +4607,9 @@ public:
 
                 if (id == "kind") {
                     //TODO: Handle kind attribute on item (ideally should be a function call)
+                    str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+                    str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
                 } else {
                     determine_char_len(item, sym, str);
                 }
@@ -4686,16 +4716,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } else if (startswith(derived_type_name, "_lfortran_")) {
-                // LFortran-specific intrinsics 
-
-                if (derived_type_name == "_lfortran_list_integer") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-                else if (derived_type_name == "_lfortran_list_real") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
-                else if (derived_type_name == "_lfortran_set_integer") 
-                    return ASRUtils::TYPE(ASR::make_Set_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-            }
+            } 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -4740,6 +4761,14 @@ public:
                         type));
                 }
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
+            return ASRUtils::TYPE(ASR::make_List_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
+        }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
+            return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
@@ -7234,7 +7263,7 @@ public:
 
     ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
-            diag.add(Diagnostic("_lfortran_len expects exactly one list argument, got " +
+            diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
         }
@@ -7252,6 +7281,39 @@ public:
         else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_len has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
+    ASR::asr_t* create_LFGetItem(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 2 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_get_item expects exactly two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+        
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 2);
+
+        for (int i=0;i<2;i++){
+            AST::expr_t* source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            args.push_back(al, ASRUtils::EXPR(tmp));
+        }   
+
+        if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+
+            if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            }
+            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
+                                        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
@@ -7304,6 +7366,41 @@ public:
 
         return ASR::make_ListConstant_t(al, x.base.base.loc, args.p, args.n, 
                                         ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));
+    }
+
+    ASR::asr_t* create_ListCount(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0 || x.n_args != 2) {
+            diag.add(Diagnostic("_lfortran_list_count expects exactly two arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+            
+        
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* list = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(list));
+        
+        source = x.m_args[1].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+        ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+        if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+            std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+            diag.add(Diagnostic(
+                "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                Level::Error, Stage::Semantic, {
+                    Label("Types mismatch (found '" + 
+                arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                }));
+            throw SemanticAbort();
+        }         
+
+
+        return ASR::make_ListCount_t(al, x.base.base.loc, list, arg, arg_type, nullptr);
     }
 
     ASR::asr_t* create_SetConstant(const AST::FuncCallOrArray_t& x) {
@@ -8169,8 +8266,12 @@ public:
                 
                 if ( var_name == "_lfortran_len")
                     tmp = create_LFLen(x);
+                else if ( var_name == "_lfortran_get_item")
+                    tmp = create_LFGetItem(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
+                else if ( var_name == "_lfortran_list_count")
+                    tmp = create_ListCount(x);
                 else if ( var_name == "_lfortran_set_constant")
                     tmp = create_SetConstant(x);
             } else {

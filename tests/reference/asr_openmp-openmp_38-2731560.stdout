@@ -217,6 +217,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -236,6 +237,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -255,6 +257,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             num_threads:
                                                 (Variable
@@ -274,6 +277,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     gomp_parallel
@@ -329,6 +333,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omp_get_max_threads
@@ -378,6 +383,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omp_get_num_procs
@@ -427,6 +433,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omp_get_thread_num
@@ -476,6 +483,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omp_get_wtime
@@ -525,6 +533,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     omp_set_num_threads
@@ -670,6 +679,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             iy:
                                 (Variable
@@ -689,6 +699,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             iz:
                                 (Variable
@@ -708,6 +719,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             nx:
                                 (Variable
@@ -727,6 +739,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ny:
                                 (Variable
@@ -746,6 +759,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             nz:
                                 (Variable
@@ -765,6 +779,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             omp_get_max_threads:
                                 (ExternalSymbol
@@ -837,46 +852,62 @@
                         ()
                         .false.
                     )
-                    (DoConcurrentLoop
-                        [((Var 2 iy)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 ny)
-                        ())
-                        ((Var 2 ix)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nx)
-                        ())
-                        ((Var 2 iz)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nz)
-                        ())]
-                        []
-                        [(Var 2 iy)
-                        (Var 2 ix)
-                        (Var 2 iz)]
-                        []
-                        [(Print
-                            (StringFormat
+                    (OMPRegion
+                        ParallelDo
+                        [(OMPCollapse
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )
+                        (OMPPrivate
+                            [(Var 2 iy)
+                            (Var 2 ix)
+                            (Var 2 iz)]
+                        )]
+                        [(DoLoop
+                            ()
+                            ((Var 2 iy)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 ny)
+                            ())
+                            [(DoLoop
                                 ()
-                                [(StringConstant
-                                    "iy->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 iy)
-                                (StringConstant
-                                    "ix->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 ix)
-                                (StringConstant
-                                    "iz->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 iz)]
-                                FormatFortran
-                                (String 1 () ExpressionLength CString)
-                                ()
-                            )
+                                ((Var 2 ix)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 nx)
+                                ())
+                                [(DoLoop
+                                    ()
+                                    ((Var 2 iz)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 nz)
+                                    ())
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "iy->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 iy)
+                                            (StringConstant
+                                                "ix->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 ix)
+                                            (StringConstant
+                                                "iz->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 iz)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
+                                    )]
+                                    []
+                                )]
+                                []
+                            )]
+                            []
                         )]
                     )]
                 )

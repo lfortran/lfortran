@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     point
@@ -138,6 +140,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     color_point
@@ -175,6 +178,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -199,6 +203,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p3d:
                                 (Variable
@@ -223,6 +228,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p_or_cp:
                                 (Variable
@@ -249,6 +255,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             point:
                                 (ExternalSymbol
@@ -283,6 +290,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     point_3d
@@ -347,6 +355,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     ~select_type_block_
@@ -439,6 +448,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     ~select_type_block_1

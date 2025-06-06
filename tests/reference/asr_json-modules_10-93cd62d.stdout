@@ -253,7 +253,8 @@
                                         "value_attr": false,
                                         "target_attr": false,
                                         "contiguous_attr": false,
-                                        "bindc_name": []
+                                        "bindc_name": [],
+                                        "is_volatile": false
                                     },
                                     "loc": {
                                         "first": 38,

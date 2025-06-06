@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             local_ctr:
                                 (Variable
@@ -63,6 +65,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -82,6 +85,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     increment_ctr
@@ -103,26 +107,38 @@
                     []
                     [(Var 2 n)
                     (Var 2 ctr)]
-                    [(DoConcurrentLoop
-                        [((Var 2 i)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 n)
-                        ())]
-                        []
-                        [(Var 2 i)]
-                        [(ReduceAdd
-                        (Var 2 local_ctr))]
-                        [(Assignment
-                            (Var 2 local_ctr)
-                            (IntegerBinOp
-                                (Var 2 local_ctr)
-                                Add
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
+                    [(OMPRegion
+                        Parallel
+                        [(OMPPrivate
+                            [(Var 2 i)]
+                        )
+                        (OMPReduction
+                            ReduceAdd
+                            [(Var 2 local_ctr)]
+                        )]
+                        [(OMPRegion
+                            Do
+                            []
+                            [(DoLoop
                                 ()
-                            )
-                            ()
-                            .false.
+                                ((Var 2 i)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 n)
+                                ())
+                                [(Assignment
+                                    (Var 2 local_ctr)
+                                    (IntegerBinOp
+                                        (Var 2 local_ctr)
+                                        Add
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                )]
+                                []
+                            )]
                         )]
                     )
                     (Assignment
@@ -166,6 +182,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -185,6 +202,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     openmp1

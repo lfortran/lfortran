@@ -30,6 +30,8 @@ enum class IntrinsicImpureSubroutines : int64_t {
     Srand,
     SystemClock,
     DateAndTime,
+    MoveAlloc,
+    Mvbits,
     // ...
 };
 
@@ -902,6 +904,136 @@ namespace CpuTime {
     }
 
 } // namespace CpuTime
+
+namespace MoveAlloc {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args != 2) {
+            ASRUtils::require_impl(false, "MoveAlloc takes exactly 2 arguments", x.base.base.loc, diagnostics);
+        }
+        ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[0])), "First argument must be an allocatable type", x.base.base.loc, diagnostics);
+        ASRUtils::require_impl(ASRUtils::is_allocatable(ASRUtils::expr_type(x.m_args[1])), "Second argument must be an allocatable type", x.base.base.loc, diagnostics);
+    }
+
+    static inline ASR::asr_t* create_MoveAlloc(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, 2);
+        m_args.push_back(al, args[0]); m_args.push_back(al, args[1]);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+
+        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran(arg_types[0]);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("from", arg_types[0], In);
+        fill_func_arg_sub("to", arg_types[1], InOut);
+        if (!ASRUtils::is_character(*arg_types[0])) {
+            int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
+            Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
+            ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            for(int i=0; i<n_dims; i++) {
+                ASR::dimension_t dim;
+                dim.loc = loc;
+                dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, loc, 1, integer_type));
+                dim.m_length = ASRUtils::EXPR(ASR::make_ArraySize_t(
+        al, loc, args[0], ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i+1, integer_type)), integer_type, nullptr));
+                alloc_dims.push_back(al, dim);
+            }
+            body.push_back(al, b.Allocate(args[1], alloc_dims));
+        }
+        body.push_back(al, b.Assignment(args[1], args[0]));
+        Vec<ASR::expr_t*> explicit_deallocate_args; explicit_deallocate_args.reserve(al, 1);
+                    explicit_deallocate_args.push_back(al, args[0]);
+        ASR::stmt_t* explicit_deallocate = ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, explicit_deallocate_args.p, explicit_deallocate_args.n));
+        body.push_back(al, explicit_deallocate);
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+
+} // namespace MoveAlloc
+
+
+namespace Mvbits {
+
+    static inline void verify_args(const ASR::IntrinsicImpureSubroutine_t& x, diag::Diagnostics& diagnostics) {
+        if (x.n_args != 5) {
+            ASRUtils::require_impl(false, "Mvbits requires exactly 5 arguments", x.base.base.loc, diagnostics);
+        }
+        for (int i = 0; i < 5; i++) {
+            ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_args[i])), "All arguments of Mvbits must be of integer type", x.base.base.loc, diagnostics);
+        }
+    }
+
+    static inline ASR::asr_t* create_Mvbits(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
+        ASRBuilder b(al, loc);
+        Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
+        for (int i = 0; i < int(args.size()); i++) {
+            m_args.push_back(al, args[i]);
+        }
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits), m_args.p, m_args.n, 0);
+    }
+
+    static inline ASR::stmt_t* instantiate_Mvbits(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        std::string c_func_name;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
+            c_func_name = "_lfortran_mvbits32";
+        } else {
+            c_func_name = "_lfortran_mvbits64";
+        }
+        std::string new_name = "_lcompilers_mvbits_" + type_to_str_fortran(arg_types[0]);
+        declare_basic_variables(new_name);
+        fill_func_arg_sub("from", arg_types[0], In);
+        fill_func_arg_sub("frompos", arg_types[1], In);
+        fill_func_arg_sub("len", arg_types[2], In);
+        fill_func_arg_sub("to", arg_types[3], InOut);
+        fill_func_arg_sub("topos", arg_types[4], In);
+        {
+            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+            Vec<ASR::expr_t*> args_1;
+            {
+                args_1.reserve(al, 5);
+                ASR::expr_t *arg = b.Variable(fn_symtab_1, "from", arg_types[0],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+                arg = b.Variable(fn_symtab_1, "frompos", arg_types[1],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+                arg = b.Variable(fn_symtab_1, "len", arg_types[2],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+                arg = b.Variable(fn_symtab_1, "to", arg_types[3],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+                arg = b.Variable(fn_symtab_1, "topos", arg_types[4],
+                    ASR::intentType::In, ASR::abiType::BindC, true);
+                args_1.push_back(al, arg);
+            }
+
+            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
+                arg_types[3], ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+
+            SetChar dep_1; dep_1.reserve(al, 1);
+            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+            fn_symtab->add_symbol(c_func_name, s);
+            dep.push_back(al, s2c(al, c_func_name));
+            body.push_back(al, b.Assignment(args[3], b.Call(s, args, arg_types[3])));
+        }
+        ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, new_symbol);
+        return b.SubroutineCall(new_symbol, new_args);
+    }
+
+} // namespace Mvbits
 
 } // namespace LCompilers::ASRUtils
 

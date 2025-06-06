@@ -8,14 +8,14 @@ source_filename = "LFortran"
 
 define void @__module_callback_05_px_call1(i32* %x) {
 .entry:
-  call void @__module_callback_05_px_call2(void (i32*)* @__module_callback_05_printx, i32* %x)
+  call void @__module_callback_05_px_call2(void (i32*)* @px_call1.__module_callback_05_printx, i32* %x)
   br label %return
 
 return:                                           ; preds = %.entry
   ret void
 }
 
-define void @__module_callback_05_printx(i32* %x) {
+define void @px_call1.__module_callback_05_printx(i32* %x) {
 .entry:
   %0 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %x)
   call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))

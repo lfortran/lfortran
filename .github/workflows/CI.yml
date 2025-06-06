@@ -10,16 +10,15 @@ on:
     branches:
       - main
 
-# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || 'main' }}
-# which eventually evaluates to: CI-7488 and 'main' isn't used.
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
+# which eventually evaluates to: CI-7488 and 'sha' isn't used.
 # NOTE: `||` acts as a logical OR and a default operator both,
 # see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
 # When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
-# evaluate to CI-main but "cancel-in-progress" evaluates to false, so the CI on main
-# will run in a single group CI-main, in a *queue* (which will slow down the CI on main),
-# and save runner for PR's but no previous CI will be cancelled on main
+# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
+# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
 concurrency:
-  group: ${{ github.workflow }}-${{ github.event.number || 'main' }}
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 
@@ -37,7 +36,7 @@ jobs:
 
       - name: Print github concurrent group name
         run: |
-          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || 'main' }}"
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Check for Added Binary Files
@@ -50,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+        os: ["windows-2025", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -92,7 +91,8 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            export WIN=0
+            shell ci/build_tmp.sh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
@@ -105,8 +105,11 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
+            shell ci\build_tmp.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
@@ -141,7 +144,10 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
             shell ci\test.sh
 
       - name: Install Timeout (macOS)
@@ -971,7 +977,7 @@ jobs:
       - name: Test CPP
         shell: bash -e -l {0}
         run: |
-            xonsh ci/test_cpp_version.xsh
+            shell ci/test_cpp_version.sh
 
       - name: Show Node Info
         shell: bash -e -l {0}
@@ -1039,7 +1045,7 @@ jobs:
       - name: Test
         shell: bash -e -l {0}
         run: |
-          xonsh ci/test_without_llvm_backend.xsh
+          shell ci/test_without_llvm_backend.sh
 
   test_mlir:
     name: Test MLIR backend

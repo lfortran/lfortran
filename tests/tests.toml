@@ -502,6 +502,10 @@ filename = "warnings/character_01.f90"
 asr = true
 
 [[test]]
+filename = "warnings/character_02.f90"
+asr = true
+
+[[test]]
 filename = "warnings/preprocess_01.f90"
 asr = true
 
@@ -1899,6 +1903,18 @@ run = true
 
 [[test]]
 filename = "../integration_tests/format_31.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_32.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_34.f90"
+run = true
+
+[[test]]
+filename = "../integration_tests/format_35.f90"
 run = true
 
 [[test]]
@@ -4658,3 +4674,15 @@ run = true
 [[test]]
 filename = "errors/integer_overflow.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/intrinsics_334.f90"
+asr = true
+
+[[test]]
+filename = "../integration_tests/volatile_02.f90"
+llvm = true
+
+[[test]]
+filename = "../integration_tests/volatile_03.f90"
+llvm = true
