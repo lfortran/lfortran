@@ -1998,7 +1998,7 @@ class ParallelRegionVisitor :
                 break;
                 
                 case ASR::omp_region_typeType::Sections:
-                visit_OMPSections(/*x*/);
+                visit_OMPSections(x);
                 break;
 
                 case ASR::omp_region_typeType::Section:
@@ -2011,6 +2011,10 @@ class ParallelRegionVisitor :
 
                 case ASR::omp_region_typeType::ParallelDo:
                 visit_OMPParallelDo(x);
+                break;
+
+                case ASR::omp_region_typeType::ParallelSections:
+                visit_OMPParallelSections(x);
                 break;
 
                 default:
@@ -2263,14 +2267,102 @@ class ParallelRegionVisitor :
             visit_OMPParallel(x);
         }
 
-        void visit_OMPSections(/* const ASR::OMPRegion_t &x */) {
+        void visit_OMPSections(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
 
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            stmt_visitor.visit_OMPRegion(x);
+            
+            // Count the number of sections in the body
+            size_t num_sections = 0;
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                    ASR::OMPRegion_t* nested_region = ASR::down_cast<ASR::OMPRegion_t>(x.m_body[i]);
+                    if (nested_region->m_region == ASR::omp_region_typeType::Section) {
+                        num_sections++;
+                    }
+                }
+            }
+            
+            if (num_sections == 0) {
+                throw LCompilersException("OpenMP sections construct must contain at least one section");
+            }
+            
+            // Declare section_id variable for GOMP_sections_start/next
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* section_id = b.Variable(current_scope, current_scope->get_unique_name("section_id"), 
+                                                int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            
+            // Call GOMP_sections_start(num_sections) and assign to section_id
+            Vec<ASR::call_arg_t> start_args; start_args.reserve(al, 1);
+            ASR::call_arg_t start_arg;
+            start_arg.loc = loc;
+            start_arg.m_value = b.i32(num_sections);
+            start_args.push_back(al, start_arg);
+            
+            nested_lowered_body.push_back(b.Assignment(section_id,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
+                    current_scope->get_symbol("gomp_sections_start"),
+                    nullptr, 
+                    start_args.p, start_args.n, int_type, nullptr, nullptr))));
+            
+            // Create the while loop body: while (section_id != 0)
+            Vec<ASR::stmt_t*> while_body; while_body.reserve(al, num_sections + 2);
+            
+            // Build switch-like if-else chain for sections
+            size_t section_counter = 1;
+            
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                    ASR::OMPRegion_t* nested_region = ASR::down_cast<ASR::OMPRegion_t>(x.m_body[i]);
+                    if (nested_region->m_region == ASR::omp_region_typeType::Section) {
+                        // Create condition for this section: section_id == section_counter
+                        ASR::expr_t* case_condition = b.Eq(section_id, b.i32(section_counter));
+                        
+                        // Create body for this section
+                        std::vector<ASR::stmt_t*> section_body; section_body.reserve(nested_region->n_body);
+                        for (size_t j = 0; j < nested_region->n_body; j++) {
+                            section_body.push_back(nested_region->m_body[j]);
+                        }
+                        
+                        // Create if statement for this section
+                        ASR::stmt_t* section_if = b.If(case_condition, section_body, {});
+                        while_body.push_back(al, section_if);
+                        
+                        section_counter++;
+                    }
+                }
+            }
+            
+            // Call GOMP_sections_next() to get next section
+            while_body.push_back(al, b.Assignment(section_id,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    current_scope->get_symbol("gomp_sections_next"),
+                    nullptr,
+                    nullptr, 0, int_type, nullptr, nullptr))));
+            
+            // Create while loop: while (section_id != 0)
+            ASR::expr_t* while_condition = b.NotEq(section_id, b.i32(0));
+            ASR::stmt_t* while_loop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, 
+                while_condition, while_body.p, while_body.n, nullptr, 0));
+            
+            nested_lowered_body.push_back(while_loop);
+            
+            // Call GOMP_sections_end()
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr)));
+            
+            clauses_heirarchial[nesting_lvl].clear();
         }
 
-        void visit_OMPSection(/* const ASR::OMPRegion_t &x */) {
-
+        void visit_OMPSection(/*const ASR::OMPRegion_t &x */) {
+            /* This is intentionally being left here
+            All the sections are handled inside the visit_OMPSections function, 
+            this method is kept for any specific rocessing for any section , if required can be done in future*/
         }
-        
 
         void visit_OMPParallelSections(const ASR::OMPRegion_t &x) {
             visit_OMPParallel(x);
