@@ -7457,6 +7457,70 @@ public:
         return ASR::make_SetConstant_t(al, x.base.base.loc, args.p, args.n, 
                                         ASRUtils::TYPE(ASR::make_Set_t(al, x.base.base.loc, contained_type)));
     }
+    
+    ASR::asr_t* create_DictConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_dict_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_dict_constant expects atleast two argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args % 2 == 1) {
+            diag.add(Diagnostic("As of now _lfortran_dict_constant expects and even number of arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        
+        AST::expr_t* source = nullptr;
+        std::pair<ASR::ttype_t*, ASR::ttype_t*> type = {nullptr, nullptr};
+        Vec<ASR::expr_t *> keys;
+        keys.reserve(al, 1);
+        
+        Vec<ASR::expr_t *> values;
+        values.reserve(al, 1);
+
+        for (size_t i=0;i<x.n_args;i++) {
+            ASR::ttype_t *contained_type = i%2? type.first : type.second;
+
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            if (i%2)
+                keys.push_back(al, arg);
+            else 
+                values.push_back(al, arg);
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                diag.add(Diagnostic(
+                    "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                    arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                    }));
+                throw SemanticAbort();
+            } else if (!contained_type) {
+                contained_type = arg_type;
+                if (i%2) type.first = arg_type;
+                else type.second = arg_type;
+            }
+        }
+
+
+        return ASR::make_DictConstant_t(al, x.base.base.loc, keys.p, keys.n, values.p, values.n, ASRUtils::TYPE(
+            ASR::make_Dict_t(al, x.base.base.loc, type.first, type.second)));
+    }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
@@ -8280,6 +8344,8 @@ public:
                     tmp = create_ListCount(x);
                 else if ( var_name == "_lfortran_set_constant")
                     tmp = create_SetConstant(x);
+                else if ( var_name == "_lfortran_dict_constant")
+                    tmp = create_DictConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
