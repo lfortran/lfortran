@@ -1,7 +1,6 @@
 #!/usr/bin/env shell
 
-# using debugging option i.e. `-x` causes a bug here, and hence is currently turned off
-set -e
+set -ex
 
 echo "Running SHELL"
 
@@ -31,7 +30,13 @@ python src/server/generator/generate_lsp_code.py --schema src/server/generator/m
 
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
+# using debugging option i.e. `-x` causes a bug with `cat` command here,
+# and hence we turned off command tracing
+set +x
 lfortran_version=$(cat version)
+# we re-enable command tracing
+set -x
+
 bash ci/create_source_tarball.sh "$lfortran_version"
 tar xzf dist/lfortran-$lfortran_version.tar.gz
 cd lfortran-$lfortran_version
