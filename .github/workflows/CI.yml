@@ -92,7 +92,7 @@ jobs:
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
             export WIN=0
-            shell ci/build_tmp.sh
+            shell ci/build.sh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
@@ -109,7 +109,7 @@ jobs:
             set CC=cl.exe
             set CXX=cl.exe
             set "PATH=%PATH:C:\mingw64\bin;=%"
-            shell ci\build_tmp.sh
+            shell ci\build.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
