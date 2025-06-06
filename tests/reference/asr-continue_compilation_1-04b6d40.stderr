@@ -71,6 +71,12 @@ semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword 
 83 |     character(1, len=20) :: str_c_4
    |     ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Allocatable array 'x' at (1) must have a deferred shape or assumed rank
+  --> tests/errors/continue_compilation_1.f90:84:33
+   |
+84 |     character(:), allocatable:: x(2)
+   |                                 ^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |
