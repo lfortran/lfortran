@@ -4865,8 +4865,8 @@ public:
     }
 
     int get_based_indexing(ASR::symbol_t* v) {
-        if (v != nullptr && ASR::is_a<ASR::Variable_t>(*v)) {
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
+        if (v != nullptr && ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(v))) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
             if (ASRUtils::is_array(var->m_type) && var->m_value && var->m_storage == ASR::storage_typeType::Parameter) {
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var->m_type);
                 for (size_t i = 0; i < arr->n_dims; i++) {
