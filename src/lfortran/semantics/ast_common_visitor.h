@@ -4716,7 +4716,10 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } 
+            }  else if (derived_type_name == "_lfortran_test_dict") {
+                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                                                       ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
+            }
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -7277,6 +7280,9 @@ public:
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
         else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(arg)))
             return ASR::make_SetLen_t(al, x.base.base.loc, arg, 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
+        else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(arg)))
+            return ASR::make_DictLen_t(al, x.base.base.loc, arg, 
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
         else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
