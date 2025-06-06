@@ -312,4 +312,6 @@ program continue_compilation_1
 
     print *, ["aa", "aaa"]
     print *, ["aa", string(x+1:x+2), "aaa"]
+    print *, compiler_options()
+    print *, compiler_version()
 end program

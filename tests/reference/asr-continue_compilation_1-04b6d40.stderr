@@ -721,3 +721,15 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
     |
 314 |     print *, ["aa", string(x+1:x+2), "aaa"]
     |                                      ^^^^^ 
+
+semantic error: Function 'compiler_options' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:315:14
+    |
+315 |     print *, compiler_options()
+    |              ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'compiler_version' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:316:14
+    |
+316 |     print *, compiler_version()
+    |              ^^^^^^^^^^^^^^^^^^ 
