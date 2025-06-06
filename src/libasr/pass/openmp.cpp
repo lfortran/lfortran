@@ -1775,6 +1775,89 @@ class ParallelRegionVisitor :
             transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
         }
 
+        void init_reduction_vars(Vec<ASR::OMPReduction_t*> reduction_clauses, const LCompilers::Location &loc) {
+            ASRUtils::ASRBuilder b(al, loc);
+            nested_lowered_body={};
+            for(size_t j=0; j<reduction_clauses.size(); j++) {
+                for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
+                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
+                    reduction_variables.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v));
+                    ASR::ttype_t* red_type = ASRUtils::expr_type(red);
+                    switch (reduction_clauses[j]->m_operator) {
+                        case ASR::reduction_opType::ReduceAdd:
+                        case ASR::reduction_opType::ReduceSub:
+                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(0.0, red_type)));
+                            break;
+                        case ASR::reduction_opType::ReduceMul:
+                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(1.0, red_type)));
+                            break;
+                        case ASR::reduction_opType::ReduceMAX:
+                            if (ASRUtils::is_integer(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MIN, red_type)));
+                            } else if (ASRUtils::is_real(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::min(), red_type)));
+                            } else {
+                                throw LCompilersException("Unsupported type for MAX reduction");
+                            }
+                            break;
+                        case ASR::reduction_opType::ReduceMIN:
+                            if (ASRUtils::is_integer(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MAX, red_type)));
+                            } else if (ASRUtils::is_real(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::max(), red_type)));
+                            } else {
+                                throw LCompilersException("Unsupported type for MIN reduction");
+                            }
+                            break;
+                        default:
+                            throw LCompilersException("Unsupported reduction operation");
+                    }
+                }
+            }
+        }
+
+        void handle_reduction_vars(Vec<ASR::OMPReduction_t*> reduction_clauses, const LCompilers::Location &loc) {
+            ASRUtils::ASRBuilder b(al,loc);
+            nested_lowered_body={};
+            if (reduction_clauses.size() > 0) {
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
+                for(size_t j=0; j<reduction_clauses.size(); j++) {
+                    for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
+                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
+                    std::string red_var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v);
+                    ASR::symbol_t* red_sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym_copy)) + "_" + red_var_name);
+                    ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr_copy, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
+                    switch (reduction_clauses[j]->m_operator) {
+                        case ASR::reduction_opType::ReduceAdd:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Add(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceSub:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Sub(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceMul:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Mul(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceMAX:
+                            nested_lowered_body.push_back(b.If(b.Lt(lhs, red),
+                                {b.Assignment(lhs, red)},
+                                {}));
+                            break;
+                        case ASR::reduction_opType::ReduceMIN:
+                            nested_lowered_body.push_back(b.If(b.Gt(lhs, red),
+                                {b.Assignment(lhs, red)},
+                                {}));
+                            break;
+                        default:
+                            throw LCompilersException("Unsupported reduction operation");
+                    }
+                }
+                }
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+            }
+        }
+
         // Create outlined function for parallel region
         ASR::symbol_t* create_lcompilers_function_for_parallel(const Location &loc, const ASR::OMPRegion_t &x,
                     std::map<std::string, ASR::ttype_t*> &involved_symbols, const std::string &thread_data_module_name,
@@ -1829,11 +1912,25 @@ class ParallelRegionVisitor :
             stmt_visitor.current_expr = nullptr;
             // stmt_visitor.visit_OMPRegion(x);
 
+            Vec<ASR::OMPReduction_t*> reduction_clauses;
+            reduction_clauses.reserve(al,0);
+
             for(size_t i=0; i<x.n_clauses; i++){
                 stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
                 clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
             }
-            
+            for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
+                if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPReduction) {
+                    reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
+                }
+            }
+            // Init Reduction Variables
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            init_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
             // Add the original body statements (but process nested OMPRegions recursively)
             if (x.m_region == ASR::omp_region_typeType::ParallelDo) {
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
@@ -1844,7 +1941,7 @@ class ParallelRegionVisitor :
                 nested_lowered_body = body_copy;
             } else if (x.m_region == ASR::omp_region_typeType::ParallelSections) {
                 std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-                visit_OMPSections(/*x*/);
+                visit_OMPSections(x);
                 for (size_t i=0; i<nested_lowered_body.size(); i++) {
                     fn_body.push_back(al,nested_lowered_body[i]);
                 }
@@ -1867,6 +1964,12 @@ class ParallelRegionVisitor :
                     }
                 }
             }
+            
+            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
 
             // Create function
             std::string fn_name = current_scope->parent->get_unique_name("lcompilers_parallel_func");
@@ -2009,10 +2112,6 @@ class ParallelRegionVisitor :
             nested_lowered_body={};
             Location loc = x.base.base.loc;
             ASRUtils::ASRBuilder b(al, loc);
-            ASR::symbol_t* thread_data_sym;
-            ASR::expr_t* tdata_expr;
-            thread_data_sym = thread_data_sym_copy;
-            tdata_expr = tdata_expr_copy;
 
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
             stmt_visitor.current_expr = nullptr;
@@ -2026,17 +2125,19 @@ class ParallelRegionVisitor :
                 for(size_t i=0; i<x.n_clauses; i++){
                     clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
                 }
-            } 
-            for(int i=1;i<=nesting_lvl;i++) {
-                for(size_t j=0;j<clauses_heirarchial[i].size();j++) {
-                    if(clauses_heirarchial[i][j]->type == ASR::omp_clauseType::OMPReduction) {
-                        reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[i][j]));
-                    } else if(clauses_heirarchial[i][j]->type == ASR::omp_clauseType::OMPCollapse) {
-                        collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[i][j]))->m_count))->m_n;
+                for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
+                    if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPReduction) {
+                        reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
+                    } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
+                        collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
                     }
                 }
             }
-            // Step 2: Extract loop heads from nested DoLoop statements
+
+            // Step 2: Initialize reduction variables (if any)
+            init_reduction_vars(reduction_clauses, x.base.base.loc);
+
+            // Step 3: Extract loop heads from nested DoLoop statements
             std::vector<ASR::do_loop_head_t> heads;
             heads.reserve(collapse_levels);
             ASR::stmt_t* current_stmt = x.m_body[0];
@@ -2054,7 +2155,7 @@ class ParallelRegionVisitor :
             }
             
 
-            // Step 3: Calculate total iterations for collapsed loops
+            // Step 4: Calculate total iterations for collapsed loops
             ASR::expr_t* total_iterations = b.i32(1);
             std::vector<ASR::expr_t*> dimension_lengths;
             dimension_lengths.reserve(heads.size());
@@ -2064,7 +2165,7 @@ class ParallelRegionVisitor :
                 total_iterations = b.Mul(total_iterations, length);
             }
 
-            // Step 4: Declare partitioning variables (similar to visit_DoConcurrentLoop)
+            // Step 5: Declare partitioning variables (similar to visit_DoConcurrentLoop)
             ASR::ttype_t* int_type = ASRUtils::expr_type(dimension_lengths[0]);
             ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
             ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
@@ -2074,7 +2175,7 @@ class ParallelRegionVisitor :
             ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
 
 
-            // Step 5: Add partitioning logic to fn_body
+            // Step 6: Add partitioning logic to fn_body
             nested_lowered_body.push_back(b.Assignment(num_threads,
                 ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),
                     current_scope->get_symbol("omp_get_max_threads"), nullptr, 0, int_type, nullptr, nullptr))));
@@ -2096,43 +2197,6 @@ class ParallelRegionVisitor :
                 {b.Assignment(end, b.Add(end, b.i32(1)))},
                 {}));
             
-                // Step 6: Initialize reduction variables (if any)
-            for(size_t j=0; j<reduction_clauses.size(); j++) {
-                for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
-                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
-                    reduction_variables.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v));
-                    ASR::ttype_t* red_type = ASRUtils::expr_type(red);
-                    switch (reduction_clauses[j]->m_operator) {
-                        case ASR::reduction_opType::ReduceAdd:
-                        case ASR::reduction_opType::ReduceSub:
-                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(0.0, red_type)));
-                            break;
-                        case ASR::reduction_opType::ReduceMul:
-                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(1.0, red_type)));
-                            break;
-                        case ASR::reduction_opType::ReduceMAX:
-                            if (ASRUtils::is_integer(*red_type)) {
-                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MIN, red_type)));
-                            } else if (ASRUtils::is_real(*red_type)) {
-                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::min(), red_type)));
-                            } else {
-                                throw LCompilersException("Unsupported type for MAX reduction");
-                            }
-                            break;
-                        case ASR::reduction_opType::ReduceMIN:
-                            if (ASRUtils::is_integer(*red_type)) {
-                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MAX, red_type)));
-                            } else if (ASRUtils::is_real(*red_type)) {
-                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::max(), red_type)));
-                            } else {
-                                throw LCompilersException("Unsupported type for MIN reduction");
-                            }
-                            break;
-                        default:
-                            throw LCompilersException("Unsupported reduction operation");
-                    }
-                }
-            }
 
             // Step 7: Create flattened loop
             ASR::expr_t* I = b.Variable(current_scope, current_scope->get_unique_name("I"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
@@ -2182,43 +2246,13 @@ class ParallelRegionVisitor :
             nested_lowered_body.push_back(do_loop_stmt);
 
             // Step 8: Handle reduction clauses with atomic operations
-            if (reduction_clauses.size() > 0) {
-                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
-                for(size_t j=0; j<reduction_clauses.size(); j++) {
-                    for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
-                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
-                    std::string red_var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v);
-                    ASR::symbol_t* red_sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + red_var_name);
-                    ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
-                    switch (reduction_clauses[j]->m_operator) {
-                        case ASR::reduction_opType::ReduceAdd:
-                            nested_lowered_body.push_back(b.Assignment(lhs, b.Add(lhs, red)));
-                            break;
-                        case ASR::reduction_opType::ReduceSub:
-                            nested_lowered_body.push_back(b.Assignment(lhs, b.Sub(lhs, red)));
-                            break;
-                        case ASR::reduction_opType::ReduceMul:
-                            nested_lowered_body.push_back(b.Assignment(lhs, b.Mul(lhs, red)));
-                            break;
-                        case ASR::reduction_opType::ReduceMAX:
-                            nested_lowered_body.push_back(b.If(b.Lt(lhs, red),
-                                {b.Assignment(lhs, red)},
-                                {}));
-                            break;
-                        case ASR::reduction_opType::ReduceMIN:
-                            nested_lowered_body.push_back(b.If(b.Gt(lhs, red),
-                                {b.Assignment(lhs, red)},
-                                {}));
-                            break;
-                        default:
-                            throw LCompilersException("Unsupported reduction operation");
-                    }
-                }
-                }
-                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                body_copy.push_back(nested_lowered_body[i]);
             }
+            nested_lowered_body = body_copy;
+
             clauses_heirarchial[nesting_lvl].clear();
             // Step 9: Add a barrier to synchronize threads
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
