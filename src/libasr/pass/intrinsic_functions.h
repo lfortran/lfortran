@@ -4998,6 +4998,15 @@ namespace Ichar {
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
+
+        ASR::expr_t* len_expr = ASR::down_cast<ASR::String_t>(ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(args[0])->m_v)->m_type)->m_len;
+        if (ASR::is_a<ASR::IntegerConstant_t>(*len_expr) ) {
+            int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(len_expr)->m_n;
+            if (len != 1) {
+                throw LCompilersException("Argument to Ichar must have length one");
+            }
+        }
+
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.Assignment(result, b.i2i_t(
             ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
