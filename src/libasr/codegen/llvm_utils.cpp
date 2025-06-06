@@ -4803,7 +4803,7 @@ namespace LCompilers {
     }
 
     llvm::Value* LLVMDict::len(llvm::Value* dict) {
-        return llvm_utils->CreateLoad(get_pointer_to_occupancy(dict));
+        return llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_occupancy(dict));
     }
 
     llvm::Value* LLVMDictSeparateChaining::len(llvm::Value* dict) {
