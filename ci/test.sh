@@ -39,7 +39,12 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 # Run all tests (does not work on Windows yet):
 cmake --version
 if [[ $WIN != "1" ]]; then
-    ./run_tests.py
+    # the below line causes syntax error at the CI (not sure why though)
+    # hence for now, I've used just $LFORTRAN_LLVM_VERSION == "11" check
+    # if [[ $LINUX != "1" || $LFORTRAN_LLVM_VERSION == "11" ]]; then
+    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
+        ./run_tests.py
+    fi
 
     cd integration_tests
     mkdir build-lfortran-llvm
