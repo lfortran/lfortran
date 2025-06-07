@@ -268,7 +268,7 @@ namespace LCompilers {
                 ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
             } else {
-                throw CodeGenError("Expected a struct type, but found: " + ptr_type->type);
+                throw CodeGenError("Expected a struct type, but found: " + ASRUtils::type_to_str_fortran(ptr_type));
             }
         } else {
             LCOMPILERS_ASSERT(false);
