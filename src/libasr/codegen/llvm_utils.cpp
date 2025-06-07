@@ -321,7 +321,7 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::ttype_t* _type, bool is_pointer) {
-        ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(_type);
+        ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(_type));
         ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
         std::string der_sym_name = ASRUtils::symbol_name(der_sym);
         std::string der_type_name = der_sym_name + std::string("_polymorphic");
