@@ -116,43 +116,6 @@ public:
     }
 
 
-    void fix_struct_type(SymbolTable* symtab) {
-        for( auto& itr: symtab->get_scope() ) {
-            ASR::symbol_t* sym = itr.second;
-            if( !ASR::is_a<ASR::Variable_t>(*sym) &&
-                !ASR::is_a<ASR::Struct_t>(*sym) ) {
-                continue ;
-            }
-
-            if( ASR::is_a<ASR::Struct_t>(*sym) ) {
-                fix_struct_type(ASR::down_cast<ASR::Struct_t>(sym)->m_symtab);
-                continue ;
-            }
-
-            ASR::ttype_t* sym_type = ASRUtils::type_get_past_pointer(
-                                        ASRUtils::symbol_type(sym));
-            if( ASR::is_a<ASR::StructType_t>(*sym_type) && !ASRUtils::is_class_type(sym_type) ) {
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(sym_type);
-                ASR::symbol_t* der_sym = struct_t->m_derived_type;
-                if( ASR::is_a<ASR::ExternalSymbol_t>(*der_sym) &&
-                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_external == nullptr &&
-                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_module_name == nullptr ) {
-                    std::string derived_type_name = ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_name;
-                    ASR::symbol_t* sym_ = symtab->resolve_symbol(derived_type_name);
-                    if( !sym_ ) {
-                        diag.add(diag::Diagnostic(
-                            "Derived type '" + derived_type_name + "' not declared",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {der_sym->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                    struct_t->m_derived_type = sym_;
-                }
-            }
-        }
-    }
-
-
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
             implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, compiler_options.po.default_integer_kind));
@@ -363,7 +326,7 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_struct_type(m->m_symtab);
+        fix_type_info(m);
         dflt_access = ASR::Public;
     }
 
@@ -1495,7 +1458,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
+                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
                     break;
                 }
                 default :
@@ -1840,9 +1803,11 @@ public:
             }
             char* aggregate_type_name = nullptr;
             if (item.first != "~abstract_type") {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
+                ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    ASR::symbol_t* sym = dt_variable->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
@@ -2109,7 +2074,7 @@ public:
 
                             ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
                             ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym));
+                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym);
 
                             Vec<ASR::call_arg_t> vals;
                             auto member2sym = struct_s->m_symtab->get_scope();
@@ -3619,7 +3584,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0);
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }

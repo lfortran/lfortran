@@ -1492,7 +1492,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(name_t->m_id));
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
+                        ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
                         new_arg.m_type = struct_t;
                     } else {
                         diag.add(Diagnostic(
@@ -2003,7 +2003,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym);
                         } else {
                             diag.add(Diagnostic(
                                 "Only class and derived type in select type test expressions.",
@@ -2051,7 +2051,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, sym->base.loc, sym));
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym);
                         } else {
                             diag.add(Diagnostic(
                                 "Only class and derived type in select type test expressions.",
@@ -2207,7 +2207,6 @@ public:
             v->n_dependencies = module_dependencies.size();
         }
 
-        create_and_replace_structType();
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
@@ -2272,7 +2271,6 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2313,7 +2311,7 @@ public:
                         && ASR::down_cast<ASR::Variable_t>(orig_sym)->m_intent == ASR::intentType::Out) {
                         ASR::StructType_t* struct_type_instance = ASR::down_cast<ASR::StructType_t>(var->m_type);
                         ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::symbol_get_past_external(struct_type_instance->m_derived_type));
+                            ASRUtils::symbol_get_past_external(var->m_type_declaration));
                         SymbolTable* sym_table_of_struct = struct_type->m_symtab;
                         for(auto struct_member : sym_table_of_struct->get_scope()){
                             if(ASR::is_a<ASR::Variable_t>(*struct_member.second) &&
@@ -2710,7 +2708,6 @@ public:
             visit_program_unit(*x.m_contains[i]);
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;
@@ -2790,7 +2787,6 @@ public:
             is_Function = false;
         }
 
-        create_and_replace_structType();
         ASRUtils::update_call_args(al, current_scope, compiler_options.implicit_interface, changed_external_function_symbol);
 
         starting_m_body = nullptr;

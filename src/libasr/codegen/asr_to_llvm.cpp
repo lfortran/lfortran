@@ -10267,7 +10267,7 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::expr_type(x.m_args[i].m_value)))))) ) {
-                tmp = convert_to_polymorphic_arg(tmp,
+                tmp = convert_to_polymorphic_arg(tmp, orig_arg,
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
@@ -10349,13 +10349,13 @@ public:
         return type2vtabid[class_sym];
     }
 
-    llvm::Value* convert_to_polymorphic_arg(llvm::Value* dt,
+    llvm::Value* convert_to_polymorphic_arg(llvm::Value* dt, ASR::expr_t* s_m_args0,
         ASR::ttype_t* s_m_args0_type, ASR::ttype_t* arg_type) {
         if( !ASRUtils::is_class_type(ASRUtils::type_get_past_array(s_m_args0_type)) ) {
             return dt;
         }
 
-        if( ASRUtils::is_abstract_class_type(s_m_args0_type) ) {
+        if( ASRUtils::is_abstract_class_type(s_m_args0) ) {
             if( ASRUtils::is_array(s_m_args0_type) ) {
                 llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
                 llvm::Value* abstract_array = llvm_utils->CreateAlloca(*builder, array_type);
