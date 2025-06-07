@@ -10793,7 +10793,6 @@ public:
         if( !ASRUtils::is_class_type(ASRUtils::type_get_past_array(s_m_args0_type)) ) {
             return dt;
         }
-
         if( ASRUtils::is_unlimited_polymorphic_type(s_m_args0) ) {
             if (ASRUtils::is_class_type(arg_type)) {
                 if( ASRUtils::is_array(s_m_args0_type) ) {
@@ -10805,7 +10804,7 @@ public:
                     llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
                     llvm::Value* polymorphic_addr = llvm_utils->create_gep(abstract_, 1);
                     builder->CreateStore(
-                        builder->CreateBitCast(llvm_utils->CreateLoad2(llvm_utils->getStructType(arg_type, module.get())->getPointerTo(), llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
+                        builder->CreateBitCast(llvm_utils->CreateLoad(llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
                         polymorphic_addr);
                     llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
                     if (ASR::is_a<ASR::StructType_t>(*arg_type)) {

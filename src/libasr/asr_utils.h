@@ -5314,24 +5314,11 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
     if (!ASRUtils::is_class_type(type)) {
         return false;
     }
+    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(expr)));
+
     return (st->n_data_member_types == 0 && st->n_member_function_types == 0
-            && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                   st->m_derived_type))
-                   == std::string("~unlimited_polymorphic_type"));
-
-}
-
-static inline bool is_abstract_class_type(ASR::ttype_t* type) {
-    type = ASRUtils::type_get_past_array(type);
-    if( !ASRUtils::is_class_type(type) ) {
-        return false;
-    }
-    // TODO: StructType - Rework this logic
-    // ASR::StructType_t* class_t = ASR::down_cast<ASR::StructType_t>(type);
-    // return std::string( ASRUtils::symbol_name(
-    //             ASRUtils::symbol_get_past_external(class_t->m_derived_type))
-    //             ) == "~abstract_type";
-    return true; // FIXME: Set correct value
+            && v->m_type_declaration == nullptr);
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,

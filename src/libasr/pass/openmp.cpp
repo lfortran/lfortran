@@ -2394,7 +2394,7 @@ class ParallelRegionVisitor :
                 ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, ASR::abiType::BindC, true);
             
             // create tdata variable: `type(thread_data), pointer :: tdata`
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
                     ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
             tdata_expr_copy = tdata_expr;
@@ -2588,7 +2588,7 @@ class ParallelRegionVisitor :
             current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), thread_data_ext_sym);
             
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)

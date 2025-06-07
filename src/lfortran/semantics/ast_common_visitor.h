@@ -2577,7 +2577,7 @@ public:
             current_scope->add_symbol(common_block_name, struct_symbol);
 
             // create a struct instance
-            ASR::ttype_t* type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, struct_symbol));
+            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol);
             std::string struct_var_name = base_struct_instance_name + common_block_name;
             ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
                                         ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
@@ -4941,7 +4941,7 @@ public:
                 current_scope = parent_scope;
             }
             // this is class variable declaration
-            type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, false));
+            type = ASRUtils::make_StructType_t_util(al, loc, v, false);
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
@@ -6727,14 +6727,13 @@ public:
             ASR::symbol_t* parent=nullptr) {
         ASR::symbol_t* v = nullptr;
         ASR::Struct_t* der_type = nullptr;
-        ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::get_symbol(dt_name));
+        ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(scope->resolve_symbol(dt_name));
         if( dt_type ) {
             dt_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable(dt_type));
         }
         if( parent == nullptr ) {
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
-                ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(dt_type);
                 der_type = ASR::down_cast<ASR::Struct_t>(dt_variable->m_type_declaration);
             } else {
                 diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
@@ -10204,7 +10203,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0));
+                            arg_type = ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0);
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
@@ -11183,7 +11182,7 @@ public:
                     ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
                     ASR::symbol_t *ext_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
-                        ASR::ttype_t *type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, ext_sym));
+                        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym);
                         default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
                     }
                 }
