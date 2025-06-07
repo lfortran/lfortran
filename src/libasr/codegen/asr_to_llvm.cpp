@@ -10577,6 +10577,11 @@ public:
                 int dt_idx = name2memidx[ASRUtils::symbol_name(struct_sym)]
                     [ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_mem->m_m))];
 
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller->m_type))) {
+                    // if caller is classType, get its type
+                    dt = llvm_utils->create_gep(dt, 1);
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
+                }
                 llvm::Value* dt_1;
                 if (ASRUtils::is_allocatable(arg_type) && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(arg_type))) {
                     // For allocatable class types, get the pointer to val
@@ -10590,8 +10595,7 @@ public:
                     dt_1 = llvm_utils->CreateLoad(dt_1);
                 } else {
                     // Non-allocatable case
-                    dt_1 = llvm_utils->create_gep2(dt_type,
-                        llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1)), dt_idx);
+                    dt_1 = llvm_utils->create_gep2(dt_type, dt, dt_idx);
                     if (LLVM::is_llvm_pointer(*arg_type)) {
                         dt_1 = llvm_utils->CreateLoad2(llvm_utils->getStructType(
                             s_m_args0_type, module.get(), true), dt_1);
