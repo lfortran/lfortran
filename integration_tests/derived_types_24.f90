@@ -3,7 +3,7 @@ module derived_types_24_module_01
     type t_1
         integer :: i
     contains
-        procedure :: sub_01
+        procedure :: sub_01, sub_03
     end type t_1
 
     type t_2
@@ -15,13 +15,23 @@ module derived_types_24_module_01
 contains
     subroutine sub_01(this)
         class(t_1), intent(in) :: this
+        print *, this%i
         if(this%i /= 123) error stop
     end subroutine sub_01
 
     subroutine sub_02(this)
         class(t_2), intent(in) :: this
+        type(t_2) :: t
         call this%yt%sub_01()
+        t%yt%i = 42
+        call t%yt%sub_03()
     end subroutine sub_02
+
+    subroutine sub_03(this)
+        class(t_1), intent(in) :: this
+        print *, this%i
+        if(this%i /= 42) error stop
+    end subroutine sub_03
 end module derived_types_24_module_01
 
 program derived_types_24
