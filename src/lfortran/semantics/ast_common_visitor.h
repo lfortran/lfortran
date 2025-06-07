@@ -4719,7 +4719,11 @@ public:
             }  else if (derived_type_name == "_lfortran_test_dict") {
                 return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
                                                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
+            } else if (derived_type_name == "_lfortran_test_dict_r") {
+                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                                                       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)))); 
             }
+
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -7317,6 +7321,23 @@ public:
             }
             return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
+        } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+            ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
+            ASR::ttype_t* key_type = dict_type->m_key_type;
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                diag.add(Diagnostic(
+                    "Type mismatch in '_lfortran_get_item', the key types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            /*return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],*/
+            /*                            ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);*/
+            return ASR::make_DictItem_t(al, x.base.base.loc, args[0], args[1], nullptr, dict_type->m_value_type, nullptr);
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
@@ -7488,12 +7509,12 @@ public:
         values.reserve(al, 1);
 
         for (size_t i=0;i<x.n_args;i++) {
-            ASR::ttype_t *contained_type = i%2? type.first : type.second;
+            ASR::ttype_t *contained_type = i%2 == 0? type.first : type.second;
 
             source = x.m_args[i].m_end;
             this->visit_expr(*source);
             ASR::expr_t* arg = ASRUtils::EXPR(tmp);
-            if (i%2)
+            if (i%2 == 0)
                 keys.push_back(al, arg);
             else 
                 values.push_back(al, arg);
@@ -7512,7 +7533,7 @@ public:
                 throw SemanticAbort();
             } else if (!contained_type) {
                 contained_type = arg_type;
-                if (i%2) type.first = arg_type;
+                if (i%2 == 0) type.first = arg_type;
                 else type.second = arg_type;
             }
         }
