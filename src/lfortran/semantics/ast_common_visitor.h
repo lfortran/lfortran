@@ -23,6 +23,7 @@ using LCompilers::diag::Level;
 using LCompilers::diag::Stage;
 using LCompilers::diag::Label;
 using LCompilers::diag::Diagnostic;
+
 namespace LCompilers::LFortran {
 
 template <typename T>
