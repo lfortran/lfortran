@@ -2236,7 +2236,7 @@ class ReplaceModuleVarWithValue:
         if( !((check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) &&
               y->m_storage == ASR::storage_typeType::Parameter) ||
             y->m_symbolic_value == nullptr ||
-            ASR::is_a<ASR::StructConstant_t>(*y->m_value)) {
+            (y->m_value && ASR::is_a<ASR::StructConstant_t>(*y->m_value))) {
             return ;
         }
 
