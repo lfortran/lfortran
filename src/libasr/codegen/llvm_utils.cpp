@@ -3909,18 +3909,23 @@ namespace LCompilers {
     llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read(
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
-        ASR::ttype_t* key_asr_type, ASR::ttype_t* /*value_asr_type*/) {
+        ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
+        
+        std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
+        std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
         llvm::Value* key_list = get_key_list(dict);
         llvm::Value* value_list = get_value_list(dict);
-        llvm::Value* key_mask = llvm_utils->CreateLoad(get_pointer_to_keymask(dict));
-        llvm::Value* capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
+        llvm::Value* capacity = llvm_utils->CreateLoad2(
+            llvm::Type::getInt32Ty(context), get_pointer_to_capacity2(key_type_code, value_type_code, dict));
         pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
         llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-        llvm::Value* key_mask_value = llvm_utils->CreateLoad(
-                                        llvm_utils->create_ptr_gep(key_mask, key_hash));
+        llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
+            llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, key_hash));
         llvm::Value* is_prob_not_neeeded = builder->CreateICmpEQ(key_mask_value,
             llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 1)));
         builder->CreateCondBr(is_prob_not_neeeded, thenBB, elseBB);
@@ -3934,7 +3939,7 @@ namespace LCompilers {
             // which is not present in the dict. Instead we should return an error
             // which is done in the below code.
             llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
-                llvm_utils->list_api->read_item(key_list, key_hash, false, module,
+                llvm_utils->list_api->read_item2(key_type_code, key_list, key_hash, false, module,
                     LLVM::is_llvm_struct(key_asr_type)), module, key_asr_type);
 
             llvm_utils->create_if_else(is_key_matching, [=]() {
@@ -3950,7 +3955,7 @@ namespace LCompilers {
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
-        llvm::Value* item = llvm_utils->list_api->read_item(value_list, pos,
+        llvm::Value* item = llvm_utils->list_api->read_item2(value_type_code, value_list, pos,
                                                         false, module, true);
         return item;
     }
@@ -4246,7 +4251,7 @@ namespace LCompilers {
         int32_t value_type_size = std::get<1>(typecode2dicttype[dict_type_key]).second;
 
         llvm::Value* capacity_ptr = get_pointer_to_capacity2(key_type_code, value_type_code, dict);
-        llvm::Value* old_capacity = llvm_utils->CreateLoad2(value_llvm_type, capacity_ptr);
+        llvm::Value* old_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), capacity_ptr);
         llvm::Value* capacity = builder->CreateMul(old_capacity, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
                                                                        llvm::APInt(32, 2)));
         capacity = builder->CreateAdd(capacity, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
@@ -4273,7 +4278,7 @@ namespace LCompilers {
         llvm::Value* new_key_mask = LLVM::lfortran_calloc(context, *module, *builder, capacity,
                                                           llvm_mask_size);
 
-        llvm::Value* current_capacity = llvm_utils->CreateLoad2(value_llvm_type, 
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), 
                                                 get_pointer_to_capacity2(key_type_code, value_type_code, dict));
         idx_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
@@ -4559,7 +4564,14 @@ namespace LCompilers {
     llvm::Value* LLVMDict::read_item(llvm::Value* dict, llvm::Value* key,
                              llvm::Module* module, ASR::Dict_t* dict_type, bool enable_bounds_checking,
                              bool get_pointer) {
-        llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
+
+        std::string key_type_code = ASRUtils::get_type_code(dict_type->m_key_type);
+        std::string value_type_code = ASRUtils::get_type_code(dict_type->m_value_type);
+
+        std::pair<std::string, std::string> llvm_key = std::make_pair(key_type_code, value_type_code);
+        llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                                            get_pointer_to_capacity2(key_type_code, value_type_code, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr;
         if (enable_bounds_checking) {
@@ -4572,7 +4584,7 @@ namespace LCompilers {
         if( get_pointer ) {
             return value_ptr;
         }
-        return llvm_utils->CreateLoad(value_ptr);
+        return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
     llvm::Value* LLVMDict::get_item(llvm::Value* dict, llvm::Value* key,
