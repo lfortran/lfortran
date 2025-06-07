@@ -7,6 +7,7 @@
 #include <libasr/asr.h>
 
 #include <map>
+#include <string>
 #include <unordered_map>
 #include <tuple>
 
@@ -674,6 +675,10 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_capacity(llvm::Value* dict) = 0;
 
             virtual
+            llvm::Value* get_pointer_to_capacity2(std::string& key_type_code, std::string& value_type_code, 
+                                                  llvm::Value* dict) = 0;
+
+            virtual
             llvm::Value* get_key_hash(llvm::Value* capacity, llvm::Value* key,
                 ASR::ttype_t* key_asr_type, llvm::Module* module);
 
@@ -739,6 +744,12 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
+            void dict_deepcopy2(std::string& key_type_code, std::string& value_type_code,
+                llvm::Value* src, llvm::Value* dest,
+                ASR::Dict_t* dict_type, llvm::Module* module,
+                std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
+
+            virtual
             llvm::Value* len(llvm::Value* dict) = 0;
 
             virtual
@@ -780,6 +791,10 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
+
+            llvm::Value* get_pointer_to_capacity2(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
+            
+            llvm::Value* get_pointer_to_occupancy2(llvm::Type* dict_type, llvm::Value* dict);
 
             virtual
             void resolve_collision(llvm::Value* capacity, llvm::Value* key_hash,
@@ -836,6 +851,11 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
 
             void dict_deepcopy(llvm::Value* src, llvm::Value* dest,
+                ASR::Dict_t* dict_type, llvm::Module* module,
+                std::map<std::string, std::map<std::string, int>>& name2memidx);
+
+            void dict_deepcopy2(std::string& key_type_code, std::string& value_type_code,
+                llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
@@ -940,6 +960,8 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
 
+            llvm::Value* get_pointer_to_capacity2(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
+
             void resolve_collision_for_write(llvm::Value* dict, llvm::Value* key_hash,
                 llvm::Value* key, llvm::Value* value,
                 llvm::Module* module, ASR::ttype_t* key_asr_type,
@@ -984,6 +1006,11 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
 
             void dict_deepcopy(llvm::Value* src, llvm::Value* dest,
+                ASR::Dict_t* dict_type, llvm::Module* module,
+                std::map<std::string, std::map<std::string, int>>& name2memidx);
+
+            void dict_deepcopy2(std::string& key_type_code, std::string& value_type_code,
+                llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 

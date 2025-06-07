@@ -4716,7 +4716,14 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } 
+            }  else if (derived_type_name == "_lfortran_test_dict") {
+                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                                                       ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
+            } else if (derived_type_name == "_lfortran_test_dict_r") {
+                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
+                                                       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)))); 
+            }
+
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -7278,6 +7285,9 @@ public:
         else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(arg)))
             return ASR::make_SetLen_t(al, x.base.base.loc, arg, 
                                  ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
+        else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(arg)))
+            return ASR::make_DictLen_t(al, x.base.base.loc, arg, 
+                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)), nullptr);
         else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_len has not been implemented yet",
@@ -7311,6 +7321,23 @@ public:
             }
             return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
+        } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+            ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
+            ASR::ttype_t* key_type = dict_type->m_key_type;
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                diag.add(Diagnostic(
+                    "Type mismatch in '_lfortran_get_item', the key types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+            /*return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],*/
+            /*                            ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);*/
+            return ASR::make_DictItem_t(al, x.base.base.loc, args[0], args[1], nullptr, dict_type->m_value_type, nullptr);
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
@@ -7450,6 +7477,70 @@ public:
 
         return ASR::make_SetConstant_t(al, x.base.base.loc, args.p, args.n, 
                                         ASRUtils::TYPE(ASR::make_Set_t(al, x.base.base.loc, contained_type)));
+    }
+    
+    ASR::asr_t* create_DictConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_dict_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_dict_constant expects atleast two argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args % 2 == 1) {
+            diag.add(Diagnostic("As of now _lfortran_dict_constant expects and even number of arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        
+        AST::expr_t* source = nullptr;
+        std::pair<ASR::ttype_t*, ASR::ttype_t*> type = {nullptr, nullptr};
+        Vec<ASR::expr_t *> keys;
+        keys.reserve(al, 1);
+        
+        Vec<ASR::expr_t *> values;
+        values.reserve(al, 1);
+
+        for (size_t i=0;i<x.n_args;i++) {
+            ASR::ttype_t *contained_type = i%2 == 0? type.first : type.second;
+
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            if (i%2 == 0)
+                keys.push_back(al, arg);
+            else 
+                values.push_back(al, arg);
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+
+
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
+                diag.add(Diagnostic(
+                    "Type mismatch in _lfortran_list_constant, the types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                    arg_type_str + "', expected '" + contained_type_str +  "')",{arg->base.loc})
+                    }));
+                throw SemanticAbort();
+            } else if (!contained_type) {
+                contained_type = arg_type;
+                if (i%2 == 0) type.first = arg_type;
+                else type.second = arg_type;
+            }
+        }
+
+
+        return ASR::make_DictConstant_t(al, x.base.base.loc, keys.p, keys.n, values.p, values.n, ASRUtils::TYPE(
+            ASR::make_Dict_t(al, x.base.base.loc, type.first, type.second)));
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -8274,6 +8365,8 @@ public:
                     tmp = create_ListCount(x);
                 else if ( var_name == "_lfortran_set_constant")
                     tmp = create_SetConstant(x);
+                else if ( var_name == "_lfortran_dict_constant")
+                    tmp = create_DictConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
