@@ -587,6 +587,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         length = PassUtils::get_bound(array, i + 1, "ubound", al);
                     }
                 }
+                if ( ASRUtils::is_integer(*ASRUtils::expr_type(length)) ) {
+                    ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
+                                                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(length))));
+                    if (int_type->m_kind != 4) {
+                        // we know by default dimensions are construced as `4`
+                        length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, length->base.loc, length, ASR::cast_kindType::IntegerToInteger,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, length->base.loc, 4))));
+                    }
+
+                }
                 dims.push_back(al, length);
             }
         }
