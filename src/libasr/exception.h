@@ -49,6 +49,12 @@ namespace LCompilers {
     below.
 */
 struct Error {
+    std::string message;
+
+    Error() = default;
+    Error(const std::string& msg)
+        : message(msg)
+    {}
 };
 
 template<typename T>

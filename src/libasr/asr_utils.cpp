@@ -1,5 +1,6 @@
 #include <unordered_set>
 #include <map>
+#include <iostream>
 #include <libasr/asr_utils.h>
 #include <libasr/string_utils.h>
 #include <libasr/serialization.h>
@@ -478,11 +479,16 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
         std::string modfile;
         std::filesystem::path full_path = path / filename;
         if (read_file(full_path.string(), modfile)) {
-            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab, lm);
-            if (intrinsic) {
-                set_intrinsic(asr);
+            Result<ASR::TranslationUnit_t*> res = load_modfile(al, modfile, false, symtab, lm);
+            if (res.ok) {
+                ASR::TranslationUnit_t* asr = res.result;
+                if (intrinsic) {
+                    set_intrinsic(asr);
+                }
+                return asr;
+            } else {
+                std::cerr << res.error.message << std::endl;
             }
-            return asr;
         }
     }
     return nullptr;

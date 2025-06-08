@@ -122,8 +122,16 @@ void asr_mod(const std::string &src) {
 
     std::string modfile = LCompilers::save_modfile(*asr, lm);
     LCompilers::SymbolTable symtab(nullptr);
-    LCompilers::ASR::TranslationUnit_t *asr2 = LCompilers::load_modfile(al,
-            modfile, true, symtab, lm);
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*> res
+        = LCompilers::load_modfile(al, modfile, true, symtab, lm);
+    LCompilers::ASR::TranslationUnit_t* asr2 = nullptr;
+    if (res.ok) {
+        asr2 = res.result;
+    } else {
+        std::cerr << "Error loading modfile: " << res.error.message << std::endl;
+        CHECK(false);
+        return;
+    }
     fix_external_symbols(*asr2, symtab);
     LCOMPILERS_ASSERT(LCompilers::asr_verify(*asr2, true, diagnostics));
 
