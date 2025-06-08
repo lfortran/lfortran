@@ -296,8 +296,8 @@ public:
                         new_call_args.p, new_call_args.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         *current_expr = new_function_call;
 
         ASR::expr_t* function_call_for_return_var = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
@@ -306,8 +306,8 @@ public:
                         args_for_return_var.p, args_for_return_var.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         call_for_return_var = function_call_for_return_var;
         new_function_scope = new_function_scope_copy;
     }
@@ -388,8 +388,8 @@ public:
                         new_call_args.p, new_call_args.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         *current_expr = new_function_call;
 
         ASR::expr_t* function_call_for_return_var = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
@@ -398,8 +398,8 @@ public:
                         args_for_return_var.p, args_for_return_var.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         call_for_return_var = function_call_for_return_var;
         new_function_scope = new_function_scope_copy;
     }

@@ -736,8 +736,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
-                                                            nullptr, nullptr,
-                                                            false);
+                                                            nullptr, nullptr
+                                                            );
                         }
                     }
                     break;
@@ -829,8 +829,8 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, proc,
                                             a_args.p, 1,
                                             return_type,
-                                            nullptr, nullptr,
-                                            false);
+                                            nullptr, nullptr
+                                            );
         }
     }
 }
@@ -1001,7 +1001,7 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
             asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
-                                            a_args.p, 2, nullptr, nullptr, false, false);
+                                            a_args.p, 2, nullptr, nullptr, false);
         }
     }
 }
@@ -1105,7 +1105,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(a_args, subrout, al);
         asr = ASRUtils::make_SubroutineCall_t_util(al, loc, a_name, sym,
-                                        a_args.p, a_args.n, nullptr, nullptr, false, false);
+                                        a_args.p, a_args.n, nullptr, nullptr, false);
     }
 }
 
@@ -1269,8 +1269,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
                                                             a_args.p, 2,
                                                             return_type,
-                                                            nullptr, nullptr,
-                                                            false);
+                                                            nullptr, nullptr
+                                                            );
                         }
                     }
                     break;
@@ -1451,7 +1451,7 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
         }
         return ASRUtils::make_SubroutineCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
-                                        nullptr, nullptr, false, false);
+                                        nullptr, nullptr, false);
     } else {
         if( func ) {
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
@@ -1459,8 +1459,8 @@ ASR::asr_t* symbol_resolve_external_generic_procedure_without_eval(
         return ASRUtils::make_FunctionCall_t_util(al, loc, final_sym,
                                         v, args.p, args.size(),
                                         return_type,
-                                        nullptr, nullptr,
-                                        false);
+                                        nullptr, nullptr
+                                        );
     }
 }
 

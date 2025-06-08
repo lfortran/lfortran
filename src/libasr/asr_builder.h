@@ -849,8 +849,8 @@ class ASRBuilder {
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::expr_t *>& args,
@@ -858,20 +858,19 @@ class ASRBuilder {
         Vec<ASR::call_arg_t> args_; args_.reserve(al, 2);
         visit_expr_list(al, args, args_);
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args_.p, args_.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args_.p, args_.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type, ASR::expr_t* value) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, value, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, value, nullptr));
     }
 
     ASR::stmt_t* SubroutineCall(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args) {
         return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                s, s, args.p, args.size(), nullptr, nullptr, false, false));
+                s, s, args.p, args.size(), nullptr, nullptr, false));
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
