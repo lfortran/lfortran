@@ -2874,9 +2874,9 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (ASR::is_a<ASR::StructType_t>(*x_m_v_type) &&
-            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type)) &&
-            ASRUtils::is_allocatable(x_m_v_type)) {
+        if (ASRUtils::is_allocatable(x_m_v_type) && 
+            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
             tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
         }
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
@@ -5487,8 +5487,12 @@ public:
         bool is_value_dict = ASR::is_a<ASR::Dict_t>(*asr_value_type);
         bool is_target_set = ASR::is_a<ASR::Set_t>(*asr_target_type);
         bool is_value_set = ASR::is_a<ASR::Set_t>(*asr_value_type);
-        bool is_target_struct = ASR::is_a<ASR::StructType_t>(*asr_target_type) && !ASRUtils::is_class_type(asr_target_type);
-        bool is_value_struct = ASR::is_a<ASR::StructType_t>(*asr_value_type) && !ASRUtils::is_class_type(asr_value_type);
+        bool is_target_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::type_get_past_allocatable(asr_target_type)) &&
+            !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_target_type));
+        bool is_value_struct = ASR::is_a<ASR::StructType_t>(
+            *ASRUtils::type_get_past_allocatable(asr_value_type)) &&
+             !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_value_type));
         // a class variable is always either an allocatable, a pointer, or a dummy argument of a procedure
         bool is_target_class = ASR::is_a<ASR::StructType_t>(
                                    *ASRUtils::type_get_past_allocatable_pointer(asr_target_type))
@@ -5617,8 +5621,16 @@ public:
             is_assignment_target = is_assignment_target_copy;
             llvm::Value* target_struct = tmp;
             ptr_loads = ptr_loads_copy;
+            if (ASRUtils::is_allocatable(asr_target_type)) {
+                llvm::Type* tar_type = llvm_utils->get_type_from_ttype_t_util(asr_target_type, module.get());
+                target_struct = llvm_utils->CreateLoad2(tar_type, target_struct);
+            } 
+            if (ASRUtils::is_allocatable(asr_value_type)) {
+                llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(asr_value_type, module.get());
+                value_struct = llvm_utils->CreateLoad2(val_type, value_struct);
+            }
             llvm_utils->deepcopy(value_struct, target_struct,
-                asr_target_type, module.get(), name2memidx);
+                ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), name2memidx);
             return ;
         } else if (is_target_class && is_value_class) {
             int64_t ptr_loads_copy = ptr_loads;
