@@ -28,9 +28,13 @@ public:
     size_t starting_n_body = 0;
     int loop_nesting = 0;
     int all_loops_blocks_nesting = 0;
+    int all_blocks_nesting = 0;
     int pragma_nesting_level = 0;
     int pragma_nesting_level_2 = 0;
     bool openmp_collapse = false;
+    bool pragma_in_do_loop=false;
+    bool do_in_pragma=false;
+    int nesting_lvl_inside_pragma=0;
     int collapse_value=0;
     Vec<ASR::do_loop_head_t> do_loop_heads_for_collapse;
     Vec<ASR::stmt_t*> do_loop_bodies_for_collapse;
@@ -137,7 +141,7 @@ public:
                     tmp_vec.clear();
                 }
             }
-            if(!omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
+            if((all_blocks_nesting ==0 || pragma_in_do_loop) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                 omp_region_body.push_back(tmp_stmt);
             } else {
@@ -4433,6 +4437,7 @@ public:
     }
 
     void visit_If(const AST::If_t &x) {
+        all_blocks_nesting++;
         visit_expr(*x.m_test);
         ASR::expr_t *test = ASRUtils::EXPR(tmp);
         ASR::ttype_t *test_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(test));
@@ -4451,6 +4456,7 @@ public:
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         tmp = ASR::make_If_t(al, x.base.base.loc, test, body.p,
                 body.size(), orelse.p, orelse.size());
+        all_blocks_nesting--;
     }
 
     void visit_IfArithmetic(const AST::IfArithmetic_t &x) {
@@ -4582,6 +4588,7 @@ public:
     void visit_DoLoop(const AST::DoLoop_t &x) {
         loop_nesting += 1;
         all_loops_blocks_nesting += 1;
+        all_blocks_nesting++;
         ASR::expr_t *var, *start, *end;
         ASR::ttype_t* type = nullptr;
         var = start = end = nullptr;
@@ -4654,7 +4661,17 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if(pragma_in_do_loop) {
+            nesting_lvl_inside_pragma++;
+            do_in_pragma=true;
+        }
         transform_stmts(body, x.n_body, x.m_body);
+        if(pragma_in_do_loop) {
+            nesting_lvl_inside_pragma--;
+        }
+        if(nesting_lvl_inside_pragma==0) {
+            do_in_pragma=false;
+        }
         ASR::do_loop_head_t head;
         head.m_v = var;
         head.m_start = start;
@@ -4662,42 +4679,8 @@ public:
         head.m_increment = increment;
         if (head.m_v != nullptr) {
             head.loc = head.m_v->base.loc;
-            if (loop_nesting - 1 == pragma_nesting_level && !omp_constructs.empty()) {
-                ASR::DoConcurrentLoop_t* do_concurrent = omp_constructs.back();
-                Vec<ASR::do_loop_head_t> do_concurrent_head;
-                do_concurrent_head.reserve(al, 1);
-                do_concurrent_head.push_back(al, head);
-                if (openmp_collapse == true) {
-                    for (size_t i=0;i<do_loop_heads_for_collapse.size();i++) {
-                        do_concurrent_head.push_back(al, do_loop_heads_for_collapse[do_loop_heads_for_collapse.size()-1-i]);
-                    }
-                    do_concurrent->m_body = do_loop_bodies_for_collapse.p; do_concurrent->n_body = do_loop_bodies_for_collapse.size();
-                } else {
-                    do_concurrent->m_body = body.p; do_concurrent->n_body = body.size();
-                }
-                do_concurrent->m_head = do_concurrent_head.p;
-                do_concurrent->n_head = do_concurrent_head.size();
-                tmp = (ASR::asr_t*) do_concurrent;
-            } else if (openmp_collapse == true && !omp_constructs.empty() && collapse_value > loop_nesting - static_cast<int>(omp_constructs.size()) - pragma_nesting_level) {
-                collapse_value--;
-                do_loop_heads_for_collapse.push_back(al, head);
-                Vec<ASR::stmt_t*> temp;
-                temp.reserve(al, do_loop_bodies_for_collapse.size());
-                for (size_t i=0;i<do_loop_bodies_for_collapse.size();i++) {
-                    temp.push_back(al, do_loop_bodies_for_collapse[i]);
-                }
-                int size=temp.size()+body.size();
-                do_loop_bodies_for_collapse.reserve(al, size);
-                for (size_t i=0;i<temp.size();i++) {
-                    do_loop_bodies_for_collapse.push_back(al, temp[i]);
-                }
-                for (size_t i=0;i<body.size();i++) {
-                    do_loop_bodies_for_collapse.push_back(al, body[i]);
-                }
-            } else {
-                tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
-                    head, body.p, body.size(), nullptr, 0);
-            }
+            tmp = ASR::make_DoLoop_t(al, x.base.base.loc, x.m_stmt_name,
+                head, body.p, body.size(), nullptr, 0);
             if (do_loop_variables.size() > 0) {
                 do_loop_variables.pop_back();
             }
@@ -4710,6 +4693,7 @@ public:
         }
         loop_nesting -= 1;
         all_loops_blocks_nesting -= 1;
+        all_blocks_nesting--;
     }
 
     void visit_DoConcurrentLoop(const AST::DoConcurrentLoop_t &x) {
@@ -5132,7 +5116,7 @@ public:
         for (size_t i = 0; i < x.n_clauses; i++) {
             std::string clause = AST::down_cast<AST::String_t>(x.m_clauses[i])->m_s;
             std::string clause_name = clause.substr(0, clause.find('('));
-            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate") {
+            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse") {
                 std::string list = clause.substr(clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                 Vec<ASR::expr_t*> vars;
                 vars.reserve(al, 1);
@@ -5159,6 +5143,10 @@ public:
                         throw SemanticAbort();
                     }
                         list = list.substr(list.find(':')+1);
+                } else if (clause_name == "collapse") {
+                    int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPCollapse_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    continue;
                 }
                 for (auto &s : LCompilers::string_split(list, ",", false)) {
                     s.erase(0, s.find_first_not_of(" "));
@@ -5203,6 +5191,12 @@ public:
                     pragma_nesting_level_2--;
                     collect_omp_body(ASR::omp_region_typeType::Section);
                     // Now collect stmts of all Sections inside the parallel sections and add it in body of ParallelSections OMPRegion_t
+                    collect_omp_body(ASR::omp_region_typeType::ParallelSections);
+                } else if (LCompilers::startswith(x.m_construct_name, "sections")) {
+                    // Collect the body of the previous section
+                    pragma_nesting_level_2--;
+                    collect_omp_body(ASR::omp_region_typeType::Section);
+                    // Now collect stmts of all Sections inside the parallel sections and add it in body of ParallelSections OMPRegion_t
                     collect_omp_body(ASR::omp_region_typeType::Sections);
                 } else if (LCompilers::startswith(x.m_construct_name, "single")) {
                     // Collect the body of the previous section
@@ -5211,16 +5205,18 @@ public:
                     collect_omp_body(ASR::omp_region_typeType::Task);
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())); 
                     omp_region_body.pop_back();
+                } else if (LCompilers::startswith(x.m_construct_name, "parallel do")) {
+                    collect_omp_body(ASR::omp_region_typeType::ParallelDo);
+                    if(pragma_in_do_loop) {
+                        tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
+                        omp_region_body.pop_back();
+                    }
                 } else if (LCompilers::startswith(x.m_construct_name, "parallel")) {
-                    omp_constructs.pop_back();
-                    if (collapse_value > 0) {
-                        collapse_value = 0;
-                    }
-                    if (openmp_collapse) {
-                        openmp_collapse = false;
-                    }
-                    return;
+                    collect_omp_body(ASR::omp_region_typeType::Parallel);
+                } else if(LCompilers::startswith(x.m_construct_name, "do")) {
+                    collect_omp_body(ASR::omp_region_typeType::Do);
                 }
+                pragma_in_do_loop=false;
                 if(pragma_nesting_level_2 == 0 && omp_region_body.size()==1) {
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())); 
                     omp_region_body.pop_back();
@@ -5228,113 +5224,44 @@ public:
                 return;
             }
 
-            if ( to_lower(x.m_construct_name) == "parallel" ||
-                 to_lower(x.m_construct_name) == "parallel do" ) {
-                pragma_nesting_level = loop_nesting;
-                std::string name = x.m_construct_name;
-                if (name != "parallel") {
-                    name = name.substr(9);
-                    if (name != "do") {
-                        diag.add(Diagnostic(
-                            "Only `parallel do` combined construct"
-                            " is supported for now",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                }
+            if(loop_nesting>0) pragma_in_do_loop=true;
+            if (to_lower(x.m_construct_name) == "parallel") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
 
-                Vec<ASR::expr_t *> m_local, m_shared; Vec<ASR::reduction_expr_t> m_reduction;
-                m_local.reserve(al, 1); m_shared.reserve(al, 1); m_reduction.reserve(al, 1);
-                for (size_t i = 0; i < x.n_clauses; i++) {
-                    std::string clause = AST::down_cast<AST::String_t>(
-                        x.m_clauses[i])->m_s;
-                    std::string clause_name = clause.substr(0, clause.find('('));
-                    if (clause_name != "private" && clause_name != "shared" && clause_name != "reduction" && clause_name != "collapse") {
-                        diag.add(Diagnostic(
-                            "The clause "+ clause_name
-                            +" is not supported yet",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{loc})
-                            }));
-                        throw SemanticAbort();
-                    }
-                    std::string list = clause.substr(clause.find('(')+1,
-                        clause.size()-clause_name.size()-2);
-                    ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd; // required for reduction
-                    if (clause_name == "collapse") {
-                        collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
-                        openmp_collapse = true;
-                        do_loop_heads_for_collapse.reserve(al, collapse_value);do_loop_bodies_for_collapse={};
-                        continue;
-                    }
-                    if (clause_name == "reduction") {
-                        std::string reduction_op = list.substr(0, list.find(':'));
-                        if ( reduction_op == "+" ) {
-                            op = ASR::reduction_opType::ReduceAdd;
-                        } else if ( reduction_op == "-" ) {
-                            op = ASR::reduction_opType::ReduceSub;
-                        } else if ( reduction_op == "*" ) {
-                            op = ASR::reduction_opType::ReduceMul;
-                        } else if ( reduction_op == "max" ) {
-                            op = ASR::reduction_opType::ReduceMAX;
-                        } else if ( reduction_op == "min" ) {
-                            op = ASR::reduction_opType::ReduceMIN;
-                        } else {
-                            diag.add(Diagnostic(
-                                "The reduction operator "+ reduction_op
-                                +" is not supported yet",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-                        list = list.substr(list.find(':')+1);
-                    }
-                    for (auto &s: LCompilers::string_split(list, ",", false)) {
-                        s.erase(0, s.find_first_not_of(" "));
-                        ASR::symbol_t *sym = current_scope->get_symbol(s);
-                        if (sym) {
-                            if (!ASR::is_a<ASR::Variable_t>(*sym)) {
-                                diag.add(Diagnostic(
-                                    "Only a variable is supported"
-                                    " in the clause for now",
-                                    Level::Error, Stage::Semantic, {
-                                        Label("",{loc})
-                                    }));
-                                throw SemanticAbort();
-                            }
-                            ASR::expr_t *v = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
-                            if (clause_name == "private") {
-                                m_local.push_back(al, v);
-                            } else if (clause_name == "reduction") {
-                                ASR::reduction_expr_t re; re.loc = loc; re.m_arg = v; re.m_op = op;
-                                m_reduction.push_back(al, re);
-                            } else {
-                                m_shared.push_back(al, v);
-                            }
-                        } else {
-                            diag.add(Diagnostic(
-                                "The clause variable `"+ s
-                                +"` is not declared",
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{loc})
-                                }));
-                            throw SemanticAbort();
-                        }
-                    }
-                }
-                Vec<ASR::do_loop_head_t> heads;
-                heads.reserve(al,1);
-                ASR::do_loop_head_t head{};
-                heads.push_back(al, head);
-                omp_constructs.push_back(ASR::down_cast2<ASR::DoConcurrentLoop_t>(
-                ASR::make_DoConcurrentLoop_t(al,loc, heads.p, heads.n, m_shared.p,
-                m_shared.n, m_local.p, m_local.n, m_reduction.p, m_reduction.n, nullptr, 0)));
-
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Parallel, clauses.p, clauses.n, body.p, body.n)));
             } else if ( to_lower(x.m_construct_name) == "do" ) {
-                // pass
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Do, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "parallel do") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelDo, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "sections") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                is_first_section = true;
+                
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Sections, clauses.p, clauses.n, body.p, body.n)));
             } else if (to_lower(x.m_construct_name) == "parallel sections") {
                 pragma_nesting_level_2++;
                 is_first_section = true;
@@ -5346,7 +5273,7 @@ public:
                 Vec<ASR::stmt_t*> body;
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
-                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Sections, clauses.p, clauses.n, body.p, body.n)));
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::ParallelSections, clauses.p, clauses.n, body.p, body.n)));
             } else if (to_lower(x.m_construct_name) == "section") {
                 pragma_nesting_level_2++;
                 if(!is_first_section){

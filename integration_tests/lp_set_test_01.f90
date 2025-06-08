@@ -1,7 +1,7 @@
 program lp_set_test_01
     integer :: x
 
-    type(_lfortran_set_integer) :: test_set 
+    type(_lfortran_set(integer)) :: test_set 
     test_set = _lfortran_set_constant(1, 2, 3, 4, 4, 5, 4, 10)
     call _lfortran_set_add(test_set, 1)
     call _lfortran_set_add(test_set, 10)

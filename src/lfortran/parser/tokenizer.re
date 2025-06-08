@@ -533,6 +533,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'where' { KW(WHERE) }
             'while' { KW(WHILE) }
             'write' { KW(WRITE) }
+            '_lfortran_list' { KW(LF_LIST) }
+            '_lfortran_set' { KW(LF_SET) }
 
             // Tokens
             newline {

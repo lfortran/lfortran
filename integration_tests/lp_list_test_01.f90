@@ -3,7 +3,7 @@ program lp_list_test_01
     integer :: x
     real :: eps = 1e-6
 
-    type(_lfortran_list_integer) :: test_list 
+    type(_lfortran_list(integer)) :: test_list 
     call _lfortran_list_append(test_list, 1)
     call _lfortran_list_append(test_list, 10)
     x = _lfortran_len(test_list)
@@ -33,7 +33,7 @@ program lp_list_test_01
     if (_lfortran_list_count(test_list, 1) /= 2) error stop
     if (_lfortran_list_count(test_list, -50) /= 1) error stop
      
-    type(_lfortran_list_real) :: test_list_r  = _lfortran_list_constant(1.0, 2.0, 3.0, 4.0)
+    type(_lfortran_list(real(4))) :: test_list_r  = _lfortran_list_constant(1.0, 2.0, 3.0, 4.0)
     if (_lfortran_len(test_list_r) /= 4) error stop
     call _lfortran_list_append(test_list_r, 1.11)
     call _lfortran_list_append(test_list_r, -10.12)
@@ -48,7 +48,7 @@ program lp_list_test_01
     call _lfortran_set_item(test_list_r, 3, 1212.33)
     if (abs(_lfortran_get_item(test_list_r, 3) - 1212.33) > eps) error stop
 
-    type(_lfortran_list_real) :: test_list_r1  
+    type(_lfortran_list(real)) :: test_list_r1  
     if (_lfortran_len(test_list_r1) /= 0) error stop
 
     ! Add other intrinsics later

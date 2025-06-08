@@ -514,8 +514,8 @@ public:
 
 };
 
-class DoConcurrentVisitor :
-    public ASR::BaseWalkVisitor<DoConcurrentVisitor>
+class ParallelRegionVisitor :
+    public ASR::BaseWalkVisitor<ParallelRegionVisitor>
 {
     private:
         Allocator& al;
@@ -525,10 +525,15 @@ class DoConcurrentVisitor :
         SymbolTable* current_scope;
         PassOptions pass_options;
         int current_stmt_index = -1;
+        int nesting_lvl = 0;
         ASR::stmt_t** current_m_body; size_t current_n_body;
+        std::vector<ASR::stmt_t*> nested_lowered_body={};
         std::vector<std::string> reduction_variables;
+        std::map<int,std::vector<ASR::omp_clause_t*>> clauses_heirarchial;
+        ASR::expr_t* tdata_expr_copy;
+        ASR::symbol_t* thread_data_sym_copy;
     public:
-        DoConcurrentVisitor(Allocator& al_, PassOptions pass_options_) :
+        ParallelRegionVisitor(Allocator& al_, PassOptions pass_options_) :
         al(al_), remove_original_statement(false), pass_options(pass_options_) {
             pass_result.n = 0;
             pass_result_allocatable.n = 0;
@@ -842,7 +847,6 @@ class DoConcurrentVisitor :
 
             ASRUtils::ASRBuilder b(al, loc);
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
-            ASR::symbol_t* thread_data_ext_sym = ASRUtils::symbol_get_past_external(thread_data_sym);
 
             // create data variable: `type(c_ptr), value :: data`
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified,
@@ -865,65 +869,8 @@ class DoConcurrentVisitor :
                 LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local, ASR::abiType::BindC));
             }
 
-            // add external symbols to struct members, we need those for `data%n = n`
-            // first process all non-arrays
-            SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_ext_sym);
-            for (auto it: involved_symbols) {
-                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
-                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
-                    current_scope, s2c(al, sym_name), thread_data_symtab->resolve_symbol(it.first), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                    s2c(al, it.first), ASR::accessType::Public));
-                current_scope->add_symbol(sym_name, sym);
-
-                ASR::ttype_t* sym_type = it.second;
-                if (!ASRUtils::is_array(sym_type)) {
-                    body.push_back(al, b.Assignment(
-                        b.Var(current_scope->get_symbol(it.first)),
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr))
-                    ));
-                }
-            }
-
-            // then process arrays
-            for (auto it: involved_symbols) {
-                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
-                ASR::symbol_t* sym = current_scope->get_symbol(sym_name);
-
-                // handle arrays
-                ASR::ttype_t* sym_type = it.second;
-                if (ASRUtils::is_array(sym_type)) {
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
-                    Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
-                    for (size_t i = 0; i < array_type->n_dims; i++) {
-                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_ubound_" + it.first + "_" + std::to_string(i);
-                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
-                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
-                        current_scope->add_symbol(ubound_name, ubound_sym);
-                        ASR::expr_t* ubound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr));
-                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_lbound_" + it.first + "_" + std::to_string(i);
-                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
-                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
-                        current_scope->add_symbol(lbound_name, lbound_sym);
-                        ASR::expr_t* lbound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr));
-                        size_args.push_back(al, b.Add(b.Sub(ubound, lbound), b.i32(1)));
-                    }
-                    ASR::expr_t* shape = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
-                        size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
-                    // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
-                    body.push_back(al, b.CPtrToPointer(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first)),
-                        shape
-                    ));
-                }
-            }
-
+            unpack_data_from_thread_data(loc, involved_symbols, thread_data_module_name, tdata_expr, body);
+           
             // Partitioning logic
             // declare start, end, num_threads, chunk, leftovers, thread_num
             // TODO: find a better way to declare these
@@ -1367,6 +1314,202 @@ class DoConcurrentVisitor :
             return false;
         }
 
+        void unpack_data_from_thread_data (const LCompilers::Location &loc, std::map<std::string, ASR::ttype_t*> involved_symbols, std::string thread_data_module_name, ASR::expr_t* tdata_expr, Vec<ASR::stmt_t*> &body) {
+            
+            ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
+            ASR::symbol_t* thread_data_ext_sym = ASRUtils::symbol_get_past_external(thread_data_sym);
+            ASRUtils::ASRBuilder b(al,loc);
+            // add external symbols to struct members, we need those for `data%n = n`
+            // first process all non-arrays
+            SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_ext_sym);
+            for (auto it: involved_symbols) {
+                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
+                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                    current_scope, s2c(al, sym_name), thread_data_symtab->resolve_symbol(it.first), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                    s2c(al, it.first), ASR::accessType::Public));
+                current_scope->add_symbol(sym_name, sym);
+
+                ASR::ttype_t* sym_type = it.second;
+                if (!ASRUtils::is_array(sym_type)) {
+                    body.push_back(al, b.Assignment(
+                        b.Var(current_scope->get_symbol(it.first)),
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr))
+                    ));
+                }
+            }
+
+            // then process arrays
+            for (auto it: involved_symbols) {
+                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
+                ASR::symbol_t* sym = current_scope->get_symbol(sym_name);
+
+                // handle arrays
+                ASR::ttype_t* sym_type = it.second;
+                if (ASRUtils::is_array(sym_type)) {
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
+                    Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_ubound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(ubound_name, ubound_sym);
+                        ASR::expr_t* ubound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr));
+                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_lbound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(lbound_name, lbound_sym);
+                        ASR::expr_t* lbound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr));
+                        size_args.push_back(al, b.Add(b.Sub(ubound, lbound), b.i32(1)));
+                    }
+                    ASR::expr_t* shape = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                        size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
+                    // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
+                    body.push_back(al, b.CPtrToPointer(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.Var(current_scope->get_symbol(it.first)),
+                        shape
+                    ));
+                }
+            }
+        }
+
+        void pack_data_to_thread_data(const LCompilers::Location &loc, std::map<std::string, ASR::ttype_t*>& involved_symbols, SymbolTable* current_scope,  std::pair<std::string, ASR::symbol_t*> thread_data_module, ASR::expr_t* data_expr, std::vector<std::string>& array_variables) {
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // TODO: update symbols with correct type
+            for (auto it: involved_symbols) {
+                ASR::ttype_t* sym_type = it.second;
+                if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
+                    // everything is already handled
+                    array_variables.push_back(it.first);
+                    continue;
+                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(sym_type))) {
+                    bool is_argument = check_is_argument(current_scope, it.first);
+                    bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*sym_type);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(sym_type));
+                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
+                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
+                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        dims.push_back(al, empty_dim);
+                    }
+                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
+                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
+                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
+                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
+                                is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
+                    LCOMPILERS_ASSERT(array_expr != nullptr);
+                    bool already_allocated = true;
+                    if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                        int arg_index = -1;
+                        for (size_t i = 0; i < func->n_args; i++) {
+                            if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
+                                arg_index = i;
+                                break;
+                            }
+                        }
+                        if (arg_index != -1) {
+                            /*
+                                Same reasoning as in the comment below, I'll keep this line as well
+                            */
+                            CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
+                            SymbolTable* global_scope = current_scope;
+                            while (global_scope->parent != nullptr) {
+                                global_scope = global_scope->parent;
+                            }
+                            v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
+                        }
+                    }
+                    /*
+                        I will not remove the line below, it is used to allocate memory for arrays present in thread_data module
+                        but we are not sure if that is correct way to do it.
+
+                        Based on example ./integration_tests/openmp_15.f90, we will assume that passed on variable is already
+                        allocated and we will not allocate memory for it again.
+
+                        This way we can handle arrays with dimension not known at compile time.
+
+                        Reason to comment this line can be found in function `recursive_function_call_resolver`
+                    */
+                    // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                    /*
+                        If it is not an argument, we need to allocate memory for it.
+                        But if it is also an allocatable, we assume that user will allocate memory for it or code is incorrect.
+                    */
+                    if (!is_argument && !is_allocatable) pass_result_allocatable.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
+                    involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
+                    array_variables.push_back(it.first);
+                }
+            }
+
+            // add external symbols to struct members, we need those for `data%n = n`
+            ASR::symbol_t* thread_data_sym = thread_data_module.second;
+            SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_sym);
+            for (auto it: involved_symbols) {
+                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
+                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                    current_scope, s2c(al, sym_name), thread_data_symtab->resolve_symbol(it.first), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                    s2c(al, it.first), ASR::accessType::Public));
+                current_scope->add_symbol(sym_name, sym);
+
+                // handle arrays
+                ASR::ttype_t* sym_type = it.second;
+                if (ASRUtils::is_array(sym_type)) {
+                    nested_lowered_body.push_back(b.Assignment(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
+                    ));
+                    // add sym, assignment for Ubound and Lbound
+                    ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
+                    for (size_t i = 0; i < array_type->n_dims; i++) {
+                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "lbound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                            current_scope->add_symbol(lbound_name, lbound_sym);
+                        nested_lowered_body.push_back(b.Assignment(
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr)),
+                            b.ArrayLBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                        ));
+                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "ubound_" + it.first + "_" + std::to_string(i);
+                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
+                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
+                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
+                        current_scope->add_symbol(ubound_name, ubound_sym);
+                        nested_lowered_body.push_back(b.Assignment(
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
+                            b.ArrayUBound(b.Var(current_scope->get_symbol(it.first)), i+1)
+                        ));
+                    }
+                } else {
+                    nested_lowered_body.push_back(b.Assignment(
+                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                        sym, ASRUtils::symbol_type(sym), nullptr)),
+                        b.Var(current_scope->get_symbol(it.first))
+                    ));
+                }
+            }
+            if (array_variables.size() > 0) {
+                // std::vector<std::string> function_names; function_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)));
+                std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> scoped_array_variable_map;
+                std::string func_name = "";
+                if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                    func_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                }
+                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true, func_name);
+            }
+        }
+
         void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
             std::map<std::string, ASR::ttype_t*> involved_symbols;
 
@@ -1512,123 +1655,13 @@ class DoConcurrentVisitor :
             ASR::expr_t* tdata_expr = b.Variable(current_scope, current_scope->get_unique_name("tdata"), ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
-            // TODO: update symbols with correct type
-            for (auto it: involved_symbols) {
-                ASR::ttype_t* sym_type = it.second;
-                if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
-                    // everything is already handled
-                    array_variables.push_back(it.first);
-                    continue;
-                } else if (ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_allocatable(sym_type))) {
-                    bool is_argument = check_is_argument(current_scope, it.first);
-                    bool is_allocatable = ASR::is_a<ASR::Allocatable_t>(*sym_type);
-                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(sym_type));
-                    Vec<ASR::dimension_t> dims; dims.reserve(al, array_type->n_dims);
-                    ASR::dimension_t empty_dim; empty_dim.loc = array_type->base.base.loc;
-                    empty_dim.m_start = nullptr; empty_dim.m_length = nullptr;
-                    for (size_t i = 0; i < array_type->n_dims; i++) {
-                        dims.push_back(al, empty_dim);
-                    }
-                    ASR::expr_t* array_expr = b.VariableOverwrite(current_scope, it.first,
-                            ASRUtils::TYPE(ASR::make_Pointer_t(al, array_type->base.base.loc,
-                                    ASRUtils::TYPE(ASR::make_Array_t(al, array_type->base.base.loc,
-                                    array_type->m_type, dims.p, dims.n, ASR::array_physical_typeType::DescriptorArray)))),
-                                is_argument ? ASR::intentType::InOut : ASR::intentType::Local);
-                    LCOMPILERS_ASSERT(array_expr != nullptr);
-                    bool already_allocated = true;
-                    if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) && ASR::is_a<ASR::Function_t>(*ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
-                        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
-                        int arg_index = -1;
-                        for (size_t i = 0; i < func->n_args; i++) {
-                            if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(func->m_args[i])->m_v) == it.first) {
-                                arg_index = i;
-                                break;
-                            }
-                        }
-                        if (arg_index != -1) {
-                            /*
-                                Same reasoning as in the comment below, I'll keep this line as well
-                            */
-                            CheckIfAlreadyAllocatedVisitor v(arg_index, func->m_name, it.first, already_allocated);
-                            SymbolTable* global_scope = current_scope;
-                            while (global_scope->parent != nullptr) {
-                                global_scope = global_scope->parent;
-                            }
-                            v.visit_TranslationUnit(*ASR::down_cast2<ASR::TranslationUnit_t>(global_scope->asr_owner));
-                        }
-                    }
-                    /*
-                        I will not remove the line below, it is used to allocate memory for arrays present in thread_data module
-                        but we are not sure if that is correct way to do it.
-
-                        Based on example ./integration_tests/openmp_15.f90, we will assume that passed on variable is already
-                        allocated and we will not allocate memory for it again.
-
-                        This way we can handle arrays with dimension not known at compile time.
-
-                        Reason to comment this line can be found in function `recursive_function_call_resolver`
-                    */
-                    // if (!already_allocated) pass_result.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
-                    /*
-                        If it is not an argument, we need to allocate memory for it.
-                        But if it is also an allocatable, we assume that user will allocate memory for it or code is incorrect.
-                    */
-                    if (!is_argument && !is_allocatable) pass_result_allocatable.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
-                    involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
-                    array_variables.push_back(it.first);
-                }
-            }
-
-            // add external symbols to struct members, we need those for `data%n = n`
             ASR::symbol_t* thread_data_sym = thread_data_module.second;
-            SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_sym);
-            for (auto it: involved_symbols) {
-                std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
-                ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
-                    current_scope, s2c(al, sym_name), thread_data_symtab->resolve_symbol(it.first), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                    s2c(al, it.first), ASR::accessType::Public));
-                current_scope->add_symbol(sym_name, sym);
-
-                // handle arrays
-                ASR::ttype_t* sym_type = it.second;
-                if (ASRUtils::is_array(sym_type)) {
-                    pass_result.push_back(al, b.Assignment(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.PointerToCPtr(b.Var(current_scope->get_symbol(it.first)), ASRUtils::symbol_type(sym))
-                    ));
-                    // add sym, assignment for Ubound and Lbound
-                    ASR::Array_t *array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
-                    for (size_t i = 0; i < array_type->n_dims; i++) {
-                        std::string lbound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "lbound_" + it.first + "_" + std::to_string(i);
-                        ASR::symbol_t* lbound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
-                            current_scope, s2c(al, lbound_name), thread_data_symtab->resolve_symbol("lbound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                            s2c(al, "lbound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
-                        current_scope->add_symbol(lbound_name, lbound_sym);
-                        pass_result.push_back(al, b.Assignment(
-                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                            lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr)),
-                            b.ArrayLBound(b.Var(current_scope->get_symbol(it.first)), i+1)
-                        ));
-                        std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + "ubound_" + it.first + "_" + std::to_string(i);
-                        ASR::symbol_t* ubound_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
-                            current_scope, s2c(al, ubound_name), thread_data_symtab->resolve_symbol("ubound_" + it.first + "_" + std::to_string(i)), ASRUtils::symbol_name(thread_data_sym), nullptr, 0,
-                            s2c(al, "ubound_" + it.first + "_" + std::to_string(i)), ASR::accessType::Public));
-                        current_scope->add_symbol(ubound_name, ubound_sym);
-                        pass_result.push_back(al, b.Assignment(
-                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                            ubound_sym, ASRUtils::symbol_type(ubound_sym), nullptr)),
-                            b.ArrayUBound(b.Var(current_scope->get_symbol(it.first)), i+1)
-                        ));
-                    }
-                } else {
-                    pass_result.push_back(al, b.Assignment(
-                        ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
-                        sym, ASRUtils::symbol_type(sym), nullptr)),
-                        b.Var(current_scope->get_symbol(it.first))
-                    ));
-                }
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body; 
+            pack_data_to_thread_data(x.base.base.loc, involved_symbols, current_scope, thread_data_module, data_expr, array_variables);
+            for(size_t i=0;i<nested_lowered_body.size();i++){
+                pass_result.push_back(al, nested_lowered_body[i]);
             }
+            nested_lowered_body = body_copy;
 
             // tdata = c_loc(data)
             pass_result.push_back(al, b.Assignment(
@@ -1680,15 +1713,6 @@ class DoConcurrentVisitor :
             }
             reduction_variables.clear();
 
-            if (array_variables.size() > 0) {
-                // std::vector<std::string> function_names; function_names.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner)));
-                std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> scoped_array_variable_map;
-                std::string func_name = "";
-                if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
-                    func_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
-                }
-                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true, func_name);
-            }
 
             remove_original_statement = true;
             return;
@@ -1751,12 +1775,604 @@ class DoConcurrentVisitor :
             transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
         }
 
+        void init_reduction_vars(Vec<ASR::OMPReduction_t*> reduction_clauses, const LCompilers::Location &loc) {
+            ASRUtils::ASRBuilder b(al, loc);
+            nested_lowered_body={};
+            for(size_t j=0; j<reduction_clauses.size(); j++) {
+                for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
+                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
+                    reduction_variables.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v));
+                    ASR::ttype_t* red_type = ASRUtils::expr_type(red);
+                    switch (reduction_clauses[j]->m_operator) {
+                        case ASR::reduction_opType::ReduceAdd:
+                        case ASR::reduction_opType::ReduceSub:
+                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(0.0, red_type)));
+                            break;
+                        case ASR::reduction_opType::ReduceMul:
+                            nested_lowered_body.push_back(b.Assignment(red, b.constant_t(1.0, red_type)));
+                            break;
+                        case ASR::reduction_opType::ReduceMAX:
+                            if (ASRUtils::is_integer(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MIN, red_type)));
+                            } else if (ASRUtils::is_real(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::min(), red_type)));
+                            } else {
+                                throw LCompilersException("Unsupported type for MAX reduction");
+                            }
+                            break;
+                        case ASR::reduction_opType::ReduceMIN:
+                            if (ASRUtils::is_integer(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.i_t(INT_MAX, red_type)));
+                            } else if (ASRUtils::is_real(*red_type)) {
+                                nested_lowered_body.push_back(b.Assignment(red, b.f_t(std::numeric_limits<double>::max(), red_type)));
+                            } else {
+                                throw LCompilersException("Unsupported type for MIN reduction");
+                            }
+                            break;
+                        default:
+                            throw LCompilersException("Unsupported reduction operation");
+                    }
+                }
+            }
+        }
+
+        void handle_reduction_vars(Vec<ASR::OMPReduction_t*> reduction_clauses, const LCompilers::Location &loc) {
+            ASRUtils::ASRBuilder b(al,loc);
+            nested_lowered_body={};
+            if (reduction_clauses.size() > 0) {
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_atomic_start"), nullptr, nullptr, 0, nullptr)));
+                for(size_t j=0; j<reduction_clauses.size(); j++) {
+                    for (size_t i = 0; i < reduction_clauses[j]->n_vars; i++) {
+                    ASR::expr_t* red = reduction_clauses[j]->m_vars[i];
+                    std::string red_var_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(red)->m_v);
+                    ASR::symbol_t* red_sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym_copy)) + "_" + red_var_name);
+                    ASR::expr_t* lhs = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr_copy, red_sym, ASRUtils::symbol_type(red_sym), nullptr));
+                    switch (reduction_clauses[j]->m_operator) {
+                        case ASR::reduction_opType::ReduceAdd:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Add(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceSub:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Sub(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceMul:
+                            nested_lowered_body.push_back(b.Assignment(lhs, b.Mul(lhs, red)));
+                            break;
+                        case ASR::reduction_opType::ReduceMAX:
+                            nested_lowered_body.push_back(b.If(b.Lt(lhs, red),
+                                {b.Assignment(lhs, red)},
+                                {}));
+                            break;
+                        case ASR::reduction_opType::ReduceMIN:
+                            nested_lowered_body.push_back(b.If(b.Gt(lhs, red),
+                                {b.Assignment(lhs, red)},
+                                {}));
+                            break;
+                        default:
+                            throw LCompilersException("Unsupported reduction operation");
+                    }
+                }
+                }
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_atomic_end"), nullptr, nullptr, 0, nullptr)));
+            }
+        }
+
+        // Create outlined function for parallel region
+        ASR::symbol_t* create_lcompilers_function_for_parallel(const Location &loc, const ASR::OMPRegion_t &x,
+                    std::map<std::string, ASR::ttype_t*> &involved_symbols, const std::string &thread_data_module_name,
+                    std::vector<ASR::symbol_t*> &module_symbols) {
+            SymbolTable* current_scope_copy = current_scope;
+            while (current_scope->parent != nullptr) {
+                current_scope = current_scope->parent;
+            }
+            // Create function scope
+            current_scope = al.make_new<SymbolTable>(current_scope);
+
+            // load modules
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[1]));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            ASR::symbol_t* mod_sym = create_module(loc, thread_data_module_name);
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            
+            // Create data parameter
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
+
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified, ASR::abiType::BindC, true);
+            
+            // create tdata variable: `type(thread_data), pointer :: tdata`
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
+                    ASR::intentType::Local, ASR::abiType::BindC);
+            LCOMPILERS_ASSERT(tdata_expr != nullptr);
+            tdata_expr_copy = tdata_expr;
+            thread_data_sym_copy = thread_data_sym;
+            
+
+            Vec<ASR::stmt_t*> fn_body; fn_body.reserve(al, x.n_body);
+            fn_body.push_back(al, b.CPtrToPointer(data_expr, tdata_expr));
+            
+            Vec<ASR::expr_t*> fn_args; fn_args.reserve(al, 1);
+            fn_args.push_back(al, data_expr);
+
+            
+            // declare involved variables
+            for (auto it: involved_symbols) {
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local, ASR::abiType::BindC));
+            }
+
+            unpack_data_from_thread_data(x.base.base.loc, involved_symbols, thread_data_module_name, tdata_expr, fn_body);
+
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            // stmt_visitor.visit_OMPRegion(x);
+
+            Vec<ASR::OMPReduction_t*> reduction_clauses;
+            reduction_clauses.reserve(al,0);
+
+            for(size_t i=0; i<x.n_clauses; i++){
+                stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
+                clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
+            }
+            for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
+                if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPReduction) {
+                    reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
+                }
+            }
+            // Init Reduction Variables
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            init_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
+            // Add the original body statements (but process nested OMPRegions recursively)
+            if (x.m_region == ASR::omp_region_typeType::ParallelDo) {
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                visit_OMPDo(x);
+                for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                    fn_body.push_back(al,nested_lowered_body[i]);
+                }
+                nested_lowered_body = body_copy;
+            } else if (x.m_region == ASR::omp_region_typeType::ParallelSections) {
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                visit_OMPSections(x);
+                for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                    fn_body.push_back(al,nested_lowered_body[i]);
+                }
+                nested_lowered_body = body_copy;
+            } else {
+                for (size_t i = 0; i < x.n_body; i++) {
+                    if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                        // Recursively handle nested OpenMP constructs
+                        std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                        // visit_OMPRegion(*nested_region);
+                        this->visit_stmt(*x.m_body[i]);
+                        for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                            fn_body.push_back(al,nested_lowered_body[i]);
+                        }
+                        nested_lowered_body = body_copy;
+                    } else {
+                        // this->visit_stmt(*x.m_body[i]);
+                        stmt_visitor.visit_stmt(*x.m_body[i]);
+                        fn_body.push_back(al, x.m_body[i]);
+                    }
+                }
+            }
+            
+            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
+
+            // Create function
+            std::string fn_name = current_scope->parent->get_unique_name("lcompilers_parallel_func");
+            ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Function_t_util(al, loc, current_scope,
+                s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
+                fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
+                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                nullptr, false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr));
+            
+            clauses_heirarchial[nesting_lvl].clear();
+            current_scope->parent->add_symbol(ASRUtils::symbol_name(function), function);
+            current_scope = current_scope_copy;
+            thread_data_sym_copy = nullptr;
+            tdata_expr_copy = nullptr;
+            return function;
+        }
+
+        void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+            nesting_lvl++;
+            nested_lowered_body = {};
+            switch (x.m_region) {
+                case ASR::omp_region_typeType::Parallel:
+                visit_OMPParallel(x);
+                break;
+                
+                case ASR::omp_region_typeType::Sections:
+                visit_OMPSections(x);
+                break;
+
+                case ASR::omp_region_typeType::Section:
+                visit_OMPSection(/*x*/);
+                break;
+
+                case ASR::omp_region_typeType::Do:
+                visit_OMPDo(x);
+                break;
+
+                case ASR::omp_region_typeType::ParallelDo:
+                visit_OMPParallelDo(x);
+                break;
+
+                case ASR::omp_region_typeType::ParallelSections:
+                visit_OMPParallelSections(x);
+                break;
+
+                default:
+                    // for now give error for constructs which we do not support
+                    break;
+            }
+            nesting_lvl--;
+            if(nesting_lvl==0) {
+                pass_result.reserve(al,0);
+                for(size_t i=0; i<nested_lowered_body.size(); i++) {
+                    pass_result.push_back(al, nested_lowered_body[i]);
+                }
+            }
+        }
+
+        void visit_OMPParallel(const ASR::OMPRegion_t &x) {
+            std::map<std::string, ASR::ttype_t*> involved_symbols;
+            InvolvedSymbolsCollector c(involved_symbols);
+            c.visit_OMPRegion(x);
+
+            // create thread data module
+            std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module(involved_symbols, x.base.base.loc);
+            std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(x.base.base.loc);
+
+            // create external symbol for the thread data module
+            ASR::symbol_t* thread_data_ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, x.base.base.loc,
+                current_scope, ASRUtils::symbol_name(thread_data_module.second), thread_data_module.second, s2c(al, thread_data_module.first),
+                nullptr, 0, ASRUtils::symbol_name(thread_data_module.second), ASR::accessType::Public));
+            current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), thread_data_ext_sym);
+            
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            LCOMPILERS_ASSERT(data_expr != nullptr);
+
+            // now create a tdata (cptr)
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, current_scope->get_unique_name("tdata"), ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), ASR::intentType::Local);
+            LCOMPILERS_ASSERT(tdata_expr != nullptr);
+
+            std::vector<std::string> array_variables;
+
+            pack_data_to_thread_data(x.base.base.loc, involved_symbols, current_scope, thread_data_module, data_expr, array_variables);
+
+            // tdata = c_loc(data)
+            nested_lowered_body.push_back(b.Assignment(
+                tdata_expr,
+                ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc,
+                    ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc, data_expr, ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, ASRUtils::expr_type(data_expr))), nullptr)),
+                    ASRUtils::expr_type(tdata_expr), nullptr))
+            ));
+
+            // Create interface function
+            ASR::symbol_t* lcompilers_function = create_lcompilers_function_for_parallel(x.base.base.loc, x, involved_symbols, 
+                                                                            thread_data_module.first, module_symbols);
+            LCOMPILERS_ASSERT(lcompilers_function != nullptr);
+            ASR::Function_t* lcompilers_func = ASR::down_cast<ASR::Function_t>(lcompilers_function);
+            ASR::symbol_t* lcompilers_interface = create_interface_lcompilers_function(lcompilers_func);
+            ASR::Function_t* lcompilers_interface_func = ASR::down_cast<ASR::Function_t>(lcompilers_interface);
+            
+            // create: c_funloc(lcompilers_function)
+            ASR::expr_t* c_funloc = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc,
+                                    ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
+                                    b.Var(lcompilers_interface), ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, lcompilers_interface_func->m_function_signature)), nullptr)),
+                                    ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+            ASR::call_arg_t arg1; arg1.loc = x.base.base.loc; arg1.m_value = c_funloc;
+            ASR::call_arg_t arg2; arg2.loc = x.base.base.loc; arg2.m_value = tdata_expr;
+            ASR::call_arg_t arg3; arg3.loc = x.base.base.loc; arg3.m_value = b.i32(0);
+            ASR::call_arg_t arg4; arg4.loc = x.base.base.loc; arg4.m_value = b.i32(0);
+
+            call_args.push_back(al, arg1); call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3); call_args.push_back(al, arg4);
+
+            ASR::symbol_t* mod_sym = create_module(x.base.base.loc, "omp_lib");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
+                                call_args.p, call_args.n, nullptr)));
+            ASR::symbol_t* thread_data_sym = thread_data_module.second;
+
+            for (auto it: reduction_variables) {
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it);
+                ASR::symbol_t* sym = current_scope->get_symbol(std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it);
+                LCOMPILERS_ASSERT(sym != nullptr);
+                nested_lowered_body.push_back(b.Assignment(
+                    b.Var(actual_sym),
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr, sym, ASRUtils::symbol_type(sym), nullptr)
+                )));
+            }
+            reduction_variables.clear();
+
+
+            remove_original_statement = true;
+        }
+
+        void visit_OMPDo(const ASR::OMPRegion_t &x) {
+            nested_lowered_body={};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            stmt_visitor.visit_OMPRegion(x);
+
+            int collapse_levels=1;
+            Vec<ASR::OMPReduction_t*> reduction_clauses;
+            reduction_clauses.reserve(al,0);
+            // Step 1: Determine collapse levels from clauses (e.g., collapse(2)) and Reduction clauses too
+            if(x.m_region == ASR::omp_region_typeType::Do) {
+                for(size_t i=0; i<x.n_clauses; i++){
+                    clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
+                }
+                for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
+                    if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPReduction) {
+                        reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
+                    } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
+                        collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
+                    }
+                }
+            }
+
+            // Step 2: Initialize reduction variables (if any)
+            init_reduction_vars(reduction_clauses, x.base.base.loc);
+
+            // Step 3: Extract loop heads from nested DoLoop statements
+            std::vector<ASR::do_loop_head_t> heads;
+            heads.reserve(collapse_levels);
+            ASR::stmt_t* current_stmt = x.m_body[0];
+            ASR::DoLoop_t* innermost_loop = nullptr;
+            for (int i = 0; i < collapse_levels; i++) {
+                if (!ASR::is_a<ASR::DoLoop_t>(*current_stmt)) {
+                    throw LCompilersException("Expected nested DoLoop for collapse level " + std::to_string(i + 1));
+                }
+                ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(current_stmt);
+                heads.push_back(do_loop->m_head);
+                innermost_loop = do_loop;
+                if (i < collapse_levels - 1 && do_loop->n_body > 0) {
+                    current_stmt = do_loop->m_body[0]; // Move to the next nested loop
+                }
+            }
+            
+
+            // Step 4: Calculate total iterations for collapsed loops
+            ASR::expr_t* total_iterations = b.i32(1);
+            std::vector<ASR::expr_t*> dimension_lengths;
+            dimension_lengths.reserve(heads.size());
+            for (auto& head : heads) {
+                ASR::expr_t* length = b.Add(b.Sub(head.m_end, head.m_start), b.i32(1));
+                dimension_lengths.push_back(length);
+                total_iterations = b.Mul(total_iterations, length);
+            }
+
+            // Step 5: Declare partitioning variables (similar to visit_DoConcurrentLoop)
+            ASR::ttype_t* int_type = ASRUtils::expr_type(dimension_lengths[0]);
+            ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* num_threads = b.Variable(current_scope, current_scope->get_unique_name("num_threads"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* chunk = b.Variable(current_scope, current_scope->get_unique_name("chunk"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* leftovers = b.Variable(current_scope, current_scope->get_unique_name("leftovers"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+
+
+            // Step 6: Add partitioning logic to fn_body
+            nested_lowered_body.push_back(b.Assignment(num_threads,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),
+                    current_scope->get_symbol("omp_get_max_threads"), nullptr, 0, int_type, nullptr, nullptr))));
+            nested_lowered_body.push_back(b.Assignment(chunk, b.Div(total_iterations, num_threads)));
+            Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+            mod_args.push_back(al, total_iterations);
+            mod_args.push_back(al, num_threads);
+            nested_lowered_body.push_back(b.Assignment(leftovers,
+                ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, mod_args.p, 2, 0, int_type, nullptr))));
+            nested_lowered_body.push_back(b.Assignment(thread_num,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
+                    current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, int_type, nullptr, nullptr))));
+            nested_lowered_body.push_back(b.Assignment(start, b.Mul(chunk, thread_num)));
+            nested_lowered_body.push_back(b.If(b.Lt(thread_num, leftovers),
+                {b.Assignment(start, b.Add(start, thread_num))},
+                {b.Assignment(start, b.Add(start, leftovers))}));
+            nested_lowered_body.push_back(b.Assignment(end, b.Add(start, chunk)));
+            nested_lowered_body.push_back(b.If(b.Lt(thread_num, leftovers),
+                {b.Assignment(end, b.Add(end, b.i32(1)))},
+                {}));
+            
+
+            // Step 7: Create flattened loop
+            ASR::expr_t* I = b.Variable(current_scope, current_scope->get_unique_name("I"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            std::vector<ASR::stmt_t*> loop_body;
+
+            // Compute original loop indices from flattened index I
+            ASR::expr_t* temp_I = I;
+            for (size_t i = 0; i < heads.size(); i++) {
+                ASR::do_loop_head_t head = heads[i];
+                ASR::expr_t* computed_var;
+                if (i == heads.size() - 1) {
+                    // Innermost loop variable: ik = (I % (nk - ak + 1)) + ak
+                    Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                    mod_args.push_back(al, temp_I);
+                    mod_args.push_back(al, dimension_lengths[i]);
+                    computed_var = b.Add(
+                        ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, mod_args.p, 2, 0, int_type, nullptr)),
+                        head.m_start);
+                } else {
+                    // Outer loop variables: iy = ((I / (product of next dimensions)) % (ny - ay + 1)) + ay
+                    ASR::expr_t* product_of_next_dims = b.i32(1);
+                    for (size_t j = i + 1; j < heads.size(); j++) {
+                        product_of_next_dims = b.Mul(product_of_next_dims, dimension_lengths[j]);
+                    }
+                    if (i != 0){
+                        Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                        mod_args.push_back(al, b.Div(temp_I, product_of_next_dims));
+                        mod_args.push_back(al, dimension_lengths[i]);
+                        computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                            loc,2,mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)),head.m_start);
+                    } else {
+                        computed_var = b.Add(b.Div(b.Add(temp_I,b.i32(-1)), product_of_next_dims),head.m_start);
+                    }
+                }
+                // Assign to the original loop variable (resolved from current_scope)
+                ASR::expr_t* loop_var = b.Var(current_scope->resolve_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v)));
+                loop_body.push_back(b.Assignment(loop_var, computed_var));
+            }
+
+            // Add the innermost loop's body
+            for (size_t i = 0; i < innermost_loop->n_body; i++) {
+                loop_body.push_back(innermost_loop->m_body[i]);
+            }
+
+            // Create the DoLoop statement (start + 1 to end, matching visit_DoConcurrentLoop)
+            ASR::stmt_t* do_loop_stmt = b.DoLoop(I, b.Add(start, b.i32(1)), end, loop_body, nullptr);
+            nested_lowered_body.push_back(do_loop_stmt);
+
+            // Step 8: Handle reduction clauses with atomic operations
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                body_copy.push_back(nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
+
+            clauses_heirarchial[nesting_lvl].clear();
+            // Step 9: Add a barrier to synchronize threads
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
+        }
+
+        void visit_OMPParallelDo(const ASR::OMPRegion_t &x) {
+            visit_OMPParallel(x);
+        }
+
+        void visit_OMPSections(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            stmt_visitor.visit_OMPRegion(x);
+            
+            // Count the number of sections in the body
+            size_t num_sections = 0;
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                    ASR::OMPRegion_t* nested_region = ASR::down_cast<ASR::OMPRegion_t>(x.m_body[i]);
+                    if (nested_region->m_region == ASR::omp_region_typeType::Section) {
+                        num_sections++;
+                    }
+                }
+            }
+            
+            if (num_sections == 0) {
+                throw LCompilersException("OpenMP sections construct must contain at least one section");
+            }
+            
+            // Declare section_id variable for GOMP_sections_start/next
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+            ASR::expr_t* section_id = b.Variable(current_scope, current_scope->get_unique_name("section_id"), 
+                                                int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            
+            // Call GOMP_sections_start(num_sections) and assign to section_id
+            Vec<ASR::call_arg_t> start_args; start_args.reserve(al, 1);
+            ASR::call_arg_t start_arg;
+            start_arg.loc = loc;
+            start_arg.m_value = b.i32(num_sections);
+            start_args.push_back(al, start_arg);
+            
+            nested_lowered_body.push_back(b.Assignment(section_id,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
+                    current_scope->get_symbol("gomp_sections_start"),
+                    nullptr, 
+                    start_args.p, start_args.n, int_type, nullptr, nullptr))));
+            
+            // Create the while loop body: while (section_id != 0)
+            Vec<ASR::stmt_t*> while_body; while_body.reserve(al, num_sections + 2);
+            
+            // Build switch-like if-else chain for sections
+            size_t section_counter = 1;
+            
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                    ASR::OMPRegion_t* nested_region = ASR::down_cast<ASR::OMPRegion_t>(x.m_body[i]);
+                    if (nested_region->m_region == ASR::omp_region_typeType::Section) {
+                        // Create condition for this section: section_id == section_counter
+                        ASR::expr_t* case_condition = b.Eq(section_id, b.i32(section_counter));
+                        
+                        // Create body for this section
+                        std::vector<ASR::stmt_t*> section_body; section_body.reserve(nested_region->n_body);
+                        for (size_t j = 0; j < nested_region->n_body; j++) {
+                            section_body.push_back(nested_region->m_body[j]);
+                        }
+                        
+                        // Create if statement for this section
+                        ASR::stmt_t* section_if = b.If(case_condition, section_body, {});
+                        while_body.push_back(al, section_if);
+                        
+                        section_counter++;
+                    }
+                }
+            }
+            
+            // Call GOMP_sections_next() to get next section
+            while_body.push_back(al, b.Assignment(section_id,
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    current_scope->get_symbol("gomp_sections_next"),
+                    nullptr,
+                    nullptr, 0, int_type, nullptr, nullptr))));
+            
+            // Create while loop: while (section_id != 0)
+            ASR::expr_t* while_condition = b.NotEq(section_id, b.i32(0));
+            ASR::stmt_t* while_loop = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, 
+                while_condition, while_body.p, while_body.n, nullptr, 0));
+            
+            nested_lowered_body.push_back(while_loop);
+            
+            // Call GOMP_sections_end()
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_sections_end"), nullptr, nullptr, 0, nullptr)));
+            
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPSection(/*const ASR::OMPRegion_t &x */) {
+            /* This is intentionally being left here
+            All the sections are handled inside the visit_OMPSections function, 
+            this method is kept for any specific rocessing for any section , if required can be done in future*/
+        }
+
+        void visit_OMPParallelSections(const ASR::OMPRegion_t &x) {
+            visit_OMPParallel(x);
+        }
 };
 
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
                             const PassOptions &pass_options) {
     if (pass_options.openmp) {
-        DoConcurrentVisitor v(al, pass_options);
+        ParallelRegionVisitor v(al, pass_options);
         v.visit_TranslationUnit(unit);
     }
     return;

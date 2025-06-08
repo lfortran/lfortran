@@ -1,9 +1,10 @@
-#!/usr/bin/env xonsh
+#!/usr/bin/env shell
+# This is a cross-platform `shell` script.
 
-$RAISE_SUBPROC_ERROR = True
-trace on
+set -ex
 
-import os
+# TODO: this file has been ported from a xonsh file, hence
+# we need to re-check the below FIXME
 # FIXME: Using the below flag generates many warnings.
 # os.environ['CXXFLAGS'] = "-Werror"
 

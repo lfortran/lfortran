@@ -1,7 +1,11 @@
 program class_29
+    type :: toml_val
+        integer :: x
+    end type
     type :: toml_table
         integer :: x
         character(len=:), allocatable :: y
+        class(toml_val), allocatable :: val
     end type
     class(toml_table), pointer :: temp
     class(toml_table), pointer :: temp2
@@ -16,6 +20,7 @@ program class_29
     allocate(temp3)
     if (.not. allocated(temp3)) error stop
     temp3%y = "Hello, World!"
+    if (allocated(temp3%val)) error stop
     call destroy(temp3)
     if (allocated(temp3%y)) error stop
 contains 

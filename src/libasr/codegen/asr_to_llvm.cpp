@@ -1793,7 +1793,11 @@ public:
             this->visit_expr(*x.m_arg);
             ptr_loads = ptr_loads_copy;
             llvm::Value* plist = tmp;
-            tmp = list_api->len(plist);
+
+            std::string type_code = ASRUtils::get_type_code(
+                ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg)));
+            llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
+            tmp = list_api->len2(list_type, plist);
         }
     }
 
@@ -5796,6 +5800,8 @@ public:
             target = llvm_symtab[h];
             if (ASR::is_a<ASR::Pointer_t>(*asr_target->m_type) &&
                 !ASR::is_a<ASR::CPtr_t>(
+                    *ASRUtils::get_contained_type(asr_target->m_type)) && 
+                !ASR::is_a<ASR::StructType_t>(
                     *ASRUtils::get_contained_type(asr_target->m_type))) {
                 target = llvm_utils->CreateLoad(target);
             }
@@ -10772,10 +10778,11 @@ public:
         int64_t ptr_loads_copy = ptr_loads;
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {
             ptr_loads = 0;
+            visit_expr_wrapper(arg, false);
         } else {
             ptr_loads = 2 - LLVM::is_llvm_pointer(*asr_type);
+            visit_expr_wrapper(arg, true);
         }
-        visit_expr_wrapper(arg, true);
         ptr_loads = ptr_loads_copy;
         int n_dims = ASRUtils::extract_n_dims_from_ttype(asr_type);
         if (ASRUtils::is_class_type(ASRUtils::extract_type(asr_type))) {

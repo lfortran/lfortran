@@ -45,6 +45,49 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+
+time_section "🧪 Testing splpak" '
+  git clone https://github.com/Pranavchiku/splpak.git
+  cd splpak
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout lf-2
+  git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
+
+  git clean -dfx
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32"
+
+  cd ../
+  rm -rf splpak
+'
+
+time_section "🧪 Testing fortran-regex" '
+  git clone https://github.com/perazz/fortran-regex.git
+  cd fortran-regex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  fpm --compiler=$FC build
+
+  print_success "Done with fortran-regex"
+  cd ..
+'
+
+time_section "🧪 Testing fortran-shlex" '
+  git clone https://github.com/jinangshah21/fortran-shlex.git
+  cd fortran-shlex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-1
+  micromamba install -c conda-forge fpm
+  git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
+  fpm --compiler=$FC build
+  print_success "Done with fortran-shlex"
+  cd ..
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
@@ -119,7 +162,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   git clean -dfx
   git restore .
   git checkout sc-lf-4
-  git checkout 9c15e559c7b5b8ccd9fbdf4f5134b2ae7b1691e8
+  git checkout 6d3370630fd0a9da8bd28d88602820848b5cc3f0
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \

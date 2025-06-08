@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     4
                                     c_funptr
-                                    17 c_funptr
+                                    20 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -23,7 +23,7 @@
                                 (ExternalSymbol
                                     4
                                     c_int
-                                    17 c_int
+                                    20 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -33,7 +33,7 @@
                                 (ExternalSymbol
                                     4
                                     c_ptr
-                                    17 c_ptr
+                                    20 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -310,14 +310,165 @@
                                     .false.
                                     ()
                                 ),
-                            omp_get_max_threads:
+                            gomp_sections_end:
                                 (Function
                                     (SymbolTable
                                         11
                                         {
+                                            
+                                        })
+                                    gomp_sections_end
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        Interface
+                                        "GOMP_sections_end"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_sections_next:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            gomp_sections_next:
+                                                (Variable
+                                                    12
+                                                    gomp_sections_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_sections_next
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_sections_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 12 gomp_sections_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_sections_start:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            count:
+                                                (Variable
+                                                    13
+                                                    count
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            gomp_sections_start:
+                                                (Variable
+                                                    13
+                                                    gomp_sections_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_sections_start
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_sections_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 count)]
+                                    []
+                                    (Var 13 gomp_sections_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_max_threads:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
                                             omp_get_max_threads:
                                                 (Variable
-                                                    11
+                                                    14
                                                     omp_get_max_threads
                                                     []
                                                     ReturnVar
@@ -354,7 +505,7 @@
                                     []
                                     []
                                     []
-                                    (Var 11 omp_get_max_threads)
+                                    (Var 14 omp_get_max_threads)
                                     Public
                                     .false.
                                     .false.
@@ -363,11 +514,11 @@
                             omp_get_num_procs:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        15
                                         {
                                             omp_get_num_procs:
                                                 (Variable
-                                                    12
+                                                    15
                                                     omp_get_num_procs
                                                     []
                                                     ReturnVar
@@ -404,7 +555,7 @@
                                     []
                                     []
                                     []
-                                    (Var 12 omp_get_num_procs)
+                                    (Var 15 omp_get_num_procs)
                                     Public
                                     .false.
                                     .false.
@@ -413,11 +564,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        16
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    13
+                                                    16
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -454,7 +605,7 @@
                                     []
                                     []
                                     []
-                                    (Var 13 omp_get_thread_num)
+                                    (Var 16 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -463,11 +614,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        17
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    14
+                                                    17
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -504,7 +655,7 @@
                                     []
                                     []
                                     []
-                                    (Var 14 omp_get_wtime)
+                                    (Var 17 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -513,11 +664,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        18
                                         {
                                             n:
                                                 (Variable
-                                                    15
+                                                    18
                                                     n
                                                     []
                                                     Unspecified
@@ -552,7 +703,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 15 n)]
+                                    [(Var 18 n)]
                                     []
                                     ()
                                     Public
@@ -575,7 +726,7 @@
                                 (ExternalSymbol
                                     2
                                     c_funptr
-                                    17 c_funptr
+                                    20 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -585,7 +736,7 @@
                                 (ExternalSymbol
                                     2
                                     c_int
-                                    17 c_int
+                                    20 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -595,7 +746,7 @@
                                 (ExternalSymbol
                                     2
                                     c_ptr
-                                    17 c_ptr
+                                    20 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -659,6 +810,36 @@
                                     omp_lib
                                     []
                                     gomp_parallel
+                                    Public
+                                ),
+                            gomp_sections_end:
+                                (ExternalSymbol
+                                    2
+                                    gomp_sections_end
+                                    4 gomp_sections_end
+                                    omp_lib
+                                    []
+                                    gomp_sections_end
+                                    Public
+                                ),
+                            gomp_sections_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_sections_next
+                                    4 gomp_sections_next
+                                    omp_lib
+                                    []
+                                    gomp_sections_next
+                                    Public
+                                ),
+                            gomp_sections_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_sections_start
+                                    4 gomp_sections_start
+                                    omp_lib
+                                    []
+                                    gomp_sections_start
                                     Public
                                 ),
                             ix:
@@ -852,46 +1033,62 @@
                         ()
                         .false.
                     )
-                    (DoConcurrentLoop
-                        [((Var 2 iy)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 ny)
-                        ())
-                        ((Var 2 ix)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nx)
-                        ())
-                        ((Var 2 iz)
-                        (IntegerConstant 1 (Integer 4) Decimal)
-                        (Var 2 nz)
-                        ())]
-                        []
-                        [(Var 2 iy)
-                        (Var 2 ix)
-                        (Var 2 iz)]
-                        []
-                        [(Print
-                            (StringFormat
+                    (OMPRegion
+                        ParallelDo
+                        [(OMPCollapse
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                        )
+                        (OMPPrivate
+                            [(Var 2 iy)
+                            (Var 2 ix)
+                            (Var 2 iz)]
+                        )]
+                        [(DoLoop
+                            ()
+                            ((Var 2 iy)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Var 2 ny)
+                            ())
+                            [(DoLoop
                                 ()
-                                [(StringConstant
-                                    "iy->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 iy)
-                                (StringConstant
-                                    "ix->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 ix)
-                                (StringConstant
-                                    "iz->"
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                                )
-                                (Var 2 iz)]
-                                FormatFortran
-                                (String 1 () ExpressionLength CString)
-                                ()
-                            )
+                                ((Var 2 ix)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Var 2 nx)
+                                ())
+                                [(DoLoop
+                                    ()
+                                    ((Var 2 iz)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 nz)
+                                    ())
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "iy->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 iy)
+                                            (StringConstant
+                                                "ix->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 ix)
+                                            (StringConstant
+                                                "iz->"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 iz)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
+                                    )]
+                                    []
+                                )]
+                                []
+                            )]
+                            []
                         )]
                     )]
                 )

@@ -3441,6 +3441,37 @@ public:
                 AST::AttrType_t *sym_type =
                     AST::down_cast<AST::AttrType_t>(x.m_vartype);
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
+               
+                bool is_allocatable = false;
+                for (size_t a = 0; a < x.n_attributes; a++) {
+                    AST::decl_attribute_t *attr = x.m_attributes[a];
+                    if (AST::is_a<AST::SimpleAttribute_t>(*attr)) {
+                        AST::SimpleAttribute_t *sa = AST::down_cast<AST::SimpleAttribute_t>(attr);
+                        if (sa->m_attr == AST::simple_attributeType::AttrAllocatable) {
+                            is_allocatable = true;
+                            break;
+                        }
+                    }
+                }
+
+                if (is_char_type && sym_type->n_kind == ASR::string_length_kindType::DeferredLength &&  is_allocatable) {
+                    bool has_fixed_shape = false;
+                    for (size_t d = 0; d < s.n_dim; d++) {
+                        if (s.m_dim[d].m_end != nullptr && s.m_dim[d].m_end_star == 0) {
+                            has_fixed_shape = true;
+                            break;
+                        }
+                    }
+                    if (has_fixed_shape && s.n_dim > 0) {
+                        diag.add(Diagnostic(
+                            "Allocatable array '" + std::string(x.m_syms[0].m_name)
+                            + "' must have a deferred shape or assumed rank",
+                            Level::Error,Stage::Semantic,{ 
+                                Label("", { s.loc }) 
+                            }));
+                        throw SemanticAbort();
+                    }
+                }
                 if (assgnd_access.count(sym)) {
                     s_access = assgnd_access[sym];
                 }
@@ -3491,7 +3522,7 @@ public:
                 dims.reserve(al, 0);
                 // location for dimension(...) if present
                 Location dims_attr_loc;
-                bool is_allocatable = false;
+                is_allocatable = false;
                 if (x.n_attributes > 0) {
                     for (size_t i=0; i < x.n_attributes; i++) {
                         AST::decl_attribute_t *a = x.m_attributes[i];
@@ -4685,16 +4716,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            } else if (startswith(derived_type_name, "_lfortran_")) {
-                // LFortran-specific intrinsics 
-
-                if (derived_type_name == "_lfortran_list_integer") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-                else if (derived_type_name == "_lfortran_list_real") 
-                    return ASRUtils::TYPE(ASR::make_List_t(al, loc, ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))));
-                else if (derived_type_name == "_lfortran_set_integer") 
-                    return ASRUtils::TYPE(ASR::make_Set_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-            }
+            } 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
             if (v && ASR::is_a<ASR::Variable_t>(*v)
                   && ASR::is_a<ASR::TypeParameter_t>(*
@@ -4739,6 +4761,14 @@ public:
                         type));
                 }
             }
+        } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
+            return ASRUtils::TYPE(ASR::make_List_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
+        }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
+            return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+                    is_pointer, is_allocatable, dims, type_declaration, abi,
+                    is_argument))); 
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
@@ -4866,8 +4896,8 @@ public:
     }
 
     int get_based_indexing(ASR::symbol_t* v) {
-        if (v != nullptr && ASR::is_a<ASR::Variable_t>(*v)) {
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(v);
+        if (v != nullptr && ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(v))) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(v));
             if (ASRUtils::is_array(var->m_type) && var->m_value && var->m_storage == ASR::storage_typeType::Parameter) {
                 ASR::Array_t* arr = ASR::down_cast<ASR::Array_t>(var->m_type);
                 for (size_t i = 0; i < arr->n_dims; i++) {
