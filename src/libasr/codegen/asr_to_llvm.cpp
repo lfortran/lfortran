@@ -1352,6 +1352,18 @@ public:
                         dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
                     }
                 }
+                if(caller_type->type == ASR::ttypeType::Pointer) {
+                    ASR::ttype_t* new_caller_type = ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(
+                        ASRUtils::expr_type(sm->m_v)));
+                    if (ASR::is_a<ASR::StructType_t>(*new_caller_type)) {
+                        struct_sym = ASRUtils::symbol_get_past_external(
+                            ASR::down_cast<ASR::StructType_t>(new_caller_type)->m_derived_type);
+                        if (ASRUtils::is_class_type(new_caller_type)) {
+                            dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                        }
+                    }
+                }
 
                 std::string curr_struct = ASRUtils::symbol_name(struct_sym);
                 std::string member_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(sm->m_m));
@@ -1366,6 +1378,13 @@ public:
                 int dt_idx = name2memidx[curr_struct][member_name];
                 std::vector<llvm::Value*> idx_vars = {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                     llvm::ConstantInt::get(context, llvm::APInt(32, dt_idx))};
+                if (dt->getType() != name2dertype[curr_struct]->getPointerTo()) {
+                    llvm::Value* dt_val = dt;
+                    llvm::Value* alloca_tmp = builder->CreateAlloca(name2dertype[curr_struct]);
+                    builder->CreateStore(dt_val, alloca_tmp);
+                    dt = alloca_tmp;
+                }
+                LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
                 llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
 #if LLVM_VERSION_MAJOR > 16
                 llvm::Type *dt_1_type = llvm_utils->get_type_from_ttype_t_util(
