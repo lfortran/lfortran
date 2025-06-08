@@ -100,8 +100,8 @@ public:
             call_args.push_back(al, call_arg);
         }
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            sym, sym, call_args.p, call_args.n, return_type, nullptr, nullptr,
-            false));
+            sym, sym, call_args.p, call_args.n, return_type, nullptr, nullptr
+            ));
     }
 
     ASR::symbol_t *create_bindc_function(const Location &loc,

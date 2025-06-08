@@ -580,7 +580,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name, x->m_original_name,
-            args.p, args.size(), type, value, dt, false);
+            args.p, args.size(), type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t *x) {
@@ -624,7 +624,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, name, dependencies);
         }
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name /* change this */,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false, false);
+            x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
     ASR::asr_t* duplicate_StructInstanceMember(ASR::StructInstanceMember_t *x) {
@@ -1617,7 +1617,7 @@ public:
         }
 
         return ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), type, value, dt, false);
+            x->m_original_name, args.p, args.size(), type, value, dt);
     }
 
     ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
@@ -1660,8 +1660,7 @@ public:
         }
 
         return ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc, name,
-            x->m_original_name, args.p, args.size(), dt, nullptr, false,
-            ASRUtils::get_class_proc_nopass_val(x->m_name));
+            x->m_original_name, args.p, args.size(), dt, nullptr, false);
     }
 
     ASR::asr_t* duplicate_DoLoop(ASR::DoLoop_t *x) {

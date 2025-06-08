@@ -236,8 +236,7 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
-                x->n_args, x->m_type, x->m_value, x->m_dt,
-                ASRUtils::get_class_proc_nopass_val((*x).m_name)));
+                x->n_args, x->m_type, x->m_value, x->m_dt));
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(call);
             x->m_args = function_call->m_args;
             x->n_args = function_call->n_args;
@@ -284,7 +283,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
-                x.n_args, x.m_dt, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
+                x.n_args, x.m_dt, nullptr, false));
             ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(call);
             ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
             xx.m_args = subrout_call->m_args;

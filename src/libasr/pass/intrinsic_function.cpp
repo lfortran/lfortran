@@ -279,7 +279,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_args.push_back(al, new_arg);
         ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
-            new_args.size(), x->m_dt, nullptr, false, false));
+            new_args.size(), x->m_dt, nullptr, false));
         pass_result.push_back(al, subrout_call);
     }
 };
