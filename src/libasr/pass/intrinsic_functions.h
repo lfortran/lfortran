@@ -4999,18 +4999,13 @@ namespace Ichar {
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
 
-        if (ASR::is_a<ASR::Var_t>(*args[0])) {
-            ASR::symbol_t* sym_t = ASR::down_cast<ASR::Var_t>(args[0])->m_v;
-            if (ASR::is_a<ASR::Variable_t>(*sym_t)) {
-                ASR::ttype_t* type_t = ASR::down_cast<ASR::Variable_t>(sym_t)->m_type;
-                if (ASR::is_a<ASR::String_t>(*type_t)) {
-                    ASR::expr_t* len_expr = ASR::down_cast<ASR::String_t>(type_t)->m_len;
-                    if (len_expr && ASR::is_a<ASR::IntegerConstant_t>(*len_expr) ) {
-                        int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(len_expr)->m_n;
-                        if (len != 1) {
-                            throw LCompilersException("Argument to Ichar must have length one");
-                        }
-                    }
+        ASR::ttype_t* type_t =ASRUtils::expr_type(args[0]);
+        if (ASR::is_a<ASR::String_t>(*type_t)) {
+            ASR::expr_t* len_expr = ASR::down_cast<ASR::String_t>(type_t)->m_len;
+            if (len_expr && ASR::is_a<ASR::IntegerConstant_t>(*len_expr) ) {
+                int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(len_expr)->m_n;
+                if (len != 1) {
+                    throw LCompilersException("Argument to Ichar must have length one");
                 }
             }
         }
