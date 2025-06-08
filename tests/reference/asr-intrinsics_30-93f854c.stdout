@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             a2:
                                 (Variable
@@ -52,6 +56,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             a3:
@@ -83,6 +91,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ar1:
@@ -121,6 +133,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ar2:
                                 (Variable
@@ -157,6 +173,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ar3:
@@ -234,6 +254,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             arr1:
                                 (Variable
@@ -274,6 +298,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             arr2:
@@ -335,6 +363,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             arr3:
@@ -416,6 +448,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             c1:
                                 (Variable
@@ -431,6 +467,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c2:
@@ -448,6 +488,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i1:
                                 (Variable
@@ -463,6 +507,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i2:
@@ -480,6 +528,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i3:
                                 (Variable
@@ -496,6 +548,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -511,6 +567,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             int16:
@@ -548,6 +608,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r2:
                                 (Variable
@@ -563,6 +627,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ri3:
@@ -586,6 +654,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ri4:
                                 (Variable
@@ -608,14 +680,22 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_30
                     [iso_fortran_env]
                     [(Print
-                        [(Var 2 a1)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -634,9 +714,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 a2)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a2)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -655,9 +739,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 a3)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a3)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -676,9 +764,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 ar1)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 ar1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -697,9 +789,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 ar2)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 ar2)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -718,9 +814,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 ar3)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 ar3)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -739,15 +839,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Integer 4)
-                            (Var 2 ri3)
-                            (Integer 4)
-                            (IntegerConstant 9 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Integer 4)
+                                (Var 2 ri3)
+                                (Integer 4)
+                                (IntegerConstant 9 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -766,15 +870,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Integer 4)
-                            (Var 2 ri4)
-                            (Integer 4)
-                            (IntegerConstant 9 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Integer 4)
+                                (Var 2 ri4)
+                                (Integer 4)
+                                (IntegerConstant 9 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -793,15 +901,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Integer 4)
-                            (Var 2 i1)
-                            (Integer 4)
-                            (IntegerConstant 9 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Integer 4)
+                                (Var 2 i1)
+                                (Integer 4)
+                                (IntegerConstant 9 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -826,15 +938,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Integer 8)
-                            (Var 2 i2)
-                            (Integer 4)
-                            (IntegerConstant 18 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Integer 8)
+                                (Var 2 i2)
+                                (Integer 4)
+                                (IntegerConstant 18 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -859,15 +975,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Real 4)
-                            (Var 2 r1)
-                            (Integer 4)
-                            (IntegerConstant 37 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Real 4)
+                                (Var 2 r1)
+                                (Integer 4)
+                                (IntegerConstant 37 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -892,15 +1012,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Real 8)
-                            (Var 2 r2)
-                            (Integer 4)
-                            (IntegerConstant 307 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Real 8)
+                                (Var 2 r2)
+                                (Integer 4)
+                                (IntegerConstant 307 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -925,15 +1049,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Complex 4)
-                            (Var 2 c1)
-                            (Integer 4)
-                            (IntegerConstant 37 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Complex 4)
+                                (Var 2 c1)
+                                (Integer 4)
+                                (IntegerConstant 37 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -958,15 +1086,19 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Complex 8)
-                            (Var 2 c2)
-                            (Integer 4)
-                            (IntegerConstant 307 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Complex 8)
+                                (Var 2 c2)
+                                (Integer 4)
+                                (IntegerConstant 307 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -991,20 +1123,24 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Array
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr1)
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            (Var 2 arr1)
-                            (Integer 4)
-                            (IntegerConstant 9 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (IntegerConstant 9 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1034,20 +1170,24 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Array
-                                (Real 8)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            (Var 2 arr2)
-                            (Integer 4)
-                            (IntegerConstant 307 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Array
+                                    (Real 8)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr2)
+                                (Integer 4)
+                                (IntegerConstant 307 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -1077,20 +1217,24 @@
                         []
                     )
                     (Print
-                        [(TypeInquiry
-                            Range
-                            (Array
-                                (Complex 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 3 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            (Var 2 arr3)
-                            (Integer 4)
-                            (IntegerConstant 37 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Range
+                                (Array
+                                    (Complex 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (Var 2 arr3)
+                                (Integer 4)
+                                (IntegerConstant 37 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare

@@ -81,15 +81,16 @@ void asr_ser(const std::string &src) {
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::CompilerOptions compiler_options;
     ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics, compiler_options));
+    LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
-        diagnostics, nullptr, false, compiler_options));
+        diagnostics, nullptr, false, compiler_options, lm));
 
     std::string asr_orig = LCompilers::pickle(*asr);
     std::string binary = LCompilers::serialize(*asr);
 
     LCompilers::ASR::asr_t *asr_new0;
     LCompilers::SymbolTable symtab(nullptr);
-    asr_new0 = LCompilers::deserialize_asr(al, binary, true, symtab);
+    asr_new0 = LCompilers::deserialize_asr(al, binary, true, symtab, 0);
     CHECK(LCompilers::ASR::is_a<LCompilers::ASR::unit_t>(*asr_new0));
     LCompilers::ASR::TranslationUnit_t *tu
         = LCompilers::ASR::down_cast2<LCompilers::ASR::TranslationUnit_t>(asr_new0);
@@ -108,13 +109,21 @@ void asr_mod(const std::string &src) {
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::CompilerOptions compiler_options;
     ast0 = TRY(LCompilers::LFortran::parse(al, src, diagnostics, compiler_options));
+    LCompilers::LocationManager lm;
+    lm.file_ends.push_back(0);
+    LCompilers::LocationManager::FileLocations file;
+    file.out_start.push_back(0); file.in_start.push_back(0); file.in_newlines.push_back(0);
+    file.in_filename = "test"; file.current_line = 1; file.preprocessor = false; file.out_start0.push_back(0);
+    file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
+    file.in_newlines0.push_back(0);
+    lm.files.push_back(file);
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *ast0,
-        diagnostics, nullptr, false, compiler_options));
+        diagnostics, nullptr, false, compiler_options, lm));
 
-    std::string modfile = LCompilers::save_modfile(*asr);
+    std::string modfile = LCompilers::save_modfile(*asr, lm);
     LCompilers::SymbolTable symtab(nullptr);
     LCompilers::ASR::TranslationUnit_t *asr2 = LCompilers::load_modfile(al,
-            modfile, true, symtab);
+            modfile, true, symtab, lm);
     fix_external_symbols(*asr2, symtab);
     LCOMPILERS_ASSERT(LCompilers::asr_verify(*asr2, true, diagnostics));
 

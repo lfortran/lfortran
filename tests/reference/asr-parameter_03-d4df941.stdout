@@ -31,14 +31,22 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     parameter_03
                     []
                     [(Print
-                        [(Var 2 l_knd)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 l_knd)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

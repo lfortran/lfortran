@@ -21,6 +21,17 @@ inline std::string get_intrinsic_subroutine_name(int x) {
     switch (x) {
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomNumber)
         INTRINSIC_SUBROUTINE_NAME_CASE(RandomInit)
+        INTRINSIC_SUBROUTINE_NAME_CASE(RandomSeed)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCommand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetCommandArgument)
+        INTRINSIC_SUBROUTINE_NAME_CASE(GetEnvironmentVariable)
+        INTRINSIC_SUBROUTINE_NAME_CASE(ExecuteCommandLine)
+        INTRINSIC_SUBROUTINE_NAME_CASE(CpuTime)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Srand)
+        INTRINSIC_SUBROUTINE_NAME_CASE(SystemClock)
+        INTRINSIC_SUBROUTINE_NAME_CASE(DateAndTime)
+        INTRINSIC_SUBROUTINE_NAME_CASE(MoveAlloc)
+        INTRINSIC_SUBROUTINE_NAME_CASE(Mvbits)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -38,6 +49,28 @@ namespace IntrinsicImpureSubroutineRegistry {
             {&RandomNumber::instantiate_RandomNumber, &RandomNumber::verify_args}},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
             {&RandomInit::instantiate_RandomInit, &RandomInit::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
+            {&RandomSeed::instantiate_RandomSeed, &RandomSeed::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            {&Srand::instantiate_Srand, &Srand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
+            {&GetCommand::instantiate_GetCommand, &GetCommand::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            {&GetCommandArgument::instantiate_GetCommandArgument, &GetCommandArgument::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            {&SystemClock::instantiate_SystemClock, &SystemClock::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            {&DateAndTime::instantiate_DateAndTime, &DateAndTime::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
+            {&GetEnvironmentVariable::instantiate_GetEnvironmentVariable, &GetEnvironmentVariable::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
+            {&ExecuteCommandLine::instantiate_ExecuteCommandLine, &ExecuteCommandLine::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            {&CpuTime::instantiate_CpuTime, &CpuTime::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
+            {&MoveAlloc::instantiate_MoveAlloc, &MoveAlloc::verify_args}},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
+            {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_subroutine_id_to_name = {
@@ -45,6 +78,28 @@ namespace IntrinsicImpureSubroutineRegistry {
             "random_number"},
         {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomInit),
             "random_init"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::RandomSeed),
+            "random_seed"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Srand),
+            "srand"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommand),
+            "get_command"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetCommandArgument),
+            "get_command_argument"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::SystemClock),
+            "system_clock"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::DateAndTime),
+            "date_and_time"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::GetEnvironmentVariable),
+            "get_environment_variable"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine),
+            "execute_command_line"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::CpuTime),
+            "cpu_time"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::MoveAlloc),
+            "move_alloc"},
+        {static_cast<int64_t>(IntrinsicImpureSubroutines::Mvbits),
+            "mvbits"},
     };
 
 
@@ -52,6 +107,17 @@ namespace IntrinsicImpureSubroutineRegistry {
         create_intrinsic_subroutine>& intrinsic_subroutine_by_name_db = {
                 {"random_number", &RandomNumber::create_RandomNumber},
                 {"random_init", &RandomInit::create_RandomInit},
+                {"random_seed", &RandomSeed::create_RandomSeed},
+                {"srand", &Srand::create_Srand},
+                {"get_command", &GetCommand::create_GetCommand},
+                {"get_command_argument", &GetCommandArgument::create_GetCommandArgument},
+                {"system_clock", &SystemClock::create_SystemClock},
+                {"get_environment_variable", &GetEnvironmentVariable::create_GetEnvironmentVariable},
+                {"execute_command_line", &ExecuteCommandLine::create_ExecuteCommandLine},
+                {"cpu_time", &CpuTime::create_CpuTime},
+                {"date_and_time", &DateAndTime::create_DateAndTime},
+                {"move_alloc", &MoveAlloc::create_MoveAlloc},
+                {"mvbits", &Mvbits::create_Mvbits},
     };
 
     static inline bool is_intrinsic_subroutine(const std::string& name) {
@@ -77,7 +143,7 @@ namespace IntrinsicImpureSubroutineRegistry {
         return std::get<0>(intrinsic_subroutine_by_id_db.at(id));
     }
 
-    static inline std::string get_intrinsic_subroutine_name(int64_t id) {
+    inline std::string get_intrinsic_subroutine_name(int64_t id) {
         if( intrinsic_subroutine_id_to_name.find(id) == intrinsic_subroutine_id_to_name.end() ) {
             throw LCompilersException("IntrinsicSubroutine with ID " + std::to_string(id) +
                                       " has no name registered for it");

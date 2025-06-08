@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             number:
                                 (Variable
@@ -43,6 +47,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -60,6 +68,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     flip_sign
@@ -68,6 +80,7 @@
                         (Var 2 number)
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -76,6 +89,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -100,6 +114,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -142,6 +157,7 @@
                         (Var 2 number)
                         (IntegerConstant 124 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -150,6 +166,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -174,6 +191,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )

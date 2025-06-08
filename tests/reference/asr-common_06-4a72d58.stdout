@@ -48,11 +48,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     ls0001
                                     []
                                     [rowns]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -71,12 +76,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         3 ls0001
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

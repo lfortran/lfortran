@@ -37,6 +37,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -53,6 +57,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -63,7 +71,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 t_1
                                                     )
                                                     ()
@@ -71,11 +82,18 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     multiply
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 t_1
                                         )
                                         (Real 4)]
@@ -109,6 +127,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 res)
                                     Private
@@ -146,6 +165,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -162,6 +185,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -172,7 +199,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 t_1
                                                     )
                                                     ()
@@ -180,11 +210,18 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     sqrt_subtract
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 t_1
                                         )
                                         (Integer 4)]
@@ -232,6 +269,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 res)
                                     Private
@@ -267,6 +305,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             multiply:
                                                 (ClassProcedure
@@ -294,6 +336,7 @@
                                     t_1
                                     []
                                     [i]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -383,12 +426,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 t_1
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -406,6 +456,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare

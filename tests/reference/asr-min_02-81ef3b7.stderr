@@ -1,5 +1,0 @@
-warning: Different kinds of args in max0 is a non-standard extension
- --> tests/errors/min_02.f90:4:14
-  |
-4 |     print *, min(y, z)
-  |              ^^^^^^^^^ help: ensure all arguments have the same kind to make it standard

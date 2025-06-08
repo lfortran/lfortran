@@ -9,6 +9,10 @@
 
 #define num_types 7
 
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
 namespace LCompilers::LFortran {
 class ImplicitCastRules {
 private:
@@ -36,7 +40,7 @@ private:
       {"UnsignedInteger", "Unsigned Integer Pointer"},
       {"Real", "Integer or Real or Real Pointer"},
       {"Complex", "Integer, Real or Complex or Complex Pointer"},
-      {"Character", "Character Pointer"},
+      {"String", "String Pointer"},
       {"Logical", "Integer or Logical Pointer"},
       {"Derived", "Derived Pointer"}
   };
@@ -65,7 +69,7 @@ private:
       {complex_to_integer, error_case, complex_to_real, complex_to_complex,
        no_cast_required, no_cast_required, no_cast_required},
 
-      // Character
+      // String
       {no_cast_required, no_cast_required, no_cast_required, no_cast_required,
        no_cast_required, no_cast_required, no_cast_required},
 
@@ -87,7 +91,7 @@ private:
       -1,  // Unsigned Integer
       5,  // Real
       6,  // Complex
-      -1, // Character
+      -1, // String
       -1, // Logical
       -1  // Derived
   };
@@ -106,7 +110,7 @@ public:
   static void set_converted_value(Allocator &al, const Location &a_loc,
                                   ASR::expr_t **convert_can,
                                   ASR::ttype_t *source_type,
-                                  ASR::ttype_t *dest_type) {
+                                  ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
     if( ASRUtils::types_equal(source_type, dest_type, true) ) {
         return;
     }
@@ -139,13 +143,15 @@ public:
       std::string allowed_types_str = type_names[dest_type2->type][1];
       std::string dest_type_str = type_names[dest_type2->type][0];
       std::string error_msg = "Only " + allowed_types_str + " can be assigned to " + dest_type_str;
-      throw SemanticError(error_msg, a_loc);
+      diag.add(Diagnostic(error_msg,
+          Level::Error, Stage::Semantic, {Label("", {a_loc})}));
+      throw SemanticAbort();
     } else if (cast_kind != no_cast_required) {
         ASR::expr_t *value=nullptr;
         if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -194,7 +200,7 @@ public:
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2))
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(
-                  *ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                  *ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::IntegerConstant_t>(*value)) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -237,6 +243,7 @@ public:
                             new_array[i] = double(((int8_t*) data)[i]);
                           }
                         }
+                        new_data = new_array;
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
@@ -249,7 +256,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*dest_type2));
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::RealConstant_t>(*value)) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
@@ -288,19 +295,55 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::RealToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::RealConstant_t>(*value) ) {
                     ASR::RealConstant_t *r = ASR::down_cast<ASR::RealConstant_t>(value);
                     double rval = r->m_r;
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       rval, 0, dest_type2);
+                } else {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+                    if (dest_kind == 8) {
+                        std::complex<double> *new_array = al.allocate<std::complex<double>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            if (kind == 4) {
+                                new_array[i] = std::complex<double>(((float*)data)[i], 0);
+                            } else if (kind == 8) {
+                                new_array[i] = std::complex<double>(((double*)data)[i], 0);
+                            }
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 4) {
+                        std::complex<float> *new_array = al.allocate<std::complex<float>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            if (kind == 4) {
+                                new_array[i] = std::complex<float>(((float*)data)[i], 0);
+                            } else if (kind == 8) {
+                                new_array[i] = std::complex<float>(((double*)data)[i], 0);
+                            }
+                        }
+                        new_data = new_array;
+                    }
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToReal) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Real_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -314,7 +357,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_pointer(dest_type2)))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if (ASR::is_a<ASR::ComplexConstant_t>(*value)) {
                   ASR::ComplexConstant_t *r = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -329,7 +372,7 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToInteger) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASRUtils::is_integer(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
@@ -369,6 +412,30 @@ public:
                           }
                         }
                         new_data = new_array;
+                    } else if (dest_kind == 2) {
+                        int16_t *new_array = al.allocate<int16_t>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = ((int*) data)[i];
+                          } else if ( kind == 8 ) {
+                            new_array[i] = ((int64_t*) data)[i];
+                          } else if ( kind == 1 ) {
+                            new_array[i] = ((int8_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 1) {
+                        int8_t *new_array = al.allocate<int8_t>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                          if ( kind == 4) {
+                            new_array[i] = ((int*) data)[i];
+                          } else if ( kind == 8 ) {
+                            new_array[i] = ((int64_t*) data)[i];
+                          } else if ( kind == 2) {
+                            new_array[i] = ((int16_t*) data)[i];
+                          }
+                        }
+                        new_data = new_array;
                     }
                     if (new_data) {
                         ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
@@ -381,19 +448,63 @@ public:
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::IntegerToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Integer_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::IntegerConstant_t>(*value) ) {
                     ASR::IntegerConstant_t *i = ASR::down_cast<ASR::IntegerConstant_t>(value);
                     int64_t ival = i->m_n;
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       ival, 0, dest_type2);
+                } else {
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    int kind = ASRUtils::extract_kind_from_ttype_t(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+                    if (dest_kind == 8) {
+                        std::complex<double> *new_array = al.allocate<std::complex<double>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            if (kind == 4) {
+                                new_array[i] = std::complex<double>(((int*)data)[i], 0);
+                            } else if (kind == 8) {
+                                new_array[i] = std::complex<double>(((int64_t*)data)[i], 0);
+                            } else if (kind == 2) {
+                                new_array[i] = std::complex<double>(((int16_t*)data)[i], 0);
+                            } else {
+                                new_array[i] = std::complex<double>(((int8_t*)data)[i], 0);
+                            }
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 4) {
+                        std::complex<float> *new_array = al.allocate<std::complex<float>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            if (kind == 4) {
+                                new_array[i] = std::complex<float>(((int*)data)[i], 0);
+                            } else if (kind == 8) {
+                                new_array[i] = std::complex<float>(((int64_t*)data)[i], 0);
+                            } else if (kind == 2) {
+                                new_array[i] = std::complex<float>(((int16_t*)data)[i], 0);
+                            } else {
+                                new_array[i] = std::complex<float>(((int8_t*)data)[i], 0);
+                            }
+                        }
+                        new_data = new_array;
+                    }
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                  array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         } else if ((ASR::cast_kindType)cast_kind == ASR::cast_kindType::ComplexToComplex) {
             if (ASRUtils::expr_value(*convert_can)) {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*dest_type2))
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::type_get_past_array(ASRUtils::expr_type(*convert_can))))
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Complex_t>(*ASRUtils::extract_type(ASRUtils::expr_type(*convert_can))))
                 value = ASRUtils::expr_value(*convert_can);
                 if( ASR::is_a<ASR::ComplexConstant_t>(*value) ) {
                     ASR::ComplexConstant_t *c = ASR::down_cast<ASR::ComplexConstant_t>(value);
@@ -402,7 +513,34 @@ public:
                     value = (ASR::expr_t *)ASR::make_ComplexConstant_t(al, a_loc,
                       re, im, dest_type2);
                 } else {
-                    value = nullptr;
+                    LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
+                    ASR::ArrayConstant_t* array = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(array->m_type);
+                    void *data = array->m_data;
+                    size_t array_size = ASRUtils::get_fixed_size_of_array(array->m_type);
+                    int dest_kind = ASRUtils::extract_kind_from_ttype_t(dest_type2);
+                    void *new_data = nullptr;
+
+                    if (dest_kind == 8) {
+                        std::complex<double> *new_array = al.allocate<std::complex<double>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            new_array[i] = std::complex<double>(((std::complex<float>*)data)[i]);
+                        }
+                        new_data = new_array;
+                    } else if (dest_kind == 4) {
+                        std::complex<float> *new_array = al.allocate<std::complex<float>>(array_size);
+                        for (size_t i = 0; i < array_size; i++) {
+                            new_array[i] = std::complex<float>(((std::complex<double>*)data)[i]);
+                        }
+                        new_data = new_array;
+                    }
+
+                    if (new_data) {
+                        ASR::ttype_t* new_array_type = ASRUtils::TYPE(ASR::make_Array_t(al, dest_type2->base.loc, dest_type2,
+                                                          array_type->m_dims, array_type->n_dims, ASR::array_physical_typeType::FixedSizeArray));
+                        value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, value->base.loc, array_size * dest_kind,
+                                                new_data, new_array_type, array->m_storage_format));
+                    }
                 }
             }
         }

@@ -52,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             newshape:
                                 (Variable
@@ -73,6 +77,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -88,6 +96,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -114,6 +126,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -137,6 +153,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     bindc2
@@ -153,6 +173,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -166,6 +187,7 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Associate
                         (Var 2 x)
@@ -409,50 +431,62 @@
                         []
                     )
                     (Print
-                        [(ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
+                        (StringFormat
+                            ()
+                            [(ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
-                            ()
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Integer 4)
-                            LBound
+                        (StringFormat
+                            ()
+                            [(ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                LBound
+                                ()
+                            )
+                            (ArrayBound
+                                (Var 2 x)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Integer 4)
+                                UBound
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (ArrayBound
-                            (Var 2 x)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Integer 4)
-                            UBound
-                            ()
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(ArraySize
-                            (Var 2 x)
+                        (StringFormat
                             ()
-                            (Integer 4)
+                            [(ArraySize
+                                (Var 2 x)
+                                ()
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (If
                         (IntegerCompare

@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -33,6 +33,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             table:
@@ -46,6 +50,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             3 toml_table
                                                         )
                                                     )
@@ -53,6 +60,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             toml_parse:
@@ -110,7 +121,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Character 1 -2 ())
+                                                (String 1 () DeferredLength PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -153,9 +164,6 @@
                                         ((Var 3 input))
                                         (())]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 table)]
                                     )]
                                     ()
                                     Public
@@ -208,7 +216,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 ())
+                                                        (String 1 () AssumedLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -217,6 +225,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             error:
@@ -230,6 +242,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -237,6 +252,10 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             table:
@@ -250,6 +269,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -258,23 +280,33 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_string
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_table
                                             )
                                         )
                                         (Array
-                                            (Character 1 -1 ())
+                                            (String 1 () AssumedLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -317,6 +349,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_error
                                                         )
                                                     )
@@ -324,6 +359,10 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             table:
@@ -337,6 +376,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 toml_table
                                                         )
                                                     )
@@ -344,6 +386,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             unit:
@@ -361,18 +407,28 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_unit
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_table
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 toml_error
                                             )
                                         )]
@@ -436,12 +492,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             stat:
@@ -459,12 +519,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_error
                                     []
                                     [stat
                                     message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -510,6 +575,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -532,12 +601,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
                                     []
                                     [implicit
                                     inline]
+                                    []
                                     Source
                                     Public
                                     .false.

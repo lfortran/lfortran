@@ -2,11 +2,11 @@
     "basename": "asr-common2-64c97b2",
     "cmd": "lfortran --fixed-form --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/common2.f",
-    "infile_hash": "a30d92cf5f1406c227922d6d2bd235773f1dae3e62d3007600faea21",
+    "infile_hash": "761ba9bcb69efc19ad1828c9ebc8deab710d02f98f6722736d6a4dd2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-common2-64c97b2.stdout",
-    "stdout_hash": "2534de25641caaacfd600c6a429c6def1dadc2c81fa8e260c48a0fa0",
+    "stdout_hash": "55a200958868937aea040c826ef60a8dfed5c18f14f0b45f4e3156c0",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

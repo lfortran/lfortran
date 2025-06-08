@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -48,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -63,6 +71,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             size_a4:
@@ -80,6 +92,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             size_a8:
                                 (Variable
@@ -95,6 +111,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             size_b4:
@@ -112,6 +132,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             size_b8:
                                 (Variable
@@ -128,6 +152,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     arrays_01
@@ -141,6 +169,7 @@
                             (IntegerConstant 3 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b4)
@@ -151,6 +180,7 @@
                             (IntegerConstant 4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_a8)
@@ -161,6 +191,7 @@
                             (IntegerConstant 3 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 size_b8)
@@ -171,6 +202,7 @@
                             (IntegerConstant 4 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

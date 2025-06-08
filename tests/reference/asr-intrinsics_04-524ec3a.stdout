@@ -42,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -58,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_04
@@ -69,6 +77,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -80,11 +89,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -285,6 +299,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -296,11 +311,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 z)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare

@@ -12,28 +12,22 @@
                     test_cpp_hex
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "yes hex and int equal"
-                            (Character 1 21 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 21 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "yes hex and bin equal"
-                            (Character 1 21 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 21 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "yes bin and int equal"
-                            (Character 1 21 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 21 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

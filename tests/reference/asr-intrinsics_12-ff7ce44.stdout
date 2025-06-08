@@ -12,107 +12,139 @@
                     intrinsics_12
                     []
                     [(Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 4)
-                            (IntegerConstant 5 (Integer 4) Decimal)
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 4)
-                            (IntegerConstant 5 (Integer 4) Decimal)
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
+                                (Integer 4)
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Integer 8)
-                            (IntegerConstant 5 (Integer 8) Decimal)
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
+                                (Integer 8)
+                                (IntegerConstant 5 (Integer 8) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Real 8)
-                            (RealConstant
-                                0.000000
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Real 8)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Real 4)
-                            (RealConstant
-                                0.000000
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Real 4)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Real 4)
-                            (RealConstant
-                                5.000000
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Real 4)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (RealConstant
+                                    5.000000
+                                    (Real 4)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Real 8)
-                            (RealConstant
-                                5.000000
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Real 8)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 8 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (RealConstant
+                                    5.000000
+                                    (Real 8)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Kind
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Kind
                                 (Logical 4)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

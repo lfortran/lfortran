@@ -52,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -67,6 +71,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             k:
@@ -84,6 +92,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             l:
                                 (Variable
@@ -100,6 +112,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     subroutines_07
@@ -108,21 +124,25 @@
                         (Var 4 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 j)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 k)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 l)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 f_int@f
@@ -173,6 +193,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -188,6 +212,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -205,6 +233,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -221,6 +253,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             kind:
                                                 (Variable
@@ -236,6 +272,10 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -286,6 +326,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public

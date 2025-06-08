@@ -47,6 +47,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             l:
                                 (Variable
@@ -62,6 +66,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -101,6 +109,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -136,6 +145,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -171,6 +181,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -206,6 +217,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -228,6 +240,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -292,6 +305,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -324,6 +338,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 l)
@@ -343,7 +358,7 @@
                                     (Array
                                         (Logical 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 3 (Integer 4) Decimal))]
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
                                     ()
@@ -354,7 +369,7 @@
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                    (IntegerConstant 5 (Integer 4) Decimal))]
                                     DescriptorArray
                                 )
                                 ()
@@ -364,6 +379,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (Var 2 l)

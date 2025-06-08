@@ -2,12 +2,6 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string),
             test_get_command_argument:
                 (Program
                     (SymbolTable
@@ -22,22 +16,16 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 32 ())
+                                    (String 1 (IntegerConstant 32 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
-                                ),
-                            command_argument_count:
-                                (ExternalSymbol
-                                    2
-                                    command_argument_count
-                                    4 command_argument_count
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    command_argument_count
-                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             count:
                                 (Variable
@@ -54,16 +42,10 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            get_command_argument:
-                                (ExternalSymbol
-                                    2
-                                    get_command_argument
-                                    4 get_command_argument
-                                    lfortran_intrinsic_builtin
-                                    []
-                                    get_command_argument
-                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -80,78 +62,53 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            len_trim:
-                                (ExternalSymbol
-                                    2
-                                    len_trim
-                                    16 len_trim
-                                    lfortran_intrinsic_string
-                                    []
-                                    len_trim
-                                    Private
-                                ),
-                            trim:
-                                (ExternalSymbol
-                                    2
-                                    trim
-                                    16 trim
-                                    lfortran_intrinsic_string
-                                    []
-                                    trim
-                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     test_get_command_argument
                     []
                     [(Assignment
                         (Var 2 count)
-                        (FunctionCall
-                            2 command_argument_count
-                            ()
+                        (IntrinsicElementalFunction
+                            CommandArgumentCount
                             []
+                            0
                             (Integer 4)
                             ()
-                            ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "count: "
-                            (Character 1 7 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "count: "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 count)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 count)]
-                        ()
-                        ()
                     )
-                    (SubroutineCall
-                        2 get_command_argument
-                        ()
-                        [((Var 2 i))
-                        ((Var 2 arg))
-                        (())
-                        (())]
-                        ()
+                    (IntrinsicImpureSubroutine
+                        GetCommandArgument
+                        [(Var 2 i)
+                        (Var 2 arg)]
+                        0
                     )
                     (Print
-                        [(FunctionCall
-                            2 trim
+                        (IntrinsicElementalFunction
+                            StringTrim
+                            [(Var 2 arg)]
+                            0
+                            (String 1 (IntegerConstant 32 (Integer 4) Decimal) ExpressionLength PointerString)
                             ()
-                            [((Var 2 arg))]
-                            (Character 1 -3 (FunctionCall
-                                2 len_trim
-                                ()
-                                [((Var 2 arg))]
-                                (Integer 4)
-                                ()
-                                ()
-                            ))
-                            ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

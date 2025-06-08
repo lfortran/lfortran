@@ -30,8 +30,10 @@ set(SRC
     codegen/wasm_utils.cpp
 
     pass/nested_vars.cpp
+    pass/array_struct_temporary.cpp
     pass/where.cpp
     pass/function_call_in_declaration.cpp
+    pass/array_passed_in_function_call.cpp
     pass/openmp.cpp
     pass/param_to_const.cpp
     pass/do_loops.cpp
@@ -45,7 +47,6 @@ set(SRC
     pass/subroutine_from_function.cpp
     pass/transform_optional_argument_functions.cpp
     pass/class_constructor.cpp
-    pass/arr_slice.cpp
     pass/print_arr.cpp
     pass/print_struct_type.cpp
     pass/print_list_tuple.cpp
@@ -70,18 +71,15 @@ set(SRC
     pass/unique_symbols.cpp
     pass/insert_deallocate.cpp
     pass/promote_allocatable_to_nonallocatable.cpp
+    pass/replace_with_compile_time_values.cpp
 
     asr_verify.cpp
     asr_utils.cpp
     casting_utils.cpp
-    diagnostics.cpp
-    stacktrace.cpp
-    string_utils.cpp
     asr_scopes.cpp
     modfile.cpp
     pickle.cpp
     serialization.cpp
-    utils2.cpp
 )
 if (WITH_LLVM)
     set(SRC ${SRC}
@@ -90,6 +88,9 @@ if (WITH_LLVM)
         codegen/llvm_array_utils.cpp
         codegen/llvm_utils.cpp
     )
+    if (WITH_MLIR)
+        set(SRC ${SRC} codegen/asr_to_mlir.cpp)
+    endif()
     # We use deprecated API in LLVM, so we disable the warning until we upgrade
     if (NOT MSVC)
         set_source_files_properties(codegen/evaluator.cpp PROPERTIES
@@ -100,11 +101,36 @@ if (WITH_LLVM)
             COMPILE_FLAGS -Wno-deprecated-declarations)
         set_source_files_properties(codegen/llvm_utils.cpp PROPERTIES
             COMPILE_FLAGS -Wno-deprecated-declarations)
+        set_source_files_properties(stacktrace.cpp PROPERTIES
+            COMPILE_FLAGS -Wno-deprecated-declarations)
     endif()
 endif()
+
+set(LFORTRAN_UTILS
+  assert.h
+  colors.h
+  exception.h
+  location.h
+
+  diagnostics.h
+  diagnostics.cpp
+  stacktrace.h
+  stacktrace.cpp
+  string_utils.cpp
+  utils.h
+  utils2.cpp
+)
+add_library(lfortran_utils OBJECT ${LFORTRAN_UTILS})
+target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
+target_include_directories(lfortran_utils BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+
 add_library(asr STATIC ${SRC})
 target_include_directories(asr BEFORE PUBLIC ${libasr_SOURCE_DIR}/..)
 target_include_directories(asr BEFORE PUBLIC ${libasr_BINARY_DIR}/..)
+target_link_libraries(asr lfortran_utils)
+if (WITH_LIBUNWIND)
+    target_link_libraries(asr p::libunwind)
+endif()
 if (WITH_BFD)
     target_link_libraries(asr p::bfd)
 endif()
@@ -116,6 +142,7 @@ if (WITH_EXECINFO)
 endif()
 if (WITH_LLVM)
     target_link_libraries(asr p::llvm)
+    target_link_libraries(lfortran_utils p::llvm)
 endif()
 
 # Install the dwarf_convert.py and dat_convert.py

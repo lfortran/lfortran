@@ -8,8 +8,9 @@ program intrinsics_276
     integer, parameter :: i2 = or(-1, 5)
     integer, parameter :: i3 = or(-4_8, 2_8)
     integer(8), parameter :: i4 = or(-2_8, 5_8)
-     ! logical, parameter :: l1 = or(.true., .false.) ! Does not work yet! #4380
-    ! logical :: true = .true., false = .false.
+    logical, parameter :: l1 = or(.true., .false.) 
+    logical, parameter :: l2 = or(.false., .false.) 
+    logical :: true = .true., false = .false.
 
     integer :: arr1(3), arr3(3)
     integer(8) :: arr2(3)
@@ -26,11 +27,15 @@ program intrinsics_276
     if (i3 /= -2) error stop
     print *, i4
     if (i4 /= -1) error stop
-    ! print *, l1
-    ! if (l1 .neqv. .true.) error stop
+    print *, l1
+    if (l1 .neqv. .true.) error stop
+    print *, l2
+    if (l2 .neqv. .false.) error stop
 
-    ! print *, or(true, false)
-    ! if (or(true, false) .neqv. .true.) error stop
+    print *, or(true, false)
+    if (or(true, false) .neqv. .true.) error stop
+    print *, or(false, false)
+    if (or(false, false) .neqv. .false.) error stop
     print*, or(5, 8)
     if (or(5, 8) /= 13) error stop
     print*, or(-1, 5)

@@ -16,6 +16,7 @@
             )
         )]
         []
+        []
         [(Subroutine
             b
             []
@@ -33,9 +34,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "b()"
-                )]
+                [(String "b()")]
                 ()
             )
             (SubroutineCall

@@ -182,7 +182,7 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
         std::vector<int> &array_variable_indices;
         std::vector<std::string> &array_variables;
         std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> &scoped_array_variable_map;
-    
+
     public:
         FunctionSubroutineCallVisitor(std::string function_name_, std::vector<SymbolTable*> &scopes_,
             std::vector<int> &array_variable_indices_,
@@ -191,7 +191,7 @@ class FunctionSubroutineCallVisitor: public ASR::BaseWalkVisitor<FunctionSubrout
             function_name(function_name_), scopes(scopes_), array_variable_indices(array_variable_indices_),
             array_variables(array_variables_),
             scoped_array_variable_map(scoped_array_variable_map_) {}
-        
+
         void visit_Program(const ASR::Program_t &x) {
             ASR::Program_t& xx = const_cast<ASR::Program_t&>(x);
             SymbolTable* current_scope_copy = current_scope;
@@ -346,25 +346,90 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
         replacer.replace_expr(*current_expr);
     }
 
-    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
-        ASR::FunctionCall_t* x_copy = const_cast<ASR::FunctionCall_t*>(&x);
+    template <typename T>
+    void visit_Call(const T &x) {
+        T* x_copy = const_cast<T*>(&x);
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                            ASRUtils::symbol_get_past_external(x_copy->m_name));
+        ASR::asr_t* asr_owner = ASRUtils::symbol_parent_symtab(x.m_name)->asr_owner;
+        ASR::symbol_t* fun_sym_for_module = nullptr;
+        char* module_name = nullptr;
+        // Steps:
+        // Create a module add it to current_scope->parent symtab
+        // Add func to that module symtab
+        // Overwrite External symbol to x's asr_owner's symtab
+        if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+            ASRUtils::SymbolDuplicator duplicator(al);
+            SymbolTable* module_scope = al.make_new<SymbolTable>(current_scope->parent);
+
+            module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
+            ASR::asr_t* mo = ASR::make_Module_t(
+                                al, x.base.base.loc, module_scope,
+                                s2c(al, module_name), nullptr,
+                                0, false, false);
+            if (current_scope->parent->get_symbol(module_name) == nullptr) {
+                current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
+            }
+
+            ASR::Module_t* module = ASR::down_cast<ASR::Module_t>(ASR::down_cast<ASR::symbol_t>(mo));
+            fun_sym_for_module = duplicator.duplicate_Function(fn, module_scope);
+            module->m_symtab->add_symbol(fn->m_name, fun_sym_for_module);
+
+            ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
+                                al,
+                                x.base.base.loc,
+                                ASRUtils::symbol_parent_symtab(x.m_name),
+                                fn->m_name,
+                                fun_sym_for_module,
+                                s2c(al, module_name),
+                                nullptr,
+                                0,
+                                x_copy->m_original_name
+                                    ? ASRUtils::symbol_name(x_copy->m_original_name)
+                                    : ASRUtils::symbol_name(x_copy->m_name),
+                                ASR::accessType::Public);
+            ASR::Program_t* program = ASR::down_cast<ASR::Program_t>(
+                                    ASR::down_cast<ASR::symbol_t>(asr_owner));
+            program->m_symtab->add_or_overwrite_symbol(fn->m_name,
+                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+        }
+
         ASR::symbol_t* func_sym = current_scope->get_symbol(ASRUtils::symbol_name(x.m_name));
         if (func_sym == nullptr) {
-            // this means we have a user defined function and need to create an interface for it
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(x.m_name);
-            ASRUtils::SymbolDuplicator duplicator(al);
-            // This will create trouble when we have something like x(n) inside function
-            // duplicator does not duplicate type of variables inside function
-            func_sym = duplicator.duplicate_Function(func, current_scope);
-            current_scope->add_symbol(ASRUtils::symbol_name(func_sym), func_sym);
-            ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(func_sym);
-            new_func->m_body = nullptr; new_func->n_body = 0;
-            ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature)->m_deftype = ASR::deftypeType::Interface;
+            if (ASR::is_a<ASR::Program_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+                ASR::asr_t* ext_fn = ASR::make_ExternalSymbol_t(
+                                        al,
+                                        x.base.base.loc,
+                                        current_scope,
+                                        fn->m_name,
+                                        fun_sym_for_module,
+                                        s2c(al, module_name),
+                                        nullptr,
+                                        0,
+                                        x_copy->m_original_name
+                                            ? ASRUtils::symbol_name(x_copy->m_original_name)
+                                            : ASRUtils::symbol_name(x_copy->m_name),
+                                        ASR::accessType::Public);
+                current_scope->add_or_overwrite_symbol(fn->m_name,
+                                                       ASR::down_cast<ASR::symbol_t>(ext_fn));
+                func_sym = current_scope->get_symbol(fn->m_name);
+            } else if (ASR::is_a<ASR::Module_t>(*ASR::down_cast<ASR::symbol_t>(asr_owner))) {
+                func_sym = current_scope->resolve_symbol(fn->m_name);
+            }
         }
         LCOMPILERS_ASSERT(func_sym != nullptr);
         x_copy->m_name = func_sym;
         x_copy->m_original_name = func_sym;
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        visit_Call(x);
         CallReplacerOnExpressionsVisitor::visit_FunctionCall(x);
+    }
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        visit_Call(x);
+        CallReplacerOnExpressionsVisitor::visit_SubroutineCall(x);
     }
 };
 
@@ -381,6 +446,72 @@ class InvolvedSymbolsCollector:
             symbols[to_lower(ASRUtils::symbol_name(x.m_v))] = ASRUtils::symbol_type(x.m_v);
             return;
         }
+};
+
+// Replaces all the symbols used inside the DoConcurrentLoop region with the
+// same symbols passed as argument to the function
+class ReplaceSymbols: public ASR::BaseExprReplacer<ReplaceSymbols> {
+private:
+    SymbolTable &fn_scope;
+
+public:
+    ReplaceSymbols(SymbolTable &fn_scope) : fn_scope(fn_scope) {}
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_v));
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        x->m_name = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (x->m_original_name) x->m_original_name = fn_scope.get_symbol(ASRUtils::symbol_name(x->m_original_name));
+    }
+};
+
+// Expression visitor to call the replacer
+class ReplaceSymbolsVisitor:
+    public ASR::CallReplacerOnExpressionsVisitor<ReplaceSymbolsVisitor> {
+
+private:
+    ReplaceSymbols replacer;
+
+public:
+    ReplaceSymbolsVisitor(SymbolTable &fn_scope): replacer(fn_scope) { }
+
+    void call_replacer() {
+        replacer.current_expr = current_expr;
+        replacer.replace_expr(*current_expr);
+    }
+
+    void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+        replacer.replace_expr(&const_cast<ASR::FunctionCall_t*>(&x)->base);
+    }
+};
+
+class ReplaceStatements: public ASR::BaseStmtReplacer<ReplaceStatements> {
+private:
+    SymbolTable &scope;
+
+public:
+    ReplaceStatements(SymbolTable &scope) : scope(scope) {}
+
+    void replace_SubroutineCall(ASR::SubroutineCall_t* x) {
+        x->m_name = scope.get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (x->m_original_name) x->m_original_name = scope.get_symbol(ASRUtils::symbol_name(x->m_original_name));
+    }
+
+};
+
+class ReplaceStatementsVisitor: public ASR::CallReplacerOnExpressionsVisitor<ReplaceStatements> {
+private:
+    ReplaceStatements replacer;
+
+public:
+    ReplaceStatementsVisitor(SymbolTable &scope) : replacer(scope) {}
+
+    void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+        replacer.replace_stmt(&const_cast<ASR::SubroutineCall_t*>(&x)->base);
+    }
+
 };
 
 class DoConcurrentVisitor :
@@ -598,9 +729,17 @@ class DoConcurrentVisitor :
             }
             SetChar module_dependencies; module_dependencies.reserve(al, 1);
             module_dependencies.push_back(al, s2c(al, module_name));
+            LCompilers::LocationManager lm;
+            lm.file_ends.push_back(0);
+            LCompilers::LocationManager::FileLocations file;
+            file.out_start.push_back(0); file.in_start.push_back(0); file.in_newlines.push_back(0);
+            file.in_filename = "test"; file.current_line = 1; file.preprocessor = false; file.out_start0.push_back(0);
+            file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
+            file.in_newlines0.push_back(0);
+            lm.files.push_back(file);
             ASR::symbol_t* module_sym = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
                 module_name, loc, false, pass_options, true,
-                [&](const std::string &/*msg*/, const Location &/*loc*/) { }
+                [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
                 ));
             LCOMPILERS_ASSERT(module_sym != nullptr && ASR::is_a<ASR::Module_t>(*module_sym));
             current_scope = current_scope_copy;
@@ -614,9 +753,17 @@ class DoConcurrentVisitor :
             }
             SetChar module_dependencies; module_dependencies.reserve(al, 1);
             module_dependencies.push_back(al, s2c(al, "iso_c_binding"));
+            LCompilers::LocationManager lm;
+            lm.file_ends.push_back(0);
+            LCompilers::LocationManager::FileLocations file;
+            file.out_start.push_back(0); file.in_start.push_back(0); file.in_newlines.push_back(0);
+            file.in_filename = "test"; file.current_line = 1; file.preprocessor = false; file.out_start0.push_back(0);
+            file.in_start0.push_back(0); file.in_size0.push_back(0); file.interval_type0.push_back(0);
+            file.in_newlines0.push_back(0);
+            lm.files.push_back(file);
             ASR::symbol_t* iso_c_binding = (ASR::symbol_t*)(ASRUtils::load_module(al, current_scope,
                 "iso_c_binding", loc, false, pass_options, true,
-                [&](const std::string &/*msg*/, const Location &/*loc*/) { }
+                [&](const std::string &/*msg*/, const Location &/*loc*/) { }, lm
                 ));
             LCOMPILERS_ASSERT(iso_c_binding != nullptr && ASR::is_a<ASR::Module_t>(*iso_c_binding));
             current_scope = al.make_new<SymbolTable>(current_scope);
@@ -651,7 +798,7 @@ class DoConcurrentVisitor :
             std::string suffix = thread_data_module_name.substr(18);
             std::string thread_data_name = "thread_data" + suffix;
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
-                current_scope, s2c(al, thread_data_name), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, ASR::abiType::Source,
+                current_scope, s2c(al, thread_data_name), nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, nullptr, 0, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
             current_scope->parent->add_symbol(thread_data_name, thread_data_struct);
             current_scope = parent_scope;
@@ -703,7 +850,7 @@ class DoConcurrentVisitor :
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // create tdata variable: `type(thread_data), pointer :: tdata`
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASR::make_StructType_t(al, loc, thread_data_sym)))),
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
                     ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
@@ -792,10 +939,40 @@ class DoConcurrentVisitor :
             DoConcurrentStatementVisitor v(al, current_scope);
             v.current_expr = nullptr;
             v.visit_DoConcurrentLoop(do_loop);
+            ASR::do_loop_head_t loop_head = do_loop.m_head[0];
 
-            ASR::do_loop_head_t loop_head = do_loop.m_head;
+            /*
+            do concurrent ( ix =ax:nx, iy = ay:ny, iz=az:nz , ik=ak:nk )
+                print *, "iy->", iy, "ix->", ix, "iz->", iz
+                ! ........some computation ....
+            end do
+
+            ------To----->
+
+            total_iterations = (nx - ax + 1) * (ny - ay + 1) * (nz - az + 1) * (nk - ak + 1) - 1
+            integer :: I = 0;
+            do I = 0, total_iterations
+                ix = (I / ((ny - ay + 1) * (nz - az + 1) * (nk - ak + 1))) + ax
+                iy = ((I / ((nz - az + 1) * (nk - ak + 1))) % (ny - ay + 1)) + ay
+                iz = ((I / (nk - ak + 1)) % (nz - az + 1)) + az
+                ik = (I % (nk - ak + 1)) + ak
+                ! ... some computation ...
+            end do
+            */
+
+            // total_iterations = (nx - ax + 1) * (ny - ay + 1) * (nz - az + 1) * (nk - ak + 1) - 1
+            ASR::expr_t* total_iterations = b.i32(1);
+            std::vector<ASR::expr_t*> dimension_lengths;
+            for (size_t i = 0; i < do_loop.n_head; ++i) {
+                ASR::do_loop_head_t head = do_loop.m_head[i];
+                ASR::expr_t* length = b.Add(b.Sub(head.m_end, head.m_start), b.i32(1));
+                dimension_lengths.push_back(length);
+                total_iterations = b.Mul(total_iterations, length);
+            }
+
             // always this shall be IntegerBinOp_t
-            ASR::expr_t* loop_length = b.Add(b.Sub(loop_head.m_end, loop_head.m_start), b.i32(1));
+            ASR::expr_t* loop_length = total_iterations;
+            // ASR::expr_t* loop_length = b.Add(b.Sub(loop_head.m_end, loop_head.m_start), b.i32(1));
             // calculate chunk size
             body.push_back(al, b.Assignment(num_threads,
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),
@@ -872,12 +1049,52 @@ class DoConcurrentVisitor :
                 }
             }
 
-            std::vector<ASR::stmt_t*> loop_body;
-            for (size_t i = 0; i < do_loop.n_body; i++) {
-                loop_body.push_back(do_loop.m_body[i]);
-            }
-            body.push_back(al, b.DoLoop(loop_head.m_v, b.Add(start, b.i32(1)), end, loop_body, loop_head.m_increment));
+            // integer :: I = 0;
+            std::vector<ASR::stmt_t*> flattened_body;
+            ASR::expr_t* I = b.Variable(current_scope, "I", ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
+            4)),ASR::intentType::Local, ASR::abiType::BindC);
 
+            ASR::expr_t* temp_I = I;
+            for (size_t i = 0; i < do_loop.n_head; ++i) {
+                ASR::do_loop_head_t head = do_loop.m_head[i];
+                ASR::expr_t* computed_var;
+
+                if (i == do_loop.n_head - 1) {
+                    // Last loop variable -> ik = (I % (nk - ak 1)) + ak
+                    Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                    mod_args.push_back(al, temp_I);
+                    mod_args.push_back(al, dimension_lengths[i]);
+                    computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                    loc,2,mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)),head.m_start);
+                } else {
+                    // Intermediate loop variable -> iy = ((I / ((nz - az 1) * (nk - ak 1))) % (ny - ay +1)) ay
+                    ASR::expr_t* product_of_next_dimensions = b.i32(1);
+                    for (size_t j = i + 1 ; j <do_loop.n_head; ++j) {
+                        product_of_next_dimensions = b.Mul(product_of_next_dimensions, dimension_lengths[j]);
+                    }
+
+                    if (i != 0){
+                        Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                        mod_args.push_back(al, b.Div(temp_I, product_of_next_dimensions));
+                        mod_args.push_back(al, dimension_lengths[i]);
+                        computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                    loc,2,mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)),head.m_start);
+                    } else {
+                        computed_var = b.Add(b.Div(b.Add(temp_I,b.i32(-1)), product_of_next_dimensions),head.m_start);
+                    }
+                }
+
+                // Add the assignment to the body
+                flattened_body.push_back(b.Assignment(b.Var(current_scope->resolve_symbol(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v))),
+                computed_var));
+            }
+
+            for (size_t i = 0; i < do_loop.n_body; ++i) {
+                flattened_body.push_back(do_loop.m_body[i]);
+            }
+            //  Collapse Ends Here
+
+            body.push_back(al, b.DoLoop(I, b.Add(start, b.i32(1)), end, flattened_body, loop_head.m_increment));
             body.push_back(al, ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc, current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
 
             /*
@@ -942,7 +1159,7 @@ class DoConcurrentVisitor :
                 ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
                 nullptr, 0,
                 false, false, false, nullptr));
-            
+
             current_scope->parent->add_symbol(ASRUtils::symbol_name(function), function);
             current_scope = current_scope_copy;
             return function;
@@ -1155,6 +1372,125 @@ class DoConcurrentVisitor :
 
             InvolvedSymbolsCollector c(involved_symbols);
             c.visit_DoConcurrentLoop(x);
+            if (pass_options.enable_gpu_offloading) {
+                //
+                // Implementation details:
+                //
+                // 1. Creates a module: `_lcompilers_mlir_gpu_offloading` and
+                //    adds a new function: `_lcompilers_doconcurrent_replacer_func`
+                //    for each `do concurrent` node in the body.
+                // 2. Move the `do concurrent` into the function body, pass
+                //    all the used variables as an argument to the function.
+                // 3. Place the subroutine call pointing to the new function.
+                // 4. The replacer class modifies the variables used in the do
+                //    concurrent body with the same arguments passed to the
+                //    function
+                //
+                // The following
+                //
+                // do concurrent (i = 1: 10)
+                //   x(i) = i
+                // end do
+                //
+                // becomes:
+                //
+                // call _lcompilers_doconcurrent_replacer_func(i, x)
+                //
+                // [...]
+                //
+                // module _lcompilers_mlir_gpu_offloading
+                //   subroutine _lcompilers_doconcurrent_replacer_func (i, x)
+                //     [...]
+                //   end subroutine
+                // end module
+                //
+                Location loc{x.base.base.loc};
+                SymbolTable *scope_copy{current_scope};
+                SymbolTable *mod_scope{nullptr};
+                std::string mod_name{"_lcompilers_mlir_gpu_offloading"};
+                if (ASR::symbol_t *mod = current_scope->resolve_symbol(mod_name)) {
+                    mod_scope = ASR::down_cast<ASR::Module_t>(mod)->m_symtab;
+                } else {
+                    while(current_scope->parent) {
+                        current_scope = current_scope->parent;
+                    }
+                    mod_scope = al.make_new<SymbolTable>(current_scope);
+                    mod = ASR::down_cast<ASR::symbol_t>(
+                        ASR::make_Module_t(al, loc, mod_scope, s2c(al, mod_name),
+                        nullptr, 0, false, false));
+                    current_scope->add_symbol(mod_name, mod);
+                }
+                SymbolTable *fn_scope{al.make_new<SymbolTable>(mod_scope)};
+                Vec<ASR::expr_t *> fn_args;
+                fn_args.reserve(al, involved_symbols.size());
+                Vec<ASR::call_arg_t> call_args;
+                call_args.reserve(al, involved_symbols.size());
+                for (auto &[sym_name, sym_type]: involved_symbols) {
+                    ASR::symbol_t *sym{scope_copy->resolve_symbol(sym_name)};
+                    ASR::call_arg_t arg; arg.loc = loc;
+                    arg.m_value = ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+                    call_args.push_back(al, arg);
+
+                    sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
+                        loc, fn_scope, s2c(al, sym_name), nullptr, 0,
+                        ASR::intentType::InOut, nullptr, nullptr,
+                        ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, sym_type),
+                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASR::presenceType::Required, false));
+                    fn_scope->add_symbol(sym_name, sym);
+                    fn_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+                }
+
+                ReplaceSymbolsVisitor v(*fn_scope);
+                v.visit_DoConcurrentLoop(x);
+
+                Vec<ASR::stmt_t *> fn_body; fn_body.reserve(al, 1);
+                fn_body.push_back(al, (ASR::stmt_t *)&x);
+
+                std::string fn_name{mod_scope->get_unique_name(
+                    "_lcompilers_doconcurrent_replacer_func")};
+                ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Function_t_util(al, loc, fn_scope,
+                    s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
+                    fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
+                    ASR::accessType::Public, ASR::deftypeType::Implementation,
+                    nullptr, false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr));
+                mod_scope->add_symbol(fn_name, function);
+
+                current_scope = scope_copy;
+
+                SymbolTable *fnI_scope{al.make_new<SymbolTable>(current_scope)};
+                Vec<ASR::expr_t *> fnI_args;
+                fnI_args.reserve(al, involved_symbols.size());
+                for (auto &[sym_name, sym_type]: involved_symbols) {
+                    ASR::symbol_t *sym{ASR::down_cast<ASR::symbol_t>(
+                        ASRUtils::make_Variable_t_util(al, loc, fnI_scope,
+                        s2c(al, sym_name), nullptr, 0, ASR::intentType::InOut,
+                        nullptr, nullptr, ASR::storage_typeType::Default,
+                        ASRUtils::duplicate_type(al, sym_type),
+                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASR::presenceType::Required, false))};
+                    fnI_scope->add_symbol(sym_name, sym);
+                    fnI_args.push_back(al, ASRUtils::EXPR(
+                        ASR::make_Var_t(al, loc, sym)));
+                }
+
+                ASR::symbol_t* fnInterface = ASR::down_cast<ASR::symbol_t>(
+                    ASRUtils::make_Function_t_util(al, loc, fnI_scope,
+                    s2c(al, fn_name), nullptr, 0, fnI_args.p, fnI_args.n,
+                    nullptr, 0, nullptr, ASR::abiType::BindC,
+                    ASR::accessType::Public, ASR::deftypeType::Interface,
+                    nullptr, false, false, false, false, false, nullptr, 0,
+                    false, false, false, nullptr));
+                current_scope->add_symbol(fn_name, fnInterface);
+                pass_result.push_back(al, ASRUtils::STMT(
+                    ASR::make_SubroutineCall_t(al, loc, fnInterface, fnInterface,
+                    call_args.p, call_args.n, nullptr)));
+                remove_original_statement = true;
+                return;
+            }
 
             // create thread data module
             std::pair<std::string, ASR::symbol_t*> thread_data_module = create_thread_data_module(involved_symbols, x.base.base.loc);
@@ -1169,7 +1505,7 @@ class DoConcurrentVisitor :
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASR::make_StructType_t(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym)), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
@@ -1383,6 +1719,26 @@ class DoConcurrentVisitor :
             }
 
             transform_stmts(xx.m_body, xx.n_body);
+            current_scope = current_scope_copy;
+        }
+
+        void visit_FunctionCall(const ASR::FunctionCall_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
+
+            ReplaceSymbolsVisitor sym_replacer(*current_scope);
+            sym_replacer.visit_FunctionCall(x);
+
+            current_scope = current_scope_copy;
+        }
+
+        void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
+            SymbolTable* current_scope_copy = current_scope;
+            current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
+
+            ReplaceStatementsVisitor stmt_replacer(*current_scope);
+            stmt_replacer.visit_SubroutineCall(x);
+
             current_scope = current_scope_copy;
         }
 

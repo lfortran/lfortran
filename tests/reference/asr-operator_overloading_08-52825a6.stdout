@@ -1,0 +1,326 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            operator_overloading_08:
+                (Program
+                    (SymbolTable
+                        5
+                        {
+                            1_custom_int_value:
+                                (ExternalSymbol
+                                    5
+                                    1_custom_int_value
+                                    3 value
+                                    custom_int
+                                    []
+                                    value
+                                    Public
+                                ),
+                            a:
+                                (Variable
+                                    5
+                                    a
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        5 custom_int
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            custom_div:
+                                (ExternalSymbol
+                                    5
+                                    custom_div
+                                    2 custom_div
+                                    operator_overloading_08_mod1
+                                    []
+                                    custom_div
+                                    Public
+                                ),
+                            custom_int:
+                                (ExternalSymbol
+                                    5
+                                    custom_int
+                                    2 custom_int
+                                    operator_overloading_08_mod1
+                                    []
+                                    custom_int
+                                    Public
+                                ),
+                            ~div:
+                                (ExternalSymbol
+                                    5
+                                    ~div
+                                    2 ~div
+                                    operator_overloading_08_mod1
+                                    []
+                                    ~div
+                                    Public
+                                )
+                        })
+                    operator_overloading_08
+                    [operator_overloading_08_mod1]
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 5 a)
+                            5 1_custom_int_value
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 1 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(OverloadedBinOp
+                                (Var 5 a)
+                                Div
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                                (FunctionCall
+                                    5 custom_div
+                                    5 ~div
+                                    [((Var 5 a))
+                                    ((IntegerConstant 0 (Integer 4) Decimal))]
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        5 custom_int
+                                    )
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )]
+                ),
+            operator_overloading_08_mod1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            custom_div:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_custom_int_value:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_custom_int_value
+                                                    3 value
+                                                    custom_int
+                                                    []
+                                                    value
+                                                    Public
+                                                ),
+                                            a:
+                                                (Variable
+                                                    4
+                                                    a
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 custom_int
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    4
+                                                    b
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    4
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 custom_int
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    custom_div
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 custom_int
+                                        )
+                                        (Integer 4)]
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 custom_int
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 a)
+                                    (Var 4 b)]
+                                    [(Assignment
+                                        (StructInstanceMember
+                                            (Var 4 res)
+                                            4 1_custom_int_value
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        (IntegerBinOp
+                                            (StructInstanceMember
+                                                (Var 4 a)
+                                                4 1_custom_int_value
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Div
+                                            (IntegerBinOp
+                                                (Var 4 b)
+                                                Add
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 4 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            custom_int:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            value:
+                                                (Variable
+                                                    3
+                                                    value
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    custom_int
+                                    []
+                                    [value]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            ~div:
+                                (CustomOperator
+                                    2
+                                    ~div
+                                    [2 custom_div]
+                                    Public
+                                )
+                        })
+                    operator_overloading_08_mod1
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

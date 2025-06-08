@@ -1,0 +1,322 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            1_circle_radius:
+                                (ExternalSymbol
+                                    2
+                                    1_circle_radius
+                                    3 radius
+                                    circle
+                                    []
+                                    radius
+                                    Public
+                                ),
+                            circle:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            radius:
+                                                (Variable
+                                                    3
+                                                    radius
+                                                    []
+                                                    Local
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    (RealConstant
+                                                        1.000000
+                                                        (Real 4)
+                                                    )
+                                                    Save
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    circle
+                                    []
+                                    [radius]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            print_radius:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            1_circle_radius:
+                                                (ExternalSymbol
+                                                    4
+                                                    1_circle_radius
+                                                    3 radius
+                                                    circle
+                                                    []
+                                                    radius
+                                                    Public
+                                                ),
+                                            m:
+                                                (Variable
+                                                    4
+                                                    m
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 circle
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    4
+                                                    n
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 circle
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    print_radius
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 circle
+                                        )
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 circle
+                                        )]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 m)
+                                    (Var 4 n)]
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(StructInstanceMember
+                                                (Var 4 m)
+                                                4 1_circle_radius
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (StructInstanceMember
+                                                (Var 4 n)
+                                                4 1_circle_radius
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
+                                    )
+                                    (Assignment
+                                        (Var 2 was_called)
+                                        (LogicalConstant
+                                            .true.
+                                            (Logical 4)
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            temp_struct_var__:
+                                (Variable
+                                    2
+                                    temp_struct_var__
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        2 circle
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            temp_struct_var__1:
+                                (Variable
+                                    2
+                                    temp_struct_var__1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        2 circle
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            was_called:
+                                (Variable
+                                    2
+                                    was_called
+                                    []
+                                    Local
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    Save
+                                    (Logical 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(Assignment
+                        (StructInstanceMember
+                            (Var 2 temp_struct_var__)
+                            2 1_circle_radius
+                            (Real 4)
+                            ()
+                        )
+                        (RealConstant
+                            1.500000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 2 temp_struct_var__1)
+                            2 1_circle_radius
+                            (Real 4)
+                            ()
+                        )
+                        (RealConstant
+                            1.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 print_radius
+                        ()
+                        [((Var 2 temp_struct_var__))
+                        ((Var 2 temp_struct_var__1))]
+                        ()
+                    )
+                    (If
+                        (LogicalNot
+                            (Var 2 was_called)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

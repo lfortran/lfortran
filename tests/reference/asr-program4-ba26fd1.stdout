@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -43,6 +47,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -58,6 +66,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             saved:
@@ -80,6 +92,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -115,6 +131,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 c)
@@ -138,6 +155,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 c)
                                     Public
@@ -165,6 +183,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -180,6 +202,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -197,6 +223,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -212,6 +242,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             saved1:
@@ -235,6 +269,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             saved2:
                                                 (Variable
@@ -250,6 +288,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -285,6 +327,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 c)
@@ -320,6 +363,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 saved2)
@@ -334,6 +378,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 d)
@@ -348,6 +393,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 c)
                                     Public
@@ -370,6 +416,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -385,6 +435,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             z:
@@ -402,6 +456,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     program4
@@ -413,6 +471,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -421,6 +480,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -434,15 +494,20 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "6.0 == "
-                            (Character 1 7 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 z)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 2 z)
@@ -456,15 +521,20 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "7.0 == "
-                            (Character 1 7 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "7.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 z)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 2 z)
@@ -478,15 +548,20 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "6.0 == "
-                            (Character 1 7 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "6.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 z)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 2 z)
@@ -500,15 +575,20 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "8.0 == "
-                            (Character 1 7 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "8.0 == "
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 z)]
-                        ()
-                        ()
                     )]
                 )
         })

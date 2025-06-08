@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     f
@@ -42,9 +46,13 @@
                     []
                     [(Var 2 a)]
                     [(Print
-                        [(Var 2 a)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                     ()
                     Public
@@ -73,24 +81,20 @@
                             )
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "first branch"
-                                (Character 1 12 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (GoToTarget
                             10
                             10
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "second branch"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )
                     (GoToTarget

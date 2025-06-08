@@ -32,6 +32,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -56,15 +60,20 @@
                             ((IntegerConstant 0 (Integer 4) Decimal))]
                             ()
                         )
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "tf=0:"
-                            (Character 1 5 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "tf=0:"
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 5 tf)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 5 tf)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 5 tf)
@@ -76,15 +85,20 @@
                             ((IntegerConstant 1 (Integer 4) Decimal))]
                             ()
                         )
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "tf=1:"
-                            (Character 1 5 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "tf=1:"
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 5 tf)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 5 tf)]
-                        ()
-                        ()
                     )]
                 ),
             overload_assignment_m:
@@ -112,6 +126,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -127,6 +145,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -159,6 +181,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Private
@@ -186,6 +209,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -201,6 +228,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -233,6 +264,7 @@
                                             ((Var 4 i))]
                                             ()
                                         )
+                                        .false.
                                     )]
                                     ()
                                     Private

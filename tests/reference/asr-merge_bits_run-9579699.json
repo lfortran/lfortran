@@ -2,7 +2,7 @@
     "basename": "asr-merge_bits_run-9579699",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/errors/merge_bits_run.f90",
-    "infile_hash": "2689a6754f639e286efe8693ffb765d4539b35f8e8dc3e56c053bc50",
+    "infile_hash": "1af0976e21bea2f1804946c6fc9338f4a28f5ed426b33ffe3b79c6b5",
     "outfile": null,
     "outfile_hash": null,
     "stdout": null,

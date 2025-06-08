@@ -87,7 +87,7 @@ loop.body:                                        ; preds = %loop.head
 loop.end:                                         ; preds = %loop.head
   %15 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 0
   %16 = load double, double* %15, align 8
-  %17 = fcmp one double %16, 1.100000e+01
+  %17 = fcmp une double %16, 1.100000e+01
   br i1 %17, label %then, label %else
 
 then:                                             ; preds = %loop.end
@@ -101,7 +101,7 @@ else:                                             ; preds = %loop.end
 ifcont:                                           ; preds = %else, %then
   %18 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 1
   %19 = load double, double* %18, align 8
-  %20 = fcmp one double %19, 1.200000e+01
+  %20 = fcmp une double %19, 1.200000e+01
   br i1 %20, label %then3, label %else4
 
 then3:                                            ; preds = %ifcont
@@ -115,7 +115,7 @@ else4:                                            ; preds = %ifcont
 ifcont5:                                          ; preds = %else4, %then3
   %21 = getelementptr [3 x double], [3 x double]* %a, i32 0, i32 2
   %22 = load double, double* %21, align 8
-  %23 = fcmp one double %22, 1.300000e+01
+  %23 = fcmp une double %22, 1.300000e+01
   br i1 %23, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
@@ -154,7 +154,7 @@ loop.body10:                                      ; preds = %loop.head9
 loop.end11:                                       ; preds = %loop.head9
   %37 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
   %38 = load double, double* %37, align 8
-  %39 = fcmp one double %38, 1.100000e+01
+  %39 = fcmp une double %38, 1.100000e+01
   br i1 %39, label %then12, label %else13
 
 then12:                                           ; preds = %loop.end11
@@ -168,7 +168,7 @@ else13:                                           ; preds = %loop.end11
 ifcont14:                                         ; preds = %else13, %then12
   %40 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 1
   %41 = load double, double* %40, align 8
-  %42 = fcmp one double %41, 1.200000e+01
+  %42 = fcmp une double %41, 1.200000e+01
   br i1 %42, label %then15, label %else16
 
 then15:                                           ; preds = %ifcont14
@@ -182,7 +182,7 @@ else16:                                           ; preds = %ifcont14
 ifcont17:                                         ; preds = %else16, %then15
   %43 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 2
   %44 = load double, double* %43, align 8
-  %45 = fcmp one double %44, 1.300000e+01
+  %45 = fcmp une double %44, 1.300000e+01
   br i1 %45, label %then18, label %else19
 
 then18:                                           ; preds = %ifcont17
@@ -196,7 +196,7 @@ else19:                                           ; preds = %ifcont17
 ifcont20:                                         ; preds = %else19, %then18
   %46 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
   %47 = load double, double* %46, align 8
-  %48 = fcmp one double %47, 1.400000e+01
+  %48 = fcmp une double %47, 1.400000e+01
   br i1 %48, label %then21, label %else22
 
 then21:                                           ; preds = %ifcont20
@@ -239,7 +239,7 @@ loop.body25:                                      ; preds = %loop.head24
 loop.end26:                                       ; preds = %loop.head24
   %66 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 0
   %67 = load double, double* %66, align 8
-  %68 = fcmp one double %67, 1.000000e+00
+  %68 = fcmp une double %67, 1.000000e+00
   br i1 %68, label %then27, label %else28
 
 then27:                                           ; preds = %loop.end26
@@ -253,7 +253,7 @@ else28:                                           ; preds = %loop.end26
 ifcont29:                                         ; preds = %else28, %then27
   %69 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 1
   %70 = load double, double* %69, align 8
-  %71 = fcmp one double %70, 2.000000e+00
+  %71 = fcmp une double %70, 2.000000e+00
   br i1 %71, label %then30, label %else31
 
 then30:                                           ; preds = %ifcont29
@@ -267,7 +267,7 @@ else31:                                           ; preds = %ifcont29
 ifcont32:                                         ; preds = %else31, %then30
   %72 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 2
   %73 = load double, double* %72, align 8
-  %74 = fcmp one double %73, 3.000000e+00
+  %74 = fcmp une double %73, 3.000000e+00
   br i1 %74, label %then33, label %else34
 
 then33:                                           ; preds = %ifcont32
@@ -294,7 +294,7 @@ ifcont35:                                         ; preds = %else34, %then33
   store double %86, double* %75, align 8
   %87 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
   %88 = load double, double* %87, align 8
-  %89 = fcmp one double %88, 1.700000e+01
+  %89 = fcmp une double %88, 1.700000e+01
   br i1 %89, label %then36, label %else37
 
 then36:                                           ; preds = %ifcont35
@@ -312,7 +312,7 @@ ifcont38:                                         ; preds = %else37, %then36
   store double %92, double* %90, align 8
   %93 = getelementptr [4 x double], [4 x double]* %b, i32 0, i32 3
   %94 = load double, double* %93, align 8
-  %95 = fcmp one double %94, 1.100000e+01
+  %95 = fcmp une double %94, 1.100000e+01
   br i1 %95, label %then39, label %else40
 
 then39:                                           ; preds = %ifcont38
@@ -373,7 +373,7 @@ loop.end46:                                       ; preds = %loop.head44
 loop.end47:                                       ; preds = %loop.head42
   %120 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 0
   %121 = load double, double* %120, align 8
-  %122 = fcmp one double %121, 1.200000e+01
+  %122 = fcmp une double %121, 1.200000e+01
   br i1 %122, label %then48, label %else49
 
 then48:                                           ; preds = %loop.end47
@@ -387,7 +387,7 @@ else49:                                           ; preds = %loop.end47
 ifcont50:                                         ; preds = %else49, %then48
   %123 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 2
   %124 = load double, double* %123, align 8
-  %125 = fcmp one double %124, 1.300000e+01
+  %125 = fcmp une double %124, 1.300000e+01
   br i1 %125, label %then51, label %else52
 
 then51:                                           ; preds = %ifcont50
@@ -401,7 +401,7 @@ else52:                                           ; preds = %ifcont50
 ifcont53:                                         ; preds = %else52, %then51
   %126 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 1
   %127 = load double, double* %126, align 8
-  %128 = fcmp one double %127, 1.300000e+01
+  %128 = fcmp une double %127, 1.300000e+01
   br i1 %128, label %then54, label %else55
 
 then54:                                           ; preds = %ifcont53
@@ -415,7 +415,7 @@ else55:                                           ; preds = %ifcont53
 ifcont56:                                         ; preds = %else55, %then54
   %129 = getelementptr [4 x double], [4 x double]* %c, i32 0, i32 3
   %130 = load double, double* %129, align 8
-  %131 = fcmp one double %130, 1.400000e+01
+  %131 = fcmp une double %130, 1.400000e+01
   br i1 %131, label %then57, label %else58
 
 then57:                                           ; preds = %ifcont56
@@ -427,6 +427,7 @@ else58:                                           ; preds = %ifcont56
   br label %ifcont59
 
 ifcont59:                                         ; preds = %else58, %then57
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont59
@@ -438,3 +439,5 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
+
+declare void @_lpython_free_argv()

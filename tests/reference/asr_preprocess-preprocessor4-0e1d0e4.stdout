@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -58,24 +66,29 @@
                             (IntegerConstant 25 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)
-                        (IntegerBinOp
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            Add
+                        (StringFormat
+                            ()
+                            [(Var 2 x)
                             (IntegerBinOp
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                Pow
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                Add
+                                (IntegerBinOp
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    Pow
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                )
                                 (Integer 4)
-                                (IntegerConstant 4 (Integer 4) Decimal)
-                            )
-                            (Integer 4)
-                            (IntegerConstant 5 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

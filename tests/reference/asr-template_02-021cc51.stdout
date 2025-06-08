@@ -27,6 +27,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -42,6 +46,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             mask:
@@ -66,6 +74,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -81,6 +93,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             pos:
@@ -105,6 +121,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             vec:
                                                 (Variable
@@ -116,7 +136,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 1 ())
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -126,12 +146,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     change_positions_chr
                                     (FunctionType
                                         [(Array
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -166,6 +190,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Allocate
                                         [((Var 12 pos)
@@ -215,6 +240,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -228,11 +254,13 @@
                                         )
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 12 j)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -249,7 +277,7 @@
                                                     [(()
                                                     (Var 12 i)
                                                     ())]
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ColMajor
                                                     ()
                                                 ))
@@ -264,7 +292,7 @@
                                                         ()
                                                     )
                                                     ())]
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ColMajor
                                                     ()
                                                 ))]
@@ -282,6 +310,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )
                                             (Assignment
                                                 (ArrayItem
@@ -295,6 +324,7 @@
                                                 )
                                                 (Var 12 i)
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -336,11 +366,9 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 12 pos)]
                                     )]
                                     (Var 12 mask)
                                     Public
@@ -368,6 +396,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -383,6 +415,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             mask:
@@ -407,6 +443,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -422,6 +462,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             pos:
@@ -446,6 +490,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             vec:
                                                 (Variable
@@ -466,6 +514,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -507,6 +559,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Allocate
                                         [((Var 10 pos)
@@ -556,6 +609,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -569,11 +623,13 @@
                                         )
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 10 j)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -623,6 +679,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )
                                             (Assignment
                                                 (ArrayItem
@@ -636,6 +693,7 @@
                                                 )
                                                 (Var 10 i)
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )]
@@ -677,11 +735,9 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 10 pos)]
                                     )]
                                     (Var 10 mask)
                                     Public
@@ -737,6 +793,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             arg1:
                                                 (Variable
@@ -753,6 +813,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             ret:
                                                 (Variable
@@ -768,6 +832,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -800,6 +868,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 9 ret)
                                     Public
@@ -821,11 +890,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             arg1:
@@ -837,11 +910,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ret:
@@ -859,12 +936,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     ~neq_intrinsic1
                                     (FunctionType
-                                        [(Character 1 1 ())
-                                        (Character 1 1 ())]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -890,6 +971,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 11 ret)
                                     Public
@@ -901,84 +983,92 @@
                     template_02
                     [template_02_m]
                     [(Print
-                        [(FunctionCall
-                            8 change_positions_int
+                        (StringFormat
                             ()
-                            [((ArrayPhysicalCast
-                                (ArrayConstant
-                                    28
-                                    [3, 3, 6, ...., 2, 2, 1]
+                            [(FunctionCall
+                                8 change_positions_int
+                                ()
+                                [((ArrayPhysicalCast
+                                    (ArrayConstant
+                                        28
+                                        [3, 3, 6, ...., 2, 2, 1]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 7 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        DescriptorArray
                                     )
-                                    ColMajor
-                                )
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 7 (Integer 4) Decimal))]
-                                    DescriptorArray
+                                    ()
+                                ))]
+                                (Allocatable
+                                    (Array
+                                        (Integer 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
                                 )
                                 ()
-                            ))]
-                            (Allocatable
-                                (Array
-                                    (Integer 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(FunctionCall
-                            8 change_positions_chr
+                        (StringFormat
                             ()
-                            [((ArrayPhysicalCast
-                                (ArrayConstant
-                                    7
-                                    ["a", "a", "b", ...., "p", "p", "o"]
+                            [(FunctionCall
+                                8 change_positions_chr
+                                ()
+                                [((ArrayPhysicalCast
+                                    (ArrayConstant
+                                        7
+                                        ["a", "a", "b", ...., "p", "p", "o"]
+                                        (Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 7 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    FixedSizeArray
+                                    DescriptorArray
                                     (Array
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 7 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        DescriptorArray
                                     )
-                                    ColMajor
-                                )
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Character 1 1 ())
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 7 (Integer 4) Decimal))]
-                                    DescriptorArray
+                                    ()
+                                ))]
+                                (Allocatable
+                                    (Array
+                                        (Integer 4)
+                                        [(()
+                                        ())]
+                                        DescriptorArray
+                                    )
                                 )
                                 ()
-                            ))]
-                            (Allocatable
-                                (Array
-                                    (Integer 4)
-                                    [(()
-                                    ())]
-                                    DescriptorArray
-                                )
-                            )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             template_02_m:
@@ -1011,6 +1101,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             j:
                                                                 (Variable
@@ -1026,6 +1120,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             mask:
@@ -1050,6 +1148,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1065,6 +1167,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             pos:
@@ -1089,6 +1195,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             vec:
                                                                 (Variable
@@ -1111,6 +1221,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1154,6 +1268,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Allocate
                                                         [((Var 7 pos)
@@ -1203,6 +1318,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (ArrayItem
@@ -1216,11 +1332,13 @@
                                                         )
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 7 j)
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )
                                                     (DoLoop
                                                         ()
@@ -1274,6 +1392,7 @@
                                                                     ()
                                                                 )
                                                                 ()
+                                                                .false.
                                                             )
                                                             (Assignment
                                                                 (ArrayItem
@@ -1287,6 +1406,7 @@
                                                                 )
                                                                 (Var 7 i)
                                                                 ()
+                                                                .false.
                                                             )]
                                                             []
                                                         )]
@@ -1328,11 +1448,9 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 7 pos)]
                                                     )]
                                                     (Var 7 mask)
                                                     Public
@@ -1362,6 +1480,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             ne:
                                                                 (Variable
@@ -1377,6 +1499,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -1395,6 +1521,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1445,6 +1575,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     change_positions_tmpl
@@ -1483,6 +1617,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             ne:
                                                                 (Variable
@@ -1498,6 +1636,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -1516,6 +1658,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1565,6 +1711,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })

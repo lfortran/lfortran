@@ -1,14 +1,20 @@
 #ifndef LFORTRAN_PASS_UTILS_H
 #define LFORTRAN_PASS_UTILS_H
 
+#include "libasr/asr_utils.h"
 #include <libasr/asr.h>
 #include <libasr/containers.h>
+#include <libasr/asr_pass_walk_visitor.h>
 
-#include <queue>
+#include <deque>
 
 namespace LCompilers {
 
     namespace PassUtils {
+
+        ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,
+            ASR::expr_t* a_target, ASR::expr_t* a_value,
+            ASR::stmt_t* a_overloaded, bool a_realloc_lhs);
 
         bool is_array(ASR::expr_t* x);
 
@@ -43,6 +49,7 @@ namespace LCompilers {
                 ASR::down_cast<ASR::Function_t>(x))->m_elemental;
         }
 
+        bool is_args_contains_allocatable(ASR::expr_t* x);
         void fix_dimension(ASR::Cast_t* x, ASR::expr_t* arg_expr);
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
@@ -80,7 +87,6 @@ namespace LCompilers {
         ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim, std::string bound,
                                 Allocator& al);
 
-
         ASR::expr_t* get_flipsign(ASR::expr_t* arg0, ASR::expr_t* arg1,
                              Allocator& al, ASR::TranslationUnit_t& unit, const Location& loc,
                              PassOptions& pass_options);
@@ -92,7 +98,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
-            ASR::intentType var_intent=ASR::intentType::Local);
+            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -118,6 +124,10 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::stmt_t* create_do_loop_helper_cshift(Allocator &al, const Location &loc, 
+            std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array_var, 
+            ASR::expr_t* res_var, ASR::expr_t* array, ASR::expr_t* res, int curr_idx);
+
         ASR::stmt_t* create_do_loop_helper_count(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx);
@@ -126,7 +136,7 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, std::vector<ASR::expr_t*> res_idx,
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* mask, ASR::expr_t* res,
             int curr_idx, int dim);
-        
+
         ASR::stmt_t* create_do_loop_helper_norm2(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx);
@@ -135,7 +145,7 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, std::vector<ASR::expr_t*> res_idx,
             ASR::stmt_t* inner_most_do_loop, ASR::expr_t* c, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx, int dim);
-        
+
         ASR::stmt_t* create_do_loop_helper_parity(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* res,
             int curr_idx);
@@ -150,14 +160,30 @@ namespace LCompilers {
             ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
-            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var));
+            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                   && !ASRUtils::is_class_type(ASRUtils::expr_type(var));
+        }
+
+        /*  Checks for any non-primitive-function-return type 
+            like fixed strings or allocatables.
+            allocatable string, allocatable integer, etc.. */
+        static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
+            // TODO : Handle other allocatable types and fixed strings.
+            return ASRUtils::is_descriptorString(x);
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
+            return ((ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var))) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
+        
+        static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
+            return  is_aggregate_or_array_type(var) || 
+                    is_non_primitive_return_type(ASRUtils::expr_type(var));
+        }
+
 
         static inline bool is_symbolic_list_type(ASR::expr_t* var) {
             if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(var))) {
@@ -387,6 +413,7 @@ namespace LCompilers {
                 bool fill_variable_dependencies;
                 bool _return_var_or_intent_out = false;
                 SymbolTable* current_scope;
+                std::string current_name;
 
             public:
 
@@ -422,6 +449,13 @@ namespace LCompilers {
                     current_scope = current_scope_copy;
                 }
 
+                void visit_Program(const ASR::Program_t& x){
+                    SymbolTable* current_scope_copy = current_scope;
+                    current_scope = x.m_symtab;
+                    BaseWalkVisitor::visit_Program(x);
+                    current_scope = current_scope_copy;
+                } 
+
                 void visit_Module(const ASR::Module_t& x) {
                     SymbolTable *parent_symtab = current_scope;
                     current_scope = x.m_symtab;
@@ -441,6 +475,8 @@ namespace LCompilers {
                 }
 
                 void visit_Variable(const ASR::Variable_t& x) {
+                    std::string current_name_copy = current_name;
+                    current_name = x.m_name;
                     ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
                     variable_dependencies.n = 0;
                     variable_dependencies.reserve(al, 1);
@@ -454,15 +490,19 @@ namespace LCompilers {
                     xx.n_dependencies = variable_dependencies.size();
                     xx.m_dependencies = variable_dependencies.p;
                     fill_variable_dependencies = fill_variable_dependencies_copy;
+                    current_name = current_name_copy;
                 }
 
                 void visit_Var(const ASR::Var_t& x) {
-                    if( fill_variable_dependencies ) {
+                    if( fill_variable_dependencies && ASRUtils::symbol_name(x.m_v) != current_name ) {
                         variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_v));
                     }
                 }
 
                 void visit_FunctionCall(const ASR::FunctionCall_t& x) {
+                    if(fill_variable_dependencies){
+                        variable_dependencies.push_back(al, ASRUtils::symbol_name(x.m_name));
+                    }
                     if (fill_function_dependencies) {
                         ASR::symbol_t* asr_owner_sym = nullptr;
                         if (current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
@@ -563,6 +603,18 @@ namespace LCompilers {
                     }
                     current_scope = parent_symtab;
                 }
+
+                void visit_Assignment(const ASR::Assignment_t& x) {
+                    ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
+                    ASR::expr_t* a_target = xx.m_target;
+                    bool is_allocatable = ASRUtils::is_allocatable(a_target);
+                    if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+                        ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+                        is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+                    }
+                    xx.m_realloc_lhs &= is_allocatable;
+                    BaseWalkVisitor<UpdateDependenciesVisitor>::visit_Assignment(x);
+                }
             // TODO: Uncomment the following in LFortran
             /*
                 template <typename T>
@@ -588,7 +640,7 @@ namespace LCompilers {
                     visit_UserDefinedType(x);
                 }
 
-                void visit_UnionType(const ASR::UnionType_t& x) {
+                void visit_Union(const ASR::Union_t& x) {
                     visit_UserDefinedType(x);
                 }
             */
@@ -601,7 +653,8 @@ namespace LCompilers {
             Vec<ASR::stmt_t*>* result_vec,
             bool perform_cast=false,
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
-            ASR::ttype_t* casted_type=nullptr) {
+            ASR::ttype_t* casted_type=nullptr,
+            bool realloc_lhs=false) {
             if( x->n_args == 0 ) {
                 if( !inside_symtab ) {
                     remove_original_statement = true;
@@ -609,7 +662,7 @@ namespace LCompilers {
                 return ;
             }
             if( replacer->result_var == nullptr ) {
-                std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__", false);
+                std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
                                     result_var_name, replacer->al, replacer->current_scope, x->m_type);
                 *replacer->current_expr = replacer->result_var;
@@ -675,12 +728,13 @@ namespace LCompilers {
                         x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
                             x_m_args_i, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* assign = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
+                    ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
                                                 x->base.base.loc, derived_ref,
-                                                x_m_args_i, nullptr));
+                                                x_m_args_i, nullptr, realloc_lhs));
                     result_vec->push_back(replacer->al, assign);
                 }
             }
+            replacer->result_var = nullptr;
         }
 
         static inline void create_do_loop(Allocator& al, ASR::ImpliedDoLoop_t* idoloop,
@@ -744,15 +798,15 @@ namespace LCompilers {
                         idoloop_m_values_i = ASRUtils::EXPR(ASR::make_Cast_t(al, array_ref->base.loc,
                             idoloop_m_values_i, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.loc,
-                                                    array_ref, idoloop_m_values_i, nullptr));
+                    ASR::stmt_t* doloop_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, arr_var->base.loc,
+                                                    array_ref, idoloop_m_values_i, nullptr, false));
                     doloop_body.push_back(al, doloop_stmt);
                     if( arr_idx != nullptr ) {
                         ASR::expr_t* one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arr_var->base.loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, arr_var->base.loc, 4))));
                         ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, arr_var->base.loc,
                                                     arr_idx, ASR::binopType::Add, one, ASRUtils::expr_type(arr_idx), nullptr));
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, arr_var->base.loc,
-                                                    arr_idx, increment, nullptr));
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, arr_var->base.loc,
+                                                    arr_idx, increment, nullptr, false));
                         doloop_body.push_back(al, assign_stmt);
                     }
                 }
@@ -794,23 +848,81 @@ namespace LCompilers {
 
         template <typename LOOP_BODY>
         static inline void create_do_loop(Allocator& al, const Location& loc,
-            ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars,
+            ASR::ArrayItem_t* array_item, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars, 
+            Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
+            Vec<ASR::stmt_t*>* result_vec) {
+            int value_rank = array_item->n_args;
+            PassUtils::create_idx_vars(idx_vars, value_rank, loc, al, current_scope, "_t");
+            LCOMPILERS_ASSERT(value_rank == (int) idx_vars.size())
+            temp_idx_vars.reserve(al, array_item->n_args);
+            for( int i = 0; i < value_rank; i++ ) {
+                if(ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))){
+                    ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_args[i].m_right, idx_vars[i], al, current_scope);
+                    temp_idx_vars.push_back(al, ref);
+                } else { 
+                    temp_idx_vars.push_back(al, array_item->m_args[i].m_right);
+                }
+            }
+            ASR::stmt_t* doloop = nullptr;
+            for( int i = 0; i < value_rank; i++ ) {
+                ASR::do_loop_head_t head;
+                head.m_v = idx_vars[i];
+                if(ASRUtils::is_array(ASRUtils::expr_type(array_item->m_args[i].m_right))) {
+                    head.m_start = PassUtils::get_bound(array_item->m_args[i].m_right, 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(array_item->m_args[i].m_right, 1, "ubound", al);
+                    head.m_increment = nullptr;
+                } else {
+                    continue;
+                } 
+                head.loc = head.m_v->base.loc;
+
+                doloop_body.reserve(al, 1);
+                if( doloop == nullptr ) {
+                    loop_body();
+                } else {
+                    doloop_body.push_back(al, doloop);
+                }
+                doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                    doloop_body.p, doloop_body.size(), nullptr, 0));
+            }
+            if(doloop != nullptr) result_vec->push_back(al, doloop);
+        }
+
+        template <typename LOOP_BODY>
+        static inline void create_do_loop(Allocator& al, const Location& loc,
+            ASR::ArraySection_t* array_section, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars,
             Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, SymbolTable* current_scope,
             Vec<ASR::stmt_t*>* result_vec) {
             PassUtils::create_idx_vars(idx_vars, array_section->n_args, loc, al, current_scope, "_t");
             LCOMPILERS_ASSERT(array_section->n_args == idx_vars.size())
+            temp_idx_vars.reserve(al, array_section->n_args);
+            for( size_t i = 0; i < array_section->n_args; i++ ) {
+                if ( ASRUtils::is_array(ASRUtils::expr_type(array_section->m_args[i].m_right)) ) {
+                    ASR::expr_t* ref = PassUtils::create_array_ref(array_section->m_args[i].m_right, idx_vars[i], al, current_scope);
+                    temp_idx_vars.push_back(al, ref);
+                } else if ( array_section->m_args[i].m_step != nullptr ) { 
+                    temp_idx_vars.push_back(al, idx_vars[i]);
+                } else {
+                    temp_idx_vars.push_back(al, array_section->m_args[i].m_right);
+                }
+            }
 
             ASR::stmt_t* doloop = nullptr;
             for( size_t i = 0; i < array_section->n_args; i++ ) {
-                if( array_section->m_args[i].m_step == nullptr ) {
-                    continue ;
-                }
                 // TODO: Add an If debug node to check if the lower and upper bounds of both the arrays are same.
                 ASR::do_loop_head_t head;
                 head.m_v = idx_vars[i];
-                head.m_start = array_section->m_args[i].m_left;
-                head.m_end = array_section->m_args[i].m_right;
-                head.m_increment = array_section->m_args[i].m_step;
+                if( ASRUtils::is_array(ASRUtils::expr_type(array_section->m_args[i].m_right)) ) {
+                    head.m_start = PassUtils::get_bound(array_section->m_args[i].m_right, 1, "lbound", al);
+                    head.m_end = PassUtils::get_bound(array_section->m_args[i].m_right, 1, "ubound", al);
+                    head.m_increment = nullptr;
+                } else if ( array_section->m_args[i].m_step == nullptr ) {
+                    continue ;
+                } else {
+                    head.m_start = array_section->m_args[i].m_left;
+                    head.m_end = array_section->m_args[i].m_right;
+                    head.m_increment = array_section->m_args[i].m_step;
+                }
                 head.loc = head.m_v->base.loc;
 
                 doloop_body.reserve(al, 1);
@@ -825,9 +937,125 @@ namespace LCompilers {
             result_vec->push_back(al, doloop);
         }
 
+        template <typename LOOP_BODY>
+        static inline void create_do_loop_assign(Allocator& al, const Location& loc,
+            ASR::expr_t* lhs, ASR::expr_t* rhs, Vec<ASR::expr_t*>& idx_vars, Vec<ASR::expr_t*>& temp_idx_vars_lhs, 
+            Vec<ASR::expr_t*>& temp_idx_vars_rhs, Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body, 
+            SymbolTable* current_scope, Vec<ASR::stmt_t*>* result_vec) {
+            if (ASR::is_a<ASR::ArrayItem_t>(*lhs) && ASR::is_a<ASR::ArrayItem_t>(*rhs)) {
+                // Case : A([1,2,3]) = B([1,2,3])
+                ASR::ArrayItem_t* lhs_array = ASR::down_cast<ASR::ArrayItem_t>(lhs);
+                ASR::ArrayItem_t* rhs_array = ASR::down_cast<ASR::ArrayItem_t>(rhs);
+                int n_array_indices = 0;
+                for( size_t i = 0; i < rhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        n_array_indices++;
+                    }
+                }
+                if(n_array_indices == 0) return;
+                PassUtils::create_idx_vars(idx_vars, n_array_indices, loc, al, current_scope, "_t");
+                temp_idx_vars_rhs.reserve(al, rhs_array->n_args);
+                temp_idx_vars_lhs.reserve(al, lhs_array->n_args);
+                for( size_t i = 0, j = 0; i < rhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(rhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_rhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_rhs.push_back(al, rhs_array->m_args[i].m_right);
+                    }
+                }
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_lhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
+                    }
+                }
+
+                ASR::stmt_t* doloop = nullptr;
+                for( size_t i = 0, j = 0; i < rhs_array->n_args; i++ ) {
+                    ASR::do_loop_head_t head;
+                    head.m_v = idx_vars[j];
+                    if (ASRUtils::is_array(ASRUtils::expr_type(rhs_array->m_args[i].m_right))) {
+                        head.m_start = PassUtils::get_bound(rhs_array->m_args[i].m_right, 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(rhs_array->m_args[i].m_right, 1, "ubound", al);
+                        head.m_increment = nullptr;
+                        j++;
+                    } else {
+                        continue;
+                    } 
+                    head.loc = head.m_v->base.loc;
+
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        doloop_body.push_back(al, doloop);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                        doloop_body.p, doloop_body.size(), nullptr, 0));
+                }
+                result_vec->push_back(al, doloop);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*lhs) && ASR::is_a<ASR::Var_t>(*rhs)) {
+                // Case : A([1,2,3]) = A2
+                ASR::ArrayItem_t* lhs_array = ASR::down_cast<ASR::ArrayItem_t>(lhs);
+                int n_array_indices = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(rhs));
+                if(n_array_indices == 0) return;
+                PassUtils::create_idx_vars(idx_vars, n_array_indices, loc, al, current_scope, "_t");
+                temp_idx_vars_rhs.reserve(al, n_array_indices);
+                temp_idx_vars_lhs.reserve(al, lhs_array->n_args);
+                for( int i = 0; i < n_array_indices; i++ ) {
+                    temp_idx_vars_rhs.push_back(al, idx_vars[i]);
+                }
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        ASR::expr_t* ref = PassUtils::create_array_ref(lhs_array->m_args[i].m_right, idx_vars[j], al, current_scope);
+                        temp_idx_vars_lhs.push_back(al, ref);
+                        j++;
+                    } else { 
+                        temp_idx_vars_lhs.push_back(al, lhs_array->m_args[i].m_right);
+                    }
+                }
+
+                ASR::stmt_t* doloop = nullptr;
+                for( size_t i = 0, j = 0; i < lhs_array->n_args; i++ ) {
+                    ASR::do_loop_head_t head;
+                    head.m_v = idx_vars[j];
+                    if (ASRUtils::is_array(ASRUtils::expr_type(lhs_array->m_args[i].m_right))) {
+                        head.m_start = PassUtils::get_bound(lhs_array->m_args[i].m_right, 1, "lbound", al);
+                        head.m_end = PassUtils::get_bound(lhs_array->m_args[i].m_right, 1, "ubound", al);
+                        head.m_increment = nullptr;
+                        j++;
+                    } else {
+                        continue;
+                    } 
+                    head.loc = head.m_v->base.loc;
+
+                    doloop_body.reserve(al, 1);
+                    if( doloop == nullptr ) {
+                        loop_body();
+                    } else {
+                        doloop_body.push_back(al, doloop);
+                    }
+                    doloop = ASRUtils::STMT(ASR::make_DoLoop_t(al, loc, nullptr, head,
+                        doloop_body.p, doloop_body.size(), nullptr, 0));
+                }
+                result_vec->push_back(al, doloop);
+            }
+        }
+
         void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
             ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
             ASR::expr_t* idx_var, SymbolTable* current_scope,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr);
+
+        void visit_ArrayConstant(ASR::ArrayConstant_t* x, Allocator& al,
+            ASR::expr_t* arr_var, Vec<ASR::stmt_t*>* result_vec,
+            Vec<ASR::expr_t*>& idx_vars, SymbolTable* current_scope,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
@@ -852,19 +1080,10 @@ namespace LCompilers {
             const Location& loc = x->base.base.loc;
             if( ASR::is_a<ASR::Var_t>(*replacer->result_var) ) {
                 [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(replacer->result_var);
-                LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
-                                    "Initialisation using ArrayConstant is "
-                                    "supported only for single dimensional arrays, found: " +
-                                    std::to_string(ASRUtils::extract_n_dims_from_ttype(result_var_type)))
                 Vec<ASR::expr_t*> idx_vars;
-                PassUtils::create_idx_vars(idx_vars, 1, loc, replacer->al, replacer->current_scope);
-                ASR::expr_t* idx_var = idx_vars[0];
-                ASR::expr_t* lb = PassUtils::get_bound(replacer->result_var, 1, "lbound", replacer->al);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
-                                                loc, idx_var, lb, nullptr));
-                result_vec->push_back(replacer->al, assign_stmt);
+                PassUtils::create_idx_vars(idx_vars, ASRUtils::extract_n_dims_from_ttype(result_var_type), loc, replacer->al, replacer->current_scope);
                 visit_ArrayConstant(x, replacer->al, replacer->result_var, result_vec,
-                                    idx_var, replacer->current_scope,
+                                    idx_vars, replacer->current_scope,
                                     perform_cast, cast_kind, casted_type);
             } else if( ASR::is_a<ASR::ArraySection_t>(*replacer->result_var) ) {
                 ASR::ArraySection_t* target_section = ASR::down_cast<ASR::ArraySection_t>(replacer->result_var);
@@ -889,8 +1108,8 @@ namespace LCompilers {
                 ASR::expr_t* lb = PassUtils::get_bound(target_section->m_v, sliced_dim_index, "lbound", replacer->al);
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(replacer->al, loc, 1,
                                             ASRUtils::expr_type(idx_var)));
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
-                                                target_section->base.base.loc, idx_var, lb, nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
+                                                target_section->base.base.loc, idx_var, lb, nullptr, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 for( size_t k = 0; k < (size_t) ASRUtils::get_fixed_size_of_array(x->m_type); k++ ) {
                     Vec<ASR::array_index_t> args;
@@ -926,15 +1145,38 @@ namespace LCompilers {
                         x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
                             x_m_args_k, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
-                                                    array_ref, x_m_args_k, nullptr));
+                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
+                                                    array_ref, x_m_args_k, nullptr, false));
                     result_vec->push_back(replacer->al, assign_stmt);
                     ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
                                                 idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
-                    assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr));
+                    assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false));
                     result_vec->push_back(replacer->al, assign_stmt);
                 }
             }
+        }
+
+        static inline void replace_ArrayConstructor_(Allocator& al, ASR::ArrayConstructor_t* x,
+            ASR::expr_t* result_var, Vec<ASR::stmt_t*>* result_vec, SymbolTable* current_scope,
+            bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
+            ASR::ttype_t* casted_type=nullptr) {
+            LCOMPILERS_ASSERT(result_var != nullptr);
+            const Location& loc = x->base.base.loc;
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Var_t>(*result_var));
+            [[maybe_unused]] ASR::ttype_t* result_var_type = ASRUtils::expr_type(result_var);
+            LCOMPILERS_ASSERT_MSG(ASRUtils::extract_n_dims_from_ttype(result_var_type) == 1,
+                                "Initialisation using ArrayConstructor is "
+                                "supported only for single dimensional arrays, found: " +
+                                std::to_string(ASRUtils::extract_n_dims_from_ttype(result_var_type)))
+            Vec<ASR::expr_t*> idx_vars;
+            PassUtils::create_idx_vars(idx_vars, 1, loc, al, current_scope, "__libasr_index_");
+            ASR::expr_t* idx_var = idx_vars[0];
+            ASR::expr_t* lb = PassUtils::get_bound(result_var, 1, "lbound", al);
+            ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al,
+                                            loc, idx_var, lb, nullptr, false));
+            result_vec->push_back(al, assign_stmt);
+            visit_ArrayConstructor(x, al, result_var, result_vec,
+                idx_var, current_scope, perform_cast, cast_kind, casted_type);
         }
 
         template <typename T>
@@ -960,8 +1202,8 @@ namespace LCompilers {
                 PassUtils::create_idx_vars(idx_vars, 1, loc, replacer->al, replacer->current_scope);
                 ASR::expr_t* idx_var = idx_vars[0];
                 ASR::expr_t* lb = PassUtils::get_bound(replacer->result_var, 1, "lbound", replacer->al);
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
-                                                loc, idx_var, lb, nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
+                                                loc, idx_var, lb, nullptr, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 visit_ArrayConstructor(x, replacer->al, replacer->result_var, result_vec,
                                     idx_var, replacer->current_scope,
@@ -989,8 +1231,8 @@ namespace LCompilers {
                 ASR::expr_t* lb = PassUtils::get_bound(target_section->m_v, sliced_dim_index, "lbound", replacer->al);
                 ASR::expr_t* const_1 = ASRUtils::EXPR(ASR::make_IntegerConstant_t(replacer->al, loc, 1,
                                             ASRUtils::expr_type(idx_var)));
-                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al,
-                                                target_section->base.base.loc, idx_var, lb, nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
+                                                target_section->base.base.loc, idx_var, lb, nullptr, false));
                 result_vec->push_back(replacer->al, assign_stmt);
                 for( size_t k = 0; k < x->n_args; k++ ) {
                     ASR::expr_t* curr_init = x->m_args[k];
@@ -1030,12 +1272,12 @@ namespace LCompilers {
                             x_m_args_k = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, array_ref->base.loc,
                                 x_m_args_k, cast_kind, casted_type, nullptr));
                         }
-                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc,
-                                                        array_ref, x_m_args_k, nullptr));
+                        ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc,
+                                                        array_ref, x_m_args_k, nullptr, false));
                         result_vec->push_back(replacer->al, assign_stmt);
                         ASR::expr_t* increment = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(replacer->al, target_section->base.base.loc,
                                                     idx_var, ASR::binopType::Add, const_1, ASRUtils::expr_type(idx_var), nullptr));
-                        assign_stmt = ASRUtils::STMT(ASR::make_Assignment_t(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr));
+                        assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al, target_section->base.base.loc, idx_var, increment, nullptr, false));
                         result_vec->push_back(replacer->al, assign_stmt);
                     }
                 }

@@ -27,8 +27,8 @@ print '(-1pe10.2,-2pe15.6,1pe010.2,2x,1pe9.2)', -a, b, -c, d
 print "(12(i3))", 1,2,3,4,5,6,7,8,9,10,11,12
 print "(4(i3),' hello')", 1,2,3,4,5,6,7,8,9,10,11,12,13,14
 print '(i0)', f, -f
-print '(d0.0,1x,d0.1,1x,d0.2)',a,b,c
-print '(d0.0,1x,d0.1,1x,d0.2)',-a,-b,-c
+print '(d12.5,1x,d0.1,1x,d0.2)',a,b,c
+print '(d12.5,1x,d0.1,1x,d0.2)',-a,-b,-c
 print '("Hello")'
 print '( F13.3,1X,F9.6,1X, F0.2 )', r, s, t
 print '( F13.3,1X,F9.6,1X, F0.2 )', -r, -s, -t

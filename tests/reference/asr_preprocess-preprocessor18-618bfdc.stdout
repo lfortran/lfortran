@@ -1,0 +1,37 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocessor18:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    preprocessor18
+                    []
+                    []
+                )
+        })
+    []
+)

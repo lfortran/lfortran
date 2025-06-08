@@ -1,5 +1,4 @@
 program test_cos
-use lfortran_intrinsic_math, only: cos
 implicit none
 real :: x
 x = cos(9.5)

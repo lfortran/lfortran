@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -53,6 +61,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f:
@@ -75,6 +87,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -91,6 +107,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -106,6 +126,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -130,6 +154,7 @@
                                         (Var 3 x)
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -141,6 +166,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 b)
                                     Public
@@ -168,6 +194,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -183,6 +213,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -224,6 +258,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 b)
                                     Public
@@ -257,6 +292,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -272,6 +311,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             signr32:
@@ -294,6 +337,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -310,6 +357,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -325,6 +376,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -351,6 +406,7 @@
                                         (Var 5 r)
                                         (Var 5 x)
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (LogicalBinOp
@@ -412,6 +468,7 @@
                                             (Var 5 r)
                                             (Var 5 x)
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 r)
@@ -421,6 +478,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 r)
@@ -444,6 +502,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -460,6 +522,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     functions_01
@@ -475,11 +541,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 y)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 q)
@@ -492,11 +563,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 q)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 q)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 a)
@@ -505,6 +581,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -520,6 +597,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 c)
@@ -533,11 +611,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 c)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 c)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

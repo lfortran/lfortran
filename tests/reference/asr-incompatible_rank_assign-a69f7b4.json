@@ -1,0 +1,13 @@
+{
+    "basename": "asr-incompatible_rank_assign-a69f7b4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/incompatible_rank_assign.f90",
+    "infile_hash": "0e650e977c4ce7ce00bc5318fc2f65dcd9689f91a8fdd7e5d8cb1007",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-incompatible_rank_assign-a69f7b4.stderr",
+    "stderr_hash": "9f94b6c9d177478d0f450c91caf1b034b7706eee4978a80630f36d7d",
+    "returncode": 2
+}

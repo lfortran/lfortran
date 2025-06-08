@@ -1,0 +1,13 @@
+{
+    "basename": "asr-data_implied_do2-fc94c6e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/data_implied_do2.f90",
+    "infile_hash": "4d1460374ba43c05e4fe5c98325127f075dba71e6caf69b8ad00e706",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-data_implied_do2-fc94c6e.stderr",
+    "stderr_hash": "abf35a8c715ce96aa96eabb23d0bcdbedc417b1fc9dba47bdcb3bc77",
+    "returncode": 2
+}

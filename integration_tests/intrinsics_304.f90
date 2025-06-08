@@ -31,36 +31,36 @@ program intrinsics_304
     print *, a4
     if (a4 /= 0) error stop
     print *, a5
-    if (a5 /= 1.425) error stop
+    if (abs(a5 - 1.425) > 1e-7) error stop
     print *, a6
-    if (a6 /= -1.425) error stop
+    if (abs(a6 - (-1.425)) > 1e-7) error stop
     print *, a7
-    if (a7 /= 1.425) error stop
+    if (abs(a7 - 1.425) > 1e-7) error stop
     print *, a8
-    if (a8 /= -0.0) error stop
+    if (abs(a8 - (-0.0)) > 1e-7) error stop
 
     print *, ar1
     if (any(ar1 /= [1, 2, 3])) error stop
     print *, ar2
     if (any(ar2 /= [-1, -2, -3])) error stop
     print *, ar3
-    if (any(ar3 /= [1.42499995e+00, 2.42499995e+00, 3.42499995e+00])) error stop
+    if (any(abs(ar3 - [1.42499995e+00, 2.42499995e+00, 3.42499995e+00]) > 1e-7)) error stop
     print *, ar4
-    if (any(ar4 /= [1.42499995231628418e+00, 2.42499995231628418e+00, 3.42499995231628418e+00])) error stop
+    if (any(abs(ar4 - [1.42499995231628418e+00, 2.42499995231628418e+00, 3.42499995231628418e+00]) >1e-7)) error stop
 
     print *, sign(x1, x2)
     if (sign(x1, x2) /= -123) error stop
     print *, sign(x3, x4)
     if (sign(x3, x4) /= 123) error stop
     print *, sign(x5, x6)
-    if (sign(x5, x6) /= -123.0) error stop
+    if (abs(sign(x5, x6) - (-123.0)) > 1e-7) error stop
     print *, sign(x7, x8)
-    if (sign(x7, x8) /= 123.0) error stop
+    if (abs(sign(x7, x8) - 123.0) > 1e-7) error stop
 
     print *, sign(arr1, arr2)
     if (any(sign(arr1, arr2) /= [311, 241, 331])) error stop
     print *, sign(arr3, arr4)
-    if (any(sign(arr3, arr4) /= [1.425, -2.425, 3.425])) error stop
+    if (any(abs(sign(arr3, arr4) - [1.425, -2.425, 3.425]) > 1e-7)) error stop
     
     print *, sign(a=-12.,b=0.)
     print *, sign(a=-12.,b=1.)

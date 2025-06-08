@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -42,6 +46,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -72,6 +80,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 y)
                                     Public
@@ -104,6 +113,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -119,6 +132,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -161,6 +178,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -176,6 +197,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -222,6 +247,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 y)
                                     Public
@@ -244,6 +270,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     closuretest
@@ -255,17 +285,21 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ())
                         [(Print
-                            [(FunctionCall
-                                2 apply
+                            (StringFormat
                                 ()
-                                [((Var 2 add_z))
-                                ((IntegerConstant 1 (Integer 4) Decimal))]
-                                (Integer 4)
+                                [(FunctionCall
+                                    2 apply
+                                    ()
+                                    [((Var 2 add_z))
+                                    ((IntegerConstant 1 (Integer 4) Decimal))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
                                 ()
-                                ()
-                            )]
-                            ()
-                            ()
+                            )
                         )]
                         []
                     )]

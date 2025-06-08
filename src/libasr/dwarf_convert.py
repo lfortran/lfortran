@@ -24,6 +24,7 @@ of lines.txt and lines.dat
 from collections import namedtuple
 from glob import glob
 import os
+from pathlib import Path
 import re
 from struct import pack
 import sys
@@ -34,6 +35,18 @@ IncludeDirectory = namedtuple("IncludeDirectory", ["id", "path"])
 FileName = namedtuple("FileName", ["id", "filename", "dir_idx"])
 
 ASRDebugLines = namedtuple("ASRDebugLines", ["filenames", "addresses"])
+
+def normalize_to_absolute_path(path_str):
+    if path_str[0] == "/":
+        # Absolute path
+        full_path = Path(path_str)
+    else:
+        # Path is relative to the root directory of the repository
+        # Path.cwd() is `src/bin`.
+        base_dir = (Path.cwd() / ".." / "..").resolve()
+        full_path = base_dir / path_str
+    full_path = full_path.resolve()
+    return str(full_path)
 
 class Parser:
     """
@@ -60,6 +73,9 @@ class Parser:
         while self.line.startswith("debug_line"):
             d = self.parse_debug_line()
             lines.append(d)
+
+        if (self.line.rstrip() != ""):
+            raise ValueError(f"Failed to completely parse {filename} !!")
         return DebugLines(lines)
 
     def parse_debug_line(self):
@@ -85,19 +101,42 @@ class Parser:
             n = re.compile(r"file_names\[[ ]*(\d+)\]:").findall(self.line)[0]
             n = int(n)
 
-            self.line = self.file.readline()
-            filename = re.compile(r"name: \"([^\"]+)\"").findall(self.line)[0]
+            # these are the only two more values we currently need to make
+            # 'FileName'
+            filename = None
+            dir_idx = None
 
-            self.line = self.file.readline()
-            dir_idx = re.compile(r"dir_index: (\d+)").findall(self.line)[0]
-            dir_idx = int(dir_idx)
+            while True:
+                self.line = self.file.readline()
+                if not self.line or self.line.startswith("file_names") or not self.line.strip():
+                    break
 
-            self.line = self.file.readline()
-            self.line = self.file.readline()
+                name_match = re.compile(r"name: \"([^\"]+)\"").findall(self.line)
+                if name_match:
+                    filename = name_match[0]
+                    continue
+
+                dir_match = re.compile(r"dir_index: (\d+)").findall(self.line)
+                if dir_match:
+                    dir_idx = int(dir_match[0])
+                    continue
+
+                # this appear in newer version of dsymutil (Apple clang 17 or higher),
+                # currently we ignore this
+                md5_match = re.compile(r"md5_checksum: ([0-9a-fA-F]+)").findall(self.line)
+                if md5_match:
+                    continue
+
+                # for older version of dsymutil `mod_time` and `length` are ignore,
+                # kindly update this comment when we notice any newer keyword is noticed
+                # in newer version(s) of dsymutil
+                continue
+
+            if filename is None or dir_idx is None:
+                raise ValueError(f"Missing entries in construction of `FileName`")
 
             file_names.append(FileName(n, filename, dir_idx))
 
-            self.line = self.file.readline()
 
         self.line = self.file.readline()
         self.line = self.file.readline()
@@ -119,16 +158,6 @@ class Parser:
         return d
 
 def ast_to_asr(ast):
-    local_files = glob("../**/*.cpp", recursive=True) + \
-                  glob("../**/*.h", recursive=True)
-    for i in range(len(local_files)):
-        local_files[i] = os.path.abspath(local_files[i])
-    def make_abs(end_path):
-        if end_path[0] != "/":
-            for f in local_files:
-                if f.endswith(end_path):
-                    return f
-        return end_path
     lines = []
     last_address = -1
     global_filename_id = 0
@@ -144,7 +173,7 @@ def ast_to_asr(ast):
             if filename.dir_idx != 0:
                 prefix = include_dirs[filename.dir_idx] + "/"
             filenames[filename.id] = global_filename_id
-            global_filenames.append(make_abs(prefix+filename.filename))
+            global_filenames.append(normalize_to_absolute_path(prefix+filename.filename))
             global_filename_id += 1
         for address, line_num, column, file_id in line.addresses:
             filename = global_filenames[filenames[file_id]]

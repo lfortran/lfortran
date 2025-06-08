@@ -1,0 +1,203 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            bobyqa_exmp:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            is_finite:
+                                (ExternalSymbol
+                                    6
+                                    is_finite
+                                    2 is_finite
+                                    inf_mod_1
+                                    []
+                                    is_finite
+                                    Public
+                                ),
+                            is_finite_1:
+                                (ExternalSymbol
+                                    6
+                                    is_finite_1
+                                    4 is_finite_1
+                                    infnan_mod_1
+                                    []
+                                    is_finite_1
+                                    Public
+                                ),
+                            is_finite_1@is_finite:
+                                (ExternalSymbol
+                                    6
+                                    is_finite_1@is_finite
+                                    2 is_finite_1
+                                    inf_mod_1
+                                    []
+                                    is_finite_1
+                                    Public
+                                )
+                        })
+                    bobyqa_exmp
+                    [infnan_mod_1]
+                    [(SubroutineCall
+                        6 is_finite_1
+                        ()
+                        [((IntegerConstant 1 (Integer 4) Decimal))]
+                        ()
+                    )]
+                ),
+            inf_mod_1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            is_finite:
+                                (GenericProcedure
+                                    2
+                                    is_finite
+                                    [2 is_finite_1]
+                                    Public
+                                ),
+                            is_finite_1:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            
+                                        })
+                                    is_finite_1
+                                    (FunctionType
+                                        []
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    inf_mod_1
+                    []
+                    .false.
+                    .false.
+                ),
+            infnan_mod_1:
+                (Module
+                    (SymbolTable
+                        4
+                        {
+                            is_finite:
+                                (ExternalSymbol
+                                    4
+                                    is_finite
+                                    2 is_finite
+                                    inf_mod_1
+                                    []
+                                    is_finite
+                                    Public
+                                ),
+                            is_finite_1:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    is_finite_1
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 x)]
+                                    [(Print
+                                        (StringFormat
+                                            ()
+                                            [(Var 5 x)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (Var 5 x)
+                                            NotEq
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            is_finite_1@is_finite:
+                                (ExternalSymbol
+                                    4
+                                    is_finite_1@is_finite
+                                    2 is_finite_1
+                                    inf_mod_1
+                                    []
+                                    is_finite_1
+                                    Public
+                                )
+                        })
+                    infnan_mod_1
+                    [inf_mod_1]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

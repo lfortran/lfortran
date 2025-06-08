@@ -16,11 +16,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 3 ())
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             string:
@@ -33,12 +37,16 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -57,22 +65,44 @@
                         (Var 2 num)
                         (StringConstant
                             "abc"
-                            (Character 1 3 ())
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 string)
-                        (Var 2 num)
+                        (StringPhysicalCast
+                            (Var 2 num)
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            ()
+                        )
                         ()
+                        .false.
                     )
                     (If
                         (StringCompare
-                            (Var 2 string)
+                            (StringPhysicalCast
+                                (Var 2 string)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 (StringLen
+                                        (Var 2 string)
+                                        (Integer 4)
+                                        ()
+                                    ) ExpressionLength PointerString)
+                                )
+                                ()
+                            )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (Character 1 3 ())
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -88,19 +118,40 @@
                             ()
                             ()
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (Character 1 -1 ())
+                            (String 1 () DeferredLength DescriptorString)
                             ()
                         )
-                        (Var 2 num)
+                        (StringPhysicalCast
+                            (Var 2 num)
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            ()
+                        )
                         ()
+                        .false.
                     )
                     (If
                         (StringCompare
-                            (Var 2 string)
+                            (StringPhysicalCast
+                                (Var 2 string)
+                                DescriptorString
+                                PointerString
+                                (Allocatable
+                                    (String 1 (StringLen
+                                        (Var 2 string)
+                                        (Integer 4)
+                                        ()
+                                    ) ExpressionLength PointerString)
+                                )
+                                ()
+                            )
                             NotEq
                             (StringConstant
                                 "abc"
-                                (Character 1 3 ())
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -109,9 +160,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 string)]
                     )]
                 )
         })

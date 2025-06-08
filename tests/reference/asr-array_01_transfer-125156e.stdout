@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             size:
                                 (Variable
@@ -42,6 +46,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -61,25 +69,30 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(BitCast
-                            (Var 2 m)
-                            (RealConstant
-                                1.000000
-                                (Real 4)
-                            )
-                            (Var 2 size)
-                            (Array
-                                (Real 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 2 size))]
-                                PointerToDataArray
-                            )
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(BitCast
+                                (Var 2 m)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (Var 2 size)
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 2 size))]
+                                    PointerToDataArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

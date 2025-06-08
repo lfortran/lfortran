@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             m_cli2:
                 (Module
                     (SymbolTable
@@ -19,16 +17,6 @@
                                                     (SymbolTable
                                                         6
                                                         {
-                                                            get_command_argument:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    get_command_argument
-                                                                    8 get_command_argument
-                                                                    lfortran_intrinsic_builtin
-                                                                    []
-                                                                    get_command_argument
-                                                                    Private
-                                                                ),
                                                             ilength:
                                                                 (Variable
                                                                     6
@@ -43,6 +31,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -63,14 +55,11 @@
                                                     )
                                                     []
                                                     []
-                                                    [(SubroutineCall
-                                                        6 get_command_argument
-                                                        ()
-                                                        [((IntegerConstant 0 (Integer 4) Decimal))
-                                                        (())
-                                                        ((Var 6 ilength))
-                                                        (())]
-                                                        ()
+                                                    [(IntrinsicImpureSubroutine
+                                                        GetCommandArgument
+                                                        [(IntegerConstant 0 (Integer 4) Decimal)
+                                                        (Var 6 ilength)]
+                                                        0
                                                     )]
                                                     ()
                                                     Public
@@ -110,7 +99,7 @@
                                 )
                         })
                     m_cli2
-                    [lfortran_intrinsic_builtin]
+                    []
                     .true.
                     .false.
                 ),

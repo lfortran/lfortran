@@ -41,11 +41,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             self:
@@ -58,12 +62,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         11 git_target_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             url:
@@ -75,19 +86,26 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     git_target_branch
                                     (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             11 git_target_t
                                         )
                                         Source
@@ -109,24 +127,42 @@
                                             (Var 13 self)
                                             13 1_git_target_t_url
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 url)
+                                        (StringPhysicalCast
+                                            (Var 13 url)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 () AssumedLength DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
                                             (Var 13 self)
                                             13 1_git_target_t_object
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
-                                        (Var 13 branch)
+                                        (StringPhysicalCast
+                                            (Var 13 branch)
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 () AssumedLength DescriptorString)
+                                            )
+                                            ()
+                                        )
                                         ()
+                                        .false.
                                     )]
                                     (Var 13 self)
                                     Public
@@ -149,12 +185,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             url:
@@ -167,12 +207,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -180,6 +224,7 @@
                                     []
                                     [url
                                     object]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -215,6 +260,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 git_target_t
                                                         )
                                                     )
@@ -222,6 +270,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             name:
@@ -234,12 +286,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             path:
@@ -252,12 +308,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -266,6 +326,7 @@
                                     [name
                                     path
                                     git]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -289,18 +350,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -346,6 +412,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 4 dependency_config_t
                                                             )
                                                             [(()
@@ -357,6 +426,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             error:
@@ -370,6 +443,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -377,6 +453,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             root:
@@ -388,11 +468,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             table:
@@ -405,12 +489,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 toml_table
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -419,6 +510,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 dependency_config_t
                                                 )
                                                 [(()
@@ -427,11 +521,17 @@
                                             )
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 toml_table
                                         )
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 error_t
                                             )
                                         )]
@@ -484,12 +584,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             self:
@@ -502,12 +606,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 dependency_config_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             url:
@@ -520,18 +631,25 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_dependency
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 dependency_config_t
                                         )]
                                         ()
@@ -554,6 +672,9 @@
                                             9 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 git_target_t
                                                 )
                                             )
@@ -562,19 +683,43 @@
                                         (FunctionCall
                                             4 git_target_branch
                                             ()
-                                            [((Var 9 url))
-                                            ((Var 9 obj))]
+                                            [((StringPhysicalCast
+                                                (Var 9 url)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 9 url)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 9 obj)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 9 obj)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 4 git_target_t
                                             )
                                             ()
                                             ()
                                         )
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 9 obj)
-                                        (Var 9 url)]
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -608,11 +753,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -706,12 +856,10 @@
                     modules_28
                     [fpm_manifest_dependency]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_28 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             loop:
                                 (Block
@@ -43,6 +47,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     loop
@@ -56,6 +64,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (IntegerCompare
@@ -81,6 +90,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         1 square
@@ -96,6 +106,7 @@
                         (Var 2 a)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (GoToTarget
                         1
@@ -126,6 +137,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             result:
                                 (Variable
@@ -141,6 +156,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -171,6 +190,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -186,9 +206,13 @@
                         []
                     )
                     (Print
-                        [(Var 3 result)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 3 result)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                     ()
                     Public

@@ -1,0 +1,13 @@
+{
+    "basename": "pass_insert_deallocate-finalize_01-3efebdd",
+    "cmd": "lfortran --pass=insert_deallocate --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/finalize_01.f90",
+    "infile_hash": "81b1d43091ce29fff8f14e778b9a33030de61262f7c499b22c152b7e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_insert_deallocate-finalize_01-3efebdd.stdout",
+    "stdout_hash": "b153397dacd01ace600a08d676400fcf1fec5668f2e4b4952aacdb21",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

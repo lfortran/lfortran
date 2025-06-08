@@ -12,43 +12,41 @@
                     intrinsics_29
                     []
                     [(Print
-                        [(StringConcat
+                        (StringConcat
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
-                                    (Character 1 17 ())
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 (TypeInquiry
                                     NewLine
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     (StringConstant
                                         "A"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
-                                    (Character 1 -1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     (StringConstant
                                         "\n"
-                                        (Character 1 0 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                 )
-                                (Character 1 -1 ())
+                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength PointerString)
                                 (StringConstant
                                     "This is record 1.\n"
-                                    (Character 1 18 ())
+                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                             )
                             (StringConstant
                                 "This is record 2."
-                                (Character 1 17 ())
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                            (Character 1 -1 ())
+                            (String 1 (IntegerConstant 35 (Integer 8) Decimal) ExpressionLength PointerString)
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
-                                (Character 1 35 ())
+                                (String 1 (IntegerConstant 35 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

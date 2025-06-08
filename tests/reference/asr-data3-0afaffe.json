@@ -1,0 +1,13 @@
+{
+    "basename": "asr-data3-0afaffe",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/data3.f90",
+    "infile_hash": "b4838a394f3b26e78e6092c67193187a539ff83b61c12d3468a6a030",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-data3-0afaffe.stdout",
+    "stdout_hash": "6a332f01e2cdd6ea9858328615a79da96a75d47a6a7fe8b5e8d371fb",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

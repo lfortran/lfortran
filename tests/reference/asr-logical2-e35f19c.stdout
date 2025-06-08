@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     logical2
@@ -49,6 +57,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -57,6 +66,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp
@@ -67,20 +77,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )]
                 )

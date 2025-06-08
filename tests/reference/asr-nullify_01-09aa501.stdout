@@ -24,6 +24,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             p2:
                                 (Variable
@@ -42,6 +46,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -57,6 +65,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -74,10 +86,11 @@
                         (Var 2 p1)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Nullify
-                        [2 p1
-                        2 p2]
+                        [(Var 2 p1)
+                        (Var 2 p2)]
                     )]
                 )
         })

@@ -27,7 +27,6 @@ macro(lfortran_compile_runtime name dir)
   endif()
 endmacro(lfortran_compile_runtime)
 
-lfortran_compile_runtime(lfortran_intrinsic_builtin builtin)
 lfortran_compile_runtime(lfortran_intrinsic_iso_fortran_env pure)
 
 lfortran_compile_runtime(lfortran_intrinsic_custom custom)
@@ -36,19 +35,9 @@ lfortran_compile_runtime(lfortran_intrinsic_ieee_arithmetic pure)
 add_dependencies(lfortran_intrinsic_ieee_arithmetic lfortran_intrinsic_iso_fortran_env)
 
 lfortran_compile_runtime(lfortran_intrinsic_iso_c_binding pure)
-add_dependencies(lfortran_intrinsic_iso_c_binding lfortran_intrinsic_builtin)
 
 lfortran_compile_runtime(omp_lib openmp)
 add_dependencies(omp_lib lfortran_intrinsic_iso_c_binding)
-
-lfortran_compile_runtime(lfortran_intrinsic_string pure)
-add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_builtin)
-add_dependencies(lfortran_intrinsic_string lfortran_intrinsic_iso_fortran_env)
-
-lfortran_compile_runtime(lfortran_intrinsic_math impure)
-add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_c_binding)
-add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_builtin)
-add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_fortran_env)
 
 # Ideally this should be a target based install, not file based:
 # install(DIRECTORY ${CMAKE_Fortran_MODULE_DIRECTORY}/ DESTINATION ${CMAKE_INSTALL_LIBDIR})
@@ -57,14 +46,11 @@ add_dependencies(lfortran_intrinsic_math lfortran_intrinsic_iso_fortran_env)
 # TODO: Change get_runtime_library_dir() to "/../../modfiles" for tests
 install(
   FILES
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_builtin.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_custom.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_fortran_env.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_ieee_arithmetic.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_iso_c_binding.mod
   ${CMAKE_Fortran_MODULE_DIRECTORY}/omp_lib.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_math.mod
-  ${CMAKE_Fortran_MODULE_DIRECTORY}/lfortran_intrinsic_string.mod
   DESTINATION ${CMAKE_INSTALL_LIBDIR}
   )
 

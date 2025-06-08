@@ -47,9 +47,7 @@
             [(Print
                 0
                 ()
-                [(String
-                    "b"
-                )]
+                [(String "b")]
                 ()
             )]
             []

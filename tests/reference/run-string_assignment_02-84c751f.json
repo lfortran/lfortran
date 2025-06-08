@@ -1,0 +1,13 @@
+{
+    "basename": "run-string_assignment_02-84c751f",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/string_assignment_02.f90",
+    "infile_hash": "a08f7ec91c7fc4d516a9ec8775761fad679344425d3572773570b7aa",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-string_assignment_02-84c751f.stderr",
+    "stderr_hash": "6a65c3e45ebf9744391ebd23ce57aa204a1a3147392a5e05e32d5424",
+    "returncode": 1
+}

@@ -10,7 +10,9 @@
         [(Declaration
             (AttrType
                 TypeInteger
-                []
+                [(()
+                8
+                Value)]
                 ()
                 ()
                 None
@@ -60,9 +62,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "1"
-                    )]
+                    [(String "1")]
                     ()
                 )]
             )
@@ -80,9 +80,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "2"
-                    )]
+                    [(String "2")]
                     ()
                 )]
             )
@@ -100,9 +98,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "3"
-                    )]
+                    [(String "3")]
                     ()
                 )]
             )
@@ -120,9 +116,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "4"
-                    )]
+                    [(String "4")]
                     ()
                 )]
             )]
@@ -170,9 +164,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "1"
-                    )]
+                    [(String "1")]
                     ()
                 )]
             )
@@ -196,9 +188,7 @@
                 (Print
                     0
                     ()
-                    [(String
-                        "2,3,4"
-                    )]
+                    [(String "2,3,4")]
                     ()
                 )]
             )]

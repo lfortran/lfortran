@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -48,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -63,6 +71,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -106,6 +118,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -119,6 +132,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -132,6 +146,7 @@
                         )
                         (IntegerConstant 8 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -171,6 +186,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Where
                         (IntegerCompare
@@ -219,6 +235,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 b)
@@ -254,90 +271,7 @@
                                 )
                             )
                             ()
-                        )]
-                    )
-                    (Where
-                        (IntegerCompare
-                            (Var 2 a)
-                            GtE
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Array
-                                (Logical 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            ()
-                        )
-                        [(Assignment
-                            (Var 2 b)
-                            (ArrayBroadcast
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (ArrayConstant
-                                    4
-                                    [10]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                (ArrayConstant
-                                    40
-                                    [1, 1, 1, ...., 1, 1, 1]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                            )
-                            ()
-                        )]
-                        [(Assignment
-                            (Var 2 b)
-                            (ArrayBroadcast
-                                (IntegerConstant 0 (Integer 4) Decimal)
-                                (ArrayConstant
-                                    4
-                                    [10]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 1 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 10 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                (ArrayConstant
-                                    40
-                                    [0, 0, 0, ...., 0, 0, 0]
-                                    (Array
-                                        (Integer 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ColMajor
-                                )
-                            )
-                            ()
+                            .false.
                         )]
                     )
                     (Where
@@ -387,6 +321,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 b)
@@ -422,6 +357,93 @@
                                 )
                             )
                             ()
+                            .false.
+                        )]
+                    )
+                    (Where
+                        (IntegerCompare
+                            (Var 2 a)
+                            GtE
+                            (IntegerConstant 0 (Integer 4) Decimal)
+                            (Array
+                                (Logical 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 b)
+                            (ArrayBroadcast
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (ArrayConstant
+                                    4
+                                    [10]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    40
+                                    [1, 1, 1, ...., 1, 1, 1]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                            .false.
+                        )]
+                        [(Assignment
+                            (Var 2 b)
+                            (ArrayBroadcast
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (ArrayConstant
+                                    4
+                                    [10]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                (ArrayConstant
+                                    40
+                                    [0, 0, 0, ...., 0, 0, 0]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )
+                            ()
+                            .false.
                         )]
                     )
                     (If
@@ -605,14 +627,22 @@
                         []
                     )
                     (Print
-                        [(Var 2 b)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 b)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(Var 2 a)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

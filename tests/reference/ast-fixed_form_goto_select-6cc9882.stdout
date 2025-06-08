@@ -56,9 +56,7 @@
         (Print
             100
             ()
-            [(String
-                "hello"
-            )]
+            [(String "hello")]
             ()
         )
         (Assignment

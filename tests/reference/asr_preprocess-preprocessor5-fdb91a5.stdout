@@ -12,29 +12,49 @@
                     preprocessor5
                     []
                     [(Print
-                        [(IntegerConstant 1 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 1 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntegerConstant 12 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 12 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntegerConstant 3 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 3 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntegerConstant 6 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 6 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntegerConstant 15 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 15 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

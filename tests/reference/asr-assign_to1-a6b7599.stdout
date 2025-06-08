@@ -22,6 +22,10 @@
                                     Public
                                     Optional
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     main
@@ -45,6 +49,7 @@
                             (Var 2 k)
                             (IntegerConstant 15 (Integer 4) Decimal)
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -86,12 +91,10 @@
                         15
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "run"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

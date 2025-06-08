@@ -7,49 +7,43 @@ source_filename = "LFortran"
 @2 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
 @3 = private unnamed_addr constant [2 x i8] c"a\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"z\00", align 1
-@5 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@7 = private unnamed_addr constant [6 x i8] c"False\00", align 1
-@8 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@10 = private unnamed_addr constant [3 x i8] c"@a\00", align 1
-@11 = private unnamed_addr constant [2 x i8] c"A\00", align 1
-@12 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
-@13 = private unnamed_addr constant [2 x i8] c"a\00", align 1
-@14 = private unnamed_addr constant [2 x i8] c"z\00", align 1
-@15 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@17 = private unnamed_addr constant [6 x i8] c"False\00", align 1
-@18 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@19 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@20 = private unnamed_addr constant [3 x i8] c"a@\00", align 1
-@21 = private unnamed_addr constant [2 x i8] c"A\00", align 1
-@22 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
-@23 = private unnamed_addr constant [2 x i8] c"a\00", align 1
-@24 = private unnamed_addr constant [2 x i8] c"z\00", align 1
-@25 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@26 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@27 = private unnamed_addr constant [6 x i8] c"False\00", align 1
-@28 = private unnamed_addr constant [5 x i8] c"True\00", align 1
-@29 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@30 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
-@31 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
-@32 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@33 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@34 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@5 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [2 x i8] c"L\00", align 1
+@6 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@7 = private unnamed_addr constant [3 x i8] c"@a\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"A\00", align 1
+@9 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
+@10 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@11 = private unnamed_addr constant [2 x i8] c"z\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.1 = private unnamed_addr constant [2 x i8] c"L\00", align 1
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [3 x i8] c"a@\00", align 1
+@15 = private unnamed_addr constant [2 x i8] c"A\00", align 1
+@16 = private unnamed_addr constant [2 x i8] c"Z\00", align 1
+@17 = private unnamed_addr constant [2 x i8] c"a\00", align 1
+@18 = private unnamed_addr constant [2 x i8] c"z\00", align 1
+@19 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.2 = private unnamed_addr constant [2 x i8] c"L\00", align 1
+@20 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@21 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
+@22 = private unnamed_addr constant [4 x i8] c"sbs\00", align 1
+@23 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@24 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@25 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %2 = call i8* @_lfortran_malloc(i32 3)
-  call void @_lfortran_string_init(i32 3, i8* %2)
+  call void @_lfortran_string_init(i64 3, i8* %2)
   store i8* %2, i8** @string_10.c, align 8
-  call void @_lfortran_strcpy(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @0, i32 0, i32 0), i8 0)
+  call void @_lfortran_strcpy_pointer_string(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @0, i32 0, i32 0))
   %3 = load i8*, i8** @string_10.c, align 8
   %is_alpha = alloca i1, align 1
   %num = alloca i8*, align 8
   %4 = call i8* @_lfortran_malloc(i32 4)
-  call void @_lfortran_string_init(i32 4, i8* %4)
+  call void @_lfortran_string_init(i64 4, i8* %4)
   store i8* %4, i8** %num, align 8
   %5 = load i8*, i8** %num, align 8
   %6 = load i8*, i8** @string_10.c, align 8
@@ -83,95 +77,89 @@ define i32 @main(i32 %0, i8** %1) {
   %26 = icmp eq i1 %15, false
   %27 = select i1 %26, i1 %25, i1 %15
   store i1 %27, i1* %is_alpha, align 1
-  %28 = load i1, i1* %is_alpha, align 1
-  %29 = icmp eq i1 %28, false
-  %30 = select i1 %29, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @7, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %30, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  call void @_lfortran_strcpy(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @10, i32 0, i32 0), i8 0)
-  %31 = load i8*, i8** @string_10.c, align 8
-  %32 = alloca i8*, align 8
-  store i8* %31, i8** %32, align 8
-  %33 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i8** %33, align 8
-  %34 = call i1 @_lpython_str_compare_gte(i8** %32, i8** %33)
-  %35 = load i8*, i8** @string_10.c, align 8
-  %36 = alloca i8*, align 8
-  store i8* %35, i8** %36, align 8
-  %37 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0), i8** %37, align 8
-  %38 = call i1 @_lpython_str_compare_lte(i8** %36, i8** %37)
-  %39 = icmp eq i1 %34, false
-  %40 = select i1 %39, i1 %34, i1 %38
-  %41 = load i8*, i8** @string_10.c, align 8
-  %42 = alloca i8*, align 8
-  store i8* %41, i8** %42, align 8
-  %43 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0), i8** %43, align 8
-  %44 = call i1 @_lpython_str_compare_gte(i8** %42, i8** %43)
-  %45 = load i8*, i8** @string_10.c, align 8
-  %46 = alloca i8*, align 8
-  store i8* %45, i8** %46, align 8
-  %47 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i8** %47, align 8
-  %48 = call i1 @_lpython_str_compare_lte(i8** %46, i8** %47)
-  %49 = icmp eq i1 %44, false
-  %50 = select i1 %49, i1 %44, i1 %48
-  %51 = icmp eq i1 %40, false
-  %52 = select i1 %51, i1 %50, i1 %40
-  store i1 %52, i1* %is_alpha, align 1
-  %53 = load i1, i1* %is_alpha, align 1
-  %54 = icmp eq i1 %53, false
-  %55 = select i1 %54, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @19, i32 0, i32 0), i8* %55, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
-  call void @_lfortran_strcpy(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @20, i32 0, i32 0), i8 0)
+  %28 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i1* %is_alpha)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* %28, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @5, i32 0, i32 0))
+  call void @_lfortran_strcpy_pointer_string(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @7, i32 0, i32 0))
+  %29 = load i8*, i8** @string_10.c, align 8
+  %30 = alloca i8*, align 8
+  store i8* %29, i8** %30, align 8
+  %31 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i8** %31, align 8
+  %32 = call i1 @_lpython_str_compare_gte(i8** %30, i8** %31)
+  %33 = load i8*, i8** @string_10.c, align 8
+  %34 = alloca i8*, align 8
+  store i8* %33, i8** %34, align 8
+  %35 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0), i8** %35, align 8
+  %36 = call i1 @_lpython_str_compare_lte(i8** %34, i8** %35)
+  %37 = icmp eq i1 %32, false
+  %38 = select i1 %37, i1 %32, i1 %36
+  %39 = load i8*, i8** @string_10.c, align 8
+  %40 = alloca i8*, align 8
+  store i8* %39, i8** %40, align 8
+  %41 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i8** %41, align 8
+  %42 = call i1 @_lpython_str_compare_gte(i8** %40, i8** %41)
+  %43 = load i8*, i8** @string_10.c, align 8
+  %44 = alloca i8*, align 8
+  store i8* %43, i8** %44, align 8
+  %45 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @11, i32 0, i32 0), i8** %45, align 8
+  %46 = call i1 @_lpython_str_compare_lte(i8** %44, i8** %45)
+  %47 = icmp eq i1 %42, false
+  %48 = select i1 %47, i1 %42, i1 %46
+  %49 = icmp eq i1 %38, false
+  %50 = select i1 %49, i1 %48, i1 %38
+  store i1 %50, i1* %is_alpha, align 1
+  %51 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i1* %is_alpha)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %51, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  call void @_lfortran_strcpy_pointer_string(i8** @string_10.c, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @14, i32 0, i32 0))
+  %52 = load i8*, i8** @string_10.c, align 8
+  %53 = alloca i8*, align 8
+  store i8* %52, i8** %53, align 8
+  %54 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0), i8** %54, align 8
+  %55 = call i1 @_lpython_str_compare_gte(i8** %53, i8** %54)
   %56 = load i8*, i8** @string_10.c, align 8
   %57 = alloca i8*, align 8
   store i8* %56, i8** %57, align 8
   %58 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @21, i32 0, i32 0), i8** %58, align 8
-  %59 = call i1 @_lpython_str_compare_gte(i8** %57, i8** %58)
-  %60 = load i8*, i8** @string_10.c, align 8
-  %61 = alloca i8*, align 8
-  store i8* %60, i8** %61, align 8
-  %62 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i8** %62, align 8
-  %63 = call i1 @_lpython_str_compare_lte(i8** %61, i8** %62)
-  %64 = icmp eq i1 %59, false
-  %65 = select i1 %64, i1 %59, i1 %63
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0), i8** %58, align 8
+  %59 = call i1 @_lpython_str_compare_lte(i8** %57, i8** %58)
+  %60 = icmp eq i1 %55, false
+  %61 = select i1 %60, i1 %55, i1 %59
+  %62 = load i8*, i8** @string_10.c, align 8
+  %63 = alloca i8*, align 8
+  store i8* %62, i8** %63, align 8
+  %64 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0), i8** %64, align 8
+  %65 = call i1 @_lpython_str_compare_gte(i8** %63, i8** %64)
   %66 = load i8*, i8** @string_10.c, align 8
   %67 = alloca i8*, align 8
   store i8* %66, i8** %67, align 8
   %68 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @23, i32 0, i32 0), i8** %68, align 8
-  %69 = call i1 @_lpython_str_compare_gte(i8** %67, i8** %68)
-  %70 = load i8*, i8** @string_10.c, align 8
-  %71 = alloca i8*, align 8
-  store i8* %70, i8** %71, align 8
-  %72 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i8** %72, align 8
-  %73 = call i1 @_lpython_str_compare_lte(i8** %71, i8** %72)
-  %74 = icmp eq i1 %69, false
-  %75 = select i1 %74, i1 %69, i1 %73
-  %76 = icmp eq i1 %65, false
-  %77 = select i1 %76, i1 %75, i1 %65
-  store i1 %77, i1* %is_alpha, align 1
-  %78 = load i1, i1* %is_alpha, align 1
-  %79 = icmp eq i1 %78, false
-  %80 = select i1 %79, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @27, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @28, i32 0, i32 0)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @29, i32 0, i32 0), i8* %80, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @26, i32 0, i32 0))
-  %81 = load i8*, i8** %num, align 8
-  %82 = call i8* @_lfortran_str_slice_assign(i8* %81, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @30, i32 0, i32 0), i32 0, i32 3, i32 1, i1 true, i1 true)
-  store i8* %82, i8** %num, align 8
-  %83 = load i8*, i8** %num, align 8
-  %84 = alloca i8*, align 8
-  store i8* %83, i8** %84, align 8
-  %85 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @31, i32 0, i32 0), i8** %85, align 8
-  %86 = call i1 @_lpython_str_compare_noteq(i8** %84, i8** %85)
-  br i1 %86, label %then, label %else
+  store i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0), i8** %68, align 8
+  %69 = call i1 @_lpython_str_compare_lte(i8** %67, i8** %68)
+  %70 = icmp eq i1 %65, false
+  %71 = select i1 %70, i1 %65, i1 %69
+  %72 = icmp eq i1 %61, false
+  %73 = select i1 %72, i1 %71, i1 %61
+  store i1 %73, i1* %is_alpha, align 1
+  %74 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i32 0, i1* %is_alpha)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @20, i32 0, i32 0), i8* %74, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @19, i32 0, i32 0))
+  %75 = load i8*, i8** %num, align 8
+  %76 = call i8* @_lfortran_str_slice_assign(i8* %75, i8* getelementptr inbounds ([4 x i8], [4 x i8]* @21, i32 0, i32 0), i32 0, i32 3, i32 1, i1 true, i1 true)
+  call void @_lfortran_strcpy_pointer_string(i8** %num, i8* %76)
+  %77 = load i8*, i8** %num, align 8
+  %78 = alloca i8*, align 8
+  store i8* %77, i8** %78, align 8
+  %79 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([4 x i8], [4 x i8]* @22, i32 0, i32 0), i8** %79, align 8
+  %80 = call i1 @_lpython_str_compare_noteq(i8** %78, i8** %79)
+  br i1 %80, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @34, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @32, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @33, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -179,6 +167,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -189,13 +178,15 @@ declare void @_lpython_call_initial_functions(i32, i8**)
 
 declare i8* @_lfortran_malloc(i32)
 
-declare void @_lfortran_string_init(i32, i8*)
+declare void @_lfortran_string_init(i64, i8*)
 
-declare void @_lfortran_strcpy(i8**, i8*, i8)
+declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
 
 declare i1 @_lpython_str_compare_gte(i8**, i8**)
 
 declare i1 @_lpython_str_compare_lte(i8**, i8**)
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
@@ -206,3 +197,5 @@ declare i1 @_lpython_str_compare_noteq(i8**, i8**)
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
+
+declare void @_lpython_free_argv()

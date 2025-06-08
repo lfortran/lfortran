@@ -2,7 +2,11 @@
 #include <libasr/location.h>
 #include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
+#include <libasr/pass/intrinsic_subroutine_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
+#include <libasr/asr_pickle_visitor.h>
+#include <libasr/asr_json_visitor.h>
+#include <libasr/asr_tree_visitor.h>
 
 namespace LCompilers {
 
@@ -54,7 +58,7 @@ public:
     }
     void visit_Module(const ASR::Module_t &x) {
         if (!show_intrinsic_modules &&
-            (x.m_intrinsic || startswith(x.m_name, "lfortran_intrinsic_") || startswith(x.m_name, "numpy"))) {
+            (x.m_intrinsic || startswith(x.m_name, "numpy"))) {
             s.append("(");
             if (use_colors) {
                 s.append(color(style::bold));
@@ -93,9 +97,15 @@ public:
         if(indent) s.append("\n" + indented);
         else s.append(" ");
         s.append("[");
-        int size = x.m_n_data / (ASRUtils::is_character(*x.m_type) ?
-                                ASR::down_cast<ASR::Character_t>(ASRUtils::type_get_past_array(x.m_type))->m_len :
-                                ASRUtils::extract_kind_from_ttype_t(x.m_type));
+        int kind;
+        if(ASRUtils::is_character(*x.m_type)){
+            ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                ASRUtils::type_get_past_array(x.m_type));
+            if(!ASRUtils::extract_value(str->m_len, kind)){LCOMPILERS_ASSERT(false)}
+        } else {
+            kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
+        }
+        int size = x.m_n_data / kind;
         int curr = 0;
         for (int i = 0; i < 3; i++) {
             if (curr < size) {
@@ -136,6 +146,20 @@ public:
             s.append(color(fg::green));
         }
         s.append(ASRUtils::get_intrinsic_name(x));
+        if (use_colors) {
+            s.append(color(fg::reset));
+            s.append(color(style::reset));
+        }
+        return s;
+    }
+
+    std::string convert_sub_intrinsic_id(int x) {
+        std::string s;
+        if (use_colors) {
+            s.append(color(style::bold));
+            s.append(color(fg::green));
+        }
+        s.append(ASRUtils::get_intrinsic_subroutine_name(x));
         if (use_colors) {
             s.append(color(fg::reset));
             s.append(color(style::reset));

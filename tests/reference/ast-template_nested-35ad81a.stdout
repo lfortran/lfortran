@@ -308,6 +308,7 @@
                 []
             )]
         )]
+        []
         [(Function
             func_arg_real
             [(x)
@@ -456,9 +457,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "The result is "
-                )
+                [(String "The result is ")
                 (FuncCallOrArray
                     add_real
                     []

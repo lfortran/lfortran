@@ -16,7 +16,7 @@ bool endswith(const std::string &s, const std::string &e);
 std::string to_lower(const std::string &s);
 std::vector<std::string> string_split(const std::string &s,
     const std::string &split_string, bool strs_to_lower=true);
-std::vector<std::string> string_split_avoid_parentheses(const std::string &s, 
+std::vector<std::string> string_split_avoid_parentheses(const std::string &s,
     bool strs_to_lower=true);
 std::vector<std::string> split(const std::string &s);
 std::string join(const std::string j, const std::vector<std::string> &v);
@@ -29,7 +29,10 @@ char *s2c(Allocator &al, const std::string &s);
 std::string replace(const std::string &s,
     const std::string &regex, const std::string &replace);
 
-std::string read_file(const std::string &filename);
+// Reads a file, returns success/fail as a result
+bool read_file(const std::string &filename, std::string &text);
+// Reads a file, aborts on failure
+std::string read_file_ok(const std::string &filename);
 
 // Returns the parent path to the given path
 std::string parent_path(const std::string &path);
@@ -47,6 +50,9 @@ char* str_unescape_c(Allocator &al, LCompilers::Str &s);
 // given string must be enclosed in double quotes
 std::string str_escape_fortran_double_quote(const std::string &s);
 char* str_unescape_fortran(Allocator &al, LCompilers::Str &s, char ch);
+
+bool str_compare(const unsigned char *pos, std::string s);
+void rtrim(std::string& str);
 
 } // namespace LCompilers
 

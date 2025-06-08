@@ -46,7 +46,7 @@ if (abs(r64-7) > 1e-10) error stop
 print *, aimag(arr1)
 if (any(aimag(arr1) - [7.0_sp, 7.11999989e+00_sp, 3.40000010e+00_sp] > 1e-6)) error stop
 
-! print *, aimag(arr2) ! Does not work yet #4542
-! if (any(aimag(arr2) - [7.00000000000000000e+00_dp, 7.12000000000000011e+00_dp, 3.39999999999999991e+00_dp] > 1e-10)) error stop
+print *, aimag(arr2) ! Does not work yet #4542
+if (any(aimag(arr2) - [7.00000000000000000e+00_dp, 7.12000000000000011e+00_dp, 3.39999999999999991e+00_dp] > 1e-10)) error stop
 
 end program

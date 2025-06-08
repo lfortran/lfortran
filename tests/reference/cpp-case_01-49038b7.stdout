@@ -25,24 +25,24 @@ namespace {
 namespace {
 
 void main2() {
-    int32_t i;
-    int32_t out;
+    int64_t i;
+    int64_t out;
     i = 4;
     if (i == 1) {
         out = 10;
-        std::cout << "1" << std::endl;
+std::cout<< "1"<<std::endl;
     }
     else if (i == 2) {
         out = 20;
-        std::cout << "2" << std::endl;
+std::cout<< "2"<<std::endl;
     }
     else if (i == 3) {
         out = 30;
-        std::cout << "3" << std::endl;
+std::cout<< "3"<<std::endl;
     }
     else if (i == 4) {
         out = 40;
-        std::cout << "4" << std::endl;
+std::cout<< "4"<<std::endl;
     }
     if (out != 40) {
         std::cerr << "ERROR STOP" << std::endl;
@@ -50,11 +50,11 @@ void main2() {
     }
     if (i == 1) {
         out = 11;
-        std::cout << "1" << std::endl;
+std::cout<< "1"<<std::endl;
     }
     else if (i == 2 || i == 3 || i == 4) {
         out = 22;
-        std::cout << "2,3,4" << std::endl;
+std::cout<< "2,3,4"<<std::endl;
     }
     if (out != 22) {
         std::cerr << "ERROR STOP" << std::endl;

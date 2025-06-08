@@ -1,0 +1,13 @@
+{
+    "basename": "asr-multi_error1-ed395f9",
+    "cmd": "lfortran --semantics-only --continue-compilation --no-color {infile}",
+    "infile": "tests/multi_error1.f90",
+    "infile_hash": "aae363b17603b231b2a906564a03365ce9a53952c754ea31187f352c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-multi_error1-ed395f9.stderr",
+    "stderr_hash": "8e354c62a28f565b652876a84c5e566842065a5429ce01c56fea19e1",
+    "returncode": 1
+}

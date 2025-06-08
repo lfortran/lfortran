@@ -25,9 +25,13 @@ struct IntrinsicProceduresAsASRNodes {
 
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
-                "transpose", "matmul", "pack", "transfer", "cmplx",
-                "dcmplx", "reshape", "ichar", "iachar", "char", "maxloc",
-                "null", "associated", "len", "complex"};
+                "transpose", "transfer", "cmplx", "dcmplx", "reshape",
+                "iachar", "null", "associated", "len", "complex", "is_contiguous",
+
+                // LF specific
+                "_lfortran_len", "_lfortran_get_item",
+                "_lfortran_list_constant", "_lfortran_list_count",
+                "_lfortran_set_constant"};
 
             kind_based_intrinsics = {};
         }
@@ -44,9 +48,6 @@ struct IntrinsicProceduresAsASRNodes {
 
 struct IntrinsicProcedures {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_math = "lfortran_intrinsic_math";
-    const std::string m_math3 = "lfortran_intrinsic_math3";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
     const std::string m_iso_c_binding = "lfortran_intrinsic_iso_c_binding";
     const std::string m_custom = "lfortran_intrinsic_custom";
@@ -72,28 +73,7 @@ struct IntrinsicProcedures {
             // real and int get transformed into ExplicitCast
             // in intrinsic_function_transformation()
             // So we shouldn't even encounter them here
-            {"int", {m_builtin, &eval_int, false}},
-            {"is_iostat_eor", {m_builtin, &not_implemented, false}},
-            {"is_iostat_end", {m_builtin, &not_implemented, false}},
-            {"get_command_argument", {m_builtin, &not_implemented, false}},
-            {"command_argument_count", {m_builtin, &not_implemented, false}},
-            {"execute_command_line", {m_builtin, &not_implemented, false}},
-            {"get_environment_variable", {m_builtin, &not_implemented, false}},
             {"newunit", {m_custom, &not_implemented, false}},
-
-            // These will fail if used in symbol table visitor, but will be
-            // left unevaluated in body visitor
-            {"trim", {m_string, &not_implemented, false}},
-            {"len_trim", {m_string, &not_implemented, false}},
-
-            // Subroutines
-            {"cpu_time", {m_math, &not_implemented, false}},
-            {"move_alloc", {m_builtin, &not_implemented, false}},
-            {"present", {m_builtin, &not_implemented, false}},
-            {"system_clock", {m_math, &not_implemented, false}},
-            {"random_number", {m_math, &not_implemented, false}},
-            {"srand", {m_math, &not_implemented, false}},
-            {"date_and_time", {m_string, &not_implemented, false}},
 
             // IEEE Arithmetic
             {"ieee_value", {m_ieee_arithmetic, &not_implemented, false}},
@@ -118,15 +98,18 @@ struct IntrinsicProcedures {
         }
     }
 
-    std::string get_module(std::string name, const Location &loc) const {
+    std::string get_module(std::string name, const Location &loc, diag::Diagnostics &diag) const {
         auto search = comptime_eval_map.find(name);
         if (search != comptime_eval_map.end()) {
             std::string module_name = std::get<0>(search->second);
             return module_name;
         } else {
-            throw SemanticError("Function '" + name
+            diag.add(diag::Diagnostic(
+                "Function '" + name
                 + "' not found among intrinsic procedures",
-                loc);
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -162,11 +145,15 @@ struct IntrinsicProcedures {
     static ASR::expr_t *eval_trig(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &,
             trig_eval_callback_double trig_double,
-            trig_eval_callback_complex_double trig_complex_double
-            ) {
+            trig_eval_callback_complex_double trig_complex_double,
+            diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 1) {
-            throw SemanticError("Intrinsic trig function accepts exactly 1 argument", loc);
+            diag.add(diag::Diagnostic(
+                "Intrinsic trig function accepts exactly 1 argument",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg = args[0];
         ASR::ttype_t* t = ASRUtils::expr_type(args[0]);
@@ -187,18 +174,25 @@ struct IntrinsicProcedures {
                 return nullptr;
             }
         } else {
-            throw SemanticError("Argument for trig function must be Real or Complex", loc);
+            diag.add(diag::Diagnostic(
+                "Argument for trig function must be Real or Complex",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
     typedef double (*eval2_callback_double)(double, double);
     static ASR::expr_t *eval_2args(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &,
-            eval2_callback_double eval2_double
-            ) {
+            eval2_callback_double eval2_double, diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 2) {
-            throw SemanticError("This intrinsic function accepts exactly 2 arguments", loc);
+            diag.add(diag::Diagnostic(
+                "This intrinsic function accepts exactly 2 arguments",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg1 = args[0];
         ASR::ttype_t* t1 = ASRUtils::expr_type(args[0]);
@@ -210,7 +204,11 @@ struct IntrinsicProcedures {
             double val = eval2_double(rv1, rv2);
             return ASR::down_cast<ASR::expr_t>(ASR::make_RealConstant_t(al, loc, val, t1));
         } else {
-            throw SemanticError("Arguments for this intrinsic function must be Real", loc);
+            diag.add(diag::Diagnostic(
+                "Arguments for this intrinsic function must be Real",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 
@@ -218,10 +216,14 @@ struct IntrinsicProcedures {
     static ASR::expr_t *eval_2args_ri(Allocator &al, const Location &loc,
             Vec<ASR::expr_t*> &args, const CompilerOptions &compiler_options,
             eval2_callback_double eval2_double,
-            eval2_callback_int eval2_int) {
+            eval2_callback_int eval2_int, diag::Diagnostics &diag) {
         LCOMPILERS_ASSERT(ASRUtils::all_args_evaluated(args));
         if (args.size() != 2) {
-            throw SemanticError("This intrinsic function accepts exactly 2 arguments", loc);
+            diag.add(diag::Diagnostic(
+                "This intrinsic function accepts exactly 2 arguments",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
         ASR::expr_t* trig_arg1 = args[0];
         ASR::ttype_t* t1 = ASRUtils::expr_type(args[0]);
@@ -240,35 +242,11 @@ struct IntrinsicProcedures {
                     ASR::make_Integer_t(al, loc, compiler_options.po.default_integer_kind));
             return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, val, type));
         } else {
-            throw SemanticError("Arguments for this intrinsic function must be Real or Integer", loc);
-        }
-    }
-
-    static ASR::expr_t *eval_int(Allocator &al, const Location &loc, Vec<ASR::expr_t*> &args, const CompilerOptions &/*compiler_options*/) {
-        ASR::expr_t* int_expr = args[0];
-        ASR::ttype_t* int_type = ASRUtils::expr_type(int_expr);
-        int int_kind = ASRUtils::extract_kind_from_ttype_t(int_type);
-        if (ASR::is_a<ASR::Integer_t>(*int_type)) {
-            if (int_kind == 4){
-                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            } else {
-                int64_t ival = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::expr_value(int_expr))->m_n;
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            }
-        } else if (ASR::is_a<ASR::Real_t>(*int_type)) {
-            if (int_kind == 4){
-                float rv = ASR::down_cast<ASR::RealConstant_t>(
-                    ASRUtils::expr_value(int_expr))->m_r;
-                int64_t ival = static_cast<int64_t>(rv);
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            } else {
-                double rv = ASR::down_cast<ASR::RealConstant_t>(ASRUtils::expr_value(int_expr))->m_r;
-                int64_t ival = static_cast<int64_t>(rv);
-                return ASR::down_cast<ASR::expr_t>(ASR::make_IntegerConstant_t(al, loc, ival, int_type));
-            }
-        } else {
-            throw SemanticError("int must have only one argument", loc);
+            diag.add(diag::Diagnostic(
+                "Arguments for this intrinsic function must be Real or Integer",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {loc})}));
+            throw SemanticAbort();
         }
     }
 

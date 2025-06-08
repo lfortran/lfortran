@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             zero:
                                 (Variable
@@ -49,6 +53,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -76,6 +84,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 zero)
@@ -84,15 +93,20 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "factor in a:"
-                            (Character 1 12 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "factor in a:"
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 3 factor)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 3 factor)]
-                        ()
-                        ()
                     )
                     (SubroutineCall
                         1 b
@@ -126,6 +140,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     b
@@ -146,13 +164,17 @@
                     []
                     [(Var 4 factor)]
                     [(Print
-                        [(StringConstant
-                            "factor: "
-                            (Character 1 8 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "factor: "
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 4 factor)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 4 factor)]
-                        ()
-                        ()
                     )]
                     ()
                     Public

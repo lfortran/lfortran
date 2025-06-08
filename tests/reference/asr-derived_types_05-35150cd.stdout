@@ -33,12 +33,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string:
@@ -50,18 +57,25 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -99,12 +113,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -122,12 +143,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -165,12 +193,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -188,12 +223,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -231,12 +273,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -254,12 +303,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )
                                         Source
@@ -297,18 +353,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -353,12 +414,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string:
@@ -370,18 +438,25 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -419,12 +494,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -442,12 +524,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_integer_int32
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -485,12 +574,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -508,12 +604,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_integer_int64
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source
@@ -551,12 +654,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         8 string_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             val:
@@ -574,12 +684,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_string_from_logical_lk
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             8 string_type
                                         )
                                         Source

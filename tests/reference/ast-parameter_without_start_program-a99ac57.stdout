@@ -1,0 +1,24 @@
+(TranslationUnit
+    [(Program
+        __xx_main
+        ()
+        []
+        []
+        [(Declaration
+            ()
+            [(SimpleAttribute
+                AttrParameter
+            )]
+            [(x
+            []
+            []
+            ()
+            10
+            Equal
+            ())]
+            ()
+        )]
+        []
+        []
+    )]
+)

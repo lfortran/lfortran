@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             random_sp:
                                 (Variable
@@ -38,25 +42,33 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_29
                     []
                     [(IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_sp)]
                         0
                     )
                     (IntrinsicImpureSubroutine
-                        ObjectType
+                        RandomNumber
                         [(Var 2 random_dp)]
                         0
                     )
                     (Print
-                        [(Var 2 random_sp)
-                        (Var 2 random_dp)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 random_sp)
+                            (Var 2 random_dp)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

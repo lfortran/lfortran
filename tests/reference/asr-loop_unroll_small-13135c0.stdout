@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             first:
                                 (Variable
@@ -42,6 +46,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i:
@@ -59,6 +67,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             last:
                                 (Variable
@@ -74,6 +86,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             print_subrout:
@@ -96,6 +112,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     print_subrout
@@ -116,9 +136,13 @@
                                     []
                                     [(Var 3 x)]
                                     [(Print
-                                        [(Var 3 x)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 x)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -140,6 +164,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -163,6 +191,7 @@
                             )
                             (Var 2 i)
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -170,11 +199,13 @@
                         (Var 2 first)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 last)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -208,6 +239,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -229,6 +261,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (SubroutineCall
                             2 print_subrout
@@ -256,6 +289,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (If
                             (IntegerCompare

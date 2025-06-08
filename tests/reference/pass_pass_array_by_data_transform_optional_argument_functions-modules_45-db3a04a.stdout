@@ -17,12 +17,16 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             file_scope_flag:
@@ -70,6 +74,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -85,6 +93,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             profile_config_t:
@@ -107,12 +119,16 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             profiles:
@@ -127,6 +143,9 @@
                                     (Allocatable
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 7 profile_config_t
                                             )
                                             [(()
@@ -138,6 +157,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             profindex:
@@ -154,6 +177,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -197,11 +224,6 @@
                         ((Var 7 profindex))
                         ((Var 7 os_valid))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 7 compiler_name)
-                        (Var 7 profile_name)
-                        (Var 7 profiles)]
                     )]
                 ),
             modules_45_fpm_manifest_profile:
@@ -217,6 +239,7 @@
                                             
                                         })
                                     file_scope_flag
+                                    []
                                     []
                                     []
                                     Source
@@ -247,6 +270,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -258,12 +285,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             compiler_name:
@@ -276,12 +307,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             cxx_flags:
@@ -294,12 +329,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             err_message:
@@ -312,12 +351,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_flags:
@@ -330,12 +373,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_name:
@@ -348,12 +395,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -368,6 +419,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 file_scope_flag
                                                             )
                                                             [(()
@@ -380,6 +434,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -391,12 +449,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ifile:
@@ -414,6 +476,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             ikey:
                                                 (Variable
@@ -429,6 +495,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_valid:
@@ -446,6 +516,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             key_name:
                                                 (Variable
@@ -457,12 +531,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             link_time_flags:
@@ -475,12 +553,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             os_type:
@@ -498,6 +580,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -514,6 +600,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -525,12 +615,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             profiles:
@@ -545,6 +639,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 profile_config_t
                                                             )
                                                             [(()
@@ -556,6 +653,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             profindex:
@@ -573,6 +674,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -589,20 +694,27 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     get_flags
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 profile_config_t
                                                 )
                                                 [(()
@@ -638,6 +750,9 @@
                                             (Var 6 profindex)
                                             ())]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 profile_config_t
                                             )
                                             ColMajor
@@ -646,14 +761,62 @@
                                         (FunctionCall
                                             2 new_profile
                                             ()
-                                            [((Var 6 profile_name))
-                                            ((Var 6 compiler_name))
+                                            [((StringPhysicalCast
+                                                (Var 6 profile_name)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 profile_name)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
+                                            ((StringPhysicalCast
+                                                (Var 6 compiler_name)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 compiler_name)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((Var 6 os_type))
-                                            ((Var 6 flags))
+                                            ((StringPhysicalCast
+                                                (Var 6 flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(Var 6 flags)]
+                                                    [(StringPhysicalCast
+                                                        (Var 6 flags)
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (String 1 (StringLen
+                                                                (Var 6 flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
+                                                        )
+                                                        ()
+                                                    )]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -666,11 +829,35 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 c_flags))
+                                            ((StringPhysicalCast
+                                                (Var 6 c_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 c_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(Var 6 c_flags)]
+                                                    [(StringPhysicalCast
+                                                        (Var 6 c_flags)
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (String 1 (StringLen
+                                                                (Var 6 c_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
+                                                        )
+                                                        ()
+                                                    )]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -683,11 +870,35 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 cxx_flags))
+                                            ((StringPhysicalCast
+                                                (Var 6 cxx_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 cxx_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(Var 6 cxx_flags)]
+                                                    [(StringPhysicalCast
+                                                        (Var 6 cxx_flags)
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (String 1 (StringLen
+                                                                (Var 6 cxx_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
+                                                        )
+                                                        ()
+                                                    )]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -700,11 +911,35 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((Var 6 link_time_flags))
+                                            ((StringPhysicalCast
+                                                (Var 6 link_time_flags)
+                                                DescriptorString
+                                                PointerString
+                                                (Allocatable
+                                                    (String 1 (StringLen
+                                                        (Var 6 link_time_flags)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
+                                                )
+                                                ()
+                                            ))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(Var 6 link_time_flags)]
+                                                    [(StringPhysicalCast
+                                                        (Var 6 link_time_flags)
+                                                        DescriptorString
+                                                        PointerString
+                                                        (Allocatable
+                                                            (String 1 (StringLen
+                                                                (Var 6 link_time_flags)
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
+                                                        )
+                                                        ()
+                                                    )]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -740,12 +975,16 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 profile_config_t
                                             )
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 6 profindex)
@@ -757,17 +996,7 @@
                                             ()
                                         )
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 6 c_flags)
-                                        (Var 6 cxx_flags)
-                                        (Var 6 err_message)
-                                        (Var 6 file_flags)
-                                        (Var 6 file_name)
-                                        (Var 6 file_scope_flags)
-                                        (Var 6 flags)
-                                        (Var 6 key_name)
-                                        (Var 6 link_time_flags)]
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -789,11 +1018,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             compiler:
@@ -805,11 +1038,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             cxx_flags:
@@ -821,11 +1058,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -839,6 +1080,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 file_scope_flag
                                                         )
                                                         [(()
@@ -850,6 +1094,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -860,11 +1108,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_built_in:
@@ -882,6 +1134,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             is_c_flags_present_:
                                                 (Variable
@@ -897,6 +1153,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_cxx_flags_present_:
@@ -914,6 +1174,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             is_file_scope_flags_present_:
                                                 (Variable
@@ -929,6 +1193,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_flags_present_:
@@ -946,6 +1214,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             is_is_built_in_present_:
                                                 (Variable
@@ -961,6 +1233,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_link_time_flags_present_:
@@ -978,6 +1254,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -988,11 +1268,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             os_type:
@@ -1010,6 +1294,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             profile:
                                                 (Variable
@@ -1021,12 +1309,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 profile_config_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             profile_name:
@@ -1038,29 +1333,36 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(Character 1 -1 ())
-                                        (Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Integer 4)
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 file_scope_flag
                                             )
                                             [(()
@@ -1071,6 +1373,9 @@
                                         (Logical 4)
                                         (Logical 4)]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 profile_config_t
                                         )
                                         Source
@@ -1122,12 +1427,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             compiler:
@@ -1140,12 +1449,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             cxx_flags:
@@ -1158,12 +1471,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -1178,6 +1495,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 file_scope_flag
                                                             )
                                                             [(()
@@ -1190,6 +1510,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1201,12 +1525,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             is_built_in:
@@ -1224,6 +1552,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1235,12 +1567,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             os_type:
@@ -1258,6 +1594,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1269,12 +1609,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -1289,6 +1633,7 @@
                                     link_time_flags
                                     file_scope_flags
                                     is_built_in]
+                                    []
                                     Source
                                     Public
                                     .false.

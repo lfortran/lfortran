@@ -38,6 +38,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             logical_and:
                                 (ExternalSymbol
@@ -70,6 +74,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ~add:
                                 (ExternalSymbol
@@ -95,196 +103,228 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_asterisk_m]
                     [(Print
-                        [(StringConstant
-                            "T*T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Mul
-                            (Var 5 t)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 t))
-                                ((Var 5 t))]
+                            [(StringConstant
+                                "T*T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Mul
+                                (Var 5 t)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 t))
+                                    ((Var 5 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "T*F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Mul
-                            (Var 5 f)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 t))
-                                ((Var 5 f))]
+                            [(StringConstant
+                                "T*F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Mul
+                                (Var 5 f)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 t))
+                                    ((Var 5 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "F*T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Mul
-                            (Var 5 t)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 f))
-                                ((Var 5 t))]
+                            [(StringConstant
+                                "F*T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Mul
+                                (Var 5 t)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 f))
+                                    ((Var 5 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "F*F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Mul
-                            (Var 5 f)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 logical_and
-                                5 ~mul
-                                [((Var 5 f))
-                                ((Var 5 f))]
+                            [(StringConstant
+                                "F*F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Mul
+                                (Var 5 f)
                                 (Logical 4)
                                 ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
+                                (FunctionCall
+                                    5 logical_and
+                                    5 ~mul
+                                    [((Var 5 f))
+                                    ((Var 5 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "T+T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Add
-                            (Var 5 t)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 t))
-                                ((Var 5 t))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "T+T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Add
+                                (Var 5 t)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 t))
+                                    ((Var 5 t))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "T+F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 t)
-                            Add
-                            (Var 5 f)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 t))
-                                ((Var 5 f))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "T+F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                            (OverloadedBinOp
+                                (Var 5 t)
+                                Add
+                                (Var 5 f)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 t))
+                                    ((Var 5 f))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "F+T:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Add
-                            (Var 5 t)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 f))
-                                ((Var 5 t))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "F+T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Add
+                                (Var 5 t)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 f))
+                                    ((Var 5 t))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
-                            "F+F:"
-                            (Character 1 4 ())
-                        )
-                        (OverloadedBinOp
-                            (Var 5 f)
-                            Add
-                            (Var 5 f)
-                            (Logical 4)
+                        (StringFormat
                             ()
-                            (FunctionCall
-                                5 bin_add
-                                5 ~add
-                                [((Var 5 f))
-                                ((Var 5 f))]
-                                (Integer 4)
-                                ()
-                                ()
+                            [(StringConstant
+                                "F+F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                        )]
-                        ()
-                        ()
+                            (OverloadedBinOp
+                                (Var 5 f)
+                                Add
+                                (Var 5 f)
+                                (Logical 4)
+                                ()
+                                (FunctionCall
+                                    5 bin_add
+                                    5 ~add
+                                    [((Var 5 f))
+                                    ((Var 5 f))]
+                                    (Integer 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 ),
             operator_overloading_01_overload_asterisk_m:
@@ -312,6 +352,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -328,6 +372,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -343,6 +391,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -377,6 +429,7 @@
                                             (Var 4 bin_add)
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                         [(If
                                             (LogicalBinOp
@@ -398,11 +451,13 @@
                                                 (Var 4 bin_add)
                                                 (IntegerConstant 0 (Integer 4) Decimal)
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 4 bin_add)
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                     )]
@@ -432,6 +487,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -448,6 +507,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             logical_and:
                                                 (Variable
@@ -463,6 +526,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -495,6 +562,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 logical_and)
                                     Public

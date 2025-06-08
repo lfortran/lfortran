@@ -47,12 +47,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         5 test_type
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -90,6 +97,10 @@
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     test_subroutine
@@ -110,12 +121,10 @@
                                     []
                                     [(Var 4 x)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "Hello World"
-                                            (Character 1 11 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -143,6 +152,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             test_subroutine:
                                                 (ClassProcedure
@@ -159,6 +172,7 @@
                                     test_type
                                     []
                                     [test_real_value]
+                                    []
                                     Source
                                     Public
                                     .false.

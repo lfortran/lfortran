@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -70,6 +82,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     doloop_02
@@ -78,16 +94,19 @@
                         (Var 2 j)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -105,6 +124,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -122,14 +142,19 @@
                         []
                     )
                     (Print
-                        [(Var 2 j)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 j)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -171,6 +196,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )]
@@ -202,14 +228,19 @@
                         []
                     )
                     (Print
-                        [(Var 2 a)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -233,6 +264,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )]
@@ -252,9 +284,13 @@
                         []
                     )
                     (Print
-                        [(Var 2 a)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

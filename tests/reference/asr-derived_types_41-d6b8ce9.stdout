@@ -1,0 +1,382 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            derived_types_41:
+                (Program
+                    (SymbolTable
+                        4
+                        {
+                            1_mytype_a:
+                                (ExternalSymbol
+                                    4
+                                    1_mytype_a
+                                    3 a
+                                    mytype
+                                    []
+                                    a
+                                    Public
+                                ),
+                            1_mytype_b:
+                                (ExternalSymbol
+                                    4
+                                    1_mytype_b
+                                    3 b
+                                    mytype
+                                    []
+                                    b
+                                    Public
+                                ),
+                            1_mytype_c:
+                                (ExternalSymbol
+                                    4
+                                    1_mytype_c
+                                    3 c
+                                    mytype
+                                    []
+                                    c
+                                    Public
+                                ),
+                            mytype:
+                                (ExternalSymbol
+                                    4
+                                    mytype
+                                    2 mytype
+                                    derived_types_41_mod
+                                    []
+                                    mytype
+                                    Public
+                                ),
+                            mytype_instance:
+                                (ExternalSymbol
+                                    4
+                                    mytype_instance
+                                    2 mytype_instance
+                                    derived_types_41_mod
+                                    []
+                                    mytype_instance
+                                    Public
+                                )
+                        })
+                    derived_types_41
+                    [derived_types_41_mod]
+                    [(If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (StructInstanceMember
+                                        (Var 4 mytype_instance)
+                                        4 1_mytype_a
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    NotEq
+                                    (ArrayConstant
+                                        8
+                                        [1, 2]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (Var 4 mytype_instance)
+                                4 1_mytype_b
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntrinsicArrayFunction
+                            Any
+                            [(ArrayPhysicalCast
+                                (IntegerCompare
+                                    (StructInstanceMember
+                                        (Var 4 mytype_instance)
+                                        4 1_mytype_c
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                    )
+                                    NotEq
+                                    (ArrayConstant
+                                        8
+                                        [4, 5]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (Array
+                                        (Logical 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                FixedSizeArray
+                                DescriptorArray
+                                (Array
+                                    (Logical 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    DescriptorArray
+                                )
+                                ()
+                            )]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            derived_types_41_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            mytype:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            a:
+                                                (Variable
+                                                    3
+                                                    a
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            b:
+                                                (Variable
+                                                    3
+                                                    b
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            c:
+                                                (Variable
+                                                    3
+                                                    c
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Integer 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    mytype
+                                    []
+                                    [a
+                                    b
+                                    c]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            mytype_instance:
+                                (Variable
+                                    2
+                                    mytype_instance
+                                    []
+                                    Local
+                                    (StructConstant
+                                        2 mytype
+                                        [((ArrayConstant
+                                            8
+                                            [1, 2]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))
+                                        ((IntegerConstant 3 (Integer 4) Decimal))
+                                        ((ArrayConstant
+                                            8
+                                            [4, 5]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))]
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 mytype
+                                        )
+                                    )
+                                    (StructConstant
+                                        2 mytype
+                                        [((ArrayConstant
+                                            8
+                                            [1, 2]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))
+                                        ((IntegerConstant 3 (Integer 4) Decimal))
+                                        ((ArrayConstant
+                                            8
+                                            [4, 5]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ColMajor
+                                        ))]
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 mytype
+                                        )
+                                    )
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        2 mytype
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    derived_types_41_mod
+                    []
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

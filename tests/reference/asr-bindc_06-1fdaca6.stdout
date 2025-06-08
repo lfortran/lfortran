@@ -1,0 +1,330 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            bindc_06:
+                (Program
+                    (SymbolTable
+                        11
+                        {
+                            c_f_pointer:
+                                (ExternalSymbol
+                                    11
+                                    c_f_pointer
+                                    4 c_f_pointer
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_f_pointer
+                                    Public
+                                ),
+                            c_int:
+                                (ExternalSymbol
+                                    11
+                                    c_int
+                                    4 c_int
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_int
+                                    Public
+                                ),
+                            c_ptr:
+                                (ExternalSymbol
+                                    11
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            f_int4:
+                                (ExternalSymbol
+                                    11
+                                    f_int4
+                                    2 f_int4
+                                    bindc_06_mod
+                                    []
+                                    f_int4
+                                    Public
+                                ),
+                            f_int8:
+                                (ExternalSymbol
+                                    11
+                                    f_int8
+                                    2 f_int8
+                                    bindc_06_mod
+                                    []
+                                    f_int8
+                                    Public
+                                ),
+                            f_logical:
+                                (ExternalSymbol
+                                    11
+                                    f_logical
+                                    2 f_logical
+                                    bindc_06_mod
+                                    []
+                                    f_logical
+                                    Public
+                                ),
+                            f_type_c_ptr:
+                                (ExternalSymbol
+                                    11
+                                    f_type_c_ptr
+                                    2 f_type_c_ptr
+                                    bindc_06_mod
+                                    []
+                                    f_type_c_ptr
+                                    Public
+                                ),
+                            ptr_f_type_c_ptr:
+                                (Variable
+                                    11
+                                    ptr_f_type_c_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Pointer
+                                        (Integer 4)
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    bindc_06
+                    [bindc_06_mod
+                    iso_c_binding]
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "f_int4: "
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 11 f_int4)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 11 f_int4)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "f_int8: "
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 11 f_int8)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 11 f_int8)
+                            NotEq
+                            (Cast
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                IntegerToInteger
+                                (Integer 8)
+                                (IntegerConstant 2 (Integer 8) Decimal)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "f_logical: "
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 11 f_logical)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (LogicalBinOp
+                            (Var 11 f_logical)
+                            NEqv
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (CPtrToPointer
+                        (Var 11 f_type_c_ptr)
+                        (Var 11 ptr_f_type_c_ptr)
+                        ()
+                        ()
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "ptr_f_type_c_ptr: "
+                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 11 ptr_f_type_c_ptr)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 11 ptr_f_type_c_ptr)
+                            NotEq
+                            (IntegerConstant 12 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                ),
+            bindc_06_mod:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            c_ptr:
+                                (ExternalSymbol
+                                    2
+                                    c_ptr
+                                    4 c_ptr
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_ptr
+                                    Public
+                                ),
+                            f_int4:
+                                (Variable
+                                    2
+                                    f_int4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "c_int4"
+                                    .false.
+                                ),
+                            f_int8:
+                                (Variable
+                                    2
+                                    f_int8
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "c_int8"
+                                    .false.
+                                ),
+                            f_logical:
+                                (Variable
+                                    2
+                                    f_logical
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Logical 4)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "c_logical"
+                                    .false.
+                                ),
+                            f_type_c_ptr:
+                                (Variable
+                                    2
+                                    f_type_c_ptr
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (CPtr)
+                                    ()
+                                    BindC
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    "c_type_c_ptr"
+                                    .false.
+                                )
+                        })
+                    bindc_06_mod
+                    [iso_c_binding]
+                    .false.
+                    .false.
+                ),
+            iso_c_binding:
+                (IntrinsicModule lfortran_intrinsic_iso_c_binding)
+        })
+    []
+)

@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -37,7 +41,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         8 t1
                                                     )
                                                     ()
@@ -45,11 +52,18 @@
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     f
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             8 t1
                                         )]
                                         (Logical 4)
@@ -91,6 +105,7 @@
                                                 )
                                         })
                                     t1
+                                    []
                                     []
                                     []
                                     Source
@@ -166,7 +181,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 t2
                                                     )
                                                     ()
@@ -174,11 +192,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     sub
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 t2
                                         )]
                                         ()
@@ -206,7 +231,10 @@
                                                 (Var 6 self)
                                                 6 1_t2_val
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 t1
                                                     )
                                                 )
@@ -214,9 +242,13 @@
                                             )
                                         )
                                         [(Print
-                                            [(IntegerConstant 1 (Integer 4) Decimal)]
-                                            ()
-                                            ()
+                                            (StringFormat
+                                                ()
+                                                [(IntegerConstant 1 (Integer 4) Decimal)]
+                                                FormatFortran
+                                                (String 1 () ExpressionLength CString)
+                                                ()
+                                            )
                                         )]
                                         []
                                     )]
@@ -251,7 +283,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 t1
                                                         )
                                                     )
@@ -260,11 +295,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     t2
                                     []
                                     [val]
+                                    []
                                     Source
                                     Public
                                     .false.

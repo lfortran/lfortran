@@ -42,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -60,6 +64,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     bindc1
@@ -72,6 +80,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                 ),
             iso_c_binding:

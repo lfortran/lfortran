@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             section:
                                 (Function
@@ -50,6 +54,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -72,6 +80,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -126,6 +138,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -161,6 +174,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -177,92 +191,101 @@
                                         )
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Print
-                                        [(IntrinsicArrayFunction
-                                            Any
-                                            [(ArrayPhysicalCast
-                                                (IntegerCompare
-                                                    (Var 3 a)
-                                                    Eq
-                                                    (Var 3 b)
+                                        (StringFormat
+                                            ()
+                                            [(IntrinsicArrayFunction
+                                                Any
+                                                [(ArrayPhysicalCast
+                                                    (IntegerCompare
+                                                        (Var 3 a)
+                                                        Eq
+                                                        (Var 3 b)
+                                                        (Array
+                                                            (Logical 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 2 (Integer 4) Decimal))
+                                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    FixedSizeArray
+                                                    DescriptorArray
                                                     (Array
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                DescriptorArray
+                                                (IntegerConstant 1 (Integer 4) Decimal)]
+                                                1
                                                 (Array
                                                     (Logical 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 2 (Integer 4) Decimal))
-                                                    ((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                                    [(()
+                                                    ())]
                                                     DescriptorArray
                                                 )
                                                 ()
-                                            )
-                                            (IntegerConstant 1 (Integer 4) Decimal)]
-                                            1
-                                            (Array
-                                                (Logical 4)
-                                                [(()
-                                                ())]
-                                                DescriptorArray
-                                            )
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(IntrinsicArrayFunction
-                                            Any
-                                            [(ArrayPhysicalCast
-                                                (IntegerCompare
-                                                    (Var 3 a)
-                                                    Eq
-                                                    (Var 3 b)
+                                        (StringFormat
+                                            ()
+                                            [(IntrinsicArrayFunction
+                                                Any
+                                                [(ArrayPhysicalCast
+                                                    (IntegerCompare
+                                                        (Var 3 a)
+                                                        Eq
+                                                        (Var 3 b)
+                                                        (Array
+                                                            (Logical 4)
+                                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 2 (Integer 4) Decimal))
+                                                            ((IntegerConstant 1 (Integer 4) Decimal)
+                                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                                            FixedSizeArray
+                                                        )
+                                                        ()
+                                                    )
+                                                    FixedSizeArray
+                                                    DescriptorArray
                                                     (Array
                                                         (Logical 4)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 2 (Integer 4) Decimal))
                                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        DescriptorArray
                                                     )
                                                     ()
                                                 )
-                                                FixedSizeArray
-                                                DescriptorArray
+                                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                                1
                                                 (Array
                                                     (Logical 4)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 2 (Integer 4) Decimal))
-                                                    ((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                                    [(()
+                                                    ())]
                                                     DescriptorArray
                                                 )
                                                 ()
-                                            )
-                                            (IntegerConstant 2 (Integer 4) Decimal)]
-                                            1
-                                            (Array
-                                                (Logical 4)
-                                                [(()
-                                                ())]
-                                                DescriptorArray
-                                            )
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -307,11 +330,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 l)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 l)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (SubroutineCall
                         2 section

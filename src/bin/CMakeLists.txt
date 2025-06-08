@@ -1,6 +1,37 @@
-add_executable(lfortran lfortran.cpp)
+set(LFORTRAN_SRC
+    lfortran_command_line_parser.cpp
+    lfortran.cpp
+)
+set(LFORTRAN_LINK_LIBRARIES
+    lfortran_lib
+)
+
+if (WITH_LSP)
+    add_compile_definitions(WITH_LSP)
+    set(LFORTRAN_SRC
+        lfortran_lsp_config.cpp
+        semantic_highlighter.cpp
+        lfortran_lsp_language_server.cpp
+        concurrent_lfortran_lsp_language_server.cpp
+        parallel_lfortran_lsp_language_server.cpp
+        language_server_interface.cpp
+        ${LFORTRAN_SRC}
+    )
+    set(LFORTRAN_LINK_LIBRARIES
+        ${LFORTRAN_LINK_LIBRARIES}
+        llanguage_server
+    )
+endif()
+
+set(LFORTRAN_SRC
+    lfortran_accessor.cpp
+    lsp_cli.cpp
+    ${LFORTRAN_SRC}
+)
+
+add_executable(lfortran ${LFORTRAN_SRC})
 target_include_directories(lfortran PRIVATE "tpl")
-target_link_libraries(lfortran lfortran_lib)
+target_link_libraries(lfortran ${LFORTRAN_LINK_LIBRARIES})
 if (LFORTRAN_STATIC_BIN)
     if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
         OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
@@ -25,10 +56,15 @@ if (WITH_STACKTRACE AND APPLE AND CMAKE_CXX_COMPILER_ID MATCHES Clang)
     # On macOS we have to call dsymutil to create the dSYM bundle so that the
     # stacktrace can find debugging information corresponding to the lfortran
     # binary
+    find_program(DSYMUTIL NAMES dsymutil PATHS /usr/bin NO_DEFAULT_PATH)
+    if(NOT DSYMUTIL)
+        find_program(DSYMUTIL NAMES dsymutil)
+    endif()
+    message("DSYMUTIL: ${DSYMUTIL}")
     add_custom_command(
         TARGET lfortran
         POST_BUILD
-        COMMAND dsymutil lfortran
+        COMMAND ${DSYMUTIL} lfortran
     )
     if (WITH_DWARFDUMP)
         add_custom_command(
@@ -79,17 +115,15 @@ install(TARGETS lfortran
     LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
 )
 
+if (WITH_BENCHMARKS)
+    add_executable(parse parse.cpp)
+    target_link_libraries(parse lfortran_lib)
 
-add_executable(parse parse.cpp)
-target_link_libraries(parse lfortran_lib)
+    add_executable(parse2 parse2.cpp)
+    target_link_libraries(parse2 lfortran_lib)
 
-add_executable(parse2 parse2.cpp)
-target_link_libraries(parse2 lfortran_lib)
-
-if (WITH_FMT)
-    add_executable(parse3 parse3.cpp)
-    target_link_libraries(parse3 lfortran_lib fmt::fmt)
+    if (WITH_FMT)
+        add_executable(parse3 parse3.cpp)
+        target_link_libraries(parse3 lfortran_lib fmt::fmt)
+    endif()
 endif()
-
-add_executable(cpptranslate cpptranslate.cpp)
-target_link_libraries(cpptranslate lfortran_lib)

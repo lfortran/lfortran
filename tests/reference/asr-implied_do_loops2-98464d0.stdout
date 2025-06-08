@@ -29,6 +29,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -45,6 +49,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -60,6 +68,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -90,7 +102,12 @@
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 3 (Integer 4) Decimal)
                                     ()
-                                    (Integer 4)
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 15 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
                                     (ArrayConstant
                                         60
                                         [1, 2, 3, ...., 5, 6, 7]
@@ -106,8 +123,8 @@
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    ())]
-                                    DescriptorArray
+                                    (IntegerConstant 15 (Integer 4) Decimal))]
+                                    FixedSizeArray
                                 )
                                 (ArrayConstant
                                     60
@@ -116,7 +133,7 @@
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 15 (Integer 4) Decimal))]
-                                        DescriptorArray
+                                        FixedSizeArray
                                     )
                                     ColMajor
                                 )
@@ -146,18 +163,25 @@
                             )
                             (Array
                                 (Integer 4)
-                                [(()
-                                ())]
-                                DescriptorArray
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal))
+                                ((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 5 (Integer 4) Decimal))]
+                                FixedSizeArray
                             )
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 array)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 array)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

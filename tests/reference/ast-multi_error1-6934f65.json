@@ -1,0 +1,13 @@
+{
+    "basename": "ast-multi_error1-6934f65",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/multi_error1.f90",
+    "infile_hash": "aae363b17603b231b2a906564a03365ce9a53952c754ea31187f352c",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "ast-multi_error1-6934f65.stderr",
+    "stderr_hash": "05f5d41863982b1d7e082112c53b5ee1dece91489f6857e77a3c2e4e",
+    "returncode": 2
+}

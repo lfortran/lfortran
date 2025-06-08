@@ -46,6 +46,7 @@ struct PassOptions {
     bool realloc_lhs = false;
     std::vector<int64_t> skip_optimization_func_instantiation;
     bool module_name_mangling = false;
+    bool intrinsic_module_name_mangling = false;
     bool global_symbols_mangling = false;
     bool intrinsic_symbols_mangling = false;
     bool all_symbols_mangling = false;
@@ -58,7 +59,13 @@ struct PassOptions {
     bool tree = false;
     bool with_intrinsic_mods = false;
     bool c_mangling = false;
+    bool enable_cpython = false;
+    bool c_skip_bindpy_pass = false;
     bool openmp = false;
+    bool enable_gpu_offloading = false;
+    bool time_report = false;
+    bool skip_removal_of_unused_procedures_in_pass_array_by_data = false;
+    std::vector<std::string> vector_of_time_report;
 };
 
 struct CompilerOptions {
@@ -83,7 +90,26 @@ struct CompilerOptions {
     bool fast = false;
     bool openmp = false;
     std::string openmp_lib_dir = "";
+    bool lookup_name = false;
+    bool rename_symbol = false;
+    std::string line = "";
+    std::string column = "";
+    bool continue_compilation = false;
+    bool semantics_only = false;
+    /*
+        Generates object code for modules as well as global procedures ( subroutines / functions )
+        avialable in ASR. This needs to be explicity set to true.
+    */
     bool generate_object_code = false;
+    /*
+        Generates object code *only* for global procedures ( subroutines / functions ) *if present* in ASR
+        by marking modules as external. We have a utility that identifies global procedures and hence this
+        option is not exposed to user. It gets set to true if there are any global procedures in ASR.
+        This is the default behaviour.
+
+        It is overridden by `generate_object_code` option.
+    */
+    bool separate_compilation = false;
     bool no_warnings = false;
     bool disable_style = false;
     bool logical_casting = false;
@@ -109,6 +135,7 @@ struct CompilerOptions {
     bool ignore_pragma = false;
     bool stack_arrays = false;
     bool wasm_html = false;
+    bool time_report = false;
     std::string emcc_embed;
     std::vector<std::string> import_paths;
     Platform platform;
@@ -116,7 +143,6 @@ struct CompilerOptions {
     CompilerOptions () : platform{get_platform()} {};
 };
 
-bool read_file(const std::string &filename, std::string &text);
 bool present(Vec<char*> &v, const char* name);
 bool present(char** const v, size_t n, const std::string name);
 int initialize();

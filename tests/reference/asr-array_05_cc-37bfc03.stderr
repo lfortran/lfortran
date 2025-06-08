@@ -1,0 +1,11 @@
+semantic error: Rank mismatch in array reference: the array `x` has rank `1`, but is referenced as rank `2`
+  --> tests/errors/array_05_cc.f90:12:14
+   |
+12 |     allocate(type_01%x(1, 2))
+   |              ^^^^^^^^^^^^^^^ 
+
+semantic error: Rank mismatch in array reference: the array `x` has rank `1`, but is referenced as rank `2`
+  --> tests/errors/array_05_cc.f90:13:14
+   |
+13 |     allocate(type_01%x(2, 1))
+   |              ^^^^^^^^^^^^^^^ 

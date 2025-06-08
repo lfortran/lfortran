@@ -7,9 +7,6 @@
 #include <libasr/pass/pass_utils.h>
 #include <libasr/pass/intrinsic_function_registry.h>
 
-#include <vector>
-#include <utility>
-
 
 namespace LCompilers {
 
@@ -102,8 +99,8 @@ public:
             LCOMPILERS_ASSERT(flip_sign_variable);
             ASR::expr_t* flip_sign_result = PassUtils::get_flipsign(flip_sign_signal_variable,
                                             flip_sign_variable, al, unit, x.base.base.loc, pass_options);
-            pass_result.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc,
-                    flip_sign_variable, flip_sign_result, nullptr)));
+            pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc,
+                    flip_sign_variable, flip_sign_result, nullptr, false)));
         }
     }
 
@@ -187,8 +184,7 @@ public:
         }
         if( func_name && func_name->type == ASR::symbolType::ExternalSymbol ) {
             ASR::ExternalSymbol_t* ext_sym = ASR::down_cast<ASR::ExternalSymbol_t>(func_name);
-            if( std::string(ext_sym->m_original_name) == "modulo" &&
-                std::string(ext_sym->m_module_name) == "lfortran_intrinsic_math2" ) {
+            if( std::string(ext_sym->m_original_name) == "modulo" ) {
                 is_function_modulo = true;
             }
         }

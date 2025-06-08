@@ -52,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -67,6 +71,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -86,6 +94,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -102,6 +114,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     bindc3
@@ -113,38 +129,46 @@
                         ()
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        (StringFormat
+                            ()
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
+                                ()
+                            )
+                            (Var 2 queries)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (Var 2 queries)]
-                        ()
-                        ()
                     )
                     (Associate
                         (Var 2 x)
                         (Var 2 y)
                     )
                     (Print
-                        [(PointerToCPtr
-                            (Var 2 x)
-                            (CPtr)
+                        (StringFormat
                             ()
-                        )
-                        (PointerToCPtr
-                            (GetPointer
-                                (Var 2 y)
-                                (Pointer
-                                    (Integer 2)
-                                )
+                            [(PointerToCPtr
+                                (Var 2 x)
+                                (CPtr)
                                 ()
                             )
-                            (CPtr)
+                            (PointerToCPtr
+                                (GetPointer
+                                    (Var 2 y)
+                                    (Pointer
+                                        (Integer 2)
+                                    )
+                                    ()
+                                )
+                                (CPtr)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             iso_c_binding:

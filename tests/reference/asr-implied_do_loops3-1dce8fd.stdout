@@ -27,7 +27,12 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 3 (Integer 4) Decimal)
                                                 ()
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
                                                 (ArrayConstant
                                                     12
                                                     [3, 6, 9]
@@ -43,8 +48,8 @@
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                ())]
-                                                DescriptorArray
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
                                             )
                                             (ArrayConstant
                                                 12
@@ -53,7 +58,7 @@
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 3 (Integer 4) Decimal))]
-                                                    DescriptorArray
+                                                    FixedSizeArray
                                                 )
                                                 ColMajor
                                             )
@@ -101,6 +106,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -122,7 +131,12 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 3 (Integer 4) Decimal)
                                                 ()
-                                                (Integer 4)
+                                                (Array
+                                                    (Integer 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 3 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
                                                 (ArrayConstant
                                                     12
                                                     [2, 4, 6]
@@ -138,8 +152,8 @@
                                             (Array
                                                 (Integer 4)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
-                                                ())]
-                                                DescriptorArray
+                                                (IntegerConstant 3 (Integer 4) Decimal))]
+                                                FixedSizeArray
                                             )
                                             (ArrayConstant
                                                 12
@@ -148,7 +162,7 @@
                                                     (Integer 4)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 3 (Integer 4) Decimal))]
-                                                    DescriptorArray
+                                                    FixedSizeArray
                                                 )
                                                 ColMajor
                                             )
@@ -196,6 +210,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -211,6 +229,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             j:
@@ -228,6 +250,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             k:
                                 (Variable
@@ -244,148 +270,100 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     implied_do_loop3
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(ImpliedDoLoop
-                            [(Var 2 i)
-                            (ImpliedDoLoop
-                                [(IntegerBinOp
-                                    (Var 2 i)
-                                    Mul
+                        (StringFormat
+                            ()
+                            [(ImpliedDoLoop
+                                [(Var 2 i)
+                                (ImpliedDoLoop
+                                    [(IntegerBinOp
+                                        (Var 2 i)
+                                        Mul
+                                        (Var 2 j)
+                                        (Integer 4)
+                                        ()
+                                    )]
                                     (Var 2 j)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    ()
                                     (Integer 4)
                                     ()
                                 )]
-                                (Var 2 j)
+                                (Var 2 i)
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 ()
                                 (Integer 4)
-                                ()
-                            )]
-                            (Var 2 i)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ()
-                            (Integer 4)
-                            (ArrayConstant
-                                48
-                                [1, 1, 2, ...., 3, 6, 9]
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 12 (Integer 4) Decimal))]
-                                    FixedSizeArray
+                                (ArrayConstant
+                                    48
+                                    [1, 1, 2, ...., 3, 6, 9]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 12 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop 2"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(ImpliedDoLoop
-                            [(ImpliedDoLoop
-                                [(RealBinOp
-                                    (ArrayItem
-                                        (Var 2 a)
-                                        [(()
-                                        (Var 2 i)
-                                        ())]
-                                        (Real 4)
-                                        ColMajor
-                                        ()
-                                    )
-                                    Mul
-                                    (ArrayItem
-                                        (Var 2 b)
-                                        [(()
-                                        (Var 2 j)
-                                        ())]
-                                        (Real 4)
-                                        ColMajor
-                                        ()
-                                    )
-                                    (Real 4)
-                                    ()
-                                )]
-                                (Var 2 j)
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 2 (Integer 4) Decimal)
-                                ()
-                                (Real 4)
-                                ()
-                            )]
-                            (Var 2 i)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 3 (Integer 4) Decimal)
+                        (StringFormat
                             ()
-                            (Real 4)
-                            (ArrayConstant
-                                24
-                                [1.00000000e+00, 2.00000000e+00, 2.00000000e+00, 4.00000000e+00, 3.00000000e+00, 6.00000000e+00]
-                                (Array
-                                    (Real 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 6 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(StringConstant
-                            "Loop 3"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
-                    )
-                    (Print
-                        [(ImpliedDoLoop
                             [(ImpliedDoLoop
-                                [(RealBinOp
-                                    (ArrayItem
-                                        (Var 2 a)
-                                        [(()
-                                        (Var 2 i)
-                                        ())]
+                                [(ImpliedDoLoop
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 2 a)
+                                            [(()
+                                            (Var 2 i)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        Mul
+                                        (ArrayItem
+                                            (Var 2 b)
+                                            [(()
+                                            (Var 2 j)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
                                         (Real 4)
-                                        ColMajor
                                         ()
-                                    )
-                                    Mul
-                                    (ArrayItem
-                                        (Var 2 b)
-                                        [(()
-                                        (Var 2 j)
-                                        ())]
-                                        (Real 4)
-                                        ColMajor
-                                        ()
-                                    )
+                                    )]
+                                    (Var 2 j)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    ()
                                     (Real 4)
                                     ()
                                 )]
@@ -394,161 +372,223 @@
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 ()
                                 (Real 4)
-                                ()
+                                (ArrayConstant
+                                    24
+                                    [1.00000000e+00, 2.00000000e+00, 2.00000000e+00, 4.00000000e+00, 3.00000000e+00, 6.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
-                            (Var 2 j)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            (Real 4)
-                            (ArrayConstant
-                                24
-                                [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, 2.00000000e+00, 4.00000000e+00, 6.00000000e+00]
-                                (Array
+                        )
+                    )
+                    (Print
+                        (StringConstant
+                            "Loop 3"
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ImpliedDoLoop
+                                [(ImpliedDoLoop
+                                    [(RealBinOp
+                                        (ArrayItem
+                                            (Var 2 a)
+                                            [(()
+                                            (Var 2 i)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        Mul
+                                        (ArrayItem
+                                            (Var 2 b)
+                                            [(()
+                                            (Var 2 j)
+                                            ())]
+                                            (Real 4)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (Real 4)
+                                        ()
+                                    )]
+                                    (Var 2 i)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    ()
                                     (Real 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 6 (Integer 4) Decimal))]
-                                    FixedSizeArray
+                                    ()
+                                )]
+                                (Var 2 j)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ()
+                                (Real 4)
+                                (ArrayConstant
+                                    24
+                                    [1.00000000e+00, 2.00000000e+00, 3.00000000e+00, 2.00000000e+00, 4.00000000e+00, 6.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 6 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop4"
-                            (Character 1 5 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(ImpliedDoLoop
-                            [(Var 2 i)
-                            (ImpliedDoLoop
-                                [(IntegerBinOp
-                                    (Var 2 i)
-                                    Add
-                                    (Var 2 j)
-                                    (Integer 4)
-                                    ()
-                                )
+                        (StringFormat
+                            ()
+                            [(ImpliedDoLoop
+                                [(Var 2 i)
                                 (ImpliedDoLoop
                                     [(IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 2 i)
+                                        (Var 2 i)
+                                        Add
+                                        (Var 2 j)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (ImpliedDoLoop
+                                        [(IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 2 i)
+                                                Add
+                                                (Var 2 j)
+                                                (Integer 4)
+                                                ()
+                                            )
                                             Add
-                                            (Var 2 j)
+                                            (Var 2 k)
                                             (Integer 4)
                                             ()
-                                        )
-                                        Add
+                                        )]
                                         (Var 2 k)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        ()
                                         (Integer 4)
                                         ()
                                     )]
-                                    (Var 2 k)
+                                    (Var 2 j)
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     ()
                                     (Integer 4)
                                     ()
                                 )]
-                                (Var 2 j)
+                                (Var 2 i)
                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ()
                                 (Integer 4)
-                                ()
+                                (ArrayConstant
+                                    132
+                                    [1, 2, 3, ...., 7, 8, 9]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 33 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
                             )]
-                            (Var 2 i)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 3 (Integer 4) Decimal)
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            (Integer 4)
-                            (ArrayConstant
-                                132
-                                [1, 2, 3, ...., 7, 8, 9]
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 33 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "Loop5"
-                            (Character 1 5 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(ImpliedDoLoop
-                            [(Var 2 i)
-                            (ImpliedDoLoop
-                                [(IntegerBinOp
-                                    (Var 2 i)
-                                    Mul
-                                    (Var 2 j)
-                                    (Integer 4)
-                                    ()
-                                )
+                        (StringFormat
+                            ()
+                            [(ImpliedDoLoop
+                                [(Var 2 i)
                                 (ImpliedDoLoop
                                     [(IntegerBinOp
-                                        (IntegerBinOp
-                                            (Var 2 i)
-                                            Mul
-                                            (Var 2 j)
+                                        (Var 2 i)
+                                        Mul
+                                        (Var 2 j)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (ImpliedDoLoop
+                                        [(IntegerBinOp
+                                            (IntegerBinOp
+                                                (Var 2 i)
+                                                Mul
+                                                (Var 2 j)
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            Add
+                                            (Var 2 k)
                                             (Integer 4)
                                             ()
-                                        )
-                                        Add
+                                        )]
                                         (Var 2 k)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        ()
                                         (Integer 4)
                                         ()
                                     )]
-                                    (Var 2 k)
+                                    (Var 2 j)
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
                                     ()
                                     (Integer 4)
                                     ()
                                 )]
-                                (Var 2 j)
+                                (Var 2 i)
                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 3 (Integer 4) Decimal)
                                 ()
                                 (Integer 4)
-                                ()
-                            )]
-                            (Var 2 i)
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ()
-                            (Integer 4)
-                            (ArrayConstant
-                                132
-                                [1, 1, 2, ...., 8, 9, 10]
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 33 (Integer 4) Decimal))]
-                                    FixedSizeArray
+                                (ArrayConstant
+                                    132
+                                    [1, 1, 2, ...., 8, 9, 10]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 33 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
                                 )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

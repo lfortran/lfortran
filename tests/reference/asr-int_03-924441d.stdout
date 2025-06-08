@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -52,6 +56,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -67,6 +75,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i8:
@@ -84,6 +96,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             w4:
                                 (Variable
@@ -99,6 +115,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             w8:
@@ -116,6 +136,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     int_03
@@ -132,6 +156,7 @@
                         )
                         (IntegerConstant 8524933037632333570 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -149,6 +174,7 @@
                             (IntegerConstant -1069250973542918798 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -166,6 +192,7 @@
                             (IntegerConstant -5123867065024149335 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -179,6 +206,7 @@
                         )
                         (IntegerConstant 7303655603304982073 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -192,11 +220,16 @@
                         )
                         (IntegerConstant 5108441843522503546 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 ans)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 ans)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 w8)
@@ -217,6 +250,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 i4)
@@ -227,6 +261,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 i8)
@@ -237,12 +272,17 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 i4)
-                        (Var 2 i8)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -294,6 +334,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 i4)
@@ -304,6 +345,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 i8)
@@ -314,12 +356,17 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 i4)
-                        (Var 2 i8)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i4)
+                            (Var 2 i8)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare

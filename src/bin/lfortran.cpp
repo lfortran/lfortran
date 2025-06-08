@@ -1,9 +1,12 @@
+#include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
+#ifndef CLI11_HAS_FILESYSTEM
 #define CLI11_HAS_FILESYSTEM 0
+#endif // CLI11_HAS_FILESYSTEM
 #include <bin/CLI11.hpp>
 
 #include <libasr/stacktrace.h>
@@ -28,7 +31,6 @@
 #include <libasr/pass/replace_implied_do_loops.h>
 #include <libasr/pass/replace_array_op.h>
 #include <libasr/pass/replace_class_constructor.h>
-#include <libasr/pass/replace_arr_slice.h>
 #include <libasr/pass/replace_print_arr.h>
 #include <libasr/pass/replace_where.h>
 #include <libasr/pass/unused_functions.h>
@@ -48,24 +50,69 @@
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
 #include <lfortran/parser/parser.tab.hh>
+#include <string>
+#include <sstream>
 
 #include <cpp-terminal/terminal.h>
 #include <cpp-terminal/prompt0.h>
+
+#include <bin/lfortran_accessor.h>
+#include <bin/lfortran_command_line_parser.h>
+#include <bin/lsp_cli.h>
+
+
+#ifdef WITH_LSP
+#include <server/lsp_specification.h>
+#include <bin/language_server_interface.h>
+#endif // WITH_LSP
 
 #ifdef HAVE_BUILD_TO_WASM
     #include <emscripten/emscripten.h>
 #endif
 
+// ANSI color codes
+#define RESET   "\033[0m"
+#define BLUE    "\033[34m"   // Blue for non-[PASS] entries
+#define GREEN   "\033[32m"   // Green for 'Total time'
+#define YELLOW  "\033[33m"   // Yellow for 'Allocator usage of last chunk (MB)'
+#define CYAN    "\033[36m"   // Cyan for 'Allocator chunks'
+#define MAGENTA "\033[35m"   // Magenta for 'File reading' and 'Src -> ASR'
+#define RED        "\033[31m"   // Red for 'Time taken by pass' and 'ASR -> ASR passes'
+
 extern std::string lcompilers_unique_ID;
+extern std::string lcompilers_commandline_options;
 
 namespace {
 
 using LCompilers::endswith;
 using LCompilers::CompilerOptions;
+using LCompilers::read_file_ok;
+
+namespace lcli = LCompilers::CommandLineInterface;
+
+#ifdef WITH_LSP
+namespace lsi = LCompilers::LLanguageServer::Interface;
+#endif
 
 enum Backend {
-    llvm, c, cpp, x86, wasm, fortran
+    llvm, c, cpp, x86, wasm, fortran, mlir
 };
+
+std::string get_system_temp_dir()
+{
+    #ifdef _WIN32
+    char buffer[MAX_PATH];
+    DWORD len = GetTempPathA(MAX_PATH, buffer);
+    return std::string(buffer, len);
+    #else
+    const char* tmp = getenv("TMPDIR");
+    if (tmp) return tmp;
+    return "/tmp";
+    #endif
+}
+
+std::string LFORTRAN_TEMP_DIR = get_system_temp_dir();
+
 
 std::string get_unique_ID() {
     static std::random_device dev;
@@ -80,20 +127,87 @@ std::string get_unique_ID() {
     return res;
 }
 
-std::string read_file(const std::string &filename)
-{
-    std::ifstream ifs(filename.c_str(), std::ios::in | std::ios::binary
-            | std::ios::ate);
+void print_one_component(std::string component) {
+    std::istringstream ss(component);
+    std::string component_name;
+    std::string time_value;
 
-    std::ifstream::pos_type filesize = ifs.tellg();
-    if (filesize < 0) return std::string();
+    // Extract component name and time
+    std::getline(ss, component_name, ':');
+    ss >> time_value;
 
-    ifs.seekg(0, std::ios::beg);
+    // Trim whitespace
+    component_name.erase(component_name.find_last_not_of(" \t\n\r") + 1);
+    component_name.erase(0, component_name.find_first_not_of(" \t\n\r"));
 
-    std::vector<char> bytes(filesize);
-    ifs.read(&bytes[0], filesize);
+    bool is_pass = false;
 
-    return std::string(&bytes[0], filesize);
+    // Detect `[PASS]` and remove it
+    if (component_name.find("[PASS]") == 0) {
+        component_name = component_name.substr(6); // Remove '[PASS]'
+        is_pass = true;
+    }
+
+    // Apply colors for key entries
+    if (component_name == "Total time") {
+        std::cout << std::string(60, '-') << '\n';  // Add dashed line before 'Total time'
+        std::cout << GREEN;
+    } else if (component_name == "Allocator usage of last chunk (MB)") {
+        std::cout << YELLOW;
+    } else if (component_name == "Allocator chunks") {
+        std::cout << CYAN;
+    } else if (component_name == "File reading" || component_name == "Src -> ASR") {
+        std::cout << MAGENTA;
+    } else if (component_name == "Time taken by pass" || component_name == "ASR -> ASR passes") {
+        std::cout << RED;
+    } else if (!is_pass) {
+        std::cout << BLUE;  // Default blue for non-[PASS] entries
+    }
+
+    // Print in formatted table
+    int indent_width = is_pass ? 4 : 0;  // Indent `[PASS]` components
+    int name_width = 50 - indent_width;  // Adjust name column width
+
+    if (time_value.empty()) {
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << component_name << RESET << '\n';
+    } else {
+        float time_float = std::stof(time_value);
+        int time_width = 10;
+
+        std::cout << std::string(indent_width, ' ')  // Print indentation
+                  << std::left << std::setw(name_width) << component_name << RESET
+                  << std::right << std::setw(time_width)
+                  << std::fixed << std::setprecision(3) << time_float
+                  << '\n';
+    }
+}
+
+
+// Note: this function is case sensitive to the input string
+void print_time_report(const std::vector<std::string>& vector_of_time_report) {
+    for (const auto& entry : vector_of_time_report) {
+        // check if `Allocator usage of last chunk (MB)` or `Allocator chunks` is present
+        if (entry.find("Allocator usage of last chunk (MB)") != std::string::npos ||
+            entry.find("Allocator chunks") != std::string::npos) {
+            print_one_component(entry);
+        }
+    }
+
+    // Header
+    std::cout << std::string(60, '-') << '\n';
+    std::cout << std::left << std::setw(50) << "Component name"
+              << std::right << std::setw(10) << "Time (ms)" << '\n';
+    std::cout << std::string(60, '-') << '\n';
+
+    for (const auto& entry : vector_of_time_report) {
+        if (entry.find("Allocator usage of last chunk (MB)") == std::string::npos &&
+            entry.find("Allocator chunks") == std::string::npos) {
+            print_one_component(entry);
+        }
+    }
+
+    std::cout << std::string(60, '-') << '\n';
 }
 
 #ifdef HAVE_LFORTRAN_LLVM
@@ -296,11 +410,12 @@ int prompt(bool verbose, CompilerOptions &cu)
             }
             LCompilers::Result<LCompilers::FortranEvaluator::EvalResult>
             res = e.evaluate(input, verbose, lm, lpm, diagnostics);
-            std::cerr << diagnostics.render(lm, cu);
             if (res.ok) {
                 r = res.result;
             } else {
                 LCOMPILERS_ASSERT(diagnostics.has_error())
+                std::cerr << diagnostics.render(lm, cu);
+                diagnostics.clear();
                 continue;
             }
         } catch (const LCompilers::LCompilersException &e) {
@@ -390,7 +505,7 @@ int prompt(bool verbose, CompilerOptions &cu)
 
 int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::LocationManager lm;
     {
         LCompilers::LocationManager::FileLocations fl;
@@ -412,7 +527,7 @@ int emit_prescan(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     // Src -> Tokens
     Allocator al(64*1024*1024);
     std::vector<int> toks;
@@ -435,7 +550,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
             compiler_options.fixed_form, include_dirs);
     }
     auto res = LCompilers::LFortran::tokens(al, input, diagnostics, &stypes, &locations,
-        compiler_options.fixed_form);
+        compiler_options.fixed_form, compiler_options.continue_compilation);
     lm.init_simple(input);
     lm.file_ends.push_back(input.size());
     std::cerr << diagnostics.render(lm, compiler_options);
@@ -458,7 +573,7 @@ int emit_tokens(const std::string &infile, bool line_numbers, const CompilerOpti
 
 int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -476,7 +591,11 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
             return visualize_json(r.result, compiler_options.platform);
         }
         std::cout << r.result << std::endl;
-        return 0;
+        if (diagnostics.has_error()) {
+            return 1;
+        } else {
+            return 0;
+        }
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
@@ -485,7 +604,7 @@ int emit_ast(const std::string &infile, CompilerOptions &compiler_options)
 
 int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
     LCompilers::diag::Diagnostics diagnostics;
@@ -511,31 +630,19 @@ int emit_ast_f90(const std::string &infile, CompilerOptions &compiler_options)
 int format(const std::string &infile, bool inplace, bool color, int indent,
     bool indent_unit, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
+    LCompilers::LLanguageServer::LFortranAccessor lfortran_accessor;
 
-    LCompilers::FortranEvaluator fe(compiler_options);
-    LCompilers::LocationManager lm;
-    LCompilers::diag::Diagnostics diagnostics;
-    {
-        LCompilers::LocationManager::FileLocations fl;
-        fl.in_filename = infile;
-        lm.files.push_back(fl);
-        lm.file_ends.push_back(input.size());
-    }
-    LCompilers::Result<LCompilers::LFortran::AST::TranslationUnit_t*>
-        r = fe.get_ast2(input, lm, diagnostics);
-    std::cerr << diagnostics.render(lm, compiler_options);
-    if (!r.ok) {
-        LCOMPILERS_ASSERT(diagnostics.has_error())
+    if (inplace) color = false;
+    LCompilers::Result<std::string> result = lfortran_accessor.format(
+        infile, input, compiler_options, color, indent, indent_unit
+    );
+
+    if (!result.ok) {
         return 2;
     }
-    LCompilers::LFortran::AST::TranslationUnit_t* ast = r.result;
 
-    // AST -> Source
-    if (inplace) color = false;
-    std::string source = LCompilers::LFortran::ast_to_src(*ast, color,
-        indent, indent_unit);
-
+    std::string &source = result.result;
     if (inplace) {
         std::ofstream out;
         out.open(infile);
@@ -553,7 +660,7 @@ int python_wrapper(const std::string &infile, std::string array_order,
 
     bool c_order = (0==array_order.compare("c"));
 
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -608,11 +715,10 @@ int python_wrapper(const std::string &infile, std::string array_order,
     return 0;
 }
 
-int emit_asr(const std::string &infile,
-    LCompilers::PassManager& pass_manager,
+[[maybe_unused]] int run_parser_and_semantics(const std::string &infile,
     CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -625,10 +731,49 @@ int emit_asr(const std::string &infile,
     LCompilers::diag::Diagnostics diagnostics;
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (!r.ok) {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 2;
+    }
+    return has_error_w_cc;
+}
+
+[[maybe_unused]] int emit_asr(const std::string &infile,
+    LCompilers::PassManager& pass_manager,
+    CompilerOptions &compiler_options)
+{
+    std::string input = read_file_ok(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        r = fe.get_asr2(input, lm, diagnostics);
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (!r.ok) {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    if ( compiler_options.lookup_name ) {
+        // TODO: output in any format we want, right now just print normal ASR.
+        // convert string to uint16_t
+        uint16_t l = std::stoi(compiler_options.line);
+        uint16_t c = std::stoi(compiler_options.column);
+        uint64_t input_pos = lm.linecol_to_pos(l, c);
+        uint64_t output_pos = lm.input_to_output_pos(input_pos, false);
+        LCompilers::ASR::asr_t* asr = fe.handle_lookup_name(r.result, output_pos);
+        std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
+                compiler_options.po.with_intrinsic_mods) << std::endl;
+        return 0;
     }
     LCompilers::ASR::TranslationUnit_t* asr = r.result;
 
@@ -649,12 +794,12 @@ int emit_asr(const std::string &infile,
         std::cout << LCompilers::pickle(*asr, compiler_options.use_colors, compiler_options.indent,
                 compiler_options.po.with_intrinsic_mods) << std::endl;
     }
-    return 0;
+    return has_error_w_cc;
 }
 
 int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -679,7 +824,7 @@ int emit_cpp(const std::string &infile, CompilerOptions &compiler_options)
 int emit_c(const std::string &infile,
     LCompilers::PassManager& pass_manager, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -714,7 +859,7 @@ int emit_c(const std::string &infile,
 
 int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -737,7 +882,7 @@ int emit_julia(const std::string &infile, CompilerOptions &compiler_options)
 }
 
 int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -752,15 +897,16 @@ int emit_fortran(const std::string &infile, CompilerOptions &compiler_options) {
     std::cerr << diagnostics.render(lm, compiler_options);
     if (src.ok) {
         std::cout << src.result;
-        return 0;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
     }
 }
 
-int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options,
+                        LCompilers::PassManager &pass_manager) {
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -776,7 +922,6 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
     std::cerr << diagnostics.render(lm, compiler_options);
     if (asr.ok) {
         Allocator al(64*1024*1024);
-        LCompilers::PassManager pass_manager;
         compiler_options.po.always_run = true;
         compiler_options.po.run_fun = "f";
         pass_manager.dump_all_passes(al, asr.result, compiler_options.po, diagnostics, lm);
@@ -789,7 +934,8 @@ int dump_all_passes(const std::string &infile, CompilerOptions &compiler_options
 }
 
 int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
-    const LCompilers::CompilerOptions &compiler_options)
+    const LCompilers::CompilerOptions &compiler_options,
+    LCompilers::LocationManager lm)
 {
     for (auto &item : u.m_symtab->get_scope()) {
         if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second)) {
@@ -814,7 +960,7 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
             LCompilers::diag::Diagnostics diagnostics;
             LCOMPILERS_ASSERT(LCompilers::asr_verify(*tu, true, diagnostics));
 
-            std::string modfile_binary = LCompilers::save_modfile(*tu);
+            std::string modfile_binary = LCompilers::save_modfile(*tu, lm);
 
             m->m_symtab->parent = orig_symtab;
 
@@ -832,12 +978,66 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
     return 0;
 }
 
+#ifdef HAVE_LFORTRAN_MLIR
+int handle_mlir(const std::string &infile,
+        const std::string &outfile,
+        CompilerOptions &compiler_options,
+        bool emit_mlir, bool emit_llvm) {
+    std::string input = read_file_ok(infile);
+
+    LCompilers::FortranEvaluator fe(compiler_options);
+    LCompilers::ASR::TranslationUnit_t* asr;
+
+    // Src -> AST -> ASR
+    LCompilers::LocationManager lm;
+    {
+        LCompilers::LocationManager::FileLocations fl;
+        fl.in_filename = infile;
+        lm.files.push_back(fl);
+        lm.file_ends.push_back(input.size());
+    }
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
+        result = fe.get_asr2(input, lm, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (result.ok) {
+        asr = result.result;
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 1;
+    }
+
+    // ASR -> MLIR -> LLVM
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    diagnostics.diagnostics.clear();
+    LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+        res = fe.get_mlir(*(LCompilers::ASR::asr_t *)asr, diagnostics);
+    std::cerr << diagnostics.render(lm, compiler_options);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return 2;
+    }
+    if (emit_mlir) {
+        std::cout << m->mlir_str();
+    } else if (emit_llvm) {
+        std::cout << m->llvm_str();
+    } else {
+        // LLVM -> Machine code (saves to an object file)
+        e.save_object_file(*(m->llvm_m), outfile);
+    }
+    return 0;
+}
+#endif // HAVE_LFORTRAN_MLIR
+
 #ifdef HAVE_LFORTRAN_LLVM
 
 int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
               CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -853,7 +1053,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
     std::cerr << diagnostics.render(lm, compiler_options);
     if (llvm.ok) {
         std::cout << llvm.result;
-        return 0;
+        return compiler_options.continue_compilation && diagnostics.has_error();
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 1;
@@ -862,7 +1062,7 @@ int emit_llvm(const std::string &infile, LCompilers::PassManager& pass_manager,
 
 int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -886,13 +1086,24 @@ int emit_asm(const std::string &infile, CompilerOptions &compiler_options)
     }
 }
 
-int compile_to_object_file(const std::string &infile,
+int compile_src_to_object_file(const std::string &infile,
         const std::string &outfile,
+        bool time_report,
         bool assembly,
         CompilerOptions &compiler_options,
-        LCompilers::PassManager& lpm)
+        LCompilers::PassManager& lpm,
+        bool arg_c = false)
 {
-    std::string input = read_file(infile);
+    int time_file_read=0;
+    int time_src_to_asr=0;
+    int time_save_mod=0;
+    int time_opt=0;
+    int time_llvm_to_bin=0;
+
+    auto t1 = std::chrono::high_resolution_clock::now();
+    std::string input = read_file_ok(infile);
+    auto t2 = std::chrono::high_resolution_clock::now();
+    time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -907,9 +1118,18 @@ int compile_to_object_file(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
+    if (compiler_options.separate_compilation) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+    }
     LCompilers::diag::Diagnostics diagnostics;
+    t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
+    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+
+    time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
     std::cerr << diagnostics.render(lm, compiler_options);
     if (result.ok) {
         asr = result.result;
@@ -920,19 +1140,29 @@ int compile_to_object_file(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        t1 = std::chrono::high_resolution_clock::now();
+        int err = save_mod_files(*asr, compiler_options, lm);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_save_mod = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
         if (err) return err;
     }
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
-    if (!compiler_options.generate_object_code
-            && !LCompilers::ASRUtils::main_program_present(*asr)) {
+    if (!(compiler_options.generate_object_code || compiler_options.separate_compilation)
+        && !LCompilers::ASRUtils::main_program_present(*asr)
+        && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
         // compiled and linked when the main program is present):
         e.create_empty_object_file(outfile);
         return 0;
+    }
+
+    // if compiler_options.separate_compilation is true, then mark all modules as external
+    // so that they are not compiled again
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
+        LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
     std::unique_ptr<LCompilers::LLVMModule> m;
@@ -951,7 +1181,7 @@ int compile_to_object_file(const std::string &infile,
 #endif
     }
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
-        res = fe.get_llvm3(*asr, lpm, diagnostics, infile);
+        res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
     std::cerr << diagnostics.render(lm, compiler_options);
     if (res.ok) {
         m = std::move(res.result);
@@ -960,32 +1190,94 @@ int compile_to_object_file(const std::string &infile,
         return 5;
     }
 
-    if (compiler_options.po.fast) {
-        e.opt(*m->m_m);
-    }
-
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
         e.save_asm_file(*(m->m_m), outfile);
     } else {
+        t1 = std::chrono::high_resolution_clock::now();
         e.save_object_file(*(m->m_m), outfile);
+        t2 = std::chrono::high_resolution_clock::now();
+        time_llvm_to_bin = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
+
+    if(compiler_options.po.enable_gpu_offloading) {
+#ifdef HAVE_LFORTRAN_MLIR
+        for (auto &item : asr->m_symtab->get_scope()) {
+            if (LCompilers::ASR::is_a<LCompilers::ASR::Module_t>(*item.second) &&
+                    item.first.find("_lcompilers_mlir_gpu_offloading")
+                    != std::string::npos) {
+                LCompilers::ASR::Module_t &mod = *LCompilers::ASR::down_cast
+                    <LCompilers::ASR::Module_t>(item.second);
+                LCompilers::Result<std::unique_ptr<LCompilers::MLIRModule>>
+                    mlir_res = fe.get_mlir((LCompilers::ASR::asr_t &)mod, diagnostics);
+
+                std::cerr << diagnostics.render(lm, compiler_options);
+                if (mlir_res.ok) {
+                    mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
+                    std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
+                        .filename().replace_extension(".mlir.tmp.o")).string();
+                    e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
+                } else {
+                    LCOMPILERS_ASSERT(diagnostics.has_error())
+                    return 1;
+                }
+            }
+        }
+#endif
+    }
+
+    if (time_report) {
+        std::string message = "";
+        message = "Allocator usage of last chunk (MB): " +
+            std::to_string(fe.get_al().size_current() / (1024. * 1024));
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Allocator chunks: " + std::to_string(fe.get_al().num_chunks());
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "File reading: " + std::to_string(time_file_read / 1000) + "." + std::to_string(time_file_read % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Src -> ASR:  " + std::to_string(time_src_to_asr / 1000) + "." + std::to_string(time_src_to_asr % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "Time taken by pass: ";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        for (auto it: fe.compiler_options.po.vector_of_time_report) {
+            compiler_options.po.vector_of_time_report.push_back(it);
+        }
+        message = "ASR -> mod:  " + std::to_string(time_save_mod / 1000) + "." + std::to_string(time_save_mod % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM opt:    " + std::to_string(time_opt / 1000) + "." + std::to_string(time_opt % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+        message = "LLVM -> BIN: " + std::to_string(time_llvm_to_bin / 1000) + "." + std::to_string(time_llvm_to_bin % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+    }
+
+    return has_error_w_cc;
+}
+
+int compile_llvm_to_object_file(const std::string& infile,
+                                const std::string& outfile,
+                                CompilerOptions& compiler_options)
+{
+    std::string input = read_file_ok(infile);
+    LCompilers::LLVMEvaluator e(compiler_options.target);
+
+    std::unique_ptr<LCompilers::LLVMModule> m = e.parse_module2(input, infile);
+    e.save_object_file(*(m->m_m), outfile);
 
     return 0;
 }
 
 int compile_to_assembly_file(const std::string &infile,
-    const std::string &outfile, CompilerOptions &compiler_options,
+    const std::string &outfile, bool time_report, CompilerOptions &compiler_options,
     LCompilers::PassManager& lpm)
 {
-    return compile_to_object_file(infile, outfile, true, compiler_options, lpm);
+    return compile_src_to_object_file(infile, outfile, time_report, true, compiler_options, lpm);
 }
 #endif // HAVE_LFORTRAN_LLVM
 
 
 int emit_wat(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1025,7 +1317,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
@@ -1059,7 +1351,7 @@ int compile_to_binary_x86(const std::string &infile, const std::string &outfile,
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1126,9 +1418,9 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        input = read_file(infile);
+        input = read_file_ok(infile);
         auto t2 = std::chrono::high_resolution_clock::now();
-        time_file_read = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
+        time_file_read = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     }
 
     // Src -> AST
@@ -1160,7 +1452,7 @@ int compile_to_binary_wasm(const std::string &infile, const std::string &outfile
         diagnostics.diagnostics.clear();
         auto t1 = std::chrono::high_resolution_clock::now();
         LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
-            result = fe.get_asr3(*ast, diagnostics);
+            result = fe.get_asr3(*ast, diagnostics, lm);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_ast_to_asr = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
 
@@ -1215,7 +1507,7 @@ int compile_to_object_file_cpp(const std::string &infile,
         bool assembly, bool kokkos, const std::string &rtlib_header_dir,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::ASR::TranslationUnit_t* asr;
@@ -1241,7 +1533,7 @@ int compile_to_object_file_cpp(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1328,7 +1620,7 @@ int compile_to_object_file_c(const std::string &infile,
         LCompilers::PassManager pass_manager,
         CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     // Src -> AST -> ASR
@@ -1352,7 +1644,7 @@ int compile_to_object_file_c(const std::string &infile,
 
     // Save .mod files
     {
-        int err = save_mod_files(*asr, compiler_options);
+        int err = save_mod_files(*asr, compiler_options, lm);
         if (err) return err;
     }
 
@@ -1428,7 +1720,7 @@ int compile_to_object_file_c(const std::string &infile,
 int compile_to_binary_fortran(const std::string &infile,
         const std::string &outfile,
         CompilerOptions &compiler_options) {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::FortranEvaluator fe(compiler_options);
     LCompilers::LocationManager lm;
@@ -1466,10 +1758,11 @@ int compile_to_binary_fortran(const std::string &infile,
 // outfile will become the executable
 int link_executable(const std::vector<std::string> &infiles,
     const std::string &outfile,
+    bool time_report,
     const std::string &runtime_library_dir, Backend backend,
     bool static_executable, bool shared_executable,
-    bool link_with_gcc, bool kokkos, bool verbose,
-    const std::vector<std::string> &lib_dirs,
+    std::string linker, std::string linker_path, bool kokkos,
+    bool verbose, const std::vector<std::string> &lib_dirs,
     const std::vector<std::string> &libraries,
     const std::vector<std::string> &linker_flags,
     CompilerOptions &compiler_options)
@@ -1529,11 +1822,14 @@ int link_executable(const std::vector<std::string> &infiles,
     There are probably simpler ways.
     */
 
+    auto t1 = std::chrono::high_resolution_clock::now();
 #ifdef HAVE_LFORTRAN_LLVM
     std::string t = (compiler_options.target == "") ? LCompilers::LLVMEvaluator::get_default_target_triple() : compiler_options.target;
 #else
     std::string t = (compiler_options.platform == LCompilers::Platform::Windows) ? "x86_64-pc-windows-msvc" : compiler_options.target;
 #endif
+    std::vector<std::string> mlir_temp_object_files;
+
     size_t dot_index = outfile.find_last_of(".");
     std::string file_name = outfile.substr(0, dot_index);
     std::string extra_linker_flags;
@@ -1557,7 +1853,7 @@ int link_executable(const std::vector<std::string> &infiles,
         std::cout << "Cannot use static_executable and shared_executable together" << std::endl;
         return 10;
     }
-    if (backend == Backend::llvm) {
+    if (backend == Backend::llvm || backend == Backend::mlir) {
         std::string run_cmd = "", compile_cmd = "";
         if (t == "x86_64-pc-windows-msvc") {
             compile_cmd = "link /NOLOGO /OUT:" + outfile + " ";
@@ -1602,21 +1898,35 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd += runtime_library_dir + "/" + runtime_lib;
             compile_cmd +=  extra_linker_flags;
         } else {
-            std::string CC;
+            std::string CC{""};
             std::string base_path = "\"" + runtime_library_dir + "\"";
             std::string options;
             std::string runtime_lib = "lfortran_runtime";
 
-            if (link_with_gcc) {
-                CC = "gcc";
-            } else {
-                CC = "clang";
+            if (!linker_path.empty()) {
+                CC = linker_path;
+            } else if (char *env_path = std::getenv("LFORTRAN_LINKER_PATH")) {
+                CC = env_path;
             }
 
-            char *env_CC = std::getenv("LFORTRAN_CC");
-            if (env_CC) CC = env_CC;
+            if (!CC.empty() && CC.back() != '/') {
+                // TODO: Fix the path usage for Windows
+                CC += "/";
+            }
 
-            if (compiler_options.target != "" && !link_with_gcc) {
+            if (!linker.empty()) {
+                CC += linker;
+            } else if (char *env_linker = std::getenv("LFORTRAN_LINKER")) {
+                CC += env_linker;
+            } else {
+                // TODO: Add support for msvc linker for Windows
+                // TODO: Add support for lld linker
+                // Default linker to be used
+                CC += "clang";
+            }
+
+            if (compiler_options.target != "" &&
+                    CC.find("clang" ) != std::string::npos) {
                 options = " -target " + compiler_options.target;
             }
 
@@ -1633,6 +1943,14 @@ int link_executable(const std::vector<std::string> &infiles,
             compile_cmd = CC + options + " -o " + outfile + " ";
             for (auto &s : infiles) {
                 compile_cmd += s + " ";
+                if (backend == Backend::llvm &&
+                        compiler_options.po.enable_gpu_offloading &&
+                        LCompilers::endswith(s, ".tmp.o")) {
+                    std::string mlir_tmp_o = s.substr(0, s.size() - 6) +
+                        ".mlir.tmp.o";
+                    compile_cmd += mlir_tmp_o + " ";
+                    mlir_temp_object_files.push_back(mlir_tmp_o);
+                }
             }
             if(!extra_library_flags.empty()) {
                 compile_cmd += extra_library_flags + " ";
@@ -1658,7 +1976,14 @@ int link_executable(const std::vector<std::string> &infiles,
         }
         int err = system(compile_cmd.c_str());
         if (err) {
-            std::cout << "The command '" + compile_cmd + "' failed." << std::endl;
+            std::cerr << "The command '" + compile_cmd + "' failed." << std::endl;
+            std::cerr << "Tip: If there is a linker issue, switch the linker "
+                "using --linker=<CC> option or create an environment "
+                "variable `export LFORTRAN_LINKER=<CC>`, where CC is "
+                "clang or gcc" << std::endl;
+            std::cerr << "Also, if required use --linker-path=<PATH>, "
+                "where PATH has location to look for the linker "
+                "execuatable" << std::endl;
             return 10;
         }
 
@@ -1808,12 +2133,24 @@ int link_executable(const std::vector<std::string> &infiles,
             return LCompilers::LFortran::get_exit_status(err);
         }
     }
+
+    auto t2 = std::chrono::high_resolution_clock::now();
+    int time_total = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+    if (time_report) {
+        std::string message = "Linking time:  " + std::to_string(time_total / 1000) + "." + std::to_string(time_total % 1000) + " ms";
+        compiler_options.po.vector_of_time_report.push_back(message);
+    }
+
+    for (const std::string& filename : mlir_temp_object_files) {
+        std::remove(filename.c_str());
+    }
+
     return 0;
 }
 
 int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_options)
 {
-    std::string input = read_file(infile);
+    std::string input = read_file_ok(infile);
 
     LCompilers::LFortran::CPreprocessor cpp(compiler_options);
     LCompilers::LocationManager lm;
@@ -1823,7 +2160,14 @@ int emit_c_preprocessor(const std::string &infile, CompilerOptions &compiler_opt
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    std::string s = cpp.run(input, lm, cpp.macro_definitions);
+    LCompilers::diag::Diagnostics diagnostics;
+    LCompilers::Result<std::string> res = cpp.run(input, lm, cpp.macro_definitions, diagnostics);
+    std::string s;
+    if (res.ok) {
+        s = res.result;
+    } else {
+        s = diagnostics.render(lm, compiler_options);
+    }
     if(!compiler_options.arg_o.empty()) {
         std::ofstream fout(compiler_options.arg_o);
         fout << s;
@@ -1953,6 +2297,7 @@ EMSCRIPTEN_KEEPALIVE char* emit_wasm_from_source(char *input) {
 
 int main_app(int argc, char *argv[]) {
     int dirname_length;
+    auto start_time = std::chrono::high_resolution_clock::now();
     LCompilers::LFortran::get_executable_path(LCompilers::binary_executable_path, dirname_length);
     LCompilers::LFortran::set_exec_path_and_mode(LCompilers::binary_executable_path, dirname_length);
 
@@ -1961,206 +2306,66 @@ int main_app(int argc, char *argv[]) {
 
     std::string rtlib_header_dir = LCompilers::LFortran::get_runtime_library_header_dir();
     Backend backend;
-
-    bool arg_S = false;
-    bool arg_c = false;
-    bool arg_v = false;
-    bool arg_E = false;
-    std::vector<std::string> arg_l;
-    std::vector<std::string> arg_L;
-    std::vector<std::string> arg_files;
-    std::string arg_standard;
-    bool arg_version = false;
-    bool show_prescan = false;
-    bool show_tokens = false;
-    bool show_ast = false;
-    bool show_asr = false;
-    bool show_ast_f90 = false;
-    std::string arg_pass;
-    bool arg_no_color = false;
-    bool arg_no_indent = false;
-    bool arg_no_prescan = false;
-    bool show_llvm = false;
-    bool show_cpp = false;
-    bool show_c = false;
-    bool show_asm = false;
-    bool show_wat = false;
-    bool show_julia = false;
-    bool show_fortran = false;
-    bool time_report = false;
-    bool static_link = false;
-    bool shared_link = false;
-    std::string skip_pass;
-    std::string arg_backend = "llvm";
-    std::string arg_kernel_f;
-    bool print_targets = false;
-    bool link_with_gcc = false;
-    bool fixed_form_infer = false;
-    bool cpp = false;
-    bool cpp_infer = false;
-    bool no_cpp = false;
-
-    std::string arg_fmt_file;
-    int arg_fmt_indent = 4;
-    bool arg_fmt_indent_unit = false;
-    bool arg_fmt_inplace = false;
-    bool arg_fmt_no_color = false;
-
-    std::string arg_mod_file;
-    bool arg_mod_show_asr = false;
-    bool arg_mod_no_color = false;
-
-    std::string arg_pywrap_file;
-    std::string arg_pywrap_array_order="f";
-    std::vector<std::string> linker_flags;
-    std::vector<std::string> f_flags;
-    std::vector<std::string> O_flags;
-
-    CompilerOptions compiler_options;
-    compiler_options.po.runtime_library_dir = LCompilers::LFortran::get_runtime_library_dir();
     std::string rtlib_c_header_dir = LCompilers::LFortran::get_runtime_library_c_header_dir();
 
     LCompilers::PassManager lfortran_pass_manager;
 
-    CLI::App app{"LFortran: modern interactive LLVM-based Fortran compiler"};
-    // Standard options compatible with gfortran, gcc or clang
-    // We follow the established conventions
-    app.add_option("files", arg_files, "Source files");
-    app.add_flag("-S", arg_S, "Emit assembly, do not assemble or link");
-    app.add_flag("-c", arg_c, "Compile and assemble, do not link");
-    app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
-    app.add_flag("-v", arg_v, "Be more verbose");
-    app.add_flag("-E", arg_E, "Preprocess only; do not compile, assemble or link");
-    app.add_option("-l", arg_l, "Link library option")->allow_extra_args(false);
-    app.add_option("-L", arg_L, "Library path option")->allow_extra_args(false);
-    app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
-    app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
-    app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
-    app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-        "Convert the linear location info into line + column in the debugging information");
-    app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
-    app.add_flag("--version", arg_version, "Display compiler version information");
-    app.add_option("-W", linker_flags, "Linker flags")->allow_extra_args(false);
-    app.add_option("-f", f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
-    app.add_option("-O", O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
+    lcli::LFortranCommandLineParser parser(argc, argv);
+    try {
+        parser.parse();
+    } catch (const CLI::ParseError &e) {
+        return parser.app.exit(e);
+    } catch (const LCompilers::LCompilersException &e) {
+        std::cerr << e.what() << std::endl;
+        return 1;
+    }
 
-    // LFortran specific options
-    app.add_flag("--cpp", cpp, "Enable C preprocessing");
-    app.add_flag("--cpp-infer", cpp_infer, "Use heuristics to infer if a file needs preprocessing");
-    app.add_flag("--no-cpp", no_cpp, "Disable C preprocessing");
-    app.add_flag("--fixed-form", compiler_options.fixed_form, "Use fixed form Fortran source parsing");
-    app.add_flag("--fixed-form-infer", fixed_form_infer, "Use heuristics to infer if a file is in fixed form");
-    app.add_option("--std", arg_standard, "Select standard conformance (lf, f23, legacy)");
-    app.add_flag("--no-prescan", arg_no_prescan, "Turn off prescanning");
-    app.add_flag("--show-prescan", show_prescan, "Show tokens for the given file and exit");
-    app.add_flag("--show-tokens", show_tokens, "Show tokens for the given file and exit");
-    app.add_flag("--show-ast", show_ast, "Show AST for the given file and exit");
-    app.add_flag("--show-asr", show_asr, "Show ASR for the given file and exit");
-    app.add_flag("--with-intrinsic-mods", compiler_options.po.with_intrinsic_mods, "Show intrinsic modules in ASR");
-    app.add_flag("--show-ast-f90", show_ast_f90, "Show Fortran from AST for the given file and exit");
-    app.add_flag("--no-color", arg_no_color, "Turn off colored AST/ASR");
-    app.add_flag("--no-indent", arg_no_indent, "Turn off Indented print ASR/AST");
-    app.add_flag("--tree", compiler_options.po.tree, "Tree structure print ASR/AST");
-    app.add_flag("--json", compiler_options.po.json, "Print ASR/AST Json format");
-    app.add_flag("--no-loc", compiler_options.po.no_loc, "Skip location information in ASR/AST Json format");
-    app.add_flag("--visualize", compiler_options.po.visualize, "Print ASR/AST Visualization");
-    app.add_option("--pass", arg_pass, "Apply the ASR pass and show ASR (implies --show-asr)");
-    app.add_option("--skip-pass", skip_pass, "Skip an ASR pass in default pipeline");
-    app.add_flag("--show-llvm", show_llvm, "Show LLVM IR for the given file and exit");
-    app.add_flag("--show-cpp", show_cpp, "Show C++ translation source for the given file and exit");
-    app.add_flag("--show-c", show_c, "Show C translation source for the given file and exit");
-    app.add_flag("--show-asm", show_asm, "Show assembly for the given file and exit");
-    app.add_flag("--show-wat", show_wat, "Show WAT (WebAssembly Text Format) and exit");
-    app.add_flag("--show-julia", show_julia, "Show Julia translation source for the given file and exit");
-    app.add_flag("--show-fortran", show_fortran, "Show Fortran translation source for the given file and exit");
-    app.add_flag("--show-stacktrace", compiler_options.show_stacktrace, "Show internal stacktrace on compiler errors");
-    app.add_flag("--symtab-only", compiler_options.symtab_only, "Only create symbol tables in ASR (skip executable stmt)");
-    app.add_flag("--time-report", time_report, "Show compilation time report");
-    app.add_flag("--static", static_link, "Create a static executable");
-    app.add_flag("--shared", shared_link, "Create a shared executable");
-    app.add_flag("--logical-casting", compiler_options.logical_casting, "Allow logical casting");
-    app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings");
-    app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions");
-    app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner");
-    app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str();
-    app.add_option("--backend", arg_backend, "Select a backend (llvm, c, cpp, x86, wasm, fortran)")->capture_default_str();
-    app.add_flag("--openmp", compiler_options.openmp, "Enable openmp");
-    app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str();
-    app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files");
-    app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output");
-    app.add_flag("--use-loop-variable-after-loop", compiler_options.po.use_loop_variable_after_loop, "Allow using loop variable after the loop");
-    app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
-    app.add_flag("--link-with-gcc", link_with_gcc, "Calls GCC for linking instead of clang");
-    app.add_option("--target", compiler_options.target, "Generate code for the given target")->capture_default_str();
-    app.add_flag("--print-targets", print_targets, "Print the registered targets");
-    app.add_flag("--implicit-typing", compiler_options.implicit_typing, "Allow implicit typing");
-    app.add_flag("--implicit-interface", compiler_options.implicit_interface, "Allow implicit interface");
-    app.add_flag("--implicit-argument-casting", compiler_options.implicit_argument_casting, "Allow implicit argument casting");
-    app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
-    app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
-    app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
-    app.add_flag("--dump-all-passes", compiler_options.po.dump_all_passes, "Apply all the passes and dump the ASR into a file");
-    app.add_flag("--dump-all-passes-fortran", compiler_options.po.dump_fortran, "Apply all passes and dump the ASR after each pass into fortran file");
-    app.add_flag("--cumulative", compiler_options.po.pass_cumulative, "Apply all the passes cumulatively till the given pass");
-    app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
-    app.add_flag("--module-mangling", compiler_options.po.module_name_mangling, "Mangles the module name");
-    app.add_flag("--global-mangling", compiler_options.po.global_symbols_mangling, "Mangles all the global symbols");
-    app.add_flag("--intrinsic-mangling", compiler_options.po.intrinsic_symbols_mangling, "Mangles all the intrinsic symbols");
-    app.add_flag("--all-mangling", compiler_options.po.all_symbols_mangling, "Mangles all possible symbols");
-    app.add_flag("--bindc-mangling", compiler_options.po.bindc_mangling, "Mangles functions with abi bind(c)");
-    app.add_flag("--apply-fortran-mangling", compiler_options.po.fortran_mangling, "Mangle symbols with Fortran supported syntax");
-    app.add_flag("--mangle-underscore", compiler_options.po.mangle_underscore, "Mangles with underscore");
-    app.add_flag("--legacy-array-sections", compiler_options.legacy_array_sections, "Enables passing array items as sections if required");
-    app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
-    app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
-    app.add_flag("--wasm-html", compiler_options.wasm_html, "Generate HTML file using emscripten for LLVM->WASM");
-    app.add_option("--emcc-embed", compiler_options.emcc_embed, "Embed a given file/directory using emscripten for LLVM->WASM");
+    CLI::App &fmt = *parser.fmt;
+    CLI::App &kernel = *parser.kernel;
+    CLI::App &mod = *parser.mod;
+    CLI::App &pywrap = *parser.pywrap;
+#ifdef WITH_LSP
+    lsi::LanguageServerInterface &languageServerInterface = parser.languageServerInterface;
+    CLI::App &server = *parser.server;
+#endif // WITH_LSP
 
-    /*
-    * Subcommands:
-    */
+    lcli::LFortranCommandLineOpts &opts = parser.opts;
+    CompilerOptions &compiler_options = opts.compiler_options;
 
-    // fmt
-    CLI::App &fmt = *app.add_subcommand("fmt", "Format Fortran source files.");
-    fmt.add_option("file", arg_fmt_file, "Fortran source file to format")->required();
-    fmt.add_flag("-i", arg_fmt_inplace, "Modify <file> in-place (instead of writing to stdout)");
-    fmt.add_option("--spaces", arg_fmt_indent, "Number of spaces to use for indentation")->capture_default_str();
-    fmt.add_flag("--indent-unit", arg_fmt_indent_unit, "Indent contents of sub / fn / prog / mod");
-    fmt.add_flag("--no-color", arg_fmt_no_color, "Turn off color when writing to stdout");
+    lcompilers_commandline_options = "";
+    for (int i=0; i<argc; i++) {
+        std::string option = std::string(argv[i]);
+        if (option != "lfortran" && (option.size() < 4 || option.substr(option.size() - 4) != ".f90")) {
+            lcompilers_commandline_options += option + " ";
+        }
+    }
 
-    // kernel
-    CLI::App &kernel = *app.add_subcommand("kernel", "Run in Jupyter kernel mode.");
-    kernel.add_option("-f", arg_kernel_f, "The kernel connection file")->required();
+    lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
+    if (parser.opts.compiler_options.generate_object_code) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+        compiler_options.po.intrinsic_module_name_mangling = true;
+        compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
+    }
 
-    // mod
-    CLI::App &mod = *app.add_subcommand("mod", "Fortran mod file utilities.");
-    mod.add_option("file", arg_mod_file, "Mod file (*.mod)")->required();
-    mod.add_flag("--show-asr", arg_mod_show_asr, "Show ASR for the module");
-    mod.add_flag("--no-color", arg_mod_no_color, "Turn off colored ASR");
-
-    // pywrap
-    CLI::App &pywrap = *app.add_subcommand("pywrap", "Python wrapper generator");
-    pywrap.add_option("file", arg_pywrap_file, "Fortran source file (*.f90)")->required();
-    pywrap.add_option("--array-order", arg_pywrap_array_order,
-            "Select array order (c, f)")->capture_default_str();
-
-
-    app.get_formatter()->column_width(25);
-    app.require_subcommand(0, 1);
-    CLI11_PARSE(app, argc, argv);
-    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
-
-    if (arg_version) {
+    if (opts.arg_version) {
         std::string version = LFORTRAN_VERSION;
         std::cout << "LFortran version: " << version << std::endl;
         std::cout << "Platform: " << pf2s(compiler_options.platform) << std::endl;
 #ifdef HAVE_LFORTRAN_LLVM
+        std::cout << "LLVM: " << LCompilers::LLVMEvaluator::llvm_version() << std::endl;
         std::cout << "Default target: " << LCompilers::LLVMEvaluator::get_default_target_triple() << std::endl;
+#endif
+#ifdef WITH_LSP
+        std::cout << "LSP Version: " << LCompilers::LanguageServerProtocol::LSP_VERSION
+                  << std::endl;
+        std::cout << "JSON_RPC Version: " << LCompilers::LanguageServerProtocol::JSON_RPC_VERSION
+                  << std::endl;
 #endif
         return 0;
     }
+    compiler_options.po.time_report = compiler_options.time_report;
 
-    if (print_targets) {
+    if (opts.print_targets) {
 #ifdef HAVE_LFORTRAN_LLVM
         LCompilers::LLVMEvaluator::print_targets();
         return 0;
@@ -2170,68 +2375,24 @@ int main_app(int argc, char *argv[]) {
 #endif
     }
 
-    if (arg_standard == "" || arg_standard == "lf") {
-        // The default LFortran behavior, do nothing
-    } else if (arg_standard == "f23") {
-        compiler_options.disable_style = true;
-        compiler_options.implicit_typing = true;
-        compiler_options.implicit_argument_casting = true;
-        compiler_options.implicit_interface = true;
-        compiler_options.print_leading_space = true;
-        compiler_options.logical_casting = false;
-    } else if (arg_standard == "legacy") {
-        // f23
-        compiler_options.disable_style = true;
-        compiler_options.implicit_typing = true;
-        compiler_options.implicit_argument_casting = true;
-        compiler_options.implicit_interface = true;
-        compiler_options.print_leading_space = true;
-        compiler_options.logical_casting = false;
-
-        // legacy options
-        compiler_options.fixed_form = true;
-        compiler_options.legacy_array_sections = true;
-        compiler_options.use_loop_variable_after_loop = true;
-        compiler_options.generate_object_code = true;
-    } else {
-        std::cerr << "The option `--std=" << arg_standard << "` is not supported" << std::endl;
-        return 1;
-    }
-
-    compiler_options.use_colors = !arg_no_color;
-    compiler_options.indent = !arg_no_indent;
-    compiler_options.prescan = !arg_no_prescan;
-    // set openmp in pass options
-    compiler_options.po.openmp = compiler_options.openmp;
-
-    for (auto &f_flag : f_flags) {
-        if (f_flag == "PIC") {
-            // Position Independent Code
-            // We do this by default, so we ignore for now
-        } else if (f_flag == "default-integer-8") {
-            compiler_options.po.default_integer_kind = 8;
-        } else {
-            std::cerr << "The flag `-f" << f_flag << "` is not supported" << std::endl;
-            return 1;
-        }
-    }
-
-    if(static_link && shared_link) {
+    if(opts.static_link && opts.shared_link) {
         std::cerr << "Options '--static' and '--shared' cannot be used together" << std::endl;
         return 1;
     }
 
     if (fmt) {
-        if (CLI::NonexistentPath(arg_fmt_file).empty())
-            throw LCompilers::LCompilersException("File does not exist: " + arg_fmt_file);
+        if (CLI::NonexistentPath(opts.arg_fmt_file).empty()) {
+            std:: cerr << "error: no such file or directory: " << "'" << opts.arg_fmt_file << "'" << std::endl;
+            return 1;
+        }
 
-        return format(arg_fmt_file, arg_fmt_inplace, !arg_fmt_no_color,
-            arg_fmt_indent, arg_fmt_indent_unit, compiler_options);
+        return format(opts.arg_fmt_file, opts.arg_fmt_inplace, !opts.arg_fmt_no_color,
+            opts.arg_fmt_indent, opts.arg_fmt_indent_unit, compiler_options);
     }
 
     if (kernel) {
 #ifdef HAVE_LFORTRAN_XEUS
-        return LCompilers::LFortran::run_kernel(arg_kernel_f);
+        return LCompilers::LFortran::run_kernel(opts.arg_kernel_f);
 #else
         std::cerr << "The kernel subcommand requires LFortran to be compiled with XEUS support. Recompile with `WITH_XEUS=yes`." << std::endl;
         return 1;
@@ -2239,161 +2400,192 @@ int main_app(int argc, char *argv[]) {
     }
 
     if (mod) {
-        if (arg_mod_show_asr) {
+        if (opts.arg_mod_show_asr) {
             Allocator al(1024*1024);
             LCompilers::ASR::TranslationUnit_t *asr;
-            asr = LCompilers::LFortran::mod_to_asr(al, arg_mod_file);
-            std::cout << LCompilers::pickle(*asr, !arg_mod_no_color) << std::endl;
+            asr = LCompilers::LFortran::mod_to_asr(al, opts.arg_mod_file);
+            std::cout << LCompilers::pickle(*asr, !opts.arg_mod_no_color) << std::endl;
             return 0;
         }
         return 0;
     }
 
     if (pywrap) {
-        return python_wrapper(arg_pywrap_file, arg_pywrap_array_order,
+        return python_wrapper(opts.arg_pywrap_file, opts.arg_pywrap_array_order,
             compiler_options);
     }
 
-    if (arg_backend == "llvm") {
+    if (opts.arg_backend == "llvm") {
         backend = Backend::llvm;
-    } else if (arg_backend == "c") {
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_arr");
+        lfortran_pass_manager.passes_to_skip_with_llvm.push_back("print_struct_type");
+    } else if (opts.arg_backend == "c") {
         backend = Backend::c;
-    } else if (arg_backend == "cpp") {
+    } else if (opts.arg_backend == "cpp") {
         backend = Backend::cpp;
-    } else if (arg_backend == "x86") {
+    } else if (opts.arg_backend == "x86") {
         backend = Backend::x86;
-    } else if (arg_backend == "wasm") {
+    } else if (opts.arg_backend == "wasm") {
         backend = Backend::wasm;
-    } else if (arg_backend == "fortran") {
+    } else if (opts.arg_backend == "fortran") {
         backend = Backend::fortran;
+    } else if (opts.arg_backend == "mlir") {
+        backend = Backend::mlir;
     } else {
-        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran." << std::endl;
+        std::cerr << "The backend must be one of: llvm, cpp, x86, wasm, fortran, mlir." << std::endl;
         return 1;
     }
 
-    if (arg_files.size() == 0) {
+#ifdef WITH_LSP
+    if (server) {
+        try {
+            languageServerInterface.serve();
+        } catch (const LCompilers::LCompilersException &e) {
+            std::cerr << e.what() << std::endl;
+            return 1;
+        } catch (const std::exception &e) {
+            std::cerr << "Caught unhandled exception: " << e.what() << std::endl;
+            return 1;
+        }
+        return 0;
+    }
+#endif
+
+    if (opts.arg_files.size() == 0) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return prompt(arg_v, compiler_options);
+        return prompt(opts.arg_v, compiler_options);
 #else
         std::cerr << "Interactive prompt requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }
 
-    // TODO: for now we ignore the other filenames, only handle
-    // the first:
-    std::string arg_file = arg_files[0];
-    if (CLI::NonexistentPath(arg_file).empty())
-        throw LCompilers::LCompilersException("File does not exist: " + arg_file);
-
-    // Decide if a file is fixed format based on the extension
-    // Gfortran does the same thing
-    if (fixed_form_infer && endswith(arg_file, ".f")) {
-        compiler_options.fixed_form = true;
+    if(compiler_options.po.enable_gpu_offloading && !compiler_options.openmp) {
+        std::cerr << "The option `--mlir-gpu-offloading` requires openmp pass "
+            "to be applied. Rerun with `--openmp` option\n";
+        return 1;
     }
 
-    if (cpp && no_cpp) {
-        throw LCompilers::LCompilersException("Cannot use --cpp and --no-cpp at the same time");
-    } else if(cpp) {
-        compiler_options.c_preprocessor = true;
-    } else if(no_cpp) {
-        compiler_options.c_preprocessor = false;
-    // Decide if a file gets preprocessing based on the extension
-    // Gfortran does the same thing
-    } else if (cpp_infer && (endswith(arg_file, ".F90") || endswith(arg_file, ".F"))) {
-        compiler_options.c_preprocessor = true;
-    } else {
-        compiler_options.c_preprocessor = false;
+    if (CLI::NonexistentPath(opts.arg_file).empty()) {
+        std::cerr << "error: no such file or directory: '" + opts.arg_file + "'" << std::endl;
+        return 1;
     }
 
     std::string outfile;
-    std::filesystem::path basename = std::filesystem::path(arg_file).filename();
+    std::filesystem::path basename = std::filesystem::path(opts.arg_file).filename();
     if (compiler_options.arg_o.size() > 0) {
         outfile = compiler_options.arg_o;
-    } else if (arg_S) {
+    } else if (opts.arg_S) {
         outfile = basename.replace_extension(".s").string();
-    } else if (arg_c) {
+    } else if (opts.arg_c) {
         outfile = basename.replace_extension(".o").string();
-    } else if (show_prescan) {
+    } else if (opts.show_prescan) {
         outfile = basename.replace_extension(".prescan").string();
-    } else if (show_tokens) {
+    } else if (opts.show_tokens) {
         outfile = basename.replace_extension(".tokens").string();
-    } else if (show_ast) {
+    } else if (opts.show_ast) {
         outfile = basename.replace_extension(".ast").string();
-    } else if (show_asr) {
+    } else if (opts.show_asr) {
         outfile = basename.replace_extension(".asr").string();
-    } else if (show_llvm) {
+    } else if (opts.show_llvm) {
         outfile = basename.replace_extension(".ll").string();
-    } else if (show_wat) {
+    } else if (opts.show_wat) {
         outfile = basename.replace_extension(".wat").string();
-    } else if (show_julia) {
+    } else if (opts.show_julia) {
         outfile = basename.replace_extension(".jl").string();
     } else {
         outfile = basename.replace_extension(".out").string();
     }
 
+    lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
     if (compiler_options.po.dump_fortran || compiler_options.po.dump_all_passes) {
-        dump_all_passes(arg_file, compiler_options);
+        dump_all_passes(opts.arg_file, compiler_options, lfortran_pass_manager);
     }
 
-    if (arg_E) {
-        return emit_c_preprocessor(arg_file, compiler_options);
+    if (opts.arg_E) {
+        return emit_c_preprocessor(opts.arg_file, compiler_options);
     }
 
-    if (show_prescan) {
-        return emit_prescan(arg_file, compiler_options);
+    if (opts.show_prescan) {
+        return emit_prescan(opts.arg_file, compiler_options);
     }
-    if (show_tokens) {
-        return emit_tokens(arg_file, false, compiler_options);
+    if (opts.show_tokens) {
+        return emit_tokens(opts.arg_file, false, compiler_options);
     }
-    if (show_ast) {
-        return emit_ast(arg_file, compiler_options);
+    if (opts.show_ast) {
+        return emit_ast(opts.arg_file, compiler_options);
     }
-    if (show_ast_f90) {
-        return emit_ast_f90(arg_file, compiler_options);
+    if (opts.show_ast_f90) {
+        return emit_ast_f90(opts.arg_file, compiler_options);
     }
-    lfortran_pass_manager.parse_pass_arg(arg_pass, skip_pass);
-    if (show_asr) {
-        return emit_asr(arg_file, lfortran_pass_manager,
+    lfortran_pass_manager.parse_pass_arg(opts.arg_pass, opts.skip_pass);
+    if (compiler_options.rename_symbol) {
+        return LCompilers::get_all_occurences(opts.arg_file, compiler_options);
+    }
+    if (compiler_options.lookup_name) {
+        return get_definitions(opts.arg_file, compiler_options);
+    }
+    if ( compiler_options.semantics_only ) {
+        return run_parser_and_semantics(opts.arg_file, compiler_options);
+    }
+    if (opts.show_asr) {
+        return emit_asr(opts.arg_file, lfortran_pass_manager,
                 compiler_options);
     }
+    if (opts.show_document_symbols) {
+        return get_symbols(opts.arg_file, compiler_options);
+    }
+
+    if (opts.show_errors) {
+        return get_errors(opts.arg_file, compiler_options);
+    }
     lfortran_pass_manager.use_default_passes();
-    if (show_llvm) {
+    if (opts.show_llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return emit_llvm(arg_file, lfortran_pass_manager,
+        return emit_llvm(opts.arg_file, lfortran_pass_manager,
                             compiler_options);
 #else
         std::cerr << "The --show-llvm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }
-    if (show_asm) {
+    if (opts.show_mlir || opts.show_llvm_from_mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+        return handle_mlir(opts.arg_file, outfile, compiler_options,
+            opts.show_mlir, opts.show_llvm_from_mlir);
+#else
+        std::cerr << "The `--show-mlir` option requires the MLIR backend to be "
+            "enabled. Recompile with `WITH_MLIR=yes`." << std::endl;
+        return 1;
+#endif
+    }
+    if (opts.show_asm) {
 #ifdef HAVE_LFORTRAN_LLVM
-        return emit_asm(arg_file, compiler_options);
+        return emit_asm(opts.arg_file, compiler_options);
 #else
         std::cerr << "The --show-asm option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
         return 1;
 #endif
     }
-    if (show_wat) {
-        return emit_wat(arg_file, compiler_options);
+    if (opts.show_wat) {
+        return emit_wat(opts.arg_file, compiler_options);
     }
-    if (show_cpp) {
-        return emit_cpp(arg_file, compiler_options);
+    if (opts.show_cpp) {
+        return emit_cpp(opts.arg_file, compiler_options);
     }
-    if (show_c) {
-        return emit_c(arg_file, lfortran_pass_manager, compiler_options);
+    if (opts.show_c) {
+        return emit_c(opts.arg_file, lfortran_pass_manager, compiler_options);
     }
-    if (show_julia) {
-        return emit_julia(arg_file, compiler_options);
+    if (opts.show_julia) {
+        return emit_julia(opts.arg_file, compiler_options);
     }
-    if (show_fortran) {
-        return emit_fortran(arg_file, compiler_options);
+    if (opts.show_fortran) {
+        return emit_fortran(opts.arg_file, compiler_options);
     }
-    if (arg_S) {
+    if (opts.arg_S) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_assembly_file(arg_file, outfile, compiler_options, lfortran_pass_manager);
+            return compile_to_assembly_file(opts.arg_file, outfile, compiler_options.time_report, compiler_options, lfortran_pass_manager);
 #else
             std::cerr << "The -S option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
@@ -2405,71 +2597,126 @@ int main_app(int argc, char *argv[]) {
             LCOMPILERS_ASSERT(false);
         }
     }
-    if (arg_c) {
+    if (opts.arg_c) {
         if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            return compile_to_object_file(arg_file, outfile, false,
-                compiler_options, lfortran_pass_manager);
+            return compile_src_to_object_file(opts.arg_file, outfile, compiler_options.time_report, false,
+                compiler_options, lfortran_pass_manager, opts.arg_c);
 #else
             std::cerr << "The -c option requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
         } else if (backend == Backend::c) {
-            return compile_to_object_file_c(arg_file, outfile, arg_v, false,
+            return compile_to_object_file_c(opts.arg_file, outfile, opts.arg_v, false,
                     rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
         } else if (backend == Backend::cpp) {
-            return compile_to_object_file_cpp(arg_file, outfile, arg_v, false,
+            return compile_to_object_file_cpp(opts.arg_file, outfile, opts.arg_v, false,
                     true, rtlib_c_header_dir, compiler_options);
         } else if (backend == Backend::x86) {
-            return compile_to_binary_x86(arg_file, outfile, time_report, compiler_options);
+            return compile_to_binary_x86(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::wasm) {
-            return compile_to_binary_wasm(arg_file, outfile, time_report, compiler_options);
+            return compile_to_binary_wasm(opts.arg_file, outfile, compiler_options.time_report, compiler_options);
         } else if (backend == Backend::fortran) {
-            return compile_to_binary_fortran(arg_file, outfile, compiler_options);
+            return compile_to_binary_fortran(opts.arg_file, outfile, compiler_options);
+        } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+            return handle_mlir(opts.arg_file, outfile, compiler_options, false, false);
+#else
+            std::cerr << "The -c option with `--backend=mlir` requires the "
+                "MLIR backend to be enabled. Recompile with `WITH_MLIR=yes`."
+                << std::endl;
+            return 1;
+#endif
         } else {
             throw LCompilers::LCompilersException("Unsupported backend.");
         }
     }
 
-    if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") || endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
-        if (backend == Backend::x86) {
-            return compile_to_binary_x86(arg_file, outfile,
-                    time_report, compiler_options);
-        }
-        std::string tmp_o = outfile + ".tmp.o";
-        int err;
-        if (backend == Backend::llvm) {
+    int err_ = 0;
+    std::vector<std::string> object_files;
+    // we need this separate vector to store temporary object files as some object files passed as arguments
+    // are considered as it is and we do not want to delete them
+    std::vector<std::string> temp_object_files;
+    for (const auto &arg_file : opts.arg_files) {
+        int err = 0;
+        std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
+                                .filename().replace_extension(".tmp.o")).string();
+        temp_object_files.push_back(tmp_o);
+        if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
+            endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
+            if (backend == Backend::x86) {
+                return compile_to_binary_x86(arg_file, outfile,
+                        compiler_options.time_report, compiler_options);
+            }
+            if (backend == Backend::llvm) {
 #ifdef HAVE_LFORTRAN_LLVM
-            err = compile_to_object_file(arg_file, tmp_o, false,
-                compiler_options, lfortran_pass_manager);
+                err = compile_src_to_object_file(arg_file, tmp_o, compiler_options.time_report, false,
+                    compiler_options, lfortran_pass_manager);
 #else
-            std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+                std::cerr << "Compiling Fortran files to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
+                return 1;
+#endif
+            } else if (backend == Backend::cpp) {
+                err = compile_to_object_file_cpp(arg_file, tmp_o, opts.arg_v, false,
+                        true, rtlib_header_dir, compiler_options);
+            } else if (backend == Backend::c) {
+                err = compile_to_object_file_c(arg_file, tmp_o, opts.arg_v,
+                        false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
+            } else if (backend == Backend::fortran) {
+                err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
+            } else if (backend == Backend::wasm) {
+                err = compile_to_binary_wasm(arg_file, outfile,
+                        compiler_options.time_report, compiler_options);
+            } else if (backend == Backend::mlir) {
+#ifdef HAVE_LFORTRAN_MLIR
+                err = handle_mlir(arg_file, tmp_o, compiler_options, false, false);
+#else
+                std::cerr << "Compiling Fortran files to object files using "
+                    "`--backend=mlir` requires the MLIR backend to be enabled. "
+                    "Recompile with `WITH_MLIR=yes`." << std::endl;
+                return 1;
+#endif
+            } else {
+                throw LCompilers::LCompilersException("Backend not supported");
+            }
+        } else if (endswith(arg_file, ".ll")) {
+            // this way we can execute LLVM IR files directly
+#ifdef HAVE_LFORTRAN_LLVM
+            err = compile_llvm_to_object_file(arg_file, tmp_o, compiler_options);
+            if (err) return err;
+#else
+            std::cerr << "Compiling LLVM IR to object files requires the LLVM backend to be enabled. Recompile with `WITH_LLVM=yes`." << std::endl;
             return 1;
 #endif
-        } else if (backend == Backend::cpp) {
-            err = compile_to_object_file_cpp(arg_file, tmp_o, arg_v, false,
-                    true, rtlib_header_dir, compiler_options);
-        } else if (backend == Backend::c) {
-            err = compile_to_object_file_c(arg_file, tmp_o, arg_v,
-                    false, rtlib_c_header_dir, lfortran_pass_manager, compiler_options);
-        } else if (backend == Backend::fortran) {
-            err = compile_to_binary_fortran(arg_file, tmp_o, compiler_options);
-        } else if (backend == Backend::wasm) {
-            err = compile_to_binary_wasm(arg_file, outfile,
-                    time_report, compiler_options);
         } else {
-            throw LCompilers::LCompilersException("Backend not supported");
+            // assume it's an object file
+            tmp_o = arg_file;
         }
-        if (err) return err;
-        return link_executable({tmp_o}, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
-    } else {
-        return link_executable(arg_files, outfile, runtime_library_dir,
-                backend, static_link, shared_link, link_with_gcc, true, arg_v, arg_L,
-		arg_l, linker_flags, compiler_options);
+        if (err && !compiler_options.continue_compilation) return err;
+        err_ = err;
+        if (!err) object_files.push_back(tmp_o);
     }
-    return 0;
+    if (object_files.size() == 0) {
+        return err_;
+    } else {
+        int status_code = err_ + link_executable(object_files, outfile, compiler_options.time_report, runtime_library_dir,
+                backend, opts.static_link, opts.shared_link, opts.linker, opts.linker_path, true,
+                opts.arg_v, opts.arg_L, opts.arg_l, opts.linker_flags, compiler_options);
+        auto end_time = std::chrono::high_resolution_clock::now();
+        
+        for (const std::string &filename : temp_object_files) {
+            std::remove(filename.c_str());
+        }
+        if (compiler_options.time_report) {
+            int total_time = std::chrono::duration_cast<std::chrono::microseconds>(end_time - start_time).count();
+            std::string message = "Total time: " + std::to_string(total_time / 1000) + "." + std::to_string(total_time % 1000) + " ms";
+            compiler_options.po.vector_of_time_report.push_back(message);
+
+            print_time_report(compiler_options.po.vector_of_time_report);
+        }
+
+        return status_code;
+    }
 }
 
 int main(int argc, char *argv[])

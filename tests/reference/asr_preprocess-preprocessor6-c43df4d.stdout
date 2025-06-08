@@ -12,124 +12,94 @@
                     preprocessor6
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "1a"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1b"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "2a"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "2b"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1b"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "10"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1a0"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1ab"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1ac"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1c"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "10"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1a0"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1aa"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1ac"
-                            (Character 1 3 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "1c"
-                            (Character 1 2 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

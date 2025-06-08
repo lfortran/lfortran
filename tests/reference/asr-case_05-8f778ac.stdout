@@ -15,18 +15,22 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "B"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -37,22 +41,20 @@
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Excellent!"
-                                    (Character 1 10 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             []
                             .false.
@@ -60,66 +62,62 @@
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Well done"
-                                    (Character 1 9 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "You passed"
-                                    (Character 1 10 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                             .false.
                         )
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Better try again"
-                                    (Character 1 16 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                             .false.
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid grade"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your grade is "
-                            (Character 1 14 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your grade is "
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 grade)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 grade)]
-                        ()
-                        ()
                     )]
                 )
         })

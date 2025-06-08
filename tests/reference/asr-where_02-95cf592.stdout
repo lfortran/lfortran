@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -48,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     main
@@ -67,6 +75,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -83,6 +92,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -99,6 +109,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -115,6 +126,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Where
                         (RealCompare
@@ -166,13 +178,18 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
                     (Print
-                        [(Var 2 a)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare

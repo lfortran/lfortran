@@ -47,12 +47,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         9 fpm_new_settings
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -96,7 +103,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -106,6 +113,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             settings:
@@ -118,6 +129,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_new_settings
                                                     )
                                                     ()
@@ -125,11 +139,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     cmd_new
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 fpm_new_settings
                                         )]
                                         ()
@@ -152,7 +173,7 @@
                                             160
                                             ["# ", "My cool new project!"]
                                             (Array
-                                                (Character 1 80 ())
+                                                (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
@@ -160,15 +181,35 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
-                                        2 warnwrite_character____1
-                                        2 warnwrite_character____1
-                                        [((StructInstanceMember
-                                            (Var 8 settings)
-                                            8 1_fpm_new_settings_name
+                                        2 warnwrite_string____1
+                                        2 warnwrite_string____1
+                                        [((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (Var 8 settings)
+                                                8 1_fpm_new_settings_name
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                ()
+                                            )
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (String 1 (StringLen
+                                                    (StructInstanceMember
+                                                        (Var 8 settings)
+                                                        8 1_fpm_new_settings_name
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))
@@ -178,19 +219,12 @@
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array
-                                                    (Character 1 -2 ())
+                                                    (String 1 () DeferredLength PointerString)
                                                     [(()
                                                     ())]
                                                     PointerToDataArray
                                                 )
                                             )
-                                            ()
-                                        ))
-                                        ((ArrayBound
-                                            (Var 8 littlefile)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
                                             ()
                                         ))
                                         ((ArraySize
@@ -200,9 +234,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 8 littlefile)]
                                     )]
                                     ()
                                     Public
@@ -225,18 +256,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
                                     []
                                     [working_dir]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -260,18 +296,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
                                     []
                                     [name]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -280,14 +321,14 @@
                                     ()
                                     2 fpm_cmd_settings
                                 ),
-                            warnwrite_character____1:
+                            warnwrite_string____1:
                                 (ExternalSymbol
                                     2
-                                    warnwrite_character____1
-                                    4 warnwrite_character____1
+                                    warnwrite_string____1
+                                    4 warnwrite_string____1
                                     modules_44_module_fpm_filesystem
                                     []
-                                    warnwrite_character____1
+                                    warnwrite_string____1
                                     Public
                                 )
                         })
@@ -301,7 +342,7 @@
                     (SymbolTable
                         4
                         {
-                            warnwrite_character____1:
+                            warnwrite_string____1:
                                 (Function
                                     (SymbolTable
                                         10
@@ -321,43 +362,34 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            __2data:
-                                                (Variable
-                                                    10
-                                                    __2data
-                                                    []
-                                                    In
+                                                    .false.
+                                                    .false.
                                                     ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
                                                     .false.
                                                 ),
                                             data:
                                                 (Variable
                                                     10
                                                     data
-                                                    [__1data
-                                                    __2data]
+                                                    [__1data]
                                                     In
                                                     ()
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 -1 ())
-                                                        [((Var 10 __1data)
-                                                        (Var 10 __2data))]
+                                                        (String 1 () AssumedLength PointerString)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 10 __1data))]
                                                         PointerToDataArray
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             fname:
@@ -369,32 +401,31 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
-                                    warnwrite_character____1
+                                    warnwrite_string____1
                                     (FunctionType
-                                        [(Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)
                                         (Array
-                                            (Character 1 -1 ())
-                                            [((FunctionParam
-                                                2
-                                                (Integer 4)
-                                                ()
-                                            )
+                                            (String 1 () AssumedLength PointerString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
-                                                3
+                                                2
                                                 (Integer 4)
                                                 ()
                                             ))]
                                             PointerToDataArray
                                         )
-                                        (Integer 4)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -411,8 +442,7 @@
                                     []
                                     [(Var 10 fname)
                                     (Var 10 data)
-                                    (Var 10 __1data)
-                                    (Var 10 __2data)]
+                                    (Var 10 __1data)]
                                     []
                                     ()
                                     Public

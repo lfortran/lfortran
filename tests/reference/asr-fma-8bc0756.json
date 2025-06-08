@@ -2,11 +2,11 @@
     "basename": "asr-fma-8bc0756",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/fma.f90",
-    "infile_hash": "59fa49468c6dcd7b7bfbb4bfab840e6ec357824e0618eed22308d5f1",
+    "infile_hash": "e251a7a68d3ac5b04630dacfdd015452826bc4e6954b51124d815868",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-fma-8bc0756.stdout",
-    "stdout_hash": "e46769f658afecb8a18a760247522d54f5bf106906bcc79322a5ea52",
+    "stdout_hash": "3da11026c0623245600647758a8fdbe028440ca371742b8aa0eb0cb8",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

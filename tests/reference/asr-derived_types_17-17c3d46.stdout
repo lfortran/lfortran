@@ -57,6 +57,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     ()
@@ -64,12 +67,19 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     add
                                     (FunctionType
                                         []
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 t_1
                                         )
                                         Source
@@ -110,6 +120,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 self)
                                     Public
@@ -142,6 +153,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 t_1
                                                     )
                                                     ()
@@ -149,12 +163,19 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     subtract
                                     (FunctionType
                                         []
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 t_1
                                         )
                                         Source
@@ -195,6 +216,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 self)
                                     Public
@@ -222,11 +244,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     t_1
                                     []
                                     [num]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -290,32 +317,46 @@
                                     []
                                     []
                                     [(Print
-                                        [(FunctionCall
-                                            6 subtract
+                                        (StringFormat
                                             ()
-                                            []
-                                            (StructType
-                                                7 1_t_1
-                                            )
+                                            [(FunctionCall
+                                                6 subtract
+                                                ()
+                                                []
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    7 1_t_1
+                                                )
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
-                                            ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )
                                     (Print
-                                        [(FunctionCall
-                                            6 add
+                                        (StringFormat
                                             ()
-                                            []
-                                            (StructType
-                                                7 1_t_1
-                                            )
+                                            [(FunctionCall
+                                                6 add
+                                                ()
+                                                []
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    7 1_t_1
+                                                )
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
-                                            ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

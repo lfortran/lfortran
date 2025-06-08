@@ -22,14 +22,14 @@
                                         "access": "Public"
                                     },
                                     "loc": {
-                                        "first": 38,
-                                        "last": 50,
+                                        "first": 197,
+                                        "last": 205,
                                         "first_filename": "tests/modules_10.f90",
-                                        "first_line": 2,
-                                        "first_column": 16,
+                                        "first_line": 10,
+                                        "first_column": 32,
                                         "last_filename": "tests/modules_10.f90",
-                                        "last_line": 2,
-                                        "last_column": 28
+                                        "last_line": 10,
+                                        "last_column": 40
                                     }
                                 },
                                 "my_proc": {
@@ -50,14 +50,14 @@
                                                         "access": "Public"
                                                     },
                                                     "loc": {
-                                                        "first": 65,
-                                                        "last": 134,
+                                                        "first": 274,
+                                                        "last": 286,
                                                         "first_filename": "tests/modules_10.f90",
-                                                        "first_line": 4,
-                                                        "first_column": 5,
+                                                        "first_line": 13,
+                                                        "first_column": 36,
                                                         "last_filename": "tests/modules_10.f90",
-                                                        "last_line": 6,
-                                                        "last_column": 18
+                                                        "last_line": 13,
+                                                        "last_column": 48
                                                     }
                                                 }
                                             }
@@ -250,7 +250,11 @@
                                         "abi": "Source",
                                         "access": "Public",
                                         "presence": "Required",
-                                        "value_attr": false
+                                        "value_attr": false,
+                                        "target_attr": false,
+                                        "contiguous_attr": false,
+                                        "bindc_name": [],
+                                        "is_volatile": false
                                     },
                                     "loc": {
                                         "first": 38,
@@ -304,26 +308,61 @@
                                             {
                                                 "node": "Print",
                                                 "fields": {
-                                                    "values": [
-                                                        {
-                                                            "node": "Var",
-                                                            "fields": {
-                                                                "v": "my_global (SymbolTable2)"
+                                                    "text": {
+                                                        "node": "StringFormat",
+                                                        "fields": {
+                                                            "fmt": [],
+                                                            "args": [
+                                                                {
+                                                                    "node": "Var",
+                                                                    "fields": {
+                                                                        "v": "my_global (SymbolTable2)"
+                                                                    },
+                                                                    "loc": {
+                                                                        "first": 107,
+                                                                        "last": 115,
+                                                                        "first_filename": "tests/modules_10.f90",
+                                                                        "first_line": 5,
+                                                                        "first_column": 18,
+                                                                        "last_filename": "tests/modules_10.f90",
+                                                                        "last_line": 5,
+                                                                        "last_column": 26
+                                                                    }
+                                                                }
+                                                            ],
+                                                            "kind": "FormatFortran",
+                                                            "type": {
+                                                                "node": "String",
+                                                                "fields": {
+                                                                    "kind": 1,
+                                                                    "len": [],
+                                                                    "len_kind": "ExpressionLength",
+                                                                    "physical_type": "CString"
+                                                                },
+                                                                "loc": {
+                                                                    "first": 98,
+                                                                    "last": 115,
+                                                                    "first_filename": "tests/modules_10.f90",
+                                                                    "first_line": 5,
+                                                                    "first_column": 9,
+                                                                    "last_filename": "tests/modules_10.f90",
+                                                                    "last_line": 5,
+                                                                    "last_column": 26
+                                                                }
                                                             },
-                                                            "loc": {
-                                                                "first": 107,
-                                                                "last": 115,
-                                                                "first_filename": "tests/modules_10.f90",
-                                                                "first_line": 5,
-                                                                "first_column": 18,
-                                                                "last_filename": "tests/modules_10.f90",
-                                                                "last_line": 5,
-                                                                "last_column": 26
-                                                            }
+                                                            "value": []
+                                                        },
+                                                        "loc": {
+                                                            "first": 98,
+                                                            "last": 115,
+                                                            "first_filename": "tests/modules_10.f90",
+                                                            "first_line": 5,
+                                                            "first_column": 9,
+                                                            "last_filename": "tests/modules_10.f90",
+                                                            "last_line": 5,
+                                                            "last_column": 26
                                                         }
-                                                    ],
-                                                    "separator": [],
-                                                    "end": []
+                                                    }
                                                 },
                                                 "loc": {
                                                     "first": 98,

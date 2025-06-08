@@ -22,11 +22,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            a_f:
+                            a1:
                                 (Variable
                                     2
-                                    a_f
+                                    a1
                                     []
                                     Local
                                     ()
@@ -38,21 +42,9 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            a_f_real:
-                                (Variable
-                                    2
-                                    a_f_real
-                                    []
-                                    Local
+                                    .false.
+                                    .false.
                                     ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
                                     .false.
                                 ),
                             b:
@@ -70,11 +62,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            b_f:
+                            b1:
                                 (Variable
                                     2
-                                    b_f
+                                    b1
                                     []
                                     Local
                                     ()
@@ -86,21 +82,9 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            b_f_real:
-                                (Variable
-                                    2
-                                    b_f_real
-                                    []
-                                    Local
+                                    .false.
+                                    .false.
                                     ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
                                     .false.
                                 ),
                             c:
@@ -117,6 +101,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f:
@@ -139,6 +127,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -155,6 +147,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -170,6 +166,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -194,6 +194,7 @@
                                         (Var 3 x)
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 b)
@@ -205,6 +206,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 b)
                                     Public
@@ -232,6 +234,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -248,11 +254,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
-                                            r_signr32:
+                                            r:
                                                 (Variable
                                                     4
-                                                    r_signr32
+                                                    r
                                                     []
                                                     Local
                                                     ()
@@ -264,11 +274,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
-                                            x_signr32:
+                                            x:
                                                 (Variable
                                                     4
-                                                    x_signr32
+                                                    x
                                                     []
                                                     Local
                                                     ()
@@ -280,11 +294,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
-                                            y_signr32:
+                                            y:
                                                 (Variable
                                                     4
-                                                    y_signr32
+                                                    y
                                                     []
                                                     Local
                                                     ()
@@ -295,6 +313,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -316,28 +338,31 @@
                                     []
                                     [(Var 4 a)]
                                     [(Assignment
-                                        (Var 4 x_signr32)
+                                        (Var 4 x)
                                         (RealConstant
                                             1.000000
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
-                                        (Var 4 y_signr32)
+                                        (Var 4 y)
                                         (Var 4 a)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
-                                        (Var 4 r_signr32)
-                                        (Var 4 x_signr32)
+                                        (Var 4 r)
+                                        (Var 4 x)
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (LogicalBinOp
                                             (LogicalBinOp
                                                 (RealCompare
-                                                    (Var 4 x_signr32)
+                                                    (Var 4 x)
                                                     GtE
                                                     (RealConstant
                                                         0.000000
@@ -348,7 +373,7 @@
                                                 )
                                                 And
                                                 (RealCompare
-                                                    (Var 4 y_signr32)
+                                                    (Var 4 y)
                                                     GtE
                                                     (RealConstant
                                                         0.000000
@@ -363,7 +388,7 @@
                                             Or
                                             (LogicalBinOp
                                                 (RealCompare
-                                                    (Var 4 x_signr32)
+                                                    (Var 4 x)
                                                     LtE
                                                     (RealConstant
                                                         0.000000
@@ -374,7 +399,7 @@
                                                 )
                                                 And
                                                 (RealCompare
-                                                    (Var 4 y_signr32)
+                                                    (Var 4 y)
                                                     LtE
                                                     (RealConstant
                                                         0.000000
@@ -390,18 +415,20 @@
                                             ()
                                         )
                                         [(Assignment
-                                            (Var 4 r_signr32)
-                                            (Var 4 x_signr32)
+                                            (Var 4 r)
+                                            (Var 4 x)
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
-                                            (Var 4 r_signr32)
+                                            (Var 4 r)
                                             (RealUnaryMinus
-                                                (Var 4 x_signr32)
+                                                (Var 4 x)
                                                 (Real 4)
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )
                                     (Assignment
@@ -409,11 +436,12 @@
                                         (RealBinOp
                                             (Var 4 a)
                                             Add
-                                            (Var 4 r_signr32)
+                                            (Var 4 r)
                                             (Real 4)
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 b)
                                     Public
@@ -447,6 +475,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -463,11 +495,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            r_signr32:
+                            r:
                                 (Variable
                                     2
-                                    r_signr32
+                                    r
                                     []
                                     Local
                                     ()
@@ -479,21 +515,9 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            r_signr32_f_real:
-                                (Variable
-                                    2
-                                    r_signr32_f_real
-                                    []
-                                    Local
+                                    .false.
+                                    .false.
                                     ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
                                     .false.
                                 ),
                             signr32:
@@ -516,6 +540,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -532,6 +560,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -547,6 +579,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -573,6 +609,7 @@
                                         (Var 5 r)
                                         (Var 5 x)
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (LogicalBinOp
@@ -634,6 +671,7 @@
                                             (Var 5 r)
                                             (Var 5 x)
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 r)
@@ -643,6 +681,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 r)
@@ -666,11 +705,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            x_f:
+                            x1:
                                 (Variable
                                     2
-                                    x_f
+                                    x1
                                     []
                                     Local
                                     ()
@@ -682,11 +725,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            x_signr32:
+                            x2:
                                 (Variable
                                     2
-                                    x_signr32
+                                    x2
                                     []
                                     Local
                                     ()
@@ -698,21 +745,9 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            x_signr32_f_real:
-                                (Variable
-                                    2
-                                    x_signr32_f_real
-                                    []
-                                    Local
+                                    .false.
+                                    .false.
                                     ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
                                     .false.
                                 ),
                             y:
@@ -730,11 +765,15 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
-                            y_signr32:
+                            y1:
                                 (Variable
                                     2
-                                    y_signr32
+                                    y1
                                     []
                                     Local
                                     ()
@@ -746,171 +785,74 @@
                                     Public
                                     Required
                                     .false.
-                                ),
-                            y_signr32_f_real:
-                                (Variable
-                                    2
-                                    y_signr32_f_real
-                                    []
-                                    Local
+                                    .false.
+                                    .false.
                                     ()
-                                    ()
-                                    Default
-                                    (Real 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
                                     .false.
                                 )
                         })
                     functions_01
                     []
                     [(Assignment
-                        (Var 2 a_f)
+                        (Var 2 a1)
                         (Var 2 x)
                         ()
+                        .false.
                     )
                     (Assignment
-                        (Var 2 x_f)
+                        (Var 2 x1)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
-                        (Var 2 b_f)
+                        (Var 2 b1)
                         (IntegerBinOp
-                            (Var 2 a_f)
+                            (Var 2 a1)
                             Add
-                            (Var 2 x_f)
+                            (Var 2 x1)
                             (Integer 4)
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
-                        (Var 2 b_f)
+                        (Var 2 b1)
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 y)]
-                        ()
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 a_f_real)
-                        (Var 2 p)
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 x_signr32_f_real)
-                        (RealConstant
-                            1.000000
-                            (Real 4)
-                        )
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 y_signr32_f_real)
-                        (Var 2 a_f_real)
-                        ()
-                    )
-                    (Assignment
-                        (Var 2 r_signr32_f_real)
-                        (Var 2 x_signr32_f_real)
-                        ()
-                    )
-                    (If
-                        (LogicalBinOp
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x_signr32_f_real)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y_signr32_f_real)
-                                    GtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            Or
-                            (LogicalBinOp
-                                (RealCompare
-                                    (Var 2 x_signr32_f_real)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                And
-                                (RealCompare
-                                    (Var 2 y_signr32_f_real)
-                                    LtE
-                                    (RealConstant
-                                        0.000000
-                                        (Real 4)
-                                    )
-                                    (Logical 4)
-                                    ()
-                                )
-                                (Logical 4)
-                                ()
-                            )
-                            (Logical 4)
+                        (StringFormat
+                            ()
+                            [(Var 2 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        [(Assignment
-                            (Var 2 r_signr32_f_real)
-                            (Var 2 x_signr32_f_real)
-                            ()
-                        )]
-                        [(Assignment
-                            (Var 2 r_signr32_f_real)
-                            (RealUnaryMinus
-                                (Var 2 x_signr32_f_real)
-                                (Real 4)
-                                ()
-                            )
-                            ()
-                        )]
-                    )
-                    (Assignment
-                        (Var 2 b_f_real)
-                        (RealBinOp
-                            (Var 2 a_f_real)
-                            Add
-                            (Var 2 r_signr32_f_real)
-                            (Real 4)
-                            ()
-                        )
-                        ()
                     )
                     (Assignment
                         (Var 2 q)
-                        (Var 2 b_f_real)
+                        (FunctionCall
+                            2 f_real
+                            ()
+                            [((Var 2 p))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 q)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 q)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 a)
@@ -919,6 +861,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -934,27 +877,31 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
-                        (Var 2 x_signr32)
+                        (Var 2 x2)
                         (Var 2 a)
                         ()
+                        .false.
                     )
                     (Assignment
-                        (Var 2 y_signr32)
+                        (Var 2 y1)
                         (Var 2 b)
                         ()
+                        .false.
                     )
                     (Assignment
-                        (Var 2 r_signr32)
-                        (Var 2 x_signr32)
+                        (Var 2 r)
+                        (Var 2 x2)
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp
                             (LogicalBinOp
                                 (RealCompare
-                                    (Var 2 x_signr32)
+                                    (Var 2 x2)
                                     GtE
                                     (RealConstant
                                         0.000000
@@ -965,7 +912,7 @@
                                 )
                                 And
                                 (RealCompare
-                                    (Var 2 y_signr32)
+                                    (Var 2 y1)
                                     GtE
                                     (RealConstant
                                         0.000000
@@ -980,7 +927,7 @@
                             Or
                             (LogicalBinOp
                                 (RealCompare
-                                    (Var 2 x_signr32)
+                                    (Var 2 x2)
                                     LtE
                                     (RealConstant
                                         0.000000
@@ -991,7 +938,7 @@
                                 )
                                 And
                                 (RealCompare
-                                    (Var 2 y_signr32)
+                                    (Var 2 y1)
                                     LtE
                                     (RealConstant
                                         0.000000
@@ -1007,29 +954,36 @@
                             ()
                         )
                         [(Assignment
-                            (Var 2 r_signr32)
-                            (Var 2 x_signr32)
+                            (Var 2 r)
+                            (Var 2 x2)
                             ()
+                            .false.
                         )]
                         [(Assignment
-                            (Var 2 r_signr32)
+                            (Var 2 r)
                             (RealUnaryMinus
-                                (Var 2 x_signr32)
+                                (Var 2 x2)
                                 (Real 4)
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )
                     (Assignment
                         (Var 2 c)
-                        (Var 2 r_signr32)
+                        (Var 2 r)
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 c)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 c)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

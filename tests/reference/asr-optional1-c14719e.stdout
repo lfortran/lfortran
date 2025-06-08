@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             optmod:
                 (Module
                     (SymbolTable
@@ -23,27 +21,21 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 10 ())
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    5 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     optional_argument
                                     (FunctionType
-                                        [(Character 1 10 ())]
+                                        [(String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -59,34 +51,29 @@
                                     []
                                     [(Var 3 name)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 name))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 name)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Print
-                                            [(StringConcat
+                                            (StringConcat
                                                 (StringConstant
                                                     "Hello "
-                                                    (Character 1 6 ())
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (Var 3 name)
-                                                (Character 1 16 ())
+                                                (String 1 (IntegerConstant 16 (Integer 8) Decimal) ExpressionLength PointerString)
                                                 ()
-                                            )]
-                                            ()
-                                            ()
+                                            )
                                         )]
                                         [(Print
-                                            [(StringConstant
+                                            (StringConstant
                                                 "Hello world!"
-                                                (Character 1 12 ())
-                                            )]
-                                            ()
-                                            ()
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
                                         )]
                                     )]
                                     ()
@@ -97,7 +84,7 @@
                                 )
                         })
                     optmod
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
                 )

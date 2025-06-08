@@ -8,8 +8,9 @@ program intrinsics_277
     integer, parameter :: i2 = xor(-1, 5)
     integer, parameter :: i3 = xor(-4_8, 2_8)
     integer(8), parameter :: i4 = xor(-2_8, 5_8)
-    ! logical, parameter :: l1 = xor(.true., .false.) ! Does not work yet! #4380
-    ! logical :: true = .true., false = .false.
+    logical, parameter :: l1 = xor(.true., .false.) 
+    logical, parameter :: l2 = xor(.false., .false.) 
+    logical :: true = .true., false = .false.
 
     integer :: arr1(3), arr3(3)
     integer(8) :: arr2(3)
@@ -26,11 +27,15 @@ program intrinsics_277
     if (i3 /= -2) error stop
     print *, i4
     if (i4 /= -5) error stop
-    ! print *, l1
-    ! if (l1 .neqv. .true.) error stop
+    print *, l1
+    if (l1 .neqv. .true.) error stop
+    print *, l2
+    if (l2 .neqv. .false.) error stop
 
-    ! print *, xor(true, false)
-    ! if (xor(true, false) .neqv. .true.) error stop
+    print *, xor(true, false)
+    if (xor(true, false) .neqv. .true.) error stop
+    print *, xor(false, false)
+    if (xor(false, false) .neqv. .false.) error stop
     print*, xor(5, 8)
     if (xor(5, 8) /= 13) error stop
     print*, xor(-1, 5)

@@ -4,8 +4,10 @@ set(CMAKE_USER_MAKE_RULES_OVERRIDE ${CMAKE_SOURCE_DIR}/cmake/UserOverride.cmake)
 
 # We don't execute this if we have a tarball
 if (LFORTRAN_BUILD_ALL)
-    find_program(BASH_BIN bash)
-    execute_process(COMMAND "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
+    find_program(RE2C re2c REQUIRED)
+    find_program(BISON bison REQUIRED)
+    find_program(BASH_BIN bash REQUIRED)
+    execute_process(COMMAND "env" "RE2C=${RE2C}" "BISON=${BISON}" "${BASH_BIN}" "-e" "build0.sh" WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} RESULT_VARIABLE _BUILD0_EXIT)
     if (NOT _BUILD0_EXIT EQUAL 0)
         message(FATAL_ERROR "Running build0.sh failed (see error above)")
     endif ()
@@ -38,6 +40,11 @@ if (NOT WITH_XEUS)
     endif ()
 endif(NOT WITH_XEUS)
 
+if (CMAKE_CXX_COMPILER_ID STREQUAL "MSVC")
+    set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} /bigobj")
+    set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} /bigobj")
+endif ()
+
 # For CMAKE_INSTALL_BINDIR:
 include(GNUInstallDirs)
 
@@ -52,7 +59,9 @@ file(RELATIVE_PATH CMAKE_INSTALL_INCLUDEDIR_RELATIVE ${CMAKE_INSTALL_FULL_BINDIR
 #
 # cpack
 #
-include(InstallRequiredSystemLibraries)
+if(NOT WIN32)
+    include(InstallRequiredSystemLibraries)
+endif()
 set(CPACK_GENERATOR "TBZ2")
 set(CPACK_STRIP_FILES YES)
 set(CPACK_PACKAGE_FILE_NAME lfortran-${LFORTRAN_VERSION}-${CMAKE_SYSTEM_NAME})
@@ -99,6 +108,8 @@ set(WITH_ZLIB yes
 set(WITH_LCOMPILERS_FAST_ALLOC yes
     CACHE BOOL "Compile with fast allocator")
 
+set(WITH_CCACHE no CACHE BOOL "Build with ccache support")
+
 # Build to wasm
 set(LFORTRAN_BUILD_TO_WASM no
     CACHE BOOL "Compile LFortran To WASM")
@@ -129,11 +140,80 @@ if (WITH_LCOMPILERS_FAST_ALLOC)
 endif()
 
 
+if (WITH_CCACHE)
+    find_program(CCACHE_PROGRAM ccache REQUIRED)
+    set(CMAKE_C_COMPILER_LAUNCHER ccache)
+    set(CMAKE_CXX_COMPILER_LAUNCHER ccache)
+endif()
+
 # LLVM
 set(WITH_LLVM no CACHE BOOL "Build with LLVM support")
 set(WITH_TARGET_AARCH64 no CACHE BOOL "Enable target AARCH64")
 set(WITH_TARGET_X86 no CACHE BOOL "Enable target X86")
 set(WITH_TARGET_WASM no CACHE BOOL "Enable target WebAssembly")
+set(WITH_MLIR no CACHE BOOL "Build with MLIR support")
+
+# Stacktrace
+set(WITH_UNWIND no
+    CACHE BOOL "Build with unwind support")
+set(WITH_BFD no
+    CACHE BOOL "Build with BFD support")
+set(WITH_DWARFDUMP no
+    CACHE BOOL "Build with dwarfdump support")
+set(WITH_LINKH no
+    CACHE BOOL "Build with link.h support")
+set(WITH_MACHO no
+    CACHE BOOL "Build with mach-o support")
+set(WITH_STACKTRACE no
+    CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
+set(WITH_LLVM_STACKTRACE no
+    CACHE BOOL "Build with LLVM stacktrace support")
+if (WITH_STACKTRACE)
+    set(WITH_UNWIND yes)
+    if (APPLE)
+        set(WITH_MACHO yes)
+        if (NOT WITH_BFD)
+            set(WITH_DWARFDUMP yes)
+        endif()
+    else()
+        set(WITH_LINKH yes)
+        if (NOT WITH_BFD)
+            set(WITH_LLVM_STACKTRACE yes)
+        endif()
+    endif()
+    set(HAVE_LFORTRAN_STACKTRACE yes)
+endif()
+if (WITH_RUNTIME_STACKTRACE)
+    set(WITH_UNWIND yes)
+    if (APPLE)
+        set(WITH_MACHO yes)
+    else()
+        set(WITH_LINKH yes)
+    endif()
+    set(HAVE_RUNTIME_STACKTRACE yes)
+endif()
+if (WITH_BFD)
+    find_package(BFD REQUIRED)
+    set(HAVE_LFORTRAN_BFD yes)
+endif()
+if (WITH_LLVM_STACKTRACE)
+    set(HAVE_LFORTRAN_LLVM_STACKTRACE yes)
+endif()
+if (WITH_DWARFDUMP)
+    set(HAVE_LFORTRAN_DWARFDUMP yes)
+endif()
+if (WITH_LINKH)
+    find_package(LINKH REQUIRED)
+    set(HAVE_LFORTRAN_LINK yes)
+endif()
+if (WITH_MACHO)
+    find_package(MACHO REQUIRED)
+    set(HAVE_LFORTRAN_MACHO yes)
+endif()
+if (WITH_UNWIND)
+    set(HAVE_LFORTRAN_UNWIND yes)
+endif()
+
 if (WITH_LLVM)
     set(WITH_ZSTD yes CACHE BOOL "Detect (and require) static libzstd for llvm")
     if(WITH_ZSTD)
@@ -141,6 +221,9 @@ if (WITH_LLVM)
     endif()
 
     set(LFORTRAN_LLVM_COMPONENTS core support mcjit orcjit native asmparser asmprinter)
+    if (WITH_LLVM_STACKTRACE)
+        list(APPEND LFORTRAN_LLVM_COMPONENTS symbolize object)
+    endif()
     find_package(LLVM REQUIRED)
     message(STATUS "Found LLVM ${LLVM_PACKAGE_VERSION}")
     message(STATUS "Using LLVMConfig.cmake in: ${LLVM_DIR}")
@@ -194,6 +277,21 @@ if (WITH_LLVM)
     endif()
     unset(LFORTRAN_LLVM_COMPONENTS)
 
+    if (WITH_MLIR)
+        add_library(p::mlir INTERFACE IMPORTED)
+        find_package(MLIR REQUIRED CONFIG)
+        set(mlir_libs
+                MLIRIR
+                MLIRLLVMToLLVMIRTranslation
+                MLIRBuiltinToLLVMIRTranslation
+                MLIRLLVMDialect
+                MLIROpenMPToLLVMIRTranslation
+                MLIROpenMPDialect
+            )
+        set_property(TARGET p::mlir PROPERTY INTERFACE_LINK_LIBRARIES ${mlir_libs})
+        set(HAVE_LFORTRAN_MLIR yes)
+    endif()
+
     add_library(p::llvm INTERFACE IMPORTED)
     set_property(TARGET p::llvm PROPERTY INTERFACE_INCLUDE_DIRECTORIES
         ${LLVM_INCLUDE_DIRS})
@@ -213,6 +311,9 @@ if (WITH_LLVM)
         message(STATUS "ZLIB LIBRARY PATH: ${mypath}")
     endif()
     set(HAVE_LFORTRAN_LLVM yes)
+    if(CMAKE_SYSTEM_NAME MATCHES "Linux" AND LLVM_VERSION_MAJOR GREATER_EQUAL 12)
+        set(WITH_LIBUNWIND_FORCE yes)
+    endif()
 endif()
 
 # XEUS (Fortran kernel)
@@ -244,10 +345,12 @@ if (WITH_XEUS)
             PATTERN "*.in" EXCLUDE)
 endif()
 
-# JSON
+# JSON OR LSP (`conda install rapidjson`)
 set(WITH_JSON no CACHE BOOL "Build with JSON support")
+set(WITH_LSP no CACHE BOOL "Build with LSP support")
 if (WITH_JSON)
     find_package(RapidJSON REQUIRED)
+    set(HAVE_LFORTRAN_RAPIDJSON yes)
 endif()
 
 set(HAVE_LFORTRAN_DEMANGLE yes
@@ -264,58 +367,16 @@ if (WITH_FMT)
     find_package(fmt)
 endif()
 
-# Stacktrace
-set(WITH_UNWIND no
-    CACHE BOOL "Build with unwind support")
-set(WITH_BFD no
-    CACHE BOOL "Build with BFD support")
-set(WITH_DWARFDUMP no
-    CACHE BOOL "Build with dwarfdump support")
-set(WITH_LINKH no
-    CACHE BOOL "Build with link.h support")
-set(WITH_MACHO no
-    CACHE BOOL "Build with mach-o support")
-set(WITH_STACKTRACE no
-    CACHE BOOL "Build with stacktrace support (requires binutils-dev)")
-if (WITH_STACKTRACE)
-    set(WITH_UNWIND yes)
-    if (APPLE)
-        set(WITH_MACHO yes)
-        if (NOT WITH_BFD)
-            set(WITH_DWARFDUMP yes)
-        endif()
-    else()
-        set(WITH_LINKH yes)
-        set(WITH_BFD yes)
-    endif()
-    set(HAVE_LFORTRAN_STACKTRACE yes)
+set(WITH_BENCHMARKS no
+    CACHE BOOL "Build benchmarks")
+
+set(WITH_LIBUNWIND no
+    CACHE BOOL "Build with libunwind (required libunwind-dev)")
+if (WITH_LIBUNWIND_FORCE)
+    set(WITH_LIBUNWIND yes)
 endif()
-if (WITH_RUNTIME_STACKTRACE)
-    set(WITH_UNWIND yes)
-    if (APPLE)
-        set(WITH_MACHO yes)
-    else()
-        set(WITH_LINKH yes)
-    endif()
-    set(HAVE_RUNTIME_STACKTRACE yes)
-endif()
-if (WITH_BFD)
-    find_package(BFD REQUIRED)
-    set(HAVE_LFORTRAN_BFD yes)
-endif()
-if (WITH_DWARFDUMP)
-    set(HAVE_LFORTRAN_DWARFDUMP yes)
-endif()
-if (WITH_LINKH)
-    find_package(LINKH REQUIRED)
-    set(HAVE_LFORTRAN_LINK yes)
-endif()
-if (WITH_MACHO)
-    find_package(MACHO REQUIRED)
-    set(HAVE_LFORTRAN_MACHO yes)
-endif()
-if (WITH_UNWIND)
-    set(HAVE_LFORTRAN_UNWIND yes)
+if (WITH_LIBUNWIND)
+    find_package(libunwind REQUIRED)
 endif()
 
 set(WITH_KOKKOS no CACHE BOOL "Detect Kokkos location for cpp backend")
@@ -348,15 +409,20 @@ message("LFORTRAN_BUILD_TO_WASM: ${LFORTRAN_BUILD_TO_WASM}")
 message("WITH_STACKTRACE: ${WITH_STACKTRACE}")
 message("WITH_RUNTIME_STACKTRACE: ${WITH_RUNTIME_STACKTRACE}")
 message("WITH_UNWIND: ${WITH_UNWIND}")
+message("WITH_LIBUNWIND: ${WITH_LIBUNWIND}")
 message("WITH_BFD: ${WITH_BFD}")
+message("WITH_LLVM_STACKTRACE: ${WITH_LLVM_STACKTRACE}")
 message("WITH_DWARFDUMP: ${WITH_DWARFDUMP}")
 message("WITH_LINKH: ${WITH_LINKH}")
 message("WITH_MACHO: ${WITH_MACHO}")
 message("HAVE_LFORTRAN_DEMANGLE: ${HAVE_LFORTRAN_DEMANGLE}")
 message("WITH_LLVM: ${WITH_LLVM}")
+message("WITH_MLIR: ${WITH_MLIR}")
 message("WITH_XEUS: ${WITH_XEUS}")
 message("WITH_JSON: ${WITH_JSON}")
+message("WITH_LSP: ${WITH_LSP}")
 message("WITH_FMT: ${WITH_FMT}")
+message("WITH_BENCHMARKS: ${WITH_BENCHMARKS}")
 message("WITH_LFORTRAN_BINARY_MODFILES: ${WITH_LFORTRAN_BINARY_MODFILES}")
 message("WITH_RUNTIME_LIBRARY: ${WITH_RUNTIME_LIBRARY}")
 message("WITH_WHEREAMI: ${WITH_WHEREAMI}")
@@ -365,6 +431,7 @@ message("WITH_TARGET_AARCH64: ${WITH_TARGET_AARCH64}")
 message("WITH_TARGET_X86: ${WITH_TARGET_X86}")
 message("WITH_TARGET_WASM: ${WITH_TARGET_WASM}")
 message("WITH_KOKKOS: ${WITH_KOKKOS}")
+message("WITH_CCACHE: ${WITH_CCACHE}")
 message("CXXFLAGS: ${CMAKE_CXX_FLAGS}")
 message("CFLAGS: ${CMAKE_C_FLAGS}")
 
@@ -392,7 +459,7 @@ if (WITH_RUNTIME_LIBRARY)
     "-DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}"
     "-DCMAKE_PREFIX_PATH=\"${CMAKE_PREFIX_PATH}\""
     "-DCMAKE_INSTALL_LIBDIR=${CMAKE_INSTALL_LIBDIR}"
-    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
+#    "-DCMAKE_VERBOSE_MAKEFILE:BOOL=${CMAKE_VERBOSE_MAKEFILE}"
     "-DCMAKE_Fortran_COMPILER=${LFORTRAN_PATH}"
     "-DLFORTRAN_NESTED_BUILD=yes"
     "${CMAKE_SOURCE_DIR}/src/runtime/"
@@ -412,7 +479,7 @@ if (WITH_RUNTIME_LIBRARY)
   add_subdirectory(cmake/postinstall)
 
   install(CODE "set(CMAKE_COMMAND \"${CMAKE_COMMAND}\")")
-  install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
+#  install(CODE "set(CMAKE_VERBOSE_MAKEFILE \"${CMAKE_VERBOSE_MAKEFILE}\")")
   install(CODE "set(CMAKE_SOURCE_DIR \"${CMAKE_SOURCE_DIR}\")")
   install(CODE "set(CMAKE_BINARY_DIR \"${CMAKE_BINARY_DIR}\")")
 endif()

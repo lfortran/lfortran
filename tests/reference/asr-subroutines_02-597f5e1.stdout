@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -42,6 +46,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -74,6 +82,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -101,6 +110,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -116,6 +129,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -148,6 +165,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -175,6 +193,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -190,6 +212,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -240,6 +266,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -256,6 +286,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     subroutines_02
@@ -264,11 +298,13 @@
                         (Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 j)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         2 f
@@ -278,10 +314,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i)
-                        (Var 2 j)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i)
+                            (Var 2 j)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -317,10 +357,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i)
-                        (Var 2 j)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i)
+                            (Var 2 j)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -356,10 +400,14 @@
                         ()
                     )
                     (Print
-                        [(Var 2 i)
-                        (Var 2 j)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i)
+                            (Var 2 j)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare

@@ -2,8 +2,10 @@
 Generate C++ AST node definitions from an ASDL description.
 """
 
-import sys
 import os
+from pathlib import Path
+import sys
+
 import asdl
 
 
@@ -114,6 +116,9 @@ def convert_type(asdl_type, seq, opt, mod_name):
         assert not seq
     elif asdl_type == "void":
         type_ = "void *"
+        assert not seq
+    elif asdl_type == "location":
+        type_ = "Location*"
         assert not seq
     else:
         type_ = asdl_type + "_t"
@@ -244,7 +249,10 @@ class ASTNodeVisitor(ASDLVisitor):
             else:
                 seq = ""
             self.emit("%s m_%s;%s" % (type_, f.name, seq), 2)
-            args.append("%s a_%s" % (type_, f.name))
+            if f.type == "location":
+                args.append("%s a_%s = nullptr" % (type_, f.name))
+            else:
+                args.append("%s a_%s" % (type_, f.name))
             lines.append("n->m_%s = a_%s;" % (f.name, f.name))
             if f.name in ["global_scope", "symtab"]:
                 lines.append("a_%s->asr_owner = (asr_t*)n;" % (f.name))
@@ -334,6 +342,186 @@ class ASTVisitorVisitor2(ASDLVisitor):
                 self.emit("""void visit_%s(const %s_t & /* x */) { throw LCompilersException("visit_%s() not implemented"); }""" \
                         % (type_.name, type_.name, type_.name), 2)
 
+class DefaultLookupNameVisitor(ASDLVisitor):
+
+    def visitModule(self, mod):
+        self.emit("/" + "*"*78 + "/")
+        self.emit("// Walk Visitor base class")
+        self.emit("")
+        self.emit("template <class StructType>")
+        self.emit("class DefaultLookupNameVisitor : public BaseVisitor<StructType>")
+        self.emit("{")
+        self.emit("private:")
+        self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
+        self.emit("public:")
+        self.emit("uint16_t pos;", 1)
+        self.emit("uint32_t min_span = UINT32_MAX;", 1)
+        self.emit("ASR::asr_t* node_to_return = nullptr;", 1)
+        self.emit("bool test_loc_and_set_span(Location loc) {", 1)
+        self.emit("uint32_t first = loc.first;", 2)
+        self.emit("uint32_t last = loc.last;", 2)
+        self.emit("if (first <= pos && pos <= last) {", 2)
+        self.emit("uint32_t span = last - first;", 3)
+        self.emit("if (span < min_span) {", 3)
+        self.emit("min_span = span;", 4)
+        self.emit("return true;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("return false;", 2)
+        self.emit("}", 1)
+        self.emit("void handle_symbol(const symbol_t* sym) {", 1)
+        self.emit("switch(sym->type) {", 2)
+        self.emit("case ASR::symbolType::Program: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Program_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Module: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Module_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Function: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Function_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::GenericProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((GenericProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::CustomOperator: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((CustomOperator_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ExternalSymbol: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ExternalSymbol_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Struct: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Struct_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Enum: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Enum_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Union: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Union_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Variable: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::ClassProcedure: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((ClassProcedure_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::AssociateBlock: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((AssociateBlock_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Block: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Block_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Requirement: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Requirement_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("case ASR::symbolType::Template: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((Template_t*)sym);", 4)
+        self.emit("return;", 4)
+        self.emit("}", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        self.emit("static inline const ASR::symbol_t *symbol_get_past_external_(ASR::symbol_t *f) {", 1)
+        self.emit("if (f->type == ASR::symbolType::ExternalSymbol) {", 2)
+        self.emit("ASR::ExternalSymbol_t *e = ASR::down_cast<ASR::ExternalSymbol_t>(f);", 3)
+        self.emit("LCOMPILERS_ASSERT(!ASR::is_a<ASR::ExternalSymbol_t>(*e->m_external));", 3)
+        self.emit("return e->m_external;", 3)
+        self.emit("} else {", 2)
+        self.emit("return f;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+        super(DefaultLookupNameVisitor, self).visitModule(mod)
+        self.emit("};")
+
+    def visitType(self, tp):
+        if not (isinstance(tp.value, asdl.Sum) and
+                is_simple_sum(tp.value)):
+            super(DefaultLookupNameVisitor, self).visitType(tp, tp.name)
+
+    def visitProduct(self, prod, name):
+        self.make_visitor(name, prod.fields)
+
+    def visitConstructor(self, cons, _):
+        self.make_visitor(cons.name, cons.fields)
+
+    def make_visitor(self, name, fields):
+        # if (test_loc_and_set_span(x.base.base.loc)) {
+        #     node_to_return = (ASR::asr_t*) &x;
+        # }
+        self.emit("void visit_%s(const %s_t &x) {" % (name, name), 1)
+        self.used = False
+        have_body = False
+        have_symbol = False
+        sym_field_name = ""
+        for field in fields:
+            if ( not have_symbol and field.type == "symbol" and field.seq == False):
+                have_symbol = True
+                sym_field_name = field.name
+            self.visitField(field)
+        if not self.used:
+            # Note: a better solution would be to change `&x` to `& /* x */`
+            # above, but we would need to change emit to return a string.
+            self.emit("if ((bool&)x) { } // Suppress unused warning", 2)
+        if name in products:
+            self.emit("if (test_loc_and_set_span(x.loc)) {", 2)
+        else:
+            self.emit("if (test_loc_and_set_span(x.base.base.loc)) {", 2)
+        if ( have_symbol and name != "Variable" ):
+            self.emit(f"self().handle_symbol(self().symbol_get_past_external_(x.m_{sym_field_name}));", 3)
+        else:
+            self.emit("node_to_return = (ASR::asr_t*) &x;", 3)
+        self.emit("}", 2)
+        self.emit("}", 1)
+
+    def visitField(self, field):
+        if (field.type not in asdl.builtin_types and
+            field.type not in self.data.simple_types):
+            level = 2
+            if field.seq:
+                self.used = True
+                self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
+                if field.type in products:
+                    self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
+
+                else:
+                    if field.type != "symbol":
+                        self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
+                self.emit("}", level)
+            else:
+                if field.type in products:
+                    self.used = True
+                    if field.opt:
+                        self.emit("if (x.m_%s)" % field.name, 2)
+                        level = 3
+                    if field.opt:
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+                    else:
+                        self.emit("self().visit_%s(x.m_%s);" % (field.type, field.name), level)
+                else:
+                    if field.type != "symbol":
+                        self.used = True
+                        if field.opt:
+                            self.emit("if (x.m_%s)" % field.name, 2)
+                            level = 3
+                        self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
+        elif field.type == "symbol_table" and field.name in["symtab",
+                "global_scope"]:
+            self.used = True
+            self.emit("for (auto &a : x.m_%s->get_scope()) {" % field.name, 2)
+            self.emit(  "this->visit_symbol(*a.second);", 3)
+            self.emit("}", 2)
 
 class ASTWalkVisitorVisitor(ASDLVisitor):
 
@@ -347,6 +535,7 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
         self.emit("private:")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("public:")
+        self.emit("    bool visit_compile_time_value = true;")
         super(ASTWalkVisitorVisitor, self).visitModule(mod)
         self.emit("};")
 
@@ -390,7 +579,10 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
                 if field.type in products:
                     self.used = True
                     if field.opt:
-                        self.emit("if (x.m_%s)" % field.name, 2)
+                        if field.name == "value":
+                            self.emit("if (x.m_%s && visit_compile_time_value)" % field.name, 2)
+                        else:
+                            self.emit("if (x.m_%s)" % field.name, 2)
                         level = 3
                     if field.opt:
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
@@ -400,7 +592,10 @@ class ASTWalkVisitorVisitor(ASDLVisitor):
                     if field.type != "symbol":
                         self.used = True
                         if field.opt:
-                            self.emit("if (x.m_%s)" % field.name, 2)
+                            if field.name == "value":
+                                self.emit("if (x.m_%s && visit_compile_time_value)" % field.name, 2)
+                            else:
+                                self.emit("if (x.m_%s)" % field.name, 2)
                             level = 3
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
         elif field.type == "symbol_table" and field.name in["symtab",
@@ -531,7 +726,9 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         self.emit("private:")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("public:")
-        self.emit("    ASR::expr_t** current_expr;")
+        self.emit("    bool call_replacer_on_value=true;")
+        self.emit("    bool visit_expr_after_replacement=true;")
+        self.emit("    ASR::expr_t** current_expr=nullptr;")
         self.emit("    SymbolTable* current_scope=nullptr;")
         self.emit("")
         self.emit("    void call_replacer() {}")
@@ -570,6 +767,10 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
         if is_stmt_present and name not in ("Assignment", "ForAllSingle", "FileRead", "FileWrite"):
             self.emit("    %s_t& xx = const_cast<%s_t&>(x);" % (name, name), 1)
         self.used = False
+        if name != "call_arg":
+            self.insert_call_replacer_on_value_check = True
+        else:
+            self.insert_call_replacer_on_value_check = False
 
         if is_symtab_present:
             self.emit("SymbolTable* current_scope_copy = current_scope;", 2)
@@ -586,11 +787,16 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
             self.emit("current_scope = current_scope_copy;", 2)
         self.emit("}", 1)
 
-    def insert_call_replacer_code(self, name, level, index=""):
-        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level)
-        self.emit("self().call_replacer();", level)
-        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
+    def insert_call_replacer_code(self, name, level, opt, index=""):
+        one_or_zero = (name == "value" or name == "symbolic_value") and opt and self.insert_call_replacer_on_value_check
+        if one_or_zero:
+            self.emit("if (call_replacer_on_value) {", level)
+        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+        self.emit("current_expr = const_cast<ASR::expr_t**>(&(x.m_%s%s));" % (name, index), level + one_or_zero)
+        self.emit("self().call_replacer();", level + one_or_zero)
+        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+        if one_or_zero:
+            self.emit("}", level)
         self.current_expr_copy_variable_count += 1
 
     def visitField(self, field):
@@ -605,14 +811,14 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                 self.emit("for (size_t i=0; i<x.n_%s; i++) {" % field.name, level)
                 if field.type in products:
                     if field.type == "expr":
-                        self.insert_call_replacer_code(field.name, level + 1, "[i]")
-                        self.emit("if( x.m_%s[i] )" % (field.name), level)
+                        self.insert_call_replacer_code(field.name, level + 1, field.opt, "[i]")
+                        self.emit("if( x.m_%s[i] && visit_expr_after_replacement )" % (field.name), level)
                     self.emit("    self().visit_%s(x.m_%s[i]);" % (field.type, field.name), level)
                 else:
                     if field.type != "symbol":
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level + 1, "[i]")
-                            self.emit("if( x.m_%s[i] )" % (field.name), level + 1)
+                            self.insert_call_replacer_code(field.name, level + 1, field.opt, "[i]")
+                            self.emit("if( x.m_%s[i] && visit_expr_after_replacement )" % (field.name), level + 1)
                         self.emit("    self().visit_%s(*x.m_%s[i]);" % (field.type, field.name), level)
                 self.emit("}", level)
             else:
@@ -622,8 +828,8 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                         self.emit("if (x.m_%s) {" % field.name, 2)
                         level = 3
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level)
-                            self.emit("if( x.m_%s )" % (field.name), level)
+                            self.insert_call_replacer_code(field.name, level, field.opt)
+                            self.emit("if( x.m_%s && visit_expr_after_replacement )" % (field.name), level)
                     if field.opt:
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
                         self.emit("}", 2)
@@ -636,8 +842,8 @@ class CallReplacerOnExpressionsVisitor(ASDLVisitor):
                             self.emit("if (x.m_%s) {" % field.name, 2)
                             level = 3
                         if field.type == "expr":
-                            self.insert_call_replacer_code(field.name, level)
-                            self.emit("if( x.m_%s )" % (field.name), level)
+                            self.insert_call_replacer_code(field.name, level, field.opt)
+                            self.emit("if( x.m_%s && visit_expr_after_replacement )" % (field.name), level)
                         self.emit("self().visit_%s(*x.m_%s);" % (field.type, field.name), level)
                         if field.opt:
                             self.emit("}", 2)
@@ -1093,7 +1299,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 if (field.type != "call_arg" and
                     field.type != "array_index" and
                     field.type != "alloc_arg" and
-                    field.type != "dimension"):
+                    field.type != "dimension" and
+                    field.type != "do_loop_head"):
                     pointer_char = '*'
                 self.emit("Vec<%s_t%s> m_%s;" % (field.type, pointer_char, field.name), level)
                 self.emit("m_%s.reserve(al, x->n_%s);" % (field.name, field.name), level)
@@ -1136,6 +1343,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                     self.emit("    dim_copy.m_start = self().duplicate_expr(x->m_%s[i].m_start);"%(field.name), level)
                     self.emit("    dim_copy.m_length = self().duplicate_expr(x->m_%s[i].m_length);"%(field.name), level)
                     self.emit("    m_%s.push_back(al, dim_copy);" % (field.name), level)
+                elif field.type == "do_loop_head":
+                    self.emit("    ASR::do_loop_head_t head;", level)
+                    self.emit("    head.loc = x->m_head[i].loc;", level)
+                    self.emit("    head.m_v = duplicate_expr(x->m_head[i].m_v);", level)
+                    self.emit("    head.m_start = duplicate_expr(x->m_head[i].m_start);", level)
+                    self.emit("    head.m_end = duplicate_expr(x->m_head[i].m_end);", level)
+                    self.emit("    head.m_increment = duplicate_expr(x->m_head[i].m_increment);", level)
+                    self.emit("    m_%s.push_back(al, head);" % (field.name), level)
                 else:
                     self.emit("    m_%s.push_back(al, self().duplicate_%s(x->m_%s[i]));" % (field.name, field.type, field.name), level)
                 self.emit("}", level)
@@ -1184,6 +1399,7 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
         self.emit("template <class StructType>")
         self.emit("class BaseExprReplacer {")
         self.emit("public:")
+        self.emit("    bool call_replacer_on_value=true;")
         self.emit("    StructType& self() { return static_cast<StructType&>(*this); }")
         self.emit("")
         self.emit("    ASR::expr_t** current_expr;")
@@ -1273,7 +1489,8 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
             field.type == "symbol" or
             field.type == "call_arg" or
             field.type == "ttype" or
-            field.type == "dimension"):
+            field.type == "dimension" or
+            field.type == "array_index"):
             level = 2
             if field.seq:
                 self.used = True
@@ -1286,6 +1503,16 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
                     self.emit("    }", level)
                     self.current_expr_copy_variable_count += 1
+                elif field.type == "array_index":
+                    attrs = ["left", "right", "step"]
+                    for attr in attrs:
+                        self.emit("    if (x->m_%s[i].m_%s != nullptr) {" % (field.name, attr), level)
+                        self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    current_expr = &(x->m_%s[i].m_%s);" % (field.name, attr), level + 1)
+                        self.emit("    self().replace_expr(x->m_%s[i].m_%s);"%(field.name, attr), level + 1)
+                        self.emit("    current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                        self.emit("    }", level)
+                        self.current_expr_copy_variable_count += 1
                 elif field.type == "dimension":
                     self.emit("    ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
                     self.emit("    current_expr = &(x->m_%s[i].m_length);" % (field.name), level)
@@ -1311,11 +1538,27 @@ class ExprBaseReplacerVisitor(ASDLVisitor):
                     if field.type == "ttype":
                         self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
                     else:
-                        self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level)
-                        self.emit("current_expr = &(x->m_%s);" % (field.name), level)
-                        self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level)
-                        self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level)
-                        self.current_expr_copy_variable_count += 1
+                        if field.type == "array_index":
+                            attrs = ["left", "right", "step"]
+                            for attr in attrs:
+                                self.emit("if (x->m_%s.m_%s != nullptr) {" % (field.name, attr), level)
+                                self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("current_expr = &(x->m_%s.m_%s);" % (field.name, attr), level + 1)
+                                self.emit("self().replace_expr(x->m_%s.m_%s);"%(field.name, attr), level + 1)
+                                self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + 1)
+                                self.emit("}", level)
+                                self.current_expr_copy_variable_count += 1
+                        else:
+                            one_or_zero = field.name == "value"
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("if (call_replacer_on_value) {", level)
+                            self.emit("ASR::expr_t** current_expr_copy_%d = current_expr;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            self.emit("current_expr = &(x->m_%s);" % (field.name), level + one_or_zero)
+                            self.emit("self().replace_%s(x->m_%s);" % (field.type, field.name), level + one_or_zero)
+                            self.emit("current_expr = current_expr_copy_%d;" % (self.current_expr_copy_variable_count), level + one_or_zero)
+                            if field.name == "value" or field.name == "symbolic_value":
+                                self.emit("}", level)
+                            self.current_expr_copy_variable_count += 1
 
 class StmtBaseReplacerVisitor(ASDLVisitor):
 
@@ -1466,7 +1709,7 @@ class PickleVisitorVisitor(ASDLVisitor):
             "Integer",
             "Real",
             "Complex",
-            "Character",
+            "String",
             "Logical",
             "Var",
         ]
@@ -1493,8 +1736,10 @@ class PickleVisitorVisitor(ASDLVisitor):
                     self.emit(    's.append(" ");', 2)
         self.used = False
         for n, field in enumerate(fields):
+            if field.type == "location":
+                continue
             self.visitField(field, cons)
-            if n < len(fields) - 1 and field.type != "void":
+            if n < len(fields) - 1 and field.type != "void" and fields[n+1].type != "location":
                 if name not in symbol:
                     self.emit(    'if(indent) s.append("\\n" + indented);', 2)
                     self.emit(    'else s.append(" ");', 2)
@@ -1677,6 +1922,8 @@ class PickleVisitorVisitor(ASDLVisitor):
                         self.emit('s.append(self().convert_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "impure_intrinsic_id":
                         self.emit('s.append(self().convert_impure_intrinsic_id(x.m_%s));' % field.name, 2)
+                    elif field.name == "sub_intrinsic_id":
+                        self.emit('s.append(self().convert_sub_intrinsic_id(x.m_%s));' % field.name, 2)
                     elif field.name == "arr_intrinsic_id":
                         self.emit('s.append(self().convert_array_intrinsic_id(x.m_%s));' % field.name, 2)
                     else:
@@ -1803,8 +2050,10 @@ class JsonVisitorVisitor(ASDLVisitor):
         if len(fields) > 0:
             self.emit('inc_indent(); s.append("\\n" + indtd);', 2)
             for n, field in enumerate(fields):
+                if field.type == "location":
+                    continue
                 self.visitField(field, cons)
-                if n < len(fields) - 1:
+                if n < len(fields) - 1 and fields[n+1].type!="location":
                     self.emit('s.append(",\\n" + indtd);', 2)
             self.emit('dec_indent(); s.append("\\n" + indtd);', 2)
         self.emit(    's.append("}");', 2)
@@ -2151,6 +2400,14 @@ class SerializationVisitorVisitor(ASDLVisitor):
                 self.emit('self().write_float64(x.m_%s);' % field.name, 2)
             elif field.type == "void":
                 assert True
+            elif field.type == "location":
+                # self.emit("if (x.m_%s != nullptr) {" % field.name, 2)
+                # self.emit('self().write_int64(x.m_%s->first);' % field.name, 3)
+                # self.emit('self().write_int64(x.m_%s->last);' % field.name, 3)
+                # self.emit("} else {", 2)
+                self.emit('self().write_int64(0);', 2)
+                self.emit('self().write_int64(0);', 2)
+                # self.emit("}", 2)
             elif field.type in self.data.simple_types:
                 if field.opt:
                     raise Exception("Unimplemented opt for field type: " + field.type);
@@ -2174,8 +2431,9 @@ class DeserializationVisitorVisitor(ASDLVisitor):
         self.emit("public:")
         self.emit(  "Allocator &al;", 1)
         self.emit(  "bool load_symtab_id;", 1)
+        self.emit(  "uint32_t offset = 0;", 1)
         self.emit(  "std::map<uint64_t,SymbolTable*> id_symtab_map;", 1)
-        self.emit(  r"DeserializationBaseVisitor(Allocator &al, bool load_symtab_id) : al{al}, load_symtab_id{load_symtab_id} {}", 1)
+        self.emit(  r"DeserializationBaseVisitor(Allocator &al, bool load_symtab_id, uint32_t offset) : al{al}, load_symtab_id{load_symtab_id}, offset{offset} {}", 1)
         self.emit_deserialize_node();
         self.mod = mod
         super(DeserializationVisitorVisitor, self).visitModule(mod)
@@ -2417,6 +2675,12 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     elif f.type == "void":
                         lines.append("void *m_%s = self().read_void(m_n_data);" % (f.name))
                         args.append("m_%s" % (f.name))
+                    elif f.type == "location":
+                        lines.append("Location* m_%s;"% f.name)
+                        lines.append("m_%s = al.make_new<Location>();"% f.name)
+                        lines.append("m_%s->first = self().read_int64();"% f.name)
+                        lines.append("m_%s->last = self().read_int64();"% f.name)
+                        args.append("m_%s" % (f.name))
                     else:
                         print(f.type)
                         assert False
@@ -2450,13 +2714,8 @@ class DeserializationVisitorVisitor(ASDLVisitor):
                     args.append("m_%s" % (f.name))
 
         self.emit(    'Location loc;', 2)
-        self.emit(    'loc.first = self().read_int64();', 2)
-        self.emit(    'loc.last = self().read_int64();', 2)
-        if subs["lcompiler"] == "lfortran":
-            # Set the location to 0 for now, since we do not yet
-            # support multiple files
-            self.emit(    'loc.first = 0;', 2)
-            self.emit(    'loc.last = 0;', 2)
+        self.emit(    'loc.first = self().read_int64() + offset;', 2)
+        self.emit(    'loc.last = self().read_int64() + offset;', 2)
         for line in lines:
             self.emit(line, 2)
         self.emit(    'return %s::make_%s_t(%s);' % (subs["MOD"], name, ", ".join(args)), 2)
@@ -2524,6 +2783,8 @@ static inline ASR::ttype_t* expr_type0(const ASR::expr_t *f)
             } else if( s->type == ASR::symbolType::Variable ) {
                 return ASR::down_cast<ASR::Variable_t>(s)->m_type;
             } else {
+                // ICE: only Function and Variable have types, this symbol
+                // does not have a type
                 LCOMPILERS_ASSERT_MSG(false, std::to_string(s->type));
             }
             return nullptr;
@@ -2723,10 +2984,68 @@ FOOT = r"""} // namespace LCompilers::%(MOD)s
 #endif // LFORTRAN_%(MOD2)s_H
 """
 
-visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
+HEAD_VISITOR = r"""#pragma once
+
+// Generated by grammar/asdl_cpp.py
+
+#include <libasr/alloc.h>
+#include <libasr/location.h>
+#include <libasr/colors.h>
+#include <libasr/containers.h>
+#include <libasr/exception.h>
+#include <libasr/asr_scopes.h>
+#include <libasr/string_utils.h>
+#include <libasr/asr_base_visitor.h>
+
+
+namespace LCompilers::%(MOD)s {
+"""
+
+HEAD_BASE_VISITOR = r"""#pragma once
+
+// Generated by grammar/asdl_cpp.py
+
+#include <libasr/alloc.h>
+#include <libasr/location.h>
+#include <libasr/colors.h>
+#include <libasr/containers.h>
+#include <libasr/exception.h>
+#include <libasr/asr_scopes.h>
+#include <libasr/string_utils.h>
+
+
+namespace LCompilers::%(MOD)s {
+"""
+
+FOOT_VISITOR = r"""}
+"""
+
+ast_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor,
         ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2,
         ASTWalkVisitorVisitor, TreeVisitorVisitor, PickleVisitorVisitor,
-        JsonVisitorVisitor, SerializationVisitorVisitor, DeserializationVisitorVisitor]
+        JsonVisitorVisitor, SerializationVisitorVisitor,
+        DeserializationVisitorVisitor]
+
+asr_visitors = [ASTNodeVisitor0, ASTNodeVisitor1, ASTNodeVisitor]
+
+asr_base_visitor = [ASTVisitorVisitor1, ASTVisitorVisitor1b, ASTVisitorVisitor2]
+
+asr_visitor_files = [
+        ("serialization", SerializationVisitorVisitor),
+        ("deserialization", DeserializationVisitorVisitor),
+        ("pickle", PickleVisitorVisitor),
+        ("json", JsonVisitorVisitor),
+        ("lookup_name", DefaultLookupNameVisitor),
+        ("tree", TreeVisitorVisitor),
+        ("pass_walk", ASRPassWalkVisitorVisitor),
+        ("expr_stmt_duplicator", ExprStmtDuplicatorVisitor),
+        ("expr_base_replacer", ExprBaseReplacerVisitor),
+        ("stmt_base_replacer", StmtBaseReplacerVisitor),
+        ("expr_call_replacer", CallReplacerOnExpressionsVisitor),
+        ("expr_type", ExprTypeVisitor),
+        ("expr_value", ExprValueVisitor),
+        ("walk", ASTWalkVisitorVisitor),
+    ]
 
 
 def main(argv):
@@ -2763,32 +3082,37 @@ def main(argv):
     fp = open(out_file, "w", encoding="utf-8")
     try:
         fp.write(HEAD % subs)
-        for visitor in visitors:
-            visitor(fp, data).visit(mod)
-            fp.write("\n\n")
         if not is_asr:
-            fp.write(FOOT % subs)
-    finally:
-        if not is_asr:
-            fp.close()
-
-    try:
+            for visitor in ast_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
         if is_asr:
-            ASRPassWalkVisitorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprStmtDuplicatorVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            StmtBaseReplacerVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            CallReplacerOnExpressionsVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprTypeVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            ExprValueVisitor(fp, data).visit(mod)
-            fp.write("\n\n")
-            fp.write(FOOT % subs)
+            for visitor in asr_visitors:
+                visitor(fp, data).visit(mod)
+                fp.write("\n\n")
+            asr_path = Path(out_file)
+
+            # asr_base_visitor
+            filename = "base"
+            full_filename = asr_path.with_name(
+                    f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+            with open(full_filename, "w", encoding="utf-8") as f:
+                f.write(HEAD_BASE_VISITOR % subs)
+                for Visitor in asr_base_visitor:
+                    Visitor(f, data).visit(mod)
+                    f.write("\n\n")
+                f.write(FOOT_VISITOR)
+
+            # asr_visitor_files
+            for filename, Visitor in asr_visitor_files:
+                full_filename = asr_path.with_name(
+                        f"{asr_path.stem}_{filename}_visitor{asr_path.suffix}")
+                with open(full_filename, "w", encoding="utf-8") as f:
+                    f.write(HEAD_VISITOR % subs)
+                    Visitor(f, data).visit(mod)
+                    f.write("\n\n")
+                    f.write(FOOT_VISITOR)
+        fp.write(FOOT % subs)
     finally:
         fp.close()
 

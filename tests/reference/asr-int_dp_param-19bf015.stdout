@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             prec2:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -53,6 +61,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             v:
@@ -75,15 +87,23 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     int_dp_param
                     []
                     [(Print
-                        [(Var 2 u)
-                        (Var 2 v)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 u)
+                            (Var 2 v)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

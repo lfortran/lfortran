@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             reldiff:
                                                 (Variable
@@ -47,6 +51,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -81,6 +89,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 absdiff)
@@ -89,6 +98,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Where
                                         (RealCompare
@@ -206,6 +216,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -288,9 +299,13 @@
                                         []
                                     )
                                     (Print
-                                        [(Var 3 reldiff)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 reldiff)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -324,6 +339,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -365,6 +384,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 x)
                                     Public

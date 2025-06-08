@@ -12,7 +12,7 @@ macro(ADDTESTC name)
     add_test(${name} ${PROJECT_BINARY_DIR}/${name})
 endmacro(ADDTESTC)
 
-ADDTESTC(test_cwrapper)
+ADDTESTC(test_cwrapper lfortran_c)
 ADDTEST(test_stacktrace)
 
 set(SRC
@@ -36,10 +36,17 @@ if (WITH_LLVM)
     )
 endif()
 
+if (WITH_LSP)
+    set(SRC_AST ${SRC_AST}
+        test_ast.cpp
+    )
+endif()
+
 
 # Add one main test suite for LFortran, composed of many individual cpp files:
 add_executable(test_lfortran ${SRC})
 target_link_libraries(test_lfortran lfortran_lib p::doctest)
+target_compile_definitions(test_lfortran PRIVATE LFORTRAN_PROJECT_SOURCE_DIR="${CMAKE_SOURCE_DIR}")
 if (HAVE_BUILD_TO_WASM)
     set(WASM_COMPILE_FLAGS "-g0 -fexceptions")
     set(WASM_LINK_FLAGS
@@ -56,5 +63,16 @@ if (WITH_LLVM)
         OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
 
         target_link_options(test_lfortran PRIVATE "LINKER:--export-dynamic")
+    endif()
+endif()
+
+if (WITH_LSP)
+    add_executable(test_asr ${SRC_AST})
+    target_link_libraries(test_asr lfortran_lib p::doctest)
+    add_test(test_asr ${PROJECT_BINARY_DIR}/test_asr)
+    if (CMAKE_SYSTEM_NAME STREQUAL "Linux"
+        OR CMAKE_SYSTEM_NAME STREQUAL "FreeBSD"
+        OR CMAKE_SYSTEM_NAME STREQUAL "OpenBSD")
+        target_link_options(test_asr PRIVATE "LINKER:--export-dynamic")
     endif()
 endif()

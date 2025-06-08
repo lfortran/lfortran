@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f2:
                                 (Variable
@@ -37,6 +41,10 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f3:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f4:
                                 (Variable
@@ -69,6 +81,10 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f5:
@@ -86,6 +102,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f6:
                                 (Variable
@@ -101,6 +121,10 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f7:
@@ -118,6 +142,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f8:
                                 (Variable
@@ -133,6 +161,10 @@
                                     BindC
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -157,6 +189,7 @@
                         (Var 2 f1)
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f2)
@@ -168,6 +201,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f3)
@@ -185,6 +219,7 @@
                             (IntegerConstant 16 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f4)
@@ -202,6 +237,7 @@
                             (IntegerConstant 11 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f5)
@@ -213,6 +249,7 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f6)
@@ -224,6 +261,7 @@
                             (IntegerConstant 64 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f7)
@@ -235,6 +273,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f8)
@@ -246,6 +285,7 @@
                             (IntegerConstant 8 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )]
                     (Var 2 f8)
                     Public

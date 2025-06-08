@@ -12,18 +12,76 @@
                                     (SymbolTable
                                         3
                                         {
+                                            __1__libasr_index_:
+                                                (Variable
+                                                    3
+                                                    __1__libasr_index_
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            __1__libasr_index_1:
+                                                (Variable
+                                                    3
+                                                    __1__libasr_index_1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
                                             __libasr__created__var__0__array_constructor_:
                                                 (Variable
                                                     3
                                                     __libasr__created__var__0__array_constructor_
-                                                    []
+                                                    [strings]
                                                     Local
                                                     ()
                                                     ()
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 1 ())
+                                                            (String 1 (StringLen
+                                                                (ArrayItem
+                                                                    (Var 3 strings)
+                                                                    [(()
+                                                                    (ArrayBound
+                                                                        (Var 3 strings)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        LBound
+                                                                        ()
+                                                                    )
+                                                                    ())]
+                                                                    (String 1 () AssumedLength PointerString)
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -34,19 +92,41 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             __libasr__created__var__1__array_constructor_:
                                                 (Variable
                                                     3
                                                     __libasr__created__var__1__array_constructor_
-                                                    []
+                                                    [strings]
                                                     Local
                                                     ()
                                                     ()
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 1 ())
+                                                            (String 1 (StringLen
+                                                                (ArrayItem
+                                                                    (Var 3 strings)
+                                                                    [(()
+                                                                    (ArrayBound
+                                                                        (Var 3 strings)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        LBound
+                                                                        ()
+                                                                    )
+                                                                    ())]
+                                                                    (String 1 () AssumedLength PointerString)
+                                                                    ColMajor
+                                                                    ()
+                                                                )
+                                                                (Integer 4)
+                                                                ()
+                                                            ) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -56,6 +136,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             place:
@@ -73,6 +157,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             strings:
                                                 (Variable
@@ -85,7 +173,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -1 ())
+                                                            (String 1 () AssumedLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -95,6 +183,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             strings_a:
@@ -108,7 +200,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -119,13 +211,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     get_args_fixed_length_a_array
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (Character 1 -1 ())
+                                                (String 1 () AssumedLength PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -177,7 +273,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -197,7 +293,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (Character 1 -1 ())
+                                                        (String 1 () AssumedLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -211,6 +307,7 @@
                                                 (Var 3 strings)
                                                 (Var 3 strings_a)
                                                 ()
+                                                .false.
                                             )]
                                             [(ExplicitDeallocate
                                                 [(Var 3 __libasr__created__var__0__array_constructor_)]
@@ -224,6 +321,24 @@
                                                 ()
                                                 ()
                                                 ()
+                                            )
+                                            (Assignment
+                                                (Var 3 __1__libasr_index_)
+                                                (ArrayBound
+                                                    (Var 3 __libasr__created__var__0__array_constructor_)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    LBound
+                                                    ()
+                                                )
+                                                ()
+                                                .false.
+                                            )
+                                            (Assignment
+                                                (Var 3 strings)
+                                                (Var 3 __libasr__created__var__0__array_constructor_)
+                                                ()
+                                                .false.
                                             )]
                                         )]
                                         []
@@ -248,11 +363,26 @@
                                             ()
                                             ()
                                             ()
+                                        )
+                                        (Assignment
+                                            (Var 3 __1__libasr_index_1)
+                                            (ArrayBound
+                                                (Var 3 __libasr__created__var__1__array_constructor_)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                (Integer 4)
+                                                LBound
+                                                ()
+                                            )
+                                            ()
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 3 strings)
+                                            (Var 3 __libasr__created__var__1__array_constructor_)
+                                            ()
+                                            .false.
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 3 strings_a)]
                                     )]
                                     ()
                                     Public
@@ -292,7 +422,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 5 ())
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -302,6 +432,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -318,21 +452,16 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "executing modules_35"
-                            (Character 1 20 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (SubroutineCall
                         4 get_args_fixed_length_a_array
                         ()
                         [((Var 4 string))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 4 string)]
                     )]
                 )
         })

@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             m:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             n:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     main
@@ -62,18 +74,17 @@
                         (Var 2 k)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (GoToTarget
                         100
                         100
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "hello"
-                            (Character 1 5 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (GoToTarget
                         200
@@ -89,16 +100,19 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 m)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 n)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 m)

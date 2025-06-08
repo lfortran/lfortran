@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             marks:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     case03
@@ -62,6 +74,7 @@
                         (Var 2 marks)
                         (IntegerConstant 94 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 marks)
@@ -75,12 +88,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
-                                    (Character 1 5 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -93,32 +104,32 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
-                                    (Character 1 7 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 marks)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 2 marks)
@@ -128,6 +139,7 @@
                             (IntegerConstant -1 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Select
                         (Var 2 marks)
@@ -141,12 +153,10 @@
                             )
                             ()
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Pass!"
-                                    (Character 1 5 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                         )
                         (CaseStmt_Range
@@ -159,32 +169,32 @@
                                 (IntegerConstant 38 (Integer 4) Decimal)
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "Failed!"
-                                    (Character 1 7 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Invalid marks"
-                                (Character 1 13 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Your marks are "
-                            (Character 1 15 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Your marks are "
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 marks)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 marks)]
-                        ()
-                        ()
                     )]
                 )
         })

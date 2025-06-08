@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -53,6 +57,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -80,6 +88,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             z:
@@ -124,24 +136,40 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_08
                     []
                     [(Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(Var 2 y)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(Var 2 z)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

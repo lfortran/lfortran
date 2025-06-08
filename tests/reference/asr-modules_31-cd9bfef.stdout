@@ -72,12 +72,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 dependency_tree_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             error:
@@ -91,6 +98,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 error_t
                                                         )
                                                     )
@@ -98,6 +108,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             fpm_dependency_modules_31_dependency_node_t:
@@ -125,6 +139,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -136,6 +154,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 fpm_update_settings
                                                     )
                                                     ()
@@ -143,11 +164,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     cmd_update
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_update_settings
                                         )]
                                         ()
@@ -167,43 +195,95 @@
                                     [(SubroutineCall
                                         7 1_update_dependency
                                         7 1_update
-                                        [((StructInstanceMember
-                                            (ArrayItem
-                                                (StructInstanceMember
-                                                    (Var 7 deps)
-                                                    7 1_dependency_tree_t_dep
-                                                    (Allocatable
-                                                        (Array
-                                                            (StructType
-                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                        [((StringPhysicalCast
+                                            (StructInstanceMember
+                                                (ArrayItem
+                                                    (StructInstanceMember
+                                                        (Var 7 deps)
+                                                        7 1_dependency_tree_t_dep
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
-                                                            [(()
-                                                            ())]
-                                                            DescriptorArray
                                                         )
+                                                        ()
                                                     )
+                                                    [(()
+                                                    (Var 7 ii)
+                                                    ())]
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        7 fpm_dependency_modules_31_dependency_node_t
+                                                    )
+                                                    ColMajor
                                                     ()
                                                 )
-                                                [(()
-                                                (Var 7 ii)
-                                                ())]
-                                                (StructType
-                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                7 1_dependency_config_t_name
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
-                                                ColMajor
                                                 ()
                                             )
-                                            7 1_dependency_config_t_name
+                                            DescriptorString
+                                            PointerString
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (String 1 (StringLen
+                                                    (StructInstanceMember
+                                                        (ArrayItem
+                                                            (StructInstanceMember
+                                                                (Var 7 deps)
+                                                                7 1_dependency_tree_t_dep
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
+                                                                            7 fpm_dependency_modules_31_dependency_node_t
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                ()
+                                                            )
+                                                            [(()
+                                                            (Var 7 ii)
+                                                            ())]
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                                            )
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        7 1_dependency_config_t_name
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (Integer 4)
+                                                    ()
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))
                                         ((Var 7 error))]
                                         (Var 7 deps)
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 7 error)]
                                     )]
                                     ()
                                     Public
@@ -257,6 +337,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -268,12 +352,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -281,6 +369,7 @@
                                     []
                                     [working_dir
                                     verbose]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -309,6 +398,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             fetch_only:
                                                 (Variable
@@ -325,6 +418,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -337,7 +434,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 5 ())
+                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -348,6 +445,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_update_settings
@@ -355,6 +456,7 @@
                                     [name
                                     fetch_only
                                     clean]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -389,12 +491,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             path:
@@ -407,12 +513,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -420,6 +530,7 @@
                                     []
                                     [name
                                     path]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -454,6 +565,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             proj_dir:
                                                 (Variable
@@ -465,12 +580,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             revision:
@@ -483,12 +602,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             update:
@@ -512,6 +635,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     dependency_node_t
@@ -520,6 +647,7 @@
                                     revision
                                     done
                                     update]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -543,12 +671,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             dep:
@@ -563,6 +695,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 dependency_node_t
                                                             )
                                                             [(()
@@ -575,6 +710,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             dep_dir:
                                                 (Variable
@@ -586,12 +725,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ndep:
@@ -609,6 +752,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -624,6 +771,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             update:
@@ -659,6 +810,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     dependency_tree_t
@@ -669,6 +824,7 @@
                                     ndep
                                     dep
                                     cache]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -692,18 +848,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     error_t
                                     []
                                     [message]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -728,6 +889,9 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 error_t
                                                         )
                                                     )
@@ -735,6 +899,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             name:
@@ -746,11 +914,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             self:
@@ -762,7 +934,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         9 dependency_tree_t
                                                     )
                                                     ()
@@ -770,16 +945,26 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     update_dependency
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             9 dependency_tree_t
                                         )
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Allocatable
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 9 error_t
                                             )
                                         )]
@@ -817,6 +1002,16 @@
                     (SymbolTable
                         2
                         {
+                            1_dependency_config_t:
+                                (ExternalSymbol
+                                    2
+                                    1_dependency_config_t
+                                    9 dependency_config_t
+                                    fpm_dependency_modules_31
+                                    []
+                                    dependency_config_t
+                                    Public
+                                ),
                             cmd_update:
                                 (ExternalSymbol
                                     2
@@ -825,16 +1020,6 @@
                                     fpm_cmd_update_modules_31
                                     []
                                     cmd_update
-                                    Public
-                                ),
-                            dependency_config_t:
-                                (ExternalSymbol
-                                    2
-                                    dependency_config_t
-                                    9 dependency_config_t
-                                    fpm_dependency_modules_31
-                                    []
-                                    dependency_config_t
                                     Public
                                 ),
                             dependency_tree_t:
@@ -881,12 +1066,10 @@
                     modules_31
                     [fpm_cmd_update_modules_31]
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_31 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

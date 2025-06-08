@@ -12,16 +12,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    len_trim
-                                                    6 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
-                                                ),
                                             length:
                                                 (Variable
                                                     3
@@ -37,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             line:
                                                 (Variable
@@ -47,11 +41,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             pattern:
@@ -63,22 +61,16 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    13 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             strout:
                                                 (Variable
@@ -90,23 +82,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(Var 3 length)
                                                         (StringLen
-                                                            (FunctionCall
-                                                                3 trim
-                                                                ()
-                                                                [((Var 3 line))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    3 len_trim
-                                                                    ()
-                                                                    [((Var 3 line))]
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    ()
-                                                                ))
-                                                                ()
+                                                            (IntrinsicElementalFunction
+                                                                StringTrim
+                                                                [(Var 3 line)]
+                                                                0
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -115,30 +99,49 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    trim
-                                                    6 trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    trim
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     atleast
                                     (FunctionType
-                                        [(Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 4)
-                                        (Character 1 -1 ())]
-                                        (Character 1 1 ())
+                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 (IntrinsicElementalFunction
+                                            Max
+                                            [(FunctionParam
+                                                1
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            (StringLen
+                                                (IntrinsicElementalFunction
+                                                    StringTrim
+                                                    [(FunctionParam
+                                                        0
+                                                        (String 1 () AssumedLength PointerString)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (String 1 () AssumedLength PointerString)
+                                                    ()
+                                                )
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            0
+                                            (Integer 4)
+                                            ()
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -155,12 +158,11 @@
                                     (Var 3 length)
                                     (Var 3 pattern)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 pattern))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 pattern)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -192,18 +194,20 @@
                                                         ()
                                                     )]
                                                     0
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
-                                                (Character 1 -1 ())
+                                                (String 1 () ExpressionLength PointerString)
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 strout)
                                             (Var 3 line)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 3 strout)
@@ -226,11 +230,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             i:
@@ -248,6 +256,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             keywords:
                                                 (Variable
@@ -260,7 +272,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -271,16 +283,10 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    4
-                                                    len_trim
-                                                    6 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             present_in:
                                                 (Variable
@@ -304,6 +310,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             shorts:
                                                 (Variable
@@ -316,7 +326,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -326,6 +336,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             stop:
@@ -343,16 +357,10 @@
                                                     Public
                                                     Optional
                                                     .false.
-                                                ),
-                                            trim:
-                                                (ExternalSymbol
-                                                    4
-                                                    trim
-                                                    6 trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    trim
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             values:
                                                 (Variable
@@ -365,7 +373,7 @@
                                                     Save
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -376,11 +384,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     print_dictionary
                                     (FunctionType
-                                        [(Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)
                                         (Logical 4)]
                                         ()
                                         Source
@@ -406,14 +418,14 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(a,1x,a,1x,a,1x,a)"
-                                                (Character 1 18 ())
+                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             [(FunctionCall
                                                 2 atleast
                                                 ()
                                                 [((StringConstant
                                                     "KEYWORD"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((IntrinsicElementalFunction
                                                     Max
@@ -429,7 +441,7 @@
                                                                 ()
                                                             )
                                                             ())]
-                                                            (Character 1 -2 ())
+                                                            (String 1 () DeferredLength PointerString)
                                                             ColMajor
                                                             ()
                                                         )
@@ -442,7 +454,7 @@
                                                     ()
                                                 ))
                                                 (())]
-                                                (Character 1 -3 (IntrinsicElementalFunction
+                                                (String 1 (IntrinsicElementalFunction
                                                     Max
                                                     [(IntrinsicElementalFunction
                                                         Max
@@ -458,7 +470,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (Character 1 -2 ())
+                                                                (String 1 () DeferredLength PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -471,25 +483,14 @@
                                                         ()
                                                     )
                                                     (StringLen
-                                                        (FunctionCall
-                                                            4 trim
-                                                            ()
-                                                            [((StringConstant
+                                                        (IntrinsicElementalFunction
+                                                            StringTrim
+                                                            [(StringConstant
                                                                 "KEYWORD"
-                                                                (Character 1 7 ())
-                                                            ))]
-                                                            (Character 1 -3 (FunctionCall
-                                                                4 len_trim
-                                                                ()
-                                                                [((StringConstant
-                                                                    "KEYWORD"
-                                                                    (Character 1 7 ())
-                                                                ))]
-                                                                (Integer 4)
-                                                                ()
-                                                                ()
-                                                            ))
-                                                            ()
+                                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                            )]
+                                                            0
+                                                            (String 1 () AssumedLength PointerString)
                                                             ()
                                                         )
                                                         (Integer 4)
@@ -498,29 +499,30 @@
                                                     0
                                                     (Integer 4)
                                                     ()
-                                                ))
+                                                ) ExpressionLength PointerString)
                                                 ()
                                                 ()
                                             )
                                             (StringConstant
                                                 "SHORT"
-                                                (Character 1 5 ())
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StringConstant
                                                 "PRESENT"
-                                                (Character 1 7 ())
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StringConstant
                                                 "VALUE"
-                                                (Character 1 5 ())
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )]
                                         ()
                                         ()
                                         ()
+                                        .true.
                                     )
                                     (FileWrite
                                         0
@@ -531,7 +533,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(*(a,1x,a5,1x,l1,8x,\"[\",a,\"]\",/))"
-                                                (Character 1 33 ())
+                                                (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             [(ImpliedDoLoop
                                                 [(FunctionCall
@@ -542,7 +544,7 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     ))
@@ -560,7 +562,7 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (Character 1 -2 ())
+                                                                (String 1 () DeferredLength PointerString)
                                                                 ColMajor
                                                                 ()
                                                             )
@@ -573,7 +575,7 @@
                                                         ()
                                                     ))
                                                     (())]
-                                                    (Character 1 -3 (IntrinsicElementalFunction
+                                                    (String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -589,7 +591,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (Character 1 -2 ())
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -602,35 +604,19 @@
                                                             ()
                                                         )
                                                         (StringLen
-                                                            (FunctionCall
-                                                                4 trim
-                                                                ()
-                                                                [((ArrayItem
+                                                            (IntrinsicElementalFunction
+                                                                StringTrim
+                                                                [(ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 ())
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
-                                                                ))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    4 len_trim
-                                                                    ()
-                                                                    [((ArrayItem
-                                                                        (Var 4 keywords)
-                                                                        [(()
-                                                                        (Var 4 i)
-                                                                        ())]
-                                                                        (Character 1 -2 ())
-                                                                        ColMajor
-                                                                        ()
-                                                                    ))]
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    ()
-                                                                ))
-                                                                ()
+                                                                )]
+                                                                0
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -639,7 +625,7 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     ()
                                                 )
@@ -648,7 +634,7 @@
                                                     [(()
                                                     (Var 4 i)
                                                     ())]
-                                                    (Character 1 -2 ())
+                                                    (String 1 () DeferredLength PointerString)
                                                     ColMajor
                                                     ()
                                                 )
@@ -667,14 +653,14 @@
                                                         [(()
                                                         (Var 4 i)
                                                         ())]
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength PointerString)
                                                         ColMajor
                                                         ()
                                                     )
                                                     ()
                                                     ()
                                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                                    (Character 1 -2 ())
+                                                    (String 1 () DeferredLength PointerString)
                                                     ()
                                                 )]
                                                 (Var 4 i)
@@ -687,7 +673,7 @@
                                                 )
                                                 ()
                                                 (Tuple
-                                                    [(Character 1 -3 (IntrinsicElementalFunction
+                                                    [(String 1 (IntrinsicElementalFunction
                                                         Max
                                                         [(IntrinsicElementalFunction
                                                             Max
@@ -703,7 +689,7 @@
                                                                         ()
                                                                     )
                                                                     ())]
-                                                                    (Character 1 -2 ())
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
                                                                 )
@@ -716,35 +702,19 @@
                                                             ()
                                                         )
                                                         (StringLen
-                                                            (FunctionCall
-                                                                4 trim
-                                                                ()
-                                                                [((ArrayItem
+                                                            (IntrinsicElementalFunction
+                                                                StringTrim
+                                                                [(ArrayItem
                                                                     (Var 4 keywords)
                                                                     [(()
                                                                     (Var 4 i)
                                                                     ())]
-                                                                    (Character 1 -2 ())
+                                                                    (String 1 () DeferredLength PointerString)
                                                                     ColMajor
                                                                     ()
-                                                                ))]
-                                                                (Character 1 -3 (FunctionCall
-                                                                    4 len_trim
-                                                                    ()
-                                                                    [((ArrayItem
-                                                                        (Var 4 keywords)
-                                                                        [(()
-                                                                        (Var 4 i)
-                                                                        ())]
-                                                                        (Character 1 -2 ())
-                                                                        ColMajor
-                                                                        ()
-                                                                    ))]
-                                                                    (Integer 4)
-                                                                    ()
-                                                                    ()
-                                                                ))
-                                                                ()
+                                                                )]
+                                                                0
+                                                                (String 1 () AssumedLength PointerString)
                                                                 ()
                                                             )
                                                             (Integer 4)
@@ -753,26 +723,21 @@
                                                         0
                                                         (Integer 4)
                                                         ()
-                                                    ))
-                                                    (Character 1 -2 ())
+                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength PointerString)
                                                     (Logical 4)
-                                                    (Character 1 -2 ())]
+                                                    (String 1 () DeferredLength PointerString)]
                                                 )
                                                 ()
                                             )]
                                             FormatFortran
-                                            (Character -1 0 ())
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )]
                                         ()
                                         ()
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 4 keywords)
-                                        (Var 4 present_in)
-                                        (Var 4 shorts)
-                                        (Var 4 values)]
+                                        .true.
                                     )]
                                     ()
                                     Public
@@ -782,18 +747,10 @@
                                 )
                         })
                     fn5
-                    [lfortran_intrinsic_string
-                    lfortran_intrinsic_builtin
-                    fn5]
+                    [fn5]
                     .false.
                     .false.
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string)
+                )
         })
     []
 )

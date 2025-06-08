@@ -18,7 +18,7 @@ ttype
     | Tuple(ttype* type)
     | Struct(symbol derived_type, dimension* dims)
     | Enum(symbol enum_type, dimension *dims)
-    | Union(symbol union_type, dimension *dims)
+    | UnionType(symbol union_type, dimension *dims)
     | Class(symbol class_type, dimension* dims)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
@@ -60,7 +60,7 @@ None.
 8. `Tuple` denotes tuple type.
 9. `Struct` denotes structure type.
 10. `Enum` denotes enumeration type.
-11. `Union` denotes union type.
+11. `UnionType` denotes union type.
 12. `Class` denotes class type.
 13. `Dict` denotes dictionary type.
 14. `Pointer` denotes Pointer type.

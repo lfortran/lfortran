@@ -34,6 +34,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -57,6 +61,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -79,6 +87,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -131,8 +143,18 @@
                                                                 ()
                                                                 [((Var 8 a))
                                                                 ((Var 8 x))]
-                                                                (TypeParameter
-                                                                    w
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        w
+                                                                    )
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (ArraySize
+                                                                        (Var 8 x)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    ))]
+                                                                    DescriptorArray
                                                                 )
                                                                 ()
                                                                 ()
@@ -141,14 +163,20 @@
                                                                 (TypeParameter
                                                                     v
                                                                 )
-                                                                [(()
-                                                                ())]
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 8 y)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
                                                                 DescriptorArray
                                                             )
                                                             ()
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -178,6 +206,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -196,6 +228,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -213,6 +249,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -265,6 +305,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             times:
                                                 (Function
@@ -288,6 +332,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -306,6 +354,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -323,6 +375,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -375,6 +431,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -393,6 +453,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             w:
                                                 (Variable
@@ -410,6 +474,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -454,6 +522,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             axpy:
                                                 (Function
@@ -474,6 +546,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             x:
@@ -496,6 +572,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -516,6 +596,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -562,20 +646,36 @@
                                                                 ()
                                                                 [((Var 15 a))
                                                                 ((Var 15 x))]
-                                                                (Real 4)
+                                                                (Array
+                                                                    (Real 4)
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (ArraySize
+                                                                        (Var 15 x)
+                                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                                        (Integer 4)
+                                                                        ()
+                                                                    ))]
+                                                                    PointerToDataArray
+                                                                )
                                                                 ()
                                                                 ()
                                                             ))]
                                                             (Array
                                                                 (Real 8)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
+                                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                                (ArraySize
+                                                                    (Var 15 y)
+                                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                                    (Integer 4)
+                                                                    ()
+                                                                ))]
+                                                                PointerToDataArray
                                                             )
                                                             ()
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -607,6 +707,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             sp:
                                                 (Variable
@@ -632,6 +736,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -653,6 +761,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -673,6 +785,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ~add:
@@ -702,6 +818,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -718,6 +838,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -733,6 +857,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -770,6 +898,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 13 ret)
                                                     Public
@@ -804,6 +933,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -820,6 +953,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -835,6 +972,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -872,6 +1013,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 14 ret)
                                                     Public
@@ -904,6 +1046,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 12 x)
@@ -939,6 +1082,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 12 y)
@@ -982,6 +1126,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (SubroutineCall
                                         12 axpy
@@ -1039,6 +1184,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1054,6 +1203,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             dp:
@@ -1080,6 +1233,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             op:
                                                 (Variable
@@ -1095,6 +1252,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             sp:
@@ -1120,6 +1281,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -1157,6 +1322,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 op)
                                     Public
@@ -1184,6 +1350,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             dp:
                                                 (Variable
@@ -1208,6 +1378,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             sp:
@@ -1234,6 +1408,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -1255,6 +1433,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -1275,6 +1457,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -1321,20 +1507,36 @@
                                                 ()
                                                 [((Var 11 a))
                                                 ((Var 11 x))]
-                                                (Real 4)
+                                                (Array
+                                                    (Real 4)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (ArraySize
+                                                        (Var 11 x)
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ))]
+                                                    DescriptorArray
+                                                )
                                                 ()
                                                 ()
                                             ))]
                                             (Array
                                                 (Real 8)
-                                                [(()
-                                                ())]
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (ArraySize
+                                                    (Var 11 y)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
                                                 DescriptorArray
                                             )
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -1362,6 +1564,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1378,6 +1584,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             op:
                                                 (Variable
@@ -1393,6 +1603,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             sp:
@@ -1418,6 +1632,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -1455,6 +1673,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 9 op)
                                     Public
@@ -1489,6 +1708,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             b:
                                                                 (Variable
@@ -1507,6 +1730,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             op:
                                                                 (Variable
@@ -1524,6 +1751,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1576,6 +1807,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             u:
                                                 (Variable
@@ -1594,6 +1829,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -1611,6 +1850,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })

@@ -15,31 +15,39 @@
                                     Local
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 ())
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "Dominic"
-                                        (Character 1 7 ())
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (Character 1 7 ())
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
                     print_01
                     []
                     [(Print
-                        [(StringConstant
-                            "My name is "
-                            (Character 1 11 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "My name is "
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 my_name)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 2 my_name)]
-                        ()
-                        ()
                     )]
                 )
         })

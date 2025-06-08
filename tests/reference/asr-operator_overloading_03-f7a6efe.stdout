@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -80,6 +84,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -105,220 +113,252 @@
                     operator_overloading_01
                     [operator_overloading_01_overload_comp_m]
                     [(Print
-                        [(StringConstant
-                            "T>T:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T>T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Gt
+                                (Var 6 t)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Gt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 t))
-                                ((Var 6 t))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "T>F:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T>F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Gt
+                                (Var 6 f)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Gt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 t))
-                                ((Var 6 f))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "F>T:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "F>T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Gt
+                                (Var 6 t)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Gt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 f))
-                                ((Var 6 t))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "F>F:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "F>F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Gt
+                                (Var 6 f)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 greater_than_inverse
+                                    6 ~gt
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Gt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 greater_than_inverse
-                                6 ~gt
-                                [((Var 6 f))
-                                ((Var 6 f))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "T<T:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T<T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Lt
+                                (Var 6 t)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 t))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Lt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 t))
-                                ((Var 6 t))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "T<F:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "T<F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 t)
+                                Lt
+                                (Var 6 f)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 t))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 t)
-                            Lt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 t))
-                                ((Var 6 f))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "F<T:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "F<T:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Lt
+                                (Var 6 t)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 f))
+                                    ((Var 6 t))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Lt
-                            (Var 6 t)
-                            (Logical 4)
-                            (LogicalConstant
-                                .true.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 f))
-                                ((Var 6 t))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "F<F:"
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "F<F:"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (OverloadedCompare
+                                (Var 6 f)
+                                Lt
+                                (Var 6 f)
+                                (Logical 4)
+                                (LogicalConstant
+                                    .false.
+                                    (Logical 4)
+                                )
+                                (FunctionCall
+                                    6 less_than_inverse
+                                    6 ~lt
+                                    [((Var 6 f))
+                                    ((Var 6 f))]
+                                    (Logical 4)
+                                    ()
+                                    ()
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (OverloadedCompare
-                            (Var 6 f)
-                            Lt
-                            (Var 6 f)
-                            (Logical 4)
-                            (LogicalConstant
-                                .false.
-                                (Logical 4)
-                            )
-                            (FunctionCall
-                                6 less_than_inverse
-                                6 ~lt
-                                [((Var 6 f))
-                                ((Var 6 f))]
-                                (Logical 4)
-                                ()
-                                ()
-                            )
-                        )]
-                        ()
-                        ()
                     )]
                 ),
             operator_overloading_01_overload_comp_m:
@@ -346,6 +386,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -362,6 +406,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -377,6 +425,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -432,6 +484,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 greater_than_inverse)
@@ -440,6 +493,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 3 greater_than_inverse)
@@ -468,6 +522,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -484,6 +542,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -499,6 +561,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -554,6 +620,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 less_than_inverse)
@@ -562,6 +629,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 4 less_than_inverse)
@@ -590,6 +658,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -606,6 +678,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -621,6 +697,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -662,6 +742,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 less_than_overload_use)
                                     Public

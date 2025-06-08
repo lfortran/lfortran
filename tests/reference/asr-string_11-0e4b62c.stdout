@@ -16,11 +16,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 30 ())
+                                    (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             teststring:
@@ -32,11 +36,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 10 ())
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -46,17 +54,19 @@
                         (Var 2 mystring)
                         (StringConstant
                             "This is a test"
-                            (Character 1 14 ())
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 teststring)
                         (StringConstant
                             "test"
-                            (Character 1 4 ())
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -79,33 +89,35 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "test is not found"
-                                (Character 1 17 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
-                                "test is found at index: "
-                                (Character 1 24 ())
-                            )
-                            (IntrinsicElementalFunction
-                                SubstrIndex
-                                [(Var 2 mystring)
-                                (Var 2 teststring)
-                                (LogicalConstant
-                                    .false.
-                                    (Logical 4)
-                                )
-                                (IntegerConstant 4 (Integer 4) Decimal)]
-                                0
-                                (Integer 4)
+                            (StringFormat
                                 ()
-                            )]
-                            ()
-                            ()
+                                [(StringConstant
+                                    "test is found at index: "
+                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                                (IntrinsicElementalFunction
+                                    SubstrIndex
+                                    [(Var 2 mystring)
+                                    (Var 2 teststring)
+                                    (LogicalConstant
+                                        .false.
+                                        (Logical 4)
+                                    )
+                                    (IntegerConstant 4 (Integer 4) Decimal)]
+                                    0
+                                    (Integer 4)
+                                    ()
+                                )]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
                         )]
                     )]
                 )

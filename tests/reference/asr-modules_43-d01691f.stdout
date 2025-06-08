@@ -29,6 +29,9 @@
                                     (Allocatable
                                         (Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 5 srcfile_t
                                             )
                                             [(()
@@ -40,6 +43,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             srcfile_t:
@@ -70,9 +77,6 @@
                         ()
                         [((Var 5 sources))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 5 sources)]
                     )]
                 ),
             modules_43_fpm_sources:
@@ -97,6 +101,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -108,6 +115,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             exclude_source:
@@ -130,6 +141,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             sources:
                                                 (Variable
@@ -143,6 +158,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 srcfile_t
                                                             )
                                                             [(()
@@ -155,6 +173,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     add_sources_from_dir
@@ -162,6 +184,9 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 srcfile_t
                                                 )
                                                 [(()
@@ -233,46 +258,22 @@
                                                 )]
                                                 2
                                                 (Allocatable
-                                                    (Allocatable
-                                                        (Array
-                                                            (StructType
-                                                                2 srcfile_t
-                                                            )
-                                                            [(()
-                                                            (IntrinsicArrayFunction
-                                                                Count
-                                                                [(ArrayPhysicalCast
-                                                                    (LogicalNot
-                                                                        (Var 4 exclude_source)
-                                                                        (Array
-                                                                            (Logical 4)
-                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                            FixedSizeArray
-                                                                        )
-                                                                        ()
-                                                                    )
-                                                                    FixedSizeArray
-                                                                    DescriptorArray
-                                                                    (Array
-                                                                        (Logical 4)
-                                                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                        (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                        DescriptorArray
-                                                                    )
-                                                                    ()
-                                                                )]
-                                                                0
-                                                                (Integer 4)
-                                                                ()
-                                                            ))]
-                                                            DescriptorArray
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            2 srcfile_t
                                                         )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
                                                     )
                                                 )
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 sources)
@@ -304,41 +305,16 @@
                                                     )]
                                                     2
                                                     (Allocatable
-                                                        (Allocatable
-                                                            (Array
-                                                                (StructType
-                                                                    2 srcfile_t
-                                                                )
-                                                                [(()
-                                                                (IntrinsicArrayFunction
-                                                                    Count
-                                                                    [(ArrayPhysicalCast
-                                                                        (LogicalNot
-                                                                            (Var 4 exclude_source)
-                                                                            (Array
-                                                                                (Logical 4)
-                                                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                                (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                                FixedSizeArray
-                                                                            )
-                                                                            ()
-                                                                        )
-                                                                        FixedSizeArray
-                                                                        DescriptorArray
-                                                                        (Array
-                                                                            (Logical 4)
-                                                                            [((IntegerConstant 1 (Integer 4) Decimal)
-                                                                            (IntegerConstant 10 (Integer 4) Decimal))]
-                                                                            DescriptorArray
-                                                                        )
-                                                                        ()
-                                                                    )]
-                                                                    0
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ))]
-                                                                DescriptorArray
+                                                        (Array
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                2 srcfile_t
                                                             )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
                                                     )
                                                     ()
@@ -346,9 +322,12 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 srcfile_t
                                                         )
-                                                        [(()
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         DescriptorArray
                                                     )
@@ -357,10 +336,8 @@
                                                 ColMajor
                                             )
                                             ()
+                                            .false.
                                         )]
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 4 dir_sources)]
                                     )]
                                     ()
                                     Public
@@ -388,6 +365,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             exe_name:
                                                 (Variable
@@ -399,12 +380,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             file_name:
@@ -417,12 +402,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -431,6 +420,7 @@
                                     [file_name
                                     exe_name
                                     digest]
+                                    []
                                     Source
                                     Public
                                     .false.

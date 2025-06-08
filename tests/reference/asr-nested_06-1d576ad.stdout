@@ -65,14 +65,22 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(IntegerConstant 5 (Integer 4) Decimal)]
-                                                        ()
-                                                        ()
+                                                        (StringFormat
+                                                            ()
+                                                            [(IntegerConstant 5 (Integer 4) Decimal)]
+                                                            FormatFortran
+                                                            (String 1 () ExpressionLength CString)
+                                                            ()
+                                                        )
                                                     )
                                                     (Print
-                                                        [(Var 3 x)]
-                                                        ()
-                                                        ()
+                                                        (StringFormat
+                                                            ()
+                                                            [(Var 3 x)]
+                                                            FormatFortran
+                                                            (String 1 () ExpressionLength CString)
+                                                            ()
+                                                        )
                                                     )]
                                                     ()
                                                     Public
@@ -95,6 +103,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     b
@@ -115,12 +127,10 @@
                                     []
                                     [(Var 3 x)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "b()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )
                                     (SubroutineCall
                                         3 c

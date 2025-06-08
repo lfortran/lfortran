@@ -305,7 +305,7 @@ public:
 
             // Determine proper canonical printing of kinds
             // TODO: Move this part into a separate AST pass
-            kind_item_t k[2];
+            kind_item_t k[2] = {};
             LCOMPILERS_ASSERT(x.n_kind <= 2);
             for (size_t i=0; i<x.n_kind; i++) {
                 k[i] = x.m_kind[i];

@@ -1,0 +1,417 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            _lcompilers_mlir_gpu_offloading:
+                (Module
+                    (SymbolTable
+                        3
+                        {
+                            _lcompilers_doconcurrent_replacer_func:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            i:
+                                                (Variable
+                                                    4
+                                                    i
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    4
+                                                    n
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 12 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    _lcompilers_doconcurrent_replacer_func
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 12 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )]
+                                        ()
+                                        BindC
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 i)
+                                    (Var 4 n)
+                                    (Var 4 x)]
+                                    [(DoConcurrentLoop
+                                        [((Var 4 i)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Var 4 n)
+                                        ())]
+                                        []
+                                        []
+                                        []
+                                        [(Print
+                                            (StringFormat
+                                                ()
+                                                [(ArrayItem
+                                                    (Var 4 x)
+                                                    [(()
+                                                    (Var 4 i)
+                                                    ())]
+                                                    (Real 4)
+                                                    ColMajor
+                                                    ()
+                                                )]
+                                                FormatFortran
+                                                (String 1 () ExpressionLength CString)
+                                                ()
+                                            )
+                                        )
+                                        (If
+                                            (RealCompare
+                                                (IntrinsicElementalFunction
+                                                    Abs
+                                                    [(RealBinOp
+                                                        (ArrayItem
+                                                            (Var 4 x)
+                                                            [(()
+                                                            (Var 4 i)
+                                                            ())]
+                                                            (Real 4)
+                                                            ColMajor
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (RealConstant
+                                                            0.490000
+                                                            (Real 4)
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Gt
+                                                (RealConstant
+                                                    0.000001
+                                                    (Real 4)
+                                                )
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            [(ErrorStop
+                                                ()
+                                            )]
+                                            []
+                                        )]
+                                    )]
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    _lcompilers_mlir_gpu_offloading
+                    []
+                    .false.
+                    .false.
+                ),
+            do_concurrent_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            _lcompilers_doconcurrent_replacer_func:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            i:
+                                                (Variable
+                                                    5
+                                                    i
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            n:
+                                                (Variable
+                                                    5
+                                                    n
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 12 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    _lcompilers_doconcurrent_replacer_func
+                                    (FunctionType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 12 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )]
+                                        ()
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 i)
+                                    (Var 5 n)
+                                    (Var 5 x)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            n:
+                                (Variable
+                                    2
+                                    n
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 12 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    do_concurrent_01
+                    []
+                    [(Assignment
+                        (Var 2 n)
+                        (IntegerConstant 12 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 x)
+                        (ArrayBroadcast
+                            (RealConstant
+                                0.490000
+                                (Real 4)
+                            )
+                            (ArrayConstant
+                                4
+                                [12]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 12 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                48
+                                [4.90000010e-01, 4.90000010e-01, 4.90000010e-01, ...., 4.90000010e-01, 4.90000010e-01, 4.90000010e-01]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 12 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        2 _lcompilers_doconcurrent_replacer_func
+                        2 _lcompilers_doconcurrent_replacer_func
+                        [((Var 2 i))
+                        ((Var 2 n))
+                        ((Var 2 x))]
+                        ()
+                    )]
+                )
+        })
+    []
+)

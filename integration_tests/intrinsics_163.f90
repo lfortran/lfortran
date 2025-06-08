@@ -7,7 +7,17 @@ program intrinsics_163
     integer(kind=2) :: res_2
     integer(kind=4) :: res_4
     integer(kind=8) :: res_8
+
+    integer(kind=1), parameter :: para_1 = ishftc(10_1, -2_1)
+    integer(kind=2), parameter :: para_2 = ishftc(10_2, -2_2)
+    integer(kind=4), parameter :: para_4 = ishftc(10_4, -2_4)
+    integer(kind=8), parameter :: para_8 = ishftc(10_8, -2_8)
  
+    if (para_1 /= -126) error stop
+    if (para_2 /= -32766) error stop
+    if (para_4 /= -2147483646) error stop
+    if (para_8 /= -9223372036854775806_8) error stop
+
     res_1 = ishftc(10_1, 2_1)
     print *, res_1
     if (res_1 /= 40) error stop
@@ -183,5 +193,14 @@ program intrinsics_163
 
     print *, ishftc(x, y, size1)
     if (ishftc(x, y, size1) /= 20) error stop
+
+    a = 293436938_8
+    res_8 = ishftc(a, 23)
+    print *, res_8
+    if (res_8 /= 2461527445602304_8) error stop 
+    b = -1292093_8
+    res_8 = ishftc(b, -32)
+    print *, res_8
+    if (res_8 /= -5549492883423233_8) error stop
 
  end program

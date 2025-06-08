@@ -1,0 +1,13 @@
+{
+    "basename": "pass_array_struct_temporary_array_op-array_op_simplifier_test-bb5013f",
+    "cmd": "lfortran --pass=array_struct_temporary,array_op --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_op_simplifier_test.f90",
+    "infile_hash": "c0b02cecb6f724cd809c6ed591f08c805e9d87dc0635842a5eca99be",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_array_struct_temporary_array_op-array_op_simplifier_test-bb5013f.stdout",
+    "stdout_hash": "6a24da1cb22560a6f14731cce32d3ebe28bea2dba1c73579d1913df4",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

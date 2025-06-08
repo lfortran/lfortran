@@ -1,0 +1,13 @@
+{
+    "basename": "pass_openmp-do_concurrent_01-2a6df8c",
+    "cmd": "lfortran --pass=openmp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/do_concurrent_01.f90",
+    "infile_hash": "6a7684b3e2ff6bfd0e1eb6c1095feb666304732379d06a99405e0aa6",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "pass_openmp-do_concurrent_01-2a6df8c.stdout",
+    "stdout_hash": "fb0e34d656c8e1bb55180e2981e16bf1e1b76d1a4de959a639156525",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

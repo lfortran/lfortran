@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -53,6 +61,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -88,24 +100,29 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Aimag
-                            [(Var 2 z)]
-                            0
-                            (Real 8)
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Aimag
+                                [(Var 2 z)]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            (IntrinsicElementalFunction
+                                Aimag
+                                [(Var 2 i)]
+                                0
+                                (Real 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (IntrinsicElementalFunction
-                            Aimag
-                            [(Var 2 i)]
-                            0
-                            (Real 8)
-                            ()
-                        )]
-                        ()
-                        ()
                     )]
                     (Var 2 f1)
                     Public
@@ -133,6 +150,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -148,6 +169,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -183,6 +208,7 @@
                             )
                         )
                         ()
+                        .false.
                     )]
                     ()
                     Public

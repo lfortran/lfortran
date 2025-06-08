@@ -37,12 +37,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             am:
@@ -55,12 +62,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             b:
@@ -73,12 +87,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             bm:
@@ -91,12 +112,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c:
@@ -109,12 +137,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_vector
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             cm:
@@ -127,12 +162,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         13 int_matrix
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i:
@@ -149,6 +191,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             int_add_matrix:
@@ -176,12 +222,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             b:
@@ -194,12 +247,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             r:
@@ -212,6 +272,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_matrix
                                                     )
                                                     ()
@@ -219,17 +282,30 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     int_add_matrix
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_matrix
                                         )
                                         Source
@@ -301,6 +377,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 18 r)
                                     Public
@@ -333,12 +410,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             b:
@@ -351,12 +435,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             r:
@@ -369,6 +460,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         13 int_vector
                                                     )
                                                     ()
@@ -376,17 +470,30 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     int_add_vector
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             13 int_vector
                                         )
                                         Source
@@ -450,6 +557,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 16 r)
                                     Private
@@ -484,11 +592,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     int_matrix
                                     []
                                     [elements]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -522,11 +635,16 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     int_vector
                                     []
                                     [elements]
+                                    []
                                     Source
                                     Private
                                     .false.
@@ -549,6 +667,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             matrix_t:
@@ -575,6 +697,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             op:
@@ -624,6 +750,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             arg1:
                                                 (Variable
@@ -640,6 +770,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             ret:
                                                 (Variable
@@ -655,6 +789,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -687,6 +825,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 14 ret)
                                     Public
@@ -725,6 +864,7 @@
                             )
                             (Var 13 i)
                             ()
+                            .false.
                         )
                         (Assignment
                             (ArrayItem
@@ -748,6 +888,7 @@
                             )
                             (Var 13 i)
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -759,27 +900,35 @@
                             [((Var 13 a))
                             ((Var 13 b))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 13 int_vector
                             )
                             ()
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 13 c)
-                            13 1_int_vector_elements
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 13 n))]
-                                FixedSizeArray
-                            )
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(StructInstanceMember
+                                (Var 13 c)
+                                13 1_int_vector_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 13 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (DoLoop
                         ()
@@ -835,6 +984,7 @@
                                     )
                                 )
                                 ()
+                                .false.
                             )
                             (Assignment
                                 (ArrayItem
@@ -878,6 +1028,7 @@
                                     )
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )]
@@ -891,29 +1042,37 @@
                             [((Var 13 am))
                             ((Var 13 bm))]
                             (StructType
+                                []
+                                []
+                                .true.
                                 13 int_matrix
                             )
                             ()
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 13 cm)
-                            13 1_int_matrix_elements
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 13 n))
-                                ((IntegerConstant 1 (Integer 4) Decimal)
-                                (Var 13 n))]
-                                FixedSizeArray
-                            )
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(StructInstanceMember
+                                (Var 13 cm)
+                                13 1_int_matrix_elements
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 13 n))
+                                    ((IntegerConstant 1 (Integer 4) Decimal)
+                                    (Var 13 n))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 ),
             template_array_05_m:
@@ -951,12 +1110,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             b:
@@ -969,12 +1135,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             r:
@@ -987,6 +1160,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 matrix
                                                                     )
                                                                     ()
@@ -994,17 +1170,30 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     add_matrix
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 matrix
                                                         )
                                                         Source
@@ -1078,12 +1267,13 @@
                                                                 (Var 9 n))
                                                                 ((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 9 n))]
-                                                                PointerToDataArray
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 12 r)
                                                     Public
@@ -1120,11 +1310,16 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     matrix
                                                     []
                                                     [elements]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -1147,6 +1342,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             plus_t:
@@ -1171,6 +1370,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1189,6 +1392,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rs:
                                                                 (Variable
@@ -1206,6 +1413,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1258,6 +1469,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     matrix_t
@@ -1297,6 +1512,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1315,6 +1534,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rs:
                                                                 (Variable
@@ -1332,6 +1555,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1384,6 +1611,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     op
@@ -1421,12 +1652,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             b:
@@ -1439,12 +1677,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             r:
@@ -1457,6 +1702,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 vector
                                                                     )
                                                                     ()
@@ -1464,17 +1712,30 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     add_vector
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 vector
                                                         )
                                                         Source
@@ -1540,12 +1801,13 @@
                                                                 )
                                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                                 (Var 5 n))]
-                                                                PointerToDataArray
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     (Var 8 r)
                                                     Private
@@ -1567,6 +1829,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             plus_t:
@@ -1591,6 +1857,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1609,6 +1879,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rs:
                                                                 (Variable
@@ -1626,6 +1900,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1678,6 +1956,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             vector:
                                                 (Struct
@@ -1706,11 +1988,16 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     vector
                                                     []
                                                     [elements]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.

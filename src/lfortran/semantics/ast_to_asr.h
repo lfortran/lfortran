@@ -10,7 +10,7 @@ namespace LCompilers::LFortran {
         AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
         SymbolTable *symbol_table,
         bool symtab_only,
-        CompilerOptions &compiler_options);
+        CompilerOptions &compiler_options, LCompilers::LocationManager &lm);
 
 } // namespace LCompilers::LFortran
 

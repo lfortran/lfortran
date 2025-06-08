@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ext:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             fm:
                                 (Variable
@@ -64,11 +76,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ios:
@@ -86,6 +102,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             len:
                                 (Variable
@@ -102,6 +122,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     rewind_inquire_flush
@@ -117,11 +141,13 @@
                         ()
                         (StringConstant
                             "file_b"
-                            (Character 1 6 ())
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         ()
                         (Var 2 ext)
+                        ()
+                        ()
                         ()
                         ()
                         ()
@@ -180,9 +206,13 @@
                         ()
                         ()
                         ()
+                        ()
+                        ()
                     )
                     (FileInquire
                         0
+                        ()
+                        ()
                         ()
                         ()
                         ()
@@ -219,24 +249,20 @@
                         10
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err rewind"
-                            (Character 1 10 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (GoToTarget
                         20
                         20
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "err inquire"
-                            (Character 1 11 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

@@ -9,6 +9,14 @@
 #include <string>
 #include <vector>
 
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
+#include <llvm/DebugInfo/Symbolize/Symbolize.h>
+#include <llvm/Support/CommandLine.h>
+#include <llvm/Support/raw_ostream.h>
+#include <llvm/Support/TargetSelect.h>
+#include <llvm/Object/ELFObjectFile.h>
+#endif
+
 // free() and abort() functions
 #include <cstdlib>
 
@@ -135,7 +143,7 @@ void get_local_address(StacktraceItem &item)
       // happen if the stacktrace is somehow corrupted. In that case, we simply
       // abort here.
       std::cout << "The stack address was not found in any shared library or the main program, the stack is probably corrupted. Aborting." << std::endl;
-      abort();
+      exit(1);
     }
 #else
 #ifdef HAVE_LFORTRAN_MACHO
@@ -179,7 +187,7 @@ void get_local_address(StacktraceItem &item)
         }
     }
     std::cout << "The stack address was not found in any shared library or the main program, the stack is probably corrupted. Aborting." << std::endl;
-    abort();
+    exit(1);
 #else
     item.local_pc=0;
 #endif // HAVE_LFORTRAN_MACHO
@@ -324,7 +332,7 @@ void get_symbol_info_bfd(std::string binary_filename, uintptr_t addr,
   abfd = bfd_openr(binary_filename.c_str(), NULL);
   if (abfd == NULL) {
     std::cout << "Cannot open the binary file '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   if (bfd_check_format(abfd, bfd_archive)) {
 #ifdef __APPLE__
@@ -336,19 +344,19 @@ void get_symbol_info_bfd(std::string binary_filename, uintptr_t addr,
 #else
     // On Linux this should work for any file, so we generate an error
     std::cout << "Cannot get addresses from the archive '" + binary_filename + "'\n";
-    abort();
+    exit(1);
 #endif
   }
   char **matching;
   if (!bfd_check_format_matches(abfd, bfd_object, &matching)) {
     std::cout << "Unknown format of the binary file '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   data.symbol_table = NULL;
   // This allocates the symbol_table:
   if (load_symbol_table(abfd, &data) == 1) {
     std::cout << "Failed to load the symbol table from '" + binary_filename + "'\n";
-    abort();
+    exit(1);
   }
   // Loops over all sections and try to find the line
   bfd_map_over_sections(abfd, process_section, &data);
@@ -428,7 +436,7 @@ std::string read_line_from_file(std::string filename, unsigned int line_number)
    File "/home/ondrej/repos/rcp/src/Teuchos_RCP.hpp", line 428, in Teuchos::RCP<A>::assert_not_null() const
    throw_null_ptr_error(typeName(*this));
 */
-std::string addr2str(const StacktraceItem &i)
+std::string addr2str(const StacktraceItem &i, bool colorize)
 {
   std::ostringstream s;
   // Do the printing --- print as much information as we were able to
@@ -436,27 +444,27 @@ std::string addr2str(const StacktraceItem &i)
   if (i.function_name == "") {
     // If we didn't find the line, at least print the address itself
     if (i.local_pc == 0) {
-        s << color(style::dim);
+        s << color(style::dim, colorize);
         s << "  File unknown, absolute address: " << (void*) i.pc;
-        s << color(style::reset);
+        s << color(style::reset, colorize);
     } else {
         if (i.source_filename == "") {
-            s << color(style::dim);
+            s << color(style::dim, colorize);
             s << "  Binary file \"";
-            s << color(style::reset);
-            s << color(style::bold) << color(fg::magenta);
+            s << color(style::reset, colorize);
+            s << color(style::bold, colorize) << color(fg::magenta, colorize);
             s << i.binary_filename;
-            s << color(fg::reset) << color(style::reset);
-            s << color(style::dim);
+            s << color(fg::reset, colorize) << color(style::reset, colorize);
+            s << color(style::dim, colorize);
             s << "\", local address: " << (void*) i.local_pc;
-            s << color(style::reset);
+            s << color(style::reset, colorize);
         } else {
           // Nicely format the filename + line
-          s << color(style::dim) << "  File \"" << color(style::reset)
-            << color(style::bold) << color(fg::magenta) << i.source_filename
-            << color(fg::reset) << color(style::reset)
-            << color(style::dim) << "\", line " << i.line_number
-            << color(style::reset);
+          s << color(style::dim, colorize) << "  File \"" << color(style::reset, colorize)
+            << color(style::bold, colorize) << color(fg::magenta, colorize) << i.source_filename
+            << color(fg::reset, colorize) << color(style::reset, colorize)
+            << color(style::dim, colorize) << "\", line " << i.line_number
+            << color(style::reset, colorize);
           const std::string line_text = remove_leading_whitespace(
             read_line_from_file(i.source_filename, i.line_number));
           if (line_text != "") {
@@ -467,18 +475,18 @@ std::string addr2str(const StacktraceItem &i)
   } else if (i.source_filename == "") {
       // The file is unknown (and data.line == 0 in this case), so the
       // only meaningful thing to print is the function name:
-      s << color(style::dim) << "  Binary file \"" + color(style::reset)
-        << color(style::bold) << color(fg::magenta) << i.binary_filename
-        << color(fg::reset) << color(style::reset)
-        << color(style::dim) << "\", in " << i.function_name
-        << color(style::reset);
+      s << color(style::dim, colorize) << "  Binary file \"" + color(style::reset, colorize)
+        << color(style::bold, colorize) << color(fg::magenta, colorize) << i.binary_filename
+        << color(fg::reset, colorize) << color(style::reset, colorize)
+        << color(style::dim, colorize) << "\", in " << i.function_name
+        << color(style::reset, colorize);
   } else {
       // Nicely format the filename + function name + line
-      s << color(style::dim) << "  File \"" << color(style::reset)
-        << color(style::bold) << color(fg::magenta) << i.source_filename
-        << color(fg::reset) << color(style::reset)
-        << color(style::dim) << "\", line " << i.line_number
-        << ", in " << i.function_name << color(style::reset);
+      s << color(style::dim, colorize) << "  File \"" << color(style::reset, colorize)
+        << color(style::bold, colorize) << color(fg::magenta, colorize) << i.source_filename
+        << color(fg::reset, colorize) << color(style::reset, colorize)
+        << color(style::dim, colorize) << "\", line " << i.line_number
+        << ", in " << i.function_name << color(style::reset, colorize);
       const std::string line_text = remove_leading_whitespace(
         read_line_from_file(i.source_filename, i.line_number));
       if (line_text != "") {
@@ -489,18 +497,75 @@ std::string addr2str(const StacktraceItem &i)
   return s.str();
 }
 
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
+void get_symbol_info_llvm(StacktraceItem &item, llvm::symbolize::LLVMSymbolizer &symbolizer) {
+  auto binary_file = llvm::object::ObjectFile::createObjectFile(item.binary_filename);
+
+  if (!binary_file) {
+#ifdef __APPLE__
+    // This can happen for dynamic libraries in macOS,
+    // like /usr/lib/system/libsystem_c.dylib
+    return;
+#endif
+    std::cout << "Cannot open the binary file '" + item.binary_filename + "'\n";
+    exit(1);
+  }
+
+  llvm::object::ObjectFile *obj_file = binary_file.get().getBinary();
+
+  uint64_t section_index;
+  bool found = false;
+  for (const auto& section : obj_file->sections()) {
+    if (section.getAddress() <= item.local_pc && item.local_pc < section.getAddress() + section.getSize()) {
+      section_index = section.getIndex();
+      found = true;
+      break;
+    }
+  }
+
+  if (!found) {
+    std::cout << "Cannot find the section for the address " << item.local_pc << " in the binary file '" + item.binary_filename + "'\n";
+    exit(1);
+  }
+
+  llvm::object::SectionedAddress sa = {item.local_pc, section_index};
+  auto result = symbolizer.symbolizeCode(item.binary_filename, sa);
+  
+  if (result) {
+    // If there is no filename, at least we can show the binary file
+    item.source_filename = (result->FileName == "<invalid>") ? "" : result->FileName;
+    item.function_name = result->FunctionName;
+    item.line_number = result->Line;
+  } else {
+    std::cout << "Cannot open the symbol table of '" + item.binary_filename + "'\n";
+    exit(1);
+  }
+}
+
+void get_llvm_info(std::vector<StacktraceItem> &d)
+{
+  llvm::symbolize::LLVMSymbolizer::Options opts;
+  opts.Demangle = true;
+  llvm::symbolize::LLVMSymbolizer symbolizer(opts);
+
+  for (auto &item : d) {
+    get_symbol_info_llvm(item, symbolizer);
+  }
+}
+
+#endif
 
 /*
   Returns a std::string with the stacktrace corresponding to the
   list of addresses (of functions on the stack) in `d`.
 */
-std::string stacktrace2str(const std::vector<StacktraceItem> &d, int skip)
+std::string stacktrace2str(const std::vector<StacktraceItem> &d, int skip, bool colorize)
 {
   std::string full_stacktrace_str("Traceback (most recent call last):\n");
 
   // Loop over the stack
   for (int i=d.size()-1; i >= skip; i--) {
-    full_stacktrace_str += addr2str(d[i]);
+    full_stacktrace_str += addr2str(d[i], colorize);
   }
 
   return full_stacktrace_str;
@@ -563,6 +628,11 @@ void address_to_line_number(const std::vector<std::string> &filenames,
           uintptr_t address,
           std::string &filename,
           int &line_number) {
+    if (addresses.size() == 0) {
+      line_number = -1;
+      filename = "";
+      return;
+    }
     uintptr_t actual_address = address-16;
     int n = addresses.size() / 3;
     // Bisection-Search
@@ -623,21 +693,26 @@ void get_local_info_dwarfdump(std::vector<StacktraceItem> &d)
   }
 }
 
+
 void get_local_info(std::vector<StacktraceItem> &d)
 {
+#ifdef HAVE_LFORTRAN_LLVM_STACKTRACE
+    get_llvm_info(d);
+#else
 #ifdef HAVE_LFORTRAN_DWARFDUMP
   get_local_info_dwarfdump(d);
 #else
-#  ifdef HAVE_LFORTRAN_BFD
+#ifdef HAVE_LFORTRAN_BFD
   bfd_init();
-#  endif
   for (size_t i=0; i < d.size(); i++) {
-#  ifdef HAVE_LFORTRAN_BFD
     get_symbol_info_bfd(d[i].binary_filename, d[i].local_pc,
       d[i].source_filename, d[i].function_name, d[i].line_number);
-#  endif
   }
-#endif
+#else
+  (void)d;
+#endif // HAVE_LFORTRAN_BFD
+#endif // HAVE_LFOTRAN_DWARFDUMP
+#endif // HAVE_LFORTRAN_LLVM_STACKTRACE
 }
 
 std::string error_stacktrace(const std::vector<StacktraceItem> &stacktrace)

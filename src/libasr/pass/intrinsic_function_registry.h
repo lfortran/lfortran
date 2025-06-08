@@ -64,16 +64,18 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Isnan)
         INTRINSIC_NAME_CASE(Nearest)
         INTRINSIC_NAME_CASE(CompilerVersion)
+        INTRINSIC_NAME_CASE(CompilerOptions)
         INTRINSIC_NAME_CASE(CommandArgumentCount)
         INTRINSIC_NAME_CASE(Spacing)
         INTRINSIC_NAME_CASE(Modulo)
+        INTRINSIC_NAME_CASE(OutOfRange)
         INTRINSIC_NAME_CASE(BesselJ0)
         INTRINSIC_NAME_CASE(BesselJ1)
         INTRINSIC_NAME_CASE(BesselJN)
         INTRINSIC_NAME_CASE(BesselY0)
         INTRINSIC_NAME_CASE(BesselY1)
         INTRINSIC_NAME_CASE(BesselYN)
-        INTRINSIC_NAME_CASE(Mvbits)
+        INTRINSIC_NAME_CASE(SameTypeAs)
         INTRINSIC_NAME_CASE(Merge)
         INTRINSIC_NAME_CASE(Mergebits)
         INTRINSIC_NAME_CASE(Shiftr)
@@ -95,8 +97,11 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SetExponent)
         INTRINSIC_NAME_CASE(Not)
         INTRINSIC_NAME_CASE(Iand)
+        INTRINSIC_NAME_CASE(And)
         INTRINSIC_NAME_CASE(Ior)
+        INTRINSIC_NAME_CASE(Or)
         INTRINSIC_NAME_CASE(Ieor)
+        INTRINSIC_NAME_CASE(Xor)
         INTRINSIC_NAME_CASE(Ibclr)
         INTRINSIC_NAME_CASE(Ibset)
         INTRINSIC_NAME_CASE(Btest)
@@ -116,8 +121,11 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SelectedIntKind)
         INTRINSIC_NAME_CASE(SelectedRealKind)
         INTRINSIC_NAME_CASE(SelectedCharKind)
+        INTRINSIC_NAME_CASE(Present)
         INTRINSIC_NAME_CASE(Adjustl)
         INTRINSIC_NAME_CASE(Adjustr)
+        INTRINSIC_NAME_CASE(StringLenTrim)
+        INTRINSIC_NAME_CASE(StringTrim)
         INTRINSIC_NAME_CASE(Ichar)
         INTRINSIC_NAME_CASE(Char)
         INTRINSIC_NAME_CASE(Achar)
@@ -138,6 +146,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(Sign)
         INTRINSIC_NAME_CASE(SignFromValue)
         INTRINSIC_NAME_CASE(Nint)
+        INTRINSIC_NAME_CASE(Idnint)
         INTRINSIC_NAME_CASE(Aint)
         INTRINSIC_NAME_CASE(Popcnt)
         INTRINSIC_NAME_CASE(Poppar)
@@ -184,6 +193,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(SymbolicLogQ)
         INTRINSIC_NAME_CASE(SymbolicSinQ)
         INTRINSIC_NAME_CASE(SymbolicGetArgument)
+        INTRINSIC_NAME_CASE(Int)
         default : {
             throw LCompilersException("pickle: intrinsic_id not implemented");
         }
@@ -215,6 +225,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Fix::instantiate_Fix, &Fix::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Sin),
             {&Sin::instantiate_Sin, &Sin::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::OutOfRange),
+            {&OutOfRange::instantiate_OutOfRange, &OutOfRange::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             {&BesselJ0::instantiate_BesselJ0, &BesselJ0::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -285,8 +297,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Nearest::instantiate_Nearest, &Nearest::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             {nullptr, &CompilerVersion::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
+            {nullptr, &CompilerOptions::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
-            {nullptr, &CommandArgumentCount::verify_args}},
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
             {&Spacing::instantiate_Spacing, &Spacing::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Modulo),
@@ -295,10 +309,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&BesselJN::instantiate_BesselJN, &BesselJN::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             {&BesselYN::instantiate_BesselYN, &BesselYN::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
+            {nullptr, &SameTypeAs::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             {&Merge::instantiate_Merge, &Merge::verify_args}},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
-            {&Mvbits::instantiate_Mvbits, &Mvbits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             {&Mergebits::instantiate_Mergebits, &Mergebits::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -307,6 +321,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Adjustl::instantiate_Adjustl, &Adjustl::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             {&Adjustr::instantiate_Adjustr, &Adjustr::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
+            {&StringLenTrim::instantiate_StringLenTrim, &StringLenTrim::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
+            {&StringTrim::instantiate_StringTrim, &StringTrim::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             {&Ichar::instantiate_Ichar, &Ichar::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -349,10 +367,16 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Not::instantiate_Not, &Not::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             {&Iand::instantiate_Iand, &Iand::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            {&And::instantiate_And, &And::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             {&Ior::instantiate_Ior, &Ior::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            {&Or::instantiate_Or, &Or::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             {&Ieor::instantiate_Ieor, &Ieor::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            {&Xor::instantiate_Xor, &Xor::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             {&Ibclr::instantiate_Ibclr, &Ibclr::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Btest),
@@ -437,6 +461,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {&Real::instantiate_Real, &Real::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             {&Nint::instantiate_Nint, &Nint::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
+            {&Idnint::instantiate_Idnint, &Idnint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             {&Anint::instantiate_Anint, &Anint::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
@@ -477,6 +503,8 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            {&Present::instantiate_Present, &Present::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             {&SelectedRealKind::instantiate_SelectedRealKind, &SelectedRealKind::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -527,6 +555,10 @@ namespace IntrinsicElementalFunctionRegistry {
             {nullptr, &SymbolicSinQ::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicGetArgument),
             {nullptr, &SymbolicGetArgument::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
+            {&CommandArgumentCount::instantiate_CommandArgumentCount, &CommandArgumentCount::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            {&Int::instantiate_Int, &Int::verify_args}},
     };
 
     static const std::map<int64_t, std::string>& intrinsic_function_id_to_name = {
@@ -604,6 +636,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "nearest"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerVersion),
             "compiler_version"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::CompilerOptions),
+            "compiler_options"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::CommandArgumentCount),
             "command_argument_count"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Spacing),
@@ -622,6 +656,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "cosd"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Tand),
             "tand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::OutOfRange),
+            "out_of_range"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ0),
             "bessel_j0"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselJ1),
@@ -634,10 +670,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "bessel_jn"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::BesselYN),
             "bessel_yn"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::SameTypeAs),
+            "same_type_as"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Merge),
             "merge"},
-        {static_cast<int64_t>(IntrinsicElementalFunctions::Mvbits),
-            "mvbits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Mergebits),
             "mergebits"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Shiftr),
@@ -648,6 +684,10 @@ namespace IntrinsicElementalFunctionRegistry {
             "adjustl"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Adjustr),
             "adjustr"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringLenTrim),
+            "len_trim"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::StringTrim),
+            "trim"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ichar),
             "ichar"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Char),
@@ -688,10 +728,16 @@ namespace IntrinsicElementalFunctionRegistry {
             "not"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Iand),
             "iand"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::And),
+            "and"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ior),
             "ior"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Or),
+            "or"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ieor),
             "ieor"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Xor),
+            "xor"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibclr),
             "ibclr"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Ibset),
@@ -708,6 +754,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "hypot"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             "selected_int_kind"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Present),
+            "present"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedRealKind),
             "selected_real_kind"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedCharKind),
@@ -778,6 +826,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "real"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Nint),
             "nint"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Idnint),
+            "idnint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Anint),
             "anint"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Dim),
@@ -860,6 +910,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "SymbolicSinQ"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicGetArgument),
             "SymbolicGetArgument"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Int),
+            "int"},
     };
 
 
@@ -881,6 +933,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"bessel_j1", {&BesselJ1::create_BesselJ1, &BesselJ1::eval_BesselJ1}},
                 {"bessel_y0", {&BesselY0::create_BesselY0, &BesselY0::eval_BesselY0}},
                 {"bessel_y1", {&BesselY1::create_BesselY1, &BesselY1::eval_BesselY1}},
+                {"same_type_as", {&SameTypeAs::create_SameTypeAs, &SameTypeAs::eval_SameTypeAs}},
                 {"asind", {&Asind::create_Asind, &Asind::eval_Asind}},
                 {"acosd", {&Acosd::create_Acosd, &Acosd::eval_Acosd}},
                 {"atand", {&Atand::create_Atand, &Atand::eval_Atand}},
@@ -911,13 +964,14 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"trailz", {&Trailz::create_Trailz, &Trailz::eval_Trailz}},
                 {"isnan", {&Isnan::create_Isnan, &Isnan::eval_Isnan}},
                 {"nearest", {&Nearest::create_Nearest, &Nearest::eval_Nearest}},
-                {"compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
+                {"_lfortran_compiler_version", {&CompilerVersion::create_CompilerVersion, &CompilerVersion::eval_CompilerVersion}},
+                {"compiler_options", {&CompilerOptions::create_CompilerOptions, &CompilerOptions::eval_CompilerOptions}},
+                {"command_argument_count", {&CommandArgumentCount::create_CommandArgumentCount, nullptr}},
                 {"spacing", {&Spacing::create_Spacing, &Spacing::eval_Spacing}},
                 {"modulo", {&Modulo::create_Modulo, &Modulo::eval_Modulo}},
                 {"bessel_jn", {&BesselJN::create_BesselJN, &BesselJN::eval_BesselJN}},
                 {"bessel_yn", {&BesselYN::create_BesselYN, &BesselYN::eval_BesselYN}},
                 {"merge", {&Merge::create_Merge, &Merge::eval_Merge}},
-                {"mvbits", {&Mvbits::create_Mvbits, &Mvbits::eval_Mvbits}},
                 {"merge_bits", {&Mergebits::create_Mergebits, &Mergebits::eval_Mergebits}},
                 {"shiftr", {&Shiftr::create_Shiftr, &Shiftr::eval_Shiftr}},
                 {"rshift", {&Rshift::create_Rshift, &Rshift::eval_Rshift}},
@@ -940,8 +994,11 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"set_exponent", {&SetExponent::create_SetExponent, &SetExponent::eval_SetExponent}},
                 {"not", {&Not::create_Not, &Not::eval_Not}},
                 {"iand", {&Iand::create_Iand, &Iand::eval_Iand}},
+                {"and", {&And::create_And, &And::eval_And}},
                 {"ior", {&Ior::create_Ior, &Ior::eval_Ior}},
+                {"or", {&Or::create_Or, &Or::eval_Or}},
                 {"ieor", {&Ieor::create_Ieor, &Ieor::eval_Ieor}},
+                {"xor", {&Xor::create_Xor, &Xor::eval_Xor}},
                 {"ibclr", {&Ibclr::create_Ibclr, &Ibclr::eval_Ibclr}},
                 {"ibset", {&Ibset::create_Ibset, &Ibset::eval_Ibset}},
                 {"btest", {&Btest::create_Btest, &Btest::eval_Btest}},
@@ -950,6 +1007,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"_lfortran_tolowercase", {&ToLowerCase::create_ToLowerCase, &ToLowerCase::eval_ToLowerCase}},
                 {"hypot", {&Hypot::create_Hypot, &Hypot::eval_Hypot}},
                 {"selected_int_kind", {&SelectedIntKind::create_SelectedIntKind, &SelectedIntKind::eval_SelectedIntKind}},
+                {"present", {&Present::create_Present, &Present::eval_Present}},
                 {"selected_real_kind", {&SelectedRealKind::create_SelectedRealKind, &SelectedRealKind::eval_SelectedRealKind}},
                 {"selected_char_kind", {&SelectedCharKind::create_SelectedCharKind, &SelectedCharKind::eval_SelectedCharKind}},
                 {"kind", {&Kind::create_Kind, &Kind::eval_Kind}},
@@ -973,6 +1031,8 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"max0", {&Max::create_Max, &Max::eval_Max}},
                 {"adjustl", {&Adjustl::create_Adjustl, &Adjustl::eval_Adjustl}},
                 {"adjustr", {&Adjustr::create_Adjustr, &Adjustr::eval_Adjustr}},
+                {"len_trim", {&StringLenTrim::create_StringLenTrim, &StringLenTrim::eval_StringLenTrim}},
+                {"trim", {&StringTrim::create_StringTrim, &StringTrim::eval_StringTrim}},
                 {"ichar", {&Ichar::create_Ichar, &Ichar::eval_Ichar}},
                 {"char", {&Char::create_Char, &Char::eval_Char}},
                 {"achar", {&Achar::create_Achar, &Achar::eval_Achar}},
@@ -981,6 +1041,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"min", {&Min::create_Min, &Min::eval_Min}},
                 {"ishftc", {&Ishftc::create_Ishftc, &Ishftc::eval_Ishftc}},
                 {"radix", {&Radix::create_Radix, &Radix::eval_Radix}},
+                {"out_of_range", {&OutOfRange::create_OutOfRange, &OutOfRange::eval_OutOfRange}},
                 {"storage_size", {&StorageSize::create_StorageSize, &StorageSize::eval_StorageSize}},
                 {"scale", {&Scale::create_Scale, &Scale::eval_Scale}},
                 {"dprod", {&Dprod::create_Dprod, &Dprod::eval_Dprod}},
@@ -991,6 +1052,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"poppar", {&Poppar::create_Poppar, &Poppar::eval_Poppar}},
                 {"real", {&Real::create_Real, &Real::eval_Real}},
                 {"nint", {&Nint::create_Nint, &Nint::eval_Nint}},
+                {"idnint", {&Idnint::create_Idnint, &Idnint::eval_Idnint}},
                 {"anint", {&Anint::create_Anint, &Anint::eval_Anint}},
                 {"dim", {&Dim::create_Dim, &Dim::eval_Dim}},
                 {"floor", {&Floor::create_Floor, &Floor::eval_Floor}},
@@ -1031,6 +1093,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"LogQ", {&SymbolicLogQ::create_SymbolicLogQ, &SymbolicLogQ::eval_SymbolicLogQ}},
                 {"SinQ", {&SymbolicSinQ::create_SymbolicSinQ, &SymbolicSinQ::eval_SymbolicSinQ}},
                 {"GetArgument", {&SymbolicGetArgument::create_SymbolicGetArgument, &SymbolicGetArgument::eval_SymbolicGetArgument}},
+                {"int", {&Int::create_Int, &Int::eval_Int}},
     };
 
     static inline bool is_intrinsic_function(const std::string& name) {

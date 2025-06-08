@@ -11,9 +11,7 @@
         [(Print
             0
             ()
-            [(String
-                "hello world"
-            )]
+            [(String "hello world")]
             ()
         )]
         []

@@ -23,6 +23,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             4 child_value
                                                         )
                                                     )
@@ -30,6 +33,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ptr:
@@ -42,7 +49,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 toml_value
                                                         )
                                                     )
@@ -50,6 +60,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ~select_type_block_:
@@ -160,11 +174,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     child_value
                                     []
                                     [ok]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -198,12 +217,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "default class"
-                                            (Character 1 13 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -243,12 +260,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "not ok"
-                                            (Character 1 6 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -271,18 +286,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_value
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -364,12 +384,10 @@
                     main
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running derived_types_19 main program"
-                            (Character 1 37 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

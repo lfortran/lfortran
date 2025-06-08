@@ -1,6 +1,7 @@
 #include <tests/doctest.h>
 
 #include <cmath>
+#include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
 #include <libasr/codegen/evaluator.h>
@@ -18,7 +19,6 @@
 using LCompilers::TRY;
 using LCompilers::FortranEvaluator;
 using LCompilers::CompilerOptions;
-
 
 TEST_CASE("llvm 1") {
     //std::cout << "LLVM Version:" << std::endl;
@@ -375,9 +375,10 @@ end function)";
 
     // AST -> ASR
     LCompilers::SymbolTable::reset_global_counter();
+    LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
-        diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) ())] (Var 2 f) Public .false. .false. ())}) [])");
+        diagnostics, nullptr, false, compiler_options, lm));
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 1 {f: (Function (SymbolTable 2 {f: (Variable 2 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 2 f) (IntegerConstant 5 (Integer 4) Decimal) () .false.)] (Var 2 f) Public .false. .false. ())}) [])");
 
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
@@ -388,7 +389,7 @@ end function)";
     co.platform = LCompilers::get_platform();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, co, "f", "");
+            lpm, co, "f", "", "");
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -416,16 +417,17 @@ end function)";
     CHECK(LCompilers::LFortran::pickle(*ast) == "(Function f [] [] () () () [] [] [] [(Declaration (AttrType TypeInteger [] () () None) [] [(f [] [] () () None ())] ())] [(Assignment 0 f 4 ())] [] [])");
 
     // AST -> ASR
+    LCompilers::LocationManager lm;
     LCompilers::ASR::TranslationUnit_t* asr = TRY(LCompilers::LFortran::ast_to_asr(al, *tu,
-        diagnostics, nullptr, false, compiler_options));
-    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) ())] (Var 4 f) Public .false. .false. ())}) [])");
+        diagnostics, nullptr, false, compiler_options, lm));
+    CHECK(LCompilers::pickle(*asr) == "(TranslationUnit (SymbolTable 3 {f: (Function (SymbolTable 4 {f: (Variable 4 f [] ReturnVar () () Default (Integer 4) () Source Public Required .false. .false. .false. () .false.)}) f (FunctionType [] (Integer 4) Source Implementation () .false. .false. .false. .false. .false. [] .false.) [] [] [(Assignment (Var 4 f) (IntegerConstant 4 (Integer 4) Decimal) () .false.)] (Var 4 f) Public .false. .false. ())}) [])");
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e;
     LCompilers::PassManager lpm;
     lpm.use_default_passes();
     LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = LCompilers::asr_to_llvm(*asr, diagnostics, e.get_context(), al,
-            lpm, compiler_options, "f", "");
+            lpm, compiler_options, "f", "", "");
     REQUIRE(res.ok);
     std::unique_ptr<LCompilers::LLVMModule> m = std::move(res.result);
     //std::cout << "Module:" << std::endl;
@@ -1243,9 +1245,9 @@ end function id
 subroutine sa(l, a)
     integer, intent(in) :: l
     integer, intent(inout) :: a(id(l))
-    
+
     integer :: i
-    
+
     do i = 1, size(a)
         a(i) = a(i) + 1
     end do
@@ -1310,6 +1312,21 @@ end function sub
     CHECK(r.ok);
     CHECK(r.result.type == FortranEvaluator::EvalResult::real4);
     CHECK(r.result.f32 == -1.0);
+}
+
+TEST_CASE("llvm ir 1") {
+    LCompilers::LLVMEvaluator e;
+    std::string file_name = std::string(LFORTRAN_PROJECT_SOURCE_DIR) + "/src/lfortran/tests/ir.ll";
+    std::ifstream infile(file_name);
+    if (!infile.good()) {
+        std::string error_msg = "File '" + file_name + "' doesn't exist or isn't readable";
+        FAIL(error_msg);
+    }
+    // `file_name` evaluates to something like:
+    // "/Users/gxyd/OpenSource/lfortran/lfortran-${version}/src/lfortran/tests/ir.ll",
+    // where `version` isn't a local variable
+    CHECK_THROWS_AS(e.parse_module2("", file_name), LCompilers::LCompilersException);
+    CHECK_THROWS_WITH(e.parse_module2("", file_name), "parse_module(): Invalid LLVM IR");
 }
 
 // This test does not work on Windows yet

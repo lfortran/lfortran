@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             f:
@@ -59,16 +67,10 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    5
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -84,6 +86,10 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -106,15 +112,15 @@
                                     [(Var 5 x)]
                                     [(Assignment
                                         (Var 5 f)
-                                        (FunctionCall
-                                            5 present
-                                            ()
-                                            [((Var 5 x))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 5 x)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 f)
                                     Public
@@ -139,6 +145,7 @@
                         (Var 4 a)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 4 b)
@@ -152,6 +159,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 sub_1
@@ -228,10 +236,14 @@
                         ()
                     )
                     (Print
-                        [(Var 4 a)
-                        (Var 4 b)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 4 a)
+                            (Var 4 b)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -263,24 +275,28 @@
                         []
                     )
                     (Print
-                        [(FunctionCall
-                            4 f
+                        (StringFormat
                             ()
-                            [(())]
-                            (Logical 4)
-                            ()
+                            [(FunctionCall
+                                4 f
+                                ()
+                                [(())]
+                                (Logical 4)
+                                ()
+                                ()
+                            )
+                            (FunctionCall
+                                4 f
+                                ()
+                                [((IntegerConstant 42 (Integer 4) Decimal))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (FunctionCall
-                            4 f
-                            ()
-                            [((IntegerConstant 42 (Integer 4) Decimal))]
-                            (Logical 4)
-                            ()
-                            ()
-                        )]
-                        ()
-                        ()
                     )]
                 ),
             functions_15_module_1:
@@ -308,6 +324,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -323,6 +343,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -340,6 +364,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -355,6 +383,10 @@
                                                     Source
                                                     Public
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             e:
@@ -372,6 +404,10 @@
                                                     Public
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -388,16 +424,10 @@
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    3
-                                                    present
-                                                    7 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     sub_1
@@ -428,12 +458,11 @@
                                     (Var 3 e)
                                     (Var 3 f)]
                                     [(If
-                                        (FunctionCall
-                                            3 present
-                                            ()
-                                            [((Var 3 d))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 3 d)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Assignment
@@ -443,15 +472,7 @@
                                                     (RealBinOp
                                                         (Var 3 b)
                                                         Pow
-                                                        (Cast
-                                                            (IntegerConstant 2 (Integer 4) Decimal)
-                                                            IntegerToReal
-                                                            (Real 4)
-                                                            (RealConstant
-                                                                2.000000
-                                                                (Real 4)
-                                                            )
-                                                        )
+                                                        (IntegerConstant 2 (Integer 4) Decimal)
                                                         (Real 4)
                                                         ()
                                                     )
@@ -465,14 +486,14 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
-                                            (FunctionCall
-                                                3 present
-                                                ()
-                                                [((Var 3 e))]
+                                            (IntrinsicElementalFunction
+                                                Present
+                                                [(Var 3 e)]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(Assignment
@@ -496,6 +517,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -507,6 +529,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                         [(Assignment
@@ -515,15 +538,7 @@
                                                 (RealBinOp
                                                     (Var 3 b)
                                                     Pow
-                                                    (Cast
-                                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                                        IntegerToReal
-                                                        (Real 4)
-                                                        (RealConstant
-                                                            2.000000
-                                                            (Real 4)
-                                                        )
-                                                    )
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
                                                     (Real 4)
                                                     ()
                                                 )
@@ -532,14 +547,14 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )
                                         (If
-                                            (FunctionCall
-                                                3 present
-                                                ()
-                                                [((Var 3 e))]
+                                            (IntrinsicElementalFunction
+                                                Present
+                                                [(Var 3 e)]
+                                                0
                                                 (Logical 4)
-                                                ()
                                                 ()
                                             )
                                             [(Assignment
@@ -563,6 +578,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             [(Assignment
                                                 (Var 3 b)
@@ -574,6 +590,7 @@
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                     )]
@@ -585,12 +602,10 @@
                                 )
                         })
                     functions_15_module_1
-                    [lfortran_intrinsic_builtin]
+                    []
                     .false.
                     .false.
-                ),
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin)
+                )
         })
     []
 )

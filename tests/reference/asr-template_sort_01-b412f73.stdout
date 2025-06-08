@@ -112,6 +112,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -128,6 +132,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -143,6 +151,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -175,6 +187,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 13 res)
                                     Private
@@ -212,6 +225,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -228,6 +245,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -243,6 +264,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -275,6 +300,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 12 res)
                                     Private
@@ -319,6 +345,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -337,6 +367,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -354,6 +388,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -406,6 +444,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             u:
                                                 (Variable
@@ -424,6 +466,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -441,6 +487,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -471,6 +521,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             lt:
                                                 (Function
@@ -494,6 +548,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -509,6 +567,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -527,6 +589,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -587,6 +653,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -602,6 +672,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             i:
@@ -619,6 +693,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -635,6 +713,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -650,6 +732,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             pivot:
@@ -668,6 +754,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -723,6 +813,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (Assignment
                                                             (Var 11 last)
@@ -734,6 +825,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (DoLoop
                                                             ()
@@ -777,6 +869,7 @@
                                                                         ()
                                                                     )
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 (SubroutineCall
                                                                     8 swp
@@ -920,6 +1013,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -938,6 +1035,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -955,6 +1056,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -985,16 +1090,19 @@
                                                         (Var 10 tmp)
                                                         (Var 10 lhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 lhs)
                                                         (Var 10 rhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 10 rhs)
                                                         (Var 10 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1018,6 +1126,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -1056,6 +1168,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1072,6 +1188,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1087,6 +1207,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1113,16 +1237,19 @@
                                                         (Var 19 tmp)
                                                         (Var 19 lhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 19 lhs)
                                                         (Var 19 rhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 19 rhs)
                                                         (Var 19 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1150,6 +1277,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1166,6 +1297,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1181,6 +1316,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1207,16 +1346,19 @@
                                                         (Var 20 tmp)
                                                         (Var 20 lhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 20 lhs)
                                                         (Var 20 rhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 20 rhs)
                                                         (Var 20 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1239,12 +1381,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -1257,12 +1406,19 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -1275,6 +1431,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1282,14 +1441,24 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_swp2
                                                     (FunctionType
                                                         [(StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 my_type
                                                         )
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 my_type
                                                         )]
                                                         ()
@@ -1311,16 +1480,19 @@
                                                         (Var 21 tmp)
                                                         (Var 21 lhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 21 lhs)
                                                         (Var 21 rhs)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 21 rhs)
                                                         (Var 21 tmp)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1342,6 +1514,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             qsort_integer:
@@ -1369,6 +1545,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -1384,6 +1564,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             i:
@@ -1401,6 +1585,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -1416,6 +1604,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             low:
@@ -1433,6 +1625,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -1448,6 +1644,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -1499,6 +1699,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (Assignment
                                                             (Var 15 last)
@@ -1510,6 +1711,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (DoLoop
                                                             ()
@@ -1551,6 +1753,7 @@
                                                                         ()
                                                                     )
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 (SubroutineCall
                                                                     14 __asr_swp
@@ -1676,6 +1879,9 @@
                                                                     Default
                                                                     (Array
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         [(()
@@ -1686,6 +1892,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             high:
@@ -1703,6 +1913,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1718,6 +1932,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             last:
@@ -1735,6 +1953,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -1751,6 +1973,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -1762,6 +1988,9 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     ()
@@ -1769,12 +1998,19 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     qsort_my_type
                                                     (FunctionType
                                                         [(Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 5 my_type
                                                             )
                                                             [(()
@@ -1816,12 +2052,16 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (Assignment
                                                             (Var 17 last)
@@ -1833,6 +2073,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (DoLoop
                                                             ()
@@ -1856,6 +2097,9 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -1876,6 +2120,7 @@
                                                                         ()
                                                                     )
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 (SubroutineCall
                                                                     14 __asr_swp2
@@ -1886,6 +2131,9 @@
                                                                         (Var 17 last)
                                                                         ())]
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -1897,6 +2145,9 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             5 my_type
                                                                         )
                                                                         ColMajor
@@ -1923,6 +2174,9 @@
                                                                 )
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -1934,6 +2188,9 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     5 my_type
                                                                 )
                                                                 ColMajor
@@ -1950,6 +2207,9 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -1971,6 +2231,9 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         5 my_type
                                                                     )
                                                                     [(()
@@ -2022,6 +2285,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -2037,6 +2304,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             i:
@@ -2054,6 +2325,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -2069,6 +2344,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             low:
@@ -2086,6 +2365,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -2101,6 +2384,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -2152,6 +2439,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (Assignment
                                                             (Var 16 last)
@@ -2163,6 +2451,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )
                                                         (DoLoop
                                                             ()
@@ -2204,6 +2493,7 @@
                                                                         ()
                                                                     )
                                                                     ()
+                                                                    .false.
                                                                 )
                                                                 (SubroutineCall
                                                                     14 __asr_swp1
@@ -2333,6 +2623,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             xm:
                                                 (Variable
@@ -2345,6 +2639,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             5 my_type
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2355,6 +2652,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             xr:
@@ -2376,6 +2677,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -2410,6 +2715,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 14 xr)
@@ -2425,6 +2731,7 @@
                                             ColMajor
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -2439,6 +2746,9 @@
                                                 (Var 14 i)
                                                 ())]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     5 my_type
                                                 )
                                                 ColMajor
@@ -2456,11 +2766,15 @@
                                                     ()
                                                 ))]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     5 my_type
                                                 )
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )
@@ -2511,6 +2825,9 @@
                                             DescriptorArray
                                             (Array
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     5 my_type
                                                 )
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
@@ -2524,19 +2841,31 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 14 xi)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 14 xi)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (Print
-                                        [(Var 14 xr)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 14 xr)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (Print
-                                        [(Var 14 xm)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 14 xm)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )]
                                     ()
                                     Private
@@ -2581,12 +2910,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 my_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             res:
@@ -2604,6 +2940,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -2615,6 +2955,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 my_type
                                                     )
                                                     ()
@@ -2622,14 +2965,24 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     lt_my_type
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 my_type
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 my_type
                                         )]
                                         (Logical 4)
@@ -2667,6 +3020,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 res)
                                     Public
@@ -2694,11 +3048,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     my_type
                                     []
                                     [d]
+                                    []
                                     Source
                                     Public
                                     .false.

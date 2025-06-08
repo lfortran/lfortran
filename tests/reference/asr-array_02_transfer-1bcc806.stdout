@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     array_02_transfer
@@ -45,32 +49,37 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(BitCast
-                            (Var 2 m)
-                            (ArrayConstant
-                                4
-                                [1.00000000e+00]
+                        (StringFormat
+                            ()
+                            [(BitCast
+                                (Var 2 m)
+                                (ArrayConstant
+                                    4
+                                    [1.00000000e+00]
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                                ()
                                 (Array
                                     (Real 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    (IntegerConstant 64 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
-                                ColMajor
-                            )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            (Array
-                                (Real 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 64 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

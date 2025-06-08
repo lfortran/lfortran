@@ -1,0 +1,748 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            data_12_module:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            bf1:
+                                (Variable
+                                    2
+                                    bf1
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.800000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.800000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            c1:
+                                (Variable
+                                    2
+                                    c1
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        16
+                                        [0.00000000e+00, 2.19999999e-01, -1.40000001e-01, -2.09999993e-01]
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        16
+                                        [0.00000000e+00, 2.19999999e-01, -1.40000001e-01, -2.09999993e-01]
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Default
+                                    (Array
+                                        (Real 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            td:
+                                (Variable
+                                    2
+                                    td
+                                    []
+                                    Local
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    2
+                                    x
+                                    []
+                                    Local
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            xx90:
+                                (Variable
+                                    2
+                                    xx90
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.550000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.550000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            xx95:
+                                (Variable
+                                    2
+                                    xx95
+                                    []
+                                    Local
+                                    (RealConstant
+                                        0.620000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        0.620000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    data_12_module
+                    []
+                    .false.
+                    .false.
+                ),
+            data_12_program:
+                (Program
+                    (SymbolTable
+                        3
+                        {
+                            b:
+                                (ExternalSymbol
+                                    3
+                                    b
+                                    2 b
+                                    data_12_module
+                                    []
+                                    b
+                                    Public
+                                ),
+                            bf1:
+                                (ExternalSymbol
+                                    3
+                                    bf1
+                                    2 bf1
+                                    data_12_module
+                                    []
+                                    bf1
+                                    Public
+                                ),
+                            c1:
+                                (ExternalSymbol
+                                    3
+                                    c1
+                                    2 c1
+                                    data_12_module
+                                    []
+                                    c1
+                                    Public
+                                ),
+                            td:
+                                (ExternalSymbol
+                                    3
+                                    td
+                                    2 td
+                                    data_12_module
+                                    []
+                                    td
+                                    Public
+                                ),
+                            x:
+                                (ExternalSymbol
+                                    3
+                                    x
+                                    2 x
+                                    data_12_module
+                                    []
+                                    x
+                                    Public
+                                ),
+                            xx90:
+                                (ExternalSymbol
+                                    3
+                                    xx90
+                                    2 xx90
+                                    data_12_module
+                                    []
+                                    xx90
+                                    Public
+                                ),
+                            xx95:
+                                (ExternalSymbol
+                                    3
+                                    xx95
+                                    2 xx95
+                                    data_12_module
+                                    []
+                                    xx95
+                                    Public
+                                ),
+                            y:
+                                (ExternalSymbol
+                                    3
+                                    y
+                                    2 y
+                                    data_12_module
+                                    []
+                                    y
+                                    Public
+                                ),
+                            z:
+                                (ExternalSymbol
+                                    3
+                                    z
+                                    2 z
+                                    data_12_module
+                                    []
+                                    z
+                                    Public
+                                )
+                        })
+                    data_12_program
+                    [data_12_module]
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 3 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 3 x)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 3 y)
+                                    Sub
+                                    (RealConstant
+                                        2.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 3 z)
+                                    Sub
+                                    (RealConstant
+                                        3.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 3 c1)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 3 c1)
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 3 c1)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 3 c1)
+                                        [(()
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Sub
+                                    (RealConstant
+                                        0.220000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 3 c1)
+                                [(()
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                ())]
+                                (Real 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (ArrayItem
+                                        (Var 3 c1)
+                                        [(()
+                                        (IntegerConstant 4 (Integer 4) Decimal)
+                                        ())]
+                                        (Real 4)
+                                        ColMajor
+                                        ()
+                                    )
+                                    Add
+                                    (RealConstant
+                                        0.210000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 bf1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 3 bf1)
+                                    Sub
+                                    (RealConstant
+                                        0.800000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 xx90)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 3 xx90)
+                                    Sub
+                                    (RealConstant
+                                        0.550000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 3 xx95)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 3 xx95)
+                                    Sub
+                                    (RealConstant
+                                        0.620000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            Gt
+                            (RealConstant
+                                0.000010
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

@@ -1,6 +1,5 @@
 #include <iostream>
 #include <string>
-#include <sstream>
 #include <cctype>
 
 #include <lfortran/parser/parser.h>
@@ -29,11 +28,11 @@ bool is_program_end(AST::Name_t* name) {
     // "end program" should not be a name. Ideally, it should be a special entity.
     // It is used as a Name_t here, so that `end`, `endprogram` and `end program`
     // can all be handled together and this simplifies the code logic.
-    return (strcmp(name->m_id, "end") == 0 || strcmp(name->m_id, "endprogram") == 0
-            || strcmp(name->m_id, "end program") == 0);
+    return (to_lower(name->m_id) == "end" || to_lower(name->m_id) == "endprogram"
+            || to_lower(name->m_id) == "end program");
 }
 
-void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast) {
+void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics) {
     Vec<AST::ast_t*> global_items; global_items.reserve(al, 0);
     Vec<AST::unit_decl1_t*> use; use.reserve(al, 0);
     Vec<AST::implicit_statement_t*> implicit; implicit.reserve(al, 0);
@@ -47,8 +46,11 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                 || ast.m_items[i]->type == AST::astType::mod) {
                 global_items.push_back(al, ast.m_items[i]);
             } else {
-                throw parser_local::ParserError("Only function, subroutine, procedure, module, submodule or"
-                    " block data allowed in global scope in non-interactive mode", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Only function, subroutine, procedure, module, submodule or"
+                    " block data allowed in global scope in non-interactive mode",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else if (contains) {
             if (ast.m_items[i]->type == AST::astType::program_unit) {
@@ -65,13 +67,22 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
                         global_items.push_back(al, program_ast);
                         program_added = true;
                     } else {
-                        throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", name->base.base.loc);
+                        diagnostics.add(diag::Diagnostic(
+                            "Expected function, subroutine, procedure in program contains",
+                            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {name->base.base.loc})}));
+                        throw parser_local::ParserAbort();
                     }
                 } else {
-                    throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", expr->base.loc);
+                    diagnostics.add(diag::Diagnostic(
+                        "Expected function, subroutine, procedure in program contains",
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {expr->base.loc})}));
+                    throw parser_local::ParserAbort();
                 }
             } else {
-                throw parser_local::ParserError("Expected function, subroutine, procedure in program contains", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Expected function, subroutine, procedure in program contains",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else if (ast.m_items[i]->type == AST::astType::stmt) {
             body.push_back(al, AST::down_cast<AST::stmt_t>(ast.m_items[i]));
@@ -87,9 +98,21 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
             AST::expr_t* expr = AST::down_cast<AST::expr_t>(ast.m_items[i]);
             if (AST::is_a<AST::Name_t>(*expr)) {
                 AST::Name_t* name = AST::down_cast<AST::Name_t>(expr);
-                if (strcmp(name->m_id, "stop") == 0) {
+                if (to_lower(name->m_id) == "stop") {
                     AST::ast_t* stop_ast = AST::make_Stop_t(al, name->base.base.loc, 0, nullptr, nullptr, nullptr);
                     body.push_back(al, AST::down_cast<AST::stmt_t>(stop_ast));
+                } else if (to_lower(name->m_id) == "return") {
+                    AST::ast_t* return_ast = AST::make_Return_t(al, name->base.base.loc, 0, nullptr, nullptr);
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(return_ast));
+                } else if (to_lower(name->m_id) == "exit") {
+                    AST::ast_t* exit_ast = AST::make_Exit_t(al, name->base.base.loc, 0, name->m_id, nullptr);
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(exit_ast));
+                } else if (to_lower(name->m_id) == "cycle") {
+                    AST::ast_t* cycle_ast = AST::make_Cycle_t(al, name->base.base.loc, 0, name->m_id, nullptr);
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(cycle_ast));
+                } else if (to_lower(name->m_id) == "continue") {
+                    AST::ast_t* continue_ast = AST::make_Continue_t(al, name->base.base.loc, 0, nullptr);
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(continue_ast));
                 } else if (is_program_end(name)) {
                     AST::ast_t* program_ast = AST::make_Program_t(al, ast.base.base.loc, s2c(al, "__xx_main"), nullptr,
                     use.p, use.size(), implicit.p, implicit.size(), decl.p, decl.size(),
@@ -97,20 +120,114 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 
                     global_items.push_back(al, program_ast);
                     program_added = true;
-                } else if (strcmp(name->m_id, "contains") == 0) {
+                } else if (to_lower(name->m_id) == "contains") {
                     contains = true;
                 } else {
-                    throw parser_local::ParserError("Statement or Declaration expected inside program, found Variable name", ast.m_items[i]->loc);
+                    diagnostics.add(diag::Diagnostic(
+                        "Statement or Declaration expected inside program, found Variable name",
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                    throw parser_local::ParserAbort();
+                }
+            } else if (AST::is_a<AST::FuncCallOrArray_t>(*expr)) {
+                AST::FuncCallOrArray_t* func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(expr);
+                if (to_lower(func_call_or_array->m_func) == "allocate") {
+                    AST::ast_t* allocate_ast = AST::make_Allocate_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    func_call_or_array->m_args,
+                                                    func_call_or_array->n_args,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(allocate_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "deallocate") {
+                    AST::ast_t* deallocate_ast = AST::make_Deallocate_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    func_call_or_array->m_args,
+                                                    func_call_or_array->n_args,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(deallocate_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "open") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* open_ast = AST::make_Open_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(open_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "close") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* close_ast = AST::make_Close_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(close_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "nullify") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* nullify_ast = AST::make_Nullify_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(nullify_ast));
+                } else if (to_lower(func_call_or_array->m_func) == "flush") {
+                    Vec<AST::expr_t*> args; args.reserve(al, func_call_or_array->n_args);
+                    for (size_t j = 0; j < func_call_or_array->n_args; j++) {
+                        args.push_back(al, func_call_or_array->m_args[j].m_end);
+                    }
+                    AST::ast_t* flush_ast = AST::make_Flush_t(al,
+                                                    func_call_or_array->base.base.loc,
+                                                    0,
+                                                    args.p,
+                                                    args.n,
+                                                    func_call_or_array->m_keywords,
+                                                    func_call_or_array->n_keywords,
+                                                    nullptr);
+
+                    body.push_back(al, AST::down_cast<AST::stmt_t>(flush_ast));
                 }
             } else {
-                throw parser_local::ParserError("Statement or Declaration expected inside program, found Expression", ast.m_items[i]->loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Statement or Declaration expected inside program, found Expression",
+                    diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.m_items[i]->loc})}));
+                throw parser_local::ParserAbort();
             }
         } else {
             global_items.push_back(al, ast.m_items[i]);
         }
     }
     if (!program_added) {
-        throw parser_local::ParserError("Expected program end", ast.base.base.loc);
+        diagnostics.add(diag::Diagnostic(
+            "Expected program end",
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {ast.base.base.loc})}));
+        throw parser_local::ParserAbort();
     }
     ast.m_items = global_items.p;
     ast.n_items = global_items.size();
@@ -119,18 +236,15 @@ void fix_program_without_program_line(Allocator &al, AST::TranslationUnit_t &ast
 Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         diag::Diagnostics &diagnostics, const CompilerOptions &co)
 {
-    Parser p(al, diagnostics, co.fixed_form);
+    Parser p(al, diagnostics, co.fixed_form, co.continue_compilation);
     try {
         if (!p.parse(s)) {
-            return Error();
+            if (!co.continue_compilation) {
+                return Error();
+            }
         };
-    } catch (const parser_local::TokenizerError &e) {
+    } catch (const parser_local::ParserAbort &) {
         Error error;
-        diagnostics.diagnostics.push_back(e.d);
-        return error;
-    } catch (const parser_local::ParserError &e) {
-        Error error;
-        diagnostics.diagnostics.push_back(e.d);
         return error;
     }
     Location l;
@@ -145,11 +259,12 @@ Result<AST::TranslationUnit_t*> parse(Allocator &al, const std::string &s,
         p.result.p, p.result.size());
     if (!co.interactive && !co.fixed_form && is_program_needed(*ast)) {
         try {
-            fix_program_without_program_line(al, *ast);
-        } catch (const parser_local::ParserError &e) {
+            fix_program_without_program_line(al, *ast, diagnostics);
+        }  catch (const parser_local::ParserAbort &) {
             Error error;
-            diagnostics.diagnostics.push_back(e.d);
-            return error;
+            if (!co.continue_compilation) {
+                return error;
+            }
         }
     }
     return ast;
@@ -165,29 +280,51 @@ bool Parser::parse(const std::string &input)
     }
     if (!fixed_form) {
         m_tokenizer.set_string(inp);
-        if (yyparse(*this) == 0) {
-            return true;
+        try {
+            if (yyparse(*this) == 0) {
+                if (diag.has_error())
+                    return false;
+                return true;
+            }
+        } catch (const parser_local::TokenizerAbort &e) {
+            return false;
         }
     } else {
         f_tokenizer.set_string(inp);
-        if (!f_tokenizer.tokenize_input(diag, m_a)) return false;
+        if (!f_tokenizer.tokenize_input(diag, m_a, this->continue_compilation)) return false;
         if (yyparse(*this) == 0) {
+            if (diag.has_error())
+                return false;
             return true;
         }
     }
-    throw parser_local::ParserError("Parsing unsuccessful (internal compiler error)");
+
+    if (!diag.has_error()) {
+        if (this->continue_compilation) {
+            diag.add(diag::Diagnostic(
+                "Parsing unsuccessful (internal compiler error)",
+                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
+        } else {
+            diag.add(diag::Diagnostic(
+                "Parsing unsuccessful (internal compiler error)",
+                diag::Level::Error, diag::Stage::Parser, {diag::Label("", {})}));
+            throw parser_local::ParserAbort();
+        }
+    }
+    return false;
 }
 
 Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
         std::vector<Location> *locations,
-        bool fixed_form)
+        bool fixed_form,
+        bool continue_compilation)
 {
     if (fixed_form) {
         FixedFormTokenizer t;
         t.set_string(input);
-        if (t.tokenize_input(diagnostics, al)) {
+        if (t.tokenize_input(diagnostics, al, false)) {
             LCOMPILERS_ASSERT(t.tokens.size() == t.stypes.size())
             if (stypes) {
                 for(const auto & el : t.stypes) {
@@ -212,9 +349,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
             YYSTYPE y;
             Location l;
             try {
-                token = t.lex(al, y, l, diagnostics);
-            } catch (const parser_local::TokenizerError &e) {
-                diagnostics.diagnostics.push_back(e.d);
+                token = t.lex(al, y, l, diagnostics, continue_compilation);
+            } catch (const parser_local::TokenizerAbort &e) {
                 return Error();
             }
             tst.push_back(token);
@@ -225,12 +361,66 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
     }
 }
 
-void cont1(const std::string &s, size_t &pos, bool &ws_or_comment)
-{
+char previous_nonspace_character(const std::string &s, size_t pos) {
+    while (pos > 0) {
+        --pos;
+        if (s[pos] != ' ' && s[pos] != '\t') {
+            return s[pos];
+        }
+    }
+    return '\0';
+}
+
+char next_nonspace_character(const std::string &s, size_t pos) {
+    pos++;
+    while (pos < s.size()) {
+        if (s[pos] != ' ' && s[pos] != '\t') {
+            return s[pos];
+        }
+        ++pos;
+    }
+    return '\0';
+}
+
+
+void is_within_string(
+    const std::string &s,
+    size_t pos,
+    char &quote,
+    const bool in_comment,
+    bool &in_string
+) {
+    // when in a comment, as everything is ignored, wearen't in string
+    if (in_comment) {
+        return;
+    }
+    if ((s[pos] == '\'' || s[pos] == '"')) {
+        if (quote == '\0') {
+            in_string = true;
+            quote = s[pos];
+        } else if (quote == s[pos]) {
+            in_string = false;
+            quote = '\0';
+        }
+    }
+}
+
+void cont1(
+    const std::string &s,
+    size_t &pos,
+    bool &in_string,
+    char &quote,
+    bool &ws_or_comment
+) {
     ws_or_comment = true;
     bool in_comment = false;
     while (s[pos] != '\n') {
-        if (s[pos] == '!') in_comment = true;
+        // when in a comment, as everything is ignore, wearen't in string
+        is_within_string(s, pos, quote, in_comment, in_string);
+        // in a string if '&!' appear together then it isn't a comment
+        if (s[pos] == '!' && (!in_string || previous_nonspace_character(s, pos) != '&')) {
+            in_comment = true;
+        }
         if (!in_comment) {
             if (s[pos] != ' ' && s[pos] != '\t') {
                 ws_or_comment = false;
@@ -253,7 +443,7 @@ enum LineType {
 
 // Determines the type of line in the fixed-form prescanner
 // `pos` points to the first character (column) of the line
-// The line ends with either `\n` or `\0`.
+// The line ends with either `\n` or `\0`.  Only used for fixed-form
 LineType determine_line_type(const unsigned char *pos)
 {
     int col=1;
@@ -284,7 +474,9 @@ LineType determine_line_type(const unsigned char *pos)
             pos++;
             col+=1;
         }
-        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')) return LineType::Comment;
+        if (*pos == '\n' || *pos == '\0' || (*pos == '\r' && *(pos+1) == '\n')
+	    || col > 72)
+	  return LineType::Comment;
         if (*pos == '!' && col != 6) return LineType::Comment;
         if (col == 6) {
             if (*pos == ' ' || *pos == '0') {
@@ -295,7 +487,7 @@ LineType determine_line_type(const unsigned char *pos)
         }
         if (col <= 6) {
             return LineType::LabeledStatement;
-        } else if (std::string(pos, pos + 7) == "include") {
+        } else if (str_compare(pos, "include")) {
             return LineType::Include;
         } else {
             return LineType::Statement;
@@ -313,27 +505,52 @@ void skip_rest_of_line(const std::string &s, size_t &pos)
 
 // Parses string, including possible continuation lines
 void parse_string(std::string &out, const std::string &s, size_t &pos,
-    bool fixed_form)
+    bool fixed_form, int &col)
 {
     char quote = s[pos];
     LCOMPILERS_ASSERT(quote == '"' || quote == '\'');
     out += s[pos];
     pos++;
-    while (pos < s.size() && ! (s[pos] == quote && s[pos+1] != quote)) {
+    col++;
+
+    while (pos < s.size()) {
+        if (fixed_form) {
+	    if (col > 72) {
+		skip_rest_of_line(s, pos);
+		col = 7;
+		pos += 6;
+		continue;
+	    } else if (s[pos] == quote && (col == 72 || s[pos+1] != quote)) {
+		break;
+	    }
+        } else {
+	    if (s[pos] == quote && s[pos+1] != quote) break;
+	}
         if (s[pos] == '\n') {
             pos++;
-            if (fixed_form) pos += 6;
+            if (fixed_form) {
+                col = 7;
+                pos += 6;
+            } else {
+                col = 1;
+            }
             continue;
         }
-        if (s[pos] == quote && s[pos+1] == quote) {
+        if (s[pos] == quote && s[pos+1] == quote && (!fixed_form || col < 72)) {
+	    // Emit a doubled quote
             out += s[pos];
             pos++;
+            col++;
         }
         out += s[pos];
         pos++;
+        col++;
     }
-    out += s[pos]; // Copy the last quote
-    pos++;
+    if (pos < s.size()) {
+	out += s[pos]; // Copy the last quote
+	pos++;
+	col++;
+    }
 }
 
 bool is_num(char c)
@@ -353,11 +570,16 @@ void copy_label(std::string &out, const std::string &s, size_t &pos)
 
 // Only used in fixed-form
 void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
-    LocationManager &lm)
+		       LocationManager &lm, int &col)
 {
     while (pos < s.size() && s[pos] != '\n') {
+        if (col > 72) {
+            skip_rest_of_line(s, pos);
+            out += '\n';
+            return;
+        }
         if (s[pos] == '"' || s[pos] == '\'') {
-            parse_string(out, s, pos, true);
+            parse_string(out, s, pos, true, col);
         } else if (s[pos] == '!') {
             skip_rest_of_line(s, pos);
             out += '\n';
@@ -365,17 +587,20 @@ void copy_rest_of_line(std::string &out, const std::string &s, size_t &pos,
         } else if (s[pos] == ' ') {
             // Skip white space in a fixed-form parser
             pos++;
+            col++;
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
         } else if (s[pos] == '\r') {
             // Skip CR in a fixed-form parser
             pos++;
+            // Don't advance the column count here
             lm.files.back().out_start.push_back(out.size());
             lm.files.back().in_start.push_back(pos);
         } else {
             // Copy the character, but covert to lowercase
             out += tolower(s[pos]);
             pos++;
+            col++;
         }
     }
     // not always a program end's with '\n', but when it does, copy it
@@ -400,10 +625,11 @@ bool check_newlines(const std::string &s, const std::vector<uint32_t> &newlines)
 
 void process_include(std::string& out, const std::string& s,
                      LocationManager& lm, size_t& pos, bool fixed_form,
-                     std::vector<std::filesystem::path> &include_dirs)
+                     std::vector<std::filesystem::path> &include_dirs,
+                     int &col)
 {
     std::string include_filename;
-    parse_string(include_filename, s, pos, false);
+    parse_string(include_filename, s, pos, fixed_form, col);
     include_filename = include_filename.substr(1, include_filename.size() - 2);
 
     bool file_found = false;
@@ -458,6 +684,15 @@ bool is_include(const std::string &s, uint32_t pos) {
     }
 }
 
+/*
+The prescan phase includes:
+- Removal of whitespace (fixed-form only)
+- Joining of continuation lines
+- Removal of comments and empty lines
+- Handling of include statements
+- Conversion to lowercase (fixed-form only)
+- Handling of fixed-form column rules (columns 1–6 for labels/comments)
+*/
 std::string prescan(const std::string &s, LocationManager &lm,
         bool fixed_form, std::vector<std::filesystem::path> &include_dirs)
 {
@@ -483,7 +718,6 @@ std::string prescan(const std::string &s, LocationManager &lm,
          *
          *   * Continuation lines after comment(s) or empty lines (they will be
          *     appended to the previous comment, and thus skipped)
-         *   * Characters after column 72 are included, but should be ignored
          *
          * After the prescanner, the tokenizer is itself a recursive descent
          * parser that correctly identifies tokens so that the Bison
@@ -491,6 +725,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
          */
         while (true) {
             const char *p = &s[pos];
+            int col = 7;  // Valid after p is advanced to code begin
             LineType lt = determine_line_type((const unsigned char*)p);
             switch (lt) {
                 case LineType::Comment : {
@@ -505,7 +740,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::StatementTab : {
@@ -513,7 +748,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 1;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::LabeledStatement : {
@@ -522,7 +757,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     // Copy from column 7
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::Continuation : {
@@ -531,7 +766,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 6;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::ContinuationTab : {
@@ -540,7 +775,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     pos += 2;
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                    copy_rest_of_line(out, s, pos, lm);
+                    copy_rest_of_line(out, s, pos, lm, col);
                     break;
                 }
                 case LineType::Include: {
@@ -550,7 +785,7 @@ std::string prescan(const std::string &s, LocationManager &lm,
                     while (pos < s.size() && s[pos] == ' ') pos++;
                     if ((s[pos] == '"') || (s[pos] == '\'')) {
                         process_include(out, s, lm, pos, fixed_form,
-                            include_dirs);
+                            include_dirs, col);
                     }
                     break;
                 }
@@ -564,52 +799,60 @@ std::string prescan(const std::string &s, LocationManager &lm,
         lm.files.back().out_start.push_back(out.size());
         return out;
     } else {
-        // `pos` is the position in the original code `s`
+         // `pos` is the position in the original code `s`
         // `out` is the final code (outcome)
         lm.files.back().out_start.push_back(0);
         lm.files.back().in_start.push_back(0);
         std::string out;
         size_t pos = 0;
         bool in_comment = false, newline = true;
+        // keeps track of whether we're in a string or not
+        bool in_string = false;
+        // if `in_string` is true, keeps track of the quote
+        // used for that string
+        char quote = '\0';
         while (pos < s.size()) {
+            is_within_string(s, pos, quote, in_comment, in_string);
             if (newline && is_include(s, pos)) {
+                int col = 0; // doesn't matter
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos + 6 < s.size() && s.substr(pos, 7) == "include")
                 pos += 7;
                 while (pos < s.size() && s[pos] == ' ') pos++;
                 LCOMPILERS_ASSERT(pos < s.size() && ((s[pos] == '"') || (s[pos] == '\'')));
-                process_include(out, s, lm, pos, fixed_form, include_dirs);
+                process_include(out, s, lm, pos, fixed_form, include_dirs, col);
             }
             newline = false;
-            if (s[pos] == '!') in_comment = true;
+            if (s[pos] == '!' && !in_string) in_comment = true;
             if (in_comment && s[pos] == '\n') in_comment = false;
-            if (!in_comment && s[pos] == '&') {
+            if (!in_comment && s[pos] == '&' &&(next_nonspace_character(s,pos) == '\n' || next_nonspace_character(s,pos) == '!')) {
                 size_t pos2=pos+1;
-                bool ws_or_comment;
-                cont1(s, pos2, ws_or_comment);
+                bool ws_or_comment = false;
+                cont1(s, pos2, in_string, quote, ws_or_comment);
                 if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
                 if (ws_or_comment) {
                     while (ws_or_comment) {
-                        cont1(s, pos2, ws_or_comment);
+                        cont1(s, pos2, in_string, quote, ws_or_comment);
                         if (ws_or_comment) lm.files.back().in_newlines.push_back(pos2-1);
-                    }
+                    }}
                     // `pos` will move by more than 1, close the old interval
-    //                lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
+                    //lm.in_size.push_back(pos-lm.in_start[lm.in_start.size()-1]);
                     // Move `pos`
                     pos = pos2;
-                    if (s[pos] == '&') pos++;
                     // Start a new interval (just the starts, the size will be
                     // filled in later)
                     lm.files.back().out_start.push_back(out.size());
                     lm.files.back().in_start.push_back(pos);
-                }
+                
             } else {
                 if (s[pos] == '\n') {
                     lm.files.back().in_newlines.push_back(pos);
                     newline = true;
                 }
             }
-            out += s[pos];
+            if (!(s[pos] == '&' &&  previous_nonspace_character(s, pos) == '\n')){
+                out += s[pos];
+            }
             pos++;
         }
         // set the size of the last interval
@@ -915,7 +1158,16 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             unsigned int invalid_token = this->f_tokenizer.token_pos;
             if (invalid_token == 0 || invalid_token > f_tokenizer.tokens.size()) {
                 message = "unknown error";
-                throw parser_local::ParserError(message, loc);
+                if (this->continue_compilation) {
+                    diag.add(diag::Diagnostic(
+                        message,
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+                } else {
+                    diag.add(diag::Diagnostic(
+                        message,
+                        diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+                    throw parser_local::ParserAbort();
+                }
             }
             invalid_token--;
             LCOMPILERS_ASSERT(invalid_token < f_tokenizer.tokens.size())
@@ -927,7 +1179,7 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
             LFortran::YYSTYPE yylval_;
             YYLTYPE yyloc_;
             this->m_tokenizer.cur = this->m_tokenizer.tok;
-            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag);
+            token = this->m_tokenizer.lex(this->m_a, yylval_, yyloc_, diag, this->continue_compilation);
             token_str = this->m_tokenizer.token();
         }
         // Create a nice error message
@@ -946,7 +1198,16 @@ void Parser::handle_yyerror(const Location &loc, const std::string &msg)
     } else {
         message = "Internal Compiler Error: parser returned unknown error";
     }
-    throw parser_local::ParserError(message, loc);
+    if (this->continue_compilation) {
+        diag.add(diag::Diagnostic(
+            message,
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+    } else {
+        diag.add(diag::Diagnostic(
+            message,
+            diag::Level::Error, diag::Stage::Parser, {diag::Label("", {loc})}));
+        throw parser_local::ParserAbort();
+    }
 }
 
 } // namespace LCompilers::LFortran

@@ -37,37 +37,45 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     stdlib_quadrature
                     [stdlib_quadrature_simps]
                     [(Print
-                        [(FunctionCall
-                            5 simps38_weights_dp
+                        (StringFormat
                             ()
-                            [((ArrayPhysicalCast
-                                (Var 5 x1)
-                                FixedSizeArray
-                                PointerToDataArray
+                            [(FunctionCall
+                                5 simps38_weights_dp
+                                ()
+                                [((ArrayPhysicalCast
+                                    (Var 5 x1)
+                                    FixedSizeArray
+                                    PointerToDataArray
+                                    (Array
+                                        (Real 8)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        PointerToDataArray
+                                    )
+                                    ()
+                                ))]
                                 (Array
                                     (Real 8)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 4 (Integer 4) Decimal))]
-                                    PointerToDataArray
+                                    FixedSizeArray
                                 )
                                 ()
-                            ))]
-                            (Array
-                                (Real 8)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 4 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             stdlib_quadrature_simps:
@@ -107,6 +115,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -127,6 +139,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -189,6 +205,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     simps38_weights_dp_use
@@ -214,21 +234,25 @@
                                     [simps38_weights_dp]
                                     [(Var 4 x1)]
                                     [(Print
-                                        [(FunctionCall
-                                            2 simps38_weights_dp
-                                            2 simps38_weights
-                                            [((Var 4 x1))]
-                                            (Array
-                                                (Real 8)
-                                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                                (IntegerConstant 4 (Integer 4) Decimal))]
-                                                FixedSizeArray
-                                            )
+                                        (StringFormat
                                             ()
+                                            [(FunctionCall
+                                                2 simps38_weights_dp
+                                                2 simps38_weights
+                                                [((Var 4 x1))]
+                                                (Array
+                                                    (Real 8)
+                                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                                                    FixedSizeArray
+                                                )
+                                                ()
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                        )
                                     )]
                                     ()
                                     Public

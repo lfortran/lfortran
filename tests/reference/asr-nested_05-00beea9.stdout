@@ -62,19 +62,28 @@
                                                     []
                                                     []
                                                     [(Print
-                                                        [(Var 3 x)]
-                                                        ()
-                                                        ()
+                                                        (StringFormat
+                                                            ()
+                                                            [(Var 3 x)]
+                                                            FormatFortran
+                                                            (String 1 () ExpressionLength CString)
+                                                            ()
+                                                        )
                                                     )
                                                     (Print
-                                                        [(Var 3 y)]
-                                                        ()
-                                                        ()
+                                                        (StringFormat
+                                                            ()
+                                                            [(Var 3 y)]
+                                                            FormatFortran
+                                                            (String 1 () ExpressionLength CString)
+                                                            ()
+                                                        )
                                                     )
                                                     (Assignment
                                                         (Var 3 x)
                                                         (IntegerConstant 4 (Integer 4) Decimal)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 3 y)
@@ -83,6 +92,7 @@
                                                             (Real 4)
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -105,6 +115,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -120,6 +134,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -144,6 +162,7 @@
                                         (Var 3 x)
                                         (IntegerConstant 6 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 3 y)
@@ -152,16 +171,25 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
-                                        [(Var 3 x)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 x)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (Print
-                                        [(Var 3 y)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 y)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (SubroutineCall
                                         3 c
@@ -170,14 +198,22 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 x)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 x)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (Print
-                                        [(Var 3 y)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 y)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )]
                                     ()
                                     Public

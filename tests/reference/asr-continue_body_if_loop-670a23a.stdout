@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             s:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             u:
@@ -59,6 +67,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     implicit_program_lfortran
@@ -70,6 +82,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (DoLoop
                         ()
@@ -95,6 +108,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (If
                             (RealCompare

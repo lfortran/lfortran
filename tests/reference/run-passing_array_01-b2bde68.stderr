@@ -1,4 +1,4 @@
-semantic error: Function 'test_01_interface' not found or not implemented yet (if it is intrinsic)
+semantic error: Function 'test_01_interface' not found (not user defined nor intrinsic)
   --> tests/errors/passing_array_01.f90:24:16
    |
 24 |         ret =  test_01_interface(len,value) ! This raise error as interfaces are strict on matching the number of ranks, so it doesn't find a match.

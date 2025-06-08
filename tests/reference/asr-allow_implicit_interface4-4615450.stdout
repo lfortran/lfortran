@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     dqk15w
@@ -73,6 +77,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             f_return_var_name:
                                                 (Variable
@@ -89,6 +97,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             hlgth:
                                                 (Variable
@@ -104,6 +116,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -146,6 +162,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     dqc25c
@@ -172,16 +192,20 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            2 f
+                        (StringFormat
                             ()
-                            [((Var 2 hlgth))]
-                            (Real 8)
+                            [(FunctionCall
+                                2 f
+                                ()
+                                [((Var 2 hlgth))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                     ()
                     Public
@@ -214,6 +238,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             c_return_var_name:
                                                 (Variable
@@ -230,6 +258,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -245,6 +277,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -287,6 +323,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -303,6 +343,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             func:
                                 (Variable
@@ -318,6 +362,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             sub2:
@@ -339,6 +387,10 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -391,16 +443,20 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            3 c
+                        (StringFormat
                             ()
-                            [((Var 3 d))]
-                            (Real 8)
+                            [(FunctionCall
+                                3 c
+                                ()
+                                [((Var 3 d))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                     (Var 3 func)
                     Public
@@ -433,6 +489,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             a_return_var_name:
                                                 (Variable
@@ -449,6 +509,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -464,6 +528,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -506,6 +574,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             sub:
                                 (Function
@@ -526,6 +598,10 @@
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -563,16 +639,20 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            4 a
+                        (StringFormat
                             ()
-                            [((Var 4 b))]
-                            (Real 8)
+                            [(FunctionCall
+                                4 a
+                                ()
+                                [((Var 4 b))]
+                                (Real 8)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             abs:
                                 (Function
@@ -48,6 +52,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -63,6 +71,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -84,12 +96,10 @@
                                     []
                                     [(Var 4 a)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "abs"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )
                                     (If
                                         (RealCompare
@@ -111,6 +121,7 @@
                                             (Var 4 r)
                                             (Var 4 a)
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 r)
@@ -120,6 +131,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 4 r)
@@ -142,6 +154,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             sum:
@@ -169,6 +185,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -185,6 +205,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -200,6 +224,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -226,12 +254,10 @@
                                     []
                                     [(Var 3 a)]
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "sum"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 r)
@@ -245,6 +271,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -275,6 +302,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -307,6 +335,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -328,6 +357,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -349,6 +379,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -372,6 +403,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare

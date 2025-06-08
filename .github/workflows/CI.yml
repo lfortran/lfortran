@@ -10,25 +10,55 @@ on:
     branches:
       - main
 
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
+# which eventually evaluates to: CI-7488 and 'sha' isn't used.
+# NOTE: `||` acts as a logical OR and a default operator both,
+# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
+# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
+# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
+# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
+  Print_Github_Concurrent_Group_and_Check_for_Added_Binary_Files:
+    name: Check for Added Binary Files
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Print github concurrent group name
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
+          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
+
+      - name: Check for Added Binary Files
+        run: |
+          python3 check_binary_file_in_git_history.py
+
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+        os: ["windows-2025", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
           create-args: >-
             python=${{ matrix.python-version }}
@@ -74,14 +104,33 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
             xonsh ci\build_tmp.xsh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
-            xonsh ci/test.xsh
+            case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
+            export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
+            shell ci/test.sh
+
+      - name: Test LFortran's Command Line Interface (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            ./test_lfortran_cmdline
+
+      - name: Test with specific Fortran standard
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b llvm --std=f23
+            ./run_tests.py -b llvm -f --std=f23 -nf16
 
       - name: Test (Windows)
         if: contains(matrix.os, 'windows')
@@ -94,8 +143,63 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\test.xsh
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
+            shell ci\test.sh
+
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
+      # ~/.bash_logout wanted to run `/usr/bin/clear_console -q` while exiting
+      # login shells which frequently erred on ubuntu-latest since the shell was
+      # not run interactively.
+      - name: Disable ~/.bash_logout (Linux)
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: mv -v ~/.bash_logout ~/.bash_logout.bak
+
+      - name: LSP Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        timeout-minutes: 5
+        env:
+            EXIT_SUCCESS: 0
+            EXIT_TIMEOUT: 124
+            EXIT_KILL: 137
+            MAX_ATTEMPTS: 3
+            SIGTERM_TIMEOUT: 60s
+            SIGKILL_TIMEOUT: 10s
+            PYTEST_TIMEOUT: 10
+        run: |
+            set -ex
+            pip install src/server/tests tests/server
+            timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                pytest -vv \
+                    --showlocals \
+                    --timeout=$PYTEST_TIMEOUT \
+                    --execution-strategy="concurrent" \
+                    tests/server
+            set +e
+            for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
+                echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
+                timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                    pytest -vv \
+                        --showlocals \
+                        --timeout=$PYTEST_TIMEOUT \
+                        --execution-strategy="parallel" \
+                        tests/server
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
+                    break
+                fi
+                echo "Command failed with exit code: $EXIT_CODE" 1>&2
+            done
+            set -e
+            exit $EXIT_CODE
 
   scipy:
     name: Check SciPy Build and Test Run
@@ -105,8 +209,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -123,6 +228,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -225,8 +331,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -257,9 +364,9 @@ jobs:
 
             ./emsdk activate 3.1.35
 
-            ./emsdk install node-14.18.2-64bit
+            ./emsdk install node-18.20.3-64bit
 
-            ./emsdk activate node-14.18.2-64bit
+            ./emsdk activate node-18.20.3-64bit
 
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
@@ -286,7 +393,7 @@ jobs:
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             which node
             node -v
-            node --experimental-wasm-bigint src/lfortran/tests/test_lfortran.js
+            node src/lfortran/tests/test_lfortran.js
 
       - name: Upload to wasm_builds
         shell: bash -l {0}
@@ -294,6 +401,7 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
+
 
   debug_outOfSource:
     name: Check Out-of-Source Debug build
@@ -306,6 +414,7 @@ jobs:
 
       - uses: mamba-org/setup-micromamba@v1.8.0
         with:
+          micromamba-version: '1.5.10-0'
           environment-file: src/ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -323,6 +432,7 @@ jobs:
             cmake -S src -B builddir -GNinja \
               -DCMAKE_BUILD_TYPE=RelWithDebInfo \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_KOKKOS=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -352,56 +462,6 @@ jobs:
           inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
 
-  debug:
-    name: Check Debug build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
-
   release:
     name: Check Release build
     runs-on: ubuntu-latest
@@ -410,8 +470,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -430,7 +491,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Release \
               -DWITH_LLVM=yes \
-              -DCMAKE_VERBOSE_MAKEFILE= yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
@@ -454,7 +515,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f
+            ./run_tests.py -b llvm -f -nf16
 
       - name: Test Installation
         shell: bash -e -l {0}
@@ -466,33 +527,40 @@ jobs:
             test -f inst/man/O/man/man1/lfortran.1
 
   third_party_code_compile:
-    name: Check Third Party Code Compilation
+    name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         os: ["macos-latest", "ubuntu-latest"]
+        llvm-version: ["11", "19"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
-          environment-file: ci/environment.yml
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
             bison=3.4
             openblas=0.3.21
             llvm-openmp=14.0.4
-            cmake=3.26.4
             make=4.3
+            openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Install libunwind
+        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
+        run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Build Linux
         shell: bash -e -l {0}
@@ -502,6 +570,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
@@ -518,214 +587,106 @@ jobs:
             ./build0.sh
             ./build1.sh
 
-      - name: Test Legacy Minpack (SciPy)
+      - name: Test third party codes
         shell: bash -e -x -l {0}
         run: |
-            git clone https://github.com/certik/minpack.git
-            cd minpack
-            git checkout -t origin/scipy30
-            git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
-            mkdir lf
-            cd lf
-            FC="$(pwd)/../../src/bin/lfortran --intrinsic-mangling" cmake ..
-            make
-            examples/example_hybrd
-            examples/example_hybrd1
-            examples/example_lmder1
-            examples/example_lmdif1
-            examples/example_primes
-            ctest
+            export PATH="$(pwd)/src/bin:$PATH"
+            RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
 
-      - name: Test Modern Minpack (Fortran-Lang)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/fortran-lang/minpack modern_minpack_01
-            cd modern_minpack_01
-            git checkout c0b5aea9fcd2b83865af921a7a7e881904f8d3c2
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
+      # The below projects are tested with a higher CMake version, so replace the current installed version
+      - name: Override cmake version to 3.31.2
+        if: contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf cmake=3.31.2
 
-      - name: Test Modern Minpack (check results)
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/Pranavchiku/modern_minpack.git modern_minpack_02
-            cd modern_minpack_02
-            git checkout -t origin/w5
-            git checkout fcde66ca86348eb0c4012dbdf0f4d8dba61261d8
-            $(pwd)/../src/bin/lfortran ./src/minpack.f90 -c --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_hybrd1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmdif1.f90 --legacy-array-sections
-            $(pwd)/../src/bin/lfortran ./examples/example_lmder1.f90 --legacy-array-sections
-
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_hybrd1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmdif1.f90 --legacy-array-sections
-            # $(pwd)/../src/bin/lfortran --fast ./examples/example_lmder1.f90 --legacy-array-sections
-
-      - name: Test dftatom
-        shell: bash -e -x -l {0}
-        run: |
-            git clone https://github.com/czgdp1807/dftatom.git
-            cd dftatom
-            git checkout -t origin/lf40
-            git checkout 6e0f6e7506440b042aae93e57b10444ee6c36f7a
-            export PATH="$(pwd)/../src/bin:$PATH"
-            make -f Makefile.manual
-            make -f Makefile.manual test
-            git clean -dfx
-            make -f Makefile.manual F90="lfortran --skip-pass=inline_function_calls,fma --fast"
-            make -f Makefile.manual test
-
-      - name: Test fastGPT ( ubuntu-latest )
-        shell: bash -e -x -l {0}
+      - name: Test Examples/Project 1
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
-            git checkout -t origin/lf6
-            git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
-            echo $CONDA_PREFIX
-            FC=$(pwd)/../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
-            make
-            ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
-            ldd ./gpt2
-            ldd ./chat
-            ldd ./test_basic_input
-            ldd ./test_chat
-            ldd ./test_more_inputs
+            cd ./examples/project1
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project1
 
-            git clean -dfx
-            git checkout -t origin/lf36run
-            git checkout c915a244354df2e23b0dc613e302893b496549e2
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
-
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
-            cd ..
-
-            mkdir lf-fast
-            cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_more_inputs
-            ./test_chat
-            ctest -V
-            cd ..
-
-            git clean -dfx
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
-
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
-
-            mkdir lf-fast
-            cd lf-fast
-            FC="$(pwd)/../../src/bin/lfortran --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
-
-            rm -rf fastGPT/
-
-      - name: Test fastGPT ( macos-latest )
-        shell: bash -e -x -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            git clone https://github.com/certik/fastGPT.git
-            cd fastGPT
-
-            git clean -dfx
-            git checkout -t origin/namelist
-            git checkout d3eef520c1be8e2db98a3c2189740af1ae7c3e06
-            curl -o model.dat -L https://huggingface.co/datasets/certik/fastGPT/resolve/main/model_fastgpt_124M_v1.dat
-
-            mkdir lf
-            cd lf
-            FC=$(pwd)/../../src/bin/lfortran CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
-            make VERBOSE=1
-            ln -s ../model.dat .
-            ./gpt2
-            ./test_basic_input
-            ./test_more_inputs
-            cd ..
-
-
-      - name: Test fpm
-        shell: bash -e -x -l {0}
+      - name: Test Examples/Project 2
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu')
         run: |
-            git clone https://github.com/certik/fpm.git
-            cd fpm
-            git checkout lfortran_build_1
-            git checkout ab02e3a57bc286c6e75b23098c209db8c27157ea
-            export PATH="$(pwd)/../src/bin:$PATH"
-            ./build.sh
+            cd ./examples/project2
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./doconcurrent
 
-      - name: Test stdlib
-        shell: bash -e -x -l {0}
+      - name: Test Examples/Project 3
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
-            git clone https://github.com/czgdp1807/stdlib.git
-            cd stdlib
-            export PATH="$(pwd)/../src/bin:$PATH"
+            cd ./examples/project3
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project3
 
-            git checkout lf20
-            git checkout abb1d33d6ae02d8b62a13be7f9e51f6117c67ba4
-            micromamba install -c conda-forge fypp gfortran
-            git clean -fdx
-            FC=lfortran cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
-            make -j8
-            ctest
-            ./build_test_gf.sh
-
-      - name: Test SNAP
-        shell: bash -e -x -l {0}
+      - name: Test Lapack
+        shell: bash -e -l {0}
         run: |
-            git clone https://github.com/certik/SNAP.git
-            cd SNAP
-            export PATH="$(pwd)/../src/bin:$PATH"
+            export PATH="$(pwd)/src/bin:$PATH"
+            git clone https://github.com/gxyd/lapack.git
+            cd lapack
+            git fetch origin lf_07
+            git checkout lf_07
+            git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+            cd build
+            micromamba create -f environment_unix.yml
+            micromamba activate lapack
+            ./build_lf.sh
 
-            git checkout lf7
-            git checkout 4da1d34db8561e580ea87d6e84e5ecd30efc1572
-            cd ./src
-            make -j8 FORTRAN=lfortran FFLAGS= MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
 
-            make clean
-            make -j8 FORTRAN=lfortran FFLAGS="--fast --skip-pass=promote_allocatable_to_nonallocatable" MPI=no OPENMP=no
-            ./gsnap ../qasnap/sample/inp out
+# Commented out to save CI runners:
+#  test-pixi:
+#    name: Pixi Build (${{ matrix.os }})
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: ["ubuntu-latest"]
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - uses: prefix-dev/setup-pixi@v0.8.1
+#        with:
+#          pixi-version: v0.37.0
+#          cache: true
+#      - name: LLVM 10
+#        run: |
+#          pixi run -e llvm10 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 11
+#        run: |
+#          pixi run -e llvm11 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run tests # Only run for LLVM 11
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 19
+#        run: |
+#          pixi run -e llvm19 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
 
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
+        # this is only run on ubuntu intentionally
+        os: ["ubuntu-latest"]
         # Note: The LLVM 11 test is redundant, since it is already tested by
         # most other tests (since LLVM 11 is our default version), but we have
         # it here as well for consistency, and that way other tests can freely
@@ -733,105 +694,82 @@ jobs:
         # exactly the same manner, to ensure that users can just change the
         # `llvmdev` version in their conda environment and everything will just
         # work.
-        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17"]
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+        python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '19')
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux_llvm.yml
           create-args: >-
+            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.4
+            openmpi=5.0.6
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '10')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.2
+            openmpi=5.0.6
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '12')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.3
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '12'))}}
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.llvm-version }}
 
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      # LLVM 10-16 all work in exactly the same way, so the test is identical
-      - name: Test Linux LLVM 10-16
-        if: contains(matrix.llvm-version, '17') == false
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm llvmImplicit
-            ./run_tests.py -b llvm llvmImplicit -f
-
-      # In LLVM 17 we can only compile a subset for now, so we have a dedicated
-      # LLVM 17 test here:
-      - name: Test Linux LLVM 17
-        if: contains(matrix.llvm-version, '17') == true
-        shell: bash -e -l {0}
-        run: |
-            src/bin/lfortran --show-llvm examples/expr2.f90
-            src/bin/lfortran examples/expr2.f90
-            ./expr2.out
-            src/bin/lfortran --show-llvm integration_tests/print_03.f90
-            src/bin/lfortran integration_tests/print_03.f90
-            ./print_03.out
-            src/bin/lfortran --show-llvm tests/subroutine3.f90
-            src/bin/lfortran --show-llvm integration_tests/module_function_without_nopass.f90
-            src/bin/lfortran integration_tests/module_function_without_nopass.f90
-            ./module_function_without_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/module_function_with_nopass.f90
-            src/bin/lfortran integration_tests/module_function_with_nopass.f90
-            ./module_function_with_nopass.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_01.f90
-            src/bin/lfortran integration_tests/elemental_01.f90
-            ./elemental_01.out
-            src/bin/lfortran --show-llvm integration_tests/elemental_04.f90
-            src/bin/lfortran integration_tests/elemental_04.f90
-            ./elemental_04.out
-            src/bin/lfortran --show-llvm integration_tests/types_23.f90
-            src/bin/lfortran integration_tests/types_23.f90
-            ./types_23.out
-            src/bin/lfortran --show-llvm integration_tests/character_01.f90
-            src/bin/lfortran integration_tests/character_01.f90
-            ./character_01.out
-
-  test_llvm_wasm:
-    name: Test LLVM->WASM ${{ matrix.llvm-version }}
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        llvm-version: ["10", "16"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            llvmdev=${{ matrix.llvm-version }}
-            nodejs=18.13.0
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.llvm-version }}
+      - name: Install libunwind
+        if: matrix.llvm-version > 11
+        run: micromamba install -y -n lf libunwind=1.7.2
 
       - name: Setup WASI SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -842,6 +780,7 @@ jobs:
           $WASI_SDK_PATH/bin/clang --version
 
       - name: Install wasmtime
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -851,6 +790,7 @@ jobs:
           wasmtime --version
 
       - name: Setup EMSCRIPTEN SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
           cd $HOME
@@ -862,7 +802,8 @@ jobs:
           ./emsdk install latest
           ./emsdk activate latest
 
-      - name: Build Linux
+      - name: Build Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
@@ -871,6 +812,7 @@ jobs:
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DWITH_TARGET_WASM=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
@@ -881,7 +823,8 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      - name: Test Linux
+      - name: Test Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
         shell: bash -e -l {0}
         run: |
             export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
@@ -891,22 +834,53 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm_wasm llvm_wasm_emcc
 
-  gfortran:
-    name: Test integration_tests with GFortran
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
+      - name: Build Linux
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
-      - name: Test integration_tests with GFortran
+            cmake --build . -j16 --target install
+
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-16
+        if: ${{(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b gfortran
+            ./run_tests.py -b llvm -sc
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f -nf16
 
-  lfortran_openmp:
-    name: Test OpenMP integration tests
+      - name: Test Linux LLVM 17-20
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
+        shell: bash -e -l {0}
+        run: |
+            ctest --output-on-failure
+            cd integration_tests
+            ./run_tests.py -b llvm -sc
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f
+
+      - name: Test third party codes
+        shell: bash -e -x -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
+
+
+  lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
+    name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -915,26 +889,39 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             llvm-openmp
+            nodejs=18.20.4
+            python=3.10
 
       - uses: hendrikmuhs/ccache-action@main
         with:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
       - name: Build Linux
         shell: bash -e -l {0}
         run: |
             ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
             cmake . -GNinja \
               -DCMAKE_BUILD_TYPE=Debug \
               -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
               -DLFORTRAN_BUILD_ALL=yes \
               -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
               -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
@@ -942,178 +929,31 @@ jobs:
 
             cmake --build . -j16 --target install
 
-      - name: Test Linux
+      - name: Test Debug Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f -nf16
+
+      - name: Test OpenMP
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
 
-  test_without_llvm:
-    name: Test without LLVM Backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Test
-        shell: bash -e -l {0}
-        run: |
-          xonsh ci/test_without_llvm_backend.xsh
-
-  test_cpp_build:
-    name: Test CPP
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - name: Test CPP
-        shell: bash -e -l {0}
-        run: |
-            xonsh ci/test_cpp_version.xsh
-
-  test_wasm:
-    name: Test WASM
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-            nodejs=18.13.0
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Show Node Info
-        shell: bash -e -l {0}
-        run: |
-          set -ex
-          which node
-          node --version
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-            ./run_tests.py -b wasm -f
-
-  test_fortran:
-    name: Test Fortran backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
+      - name: Test Fortran Backend
         shell: bash -e -l {0}
         run: |
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
 
-  test_c_cpp:
-    name: Test C/C++ backend
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v1.8.0
-        with:
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Linux
+      - name: Test C/C++ Backend
         shell: bash -e -l {0}
         run: |
             mkdir build-kokkos
@@ -1133,6 +973,25 @@ jobs:
             ./run_tests.py -b cpp c c_nopragma
             ./run_tests.py -b cpp c c_nopragma -f
 
+      - name: Test CPP
+        shell: bash -e -l {0}
+        run: |
+            xonsh ci/test_cpp_version.xsh
+
+      - name: Show Node Info
+        shell: bash -e -l {0}
+        run: |
+          set -ex
+          which node
+          node --version
+
+      - name: Test WASM backend
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
+
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
@@ -1141,8 +1000,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_linux.yml
           create-args: >-
             python=3.10
@@ -1166,6 +1026,74 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+  test_without_llvm:
+    name: Test without LLVM Backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - name: Test
+        shell: bash -e -l {0}
+        run: |
+          xonsh ci/test_without_llvm_backend.xsh
+
+  test_mlir:
+    name: Test MLIR backend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=3.10
+            mlir=19.1.6
+            llvm=19.1.6
+            llvm-openmp=19.1.6
+            libunwind=1.7.2
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_MLIR=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b mlir mlir_omp mlir_llvm_omp -j1
+
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
@@ -1174,8 +1102,9 @@ jobs:
         with:
           fetch-depth: 0
 
-      - uses: mamba-org/setup-micromamba@v1.8.0
+      - uses: mamba-org/setup-micromamba@v2.0.2
         with:
+          micromamba-version: '2.0.4-0'
           environment-file: ci/environment_docs_linux.yml
 
       - uses: hendrikmuhs/ccache-action@main
@@ -1191,6 +1120,7 @@ jobs:
           cmake . -GNinja \
             -DCMAKE_BUILD_TYPE=Debug \
             -DWITH_LLVM=yes \
+            -DWITH_LSP=yes \
             -DWITH_XEUS=yes \
             -DCMAKE_PREFIX_PATH=$CONDA_PREFIX \
             -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX \
@@ -1214,3 +1144,33 @@ jobs:
           ../ci/upload_docs.sh
         env:
           SSH_PRIVATE_KEY_DOCS: ${{ secrets.SSH_PRIVATE_KEY_DOCS }}
+
+
+  build-and-push-image:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    env:
+      REGISTRY: ghcr.io
+      USER: lfortran
+      PROJECT: lfortran
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Log in to the Container registry
+        if: ${{ github.event_name == 'push' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ env.USER }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          tags: ${{ env.REGISTRY }}/${{ env.USER }}/${{ env.PROJECT }}:latest

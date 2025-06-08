@@ -83,7 +83,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (Character 1 1 ())
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -93,6 +93,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             f_string@f_string~genericprocedure:
@@ -115,12 +119,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -128,7 +136,7 @@
                                     (FunctionType
                                         []
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -150,12 +158,13 @@
                                             2 f_string
                                             [((Var 19 c_tempfile))]
                                             (Allocatable
-                                                (Character 1 -2 ())
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 19 tempfile)
                                     Public
@@ -183,6 +192,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             dir_handle:
                                                 (Variable
@@ -198,6 +211,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             f_string@f_string_cptr:
@@ -220,12 +237,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -273,18 +294,16 @@
                                                     2 f_string
                                                     [((Var 18 dir_entry_c))]
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     ()
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 18 string_fortran)]
                                     )]
                                     ()
                                     Public
@@ -378,6 +397,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -394,6 +417,10 @@
                                                                     Public
                                                                     Required
                                                                     .true.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     c_strlen
@@ -435,6 +462,10 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -446,12 +477,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -459,7 +494,7 @@
                                     (FunctionType
                                         [(CPtr)]
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -476,30 +511,46 @@
                                     [(Var 6 cptr)]
                                     [(Assignment
                                         (Var 6 s)
-                                        (FunctionCall
-                                            4 f_string_cptr_n
-                                            ()
-                                            [((Var 6 cptr))
-                                            ((FunctionCall
-                                                6 c_strlen
+                                        (StringPhysicalCast
+                                            (FunctionCall
+                                                4 f_string_cptr_n
                                                 ()
-                                                [((Var 6 cptr))]
-                                                (Integer 8)
+                                                [((Var 6 cptr))
+                                                ((FunctionCall
+                                                    6 c_strlen
+                                                    ()
+                                                    [((Var 6 cptr))]
+                                                    (Integer 8)
+                                                    ()
+                                                    ()
+                                                ))]
+                                                (String 1 (FunctionCall
+                                                    6 c_strlen
+                                                    ()
+                                                    [((Var 6 cptr))]
+                                                    (Integer 8)
+                                                    ()
+                                                    ()
+                                                ) ExpressionLength PointerString)
                                                 ()
                                                 ()
-                                            ))]
-                                            (Character 1 -3 (FunctionCall
-                                                6 c_strlen
-                                                ()
-                                                [((Var 6 cptr))]
-                                                (Integer 8)
-                                                ()
-                                                ()
-                                            ))
-                                            ()
+                                            )
+                                            PointerString
+                                            DescriptorString
+                                            (Allocatable
+                                                (String 1 (FunctionCall
+                                                    6 c_strlen
+                                                    ()
+                                                    [((Var 6 cptr))]
+                                                    (Integer 8)
+                                                    ()
+                                                    ()
+                                                ) ExpressionLength DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 6 s)
                                     Public
@@ -527,6 +578,10 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -543,6 +598,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -553,11 +612,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (Var 8 n))
+                                                    (String 1 (Var 8 n) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -565,11 +628,11 @@
                                     (FunctionType
                                         [(CPtr)
                                         (Integer 8)]
-                                        (Character 1 -3 (FunctionParam
+                                        (String 1 (FunctionParam
                                             1
                                             (Integer 8)
                                             ()
-                                        ))
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -606,7 +669,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (Character 1 1 ())
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -615,6 +678,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             f_string:
@@ -627,25 +694,29 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )]
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -682,18 +753,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     string_t
                                     []
                                     [s]
+                                    []
                                     Source
                                     Public
                                     .false.

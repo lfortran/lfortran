@@ -1,7 +1,5 @@
 #include <fstream>
-#include <iostream>
 #include <map>
-#include <memory>
 #include <string>
 #include <cmath>
 
@@ -29,11 +27,13 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure);
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm);
 
 Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         AST::TranslationUnit_t &ast,
@@ -43,28 +43,28 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, std::map<std::string, ASR::ttype_t*>>& implicit_mapping,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
+        std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
         std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
-        std::vector<ASR::stmt_t*> &data_structure);
+        std::vector<ASR::stmt_t*> &data_structure,
+        LCompilers::LocationManager &lm);
 
 void load_rtlib() {
     const std::string m_builtin = "lfortran_intrinsic_builtin";
-    const std::string m_math = "lfortran_intrinsic_math";
-    const std::string m_math3 = "lfortran_intrinsic_math3";
-    const std::string m_string = "lfortran_intrinsic_string";
     const std::string m_ieee_arithmetic = "lfortran_intrinsic_ieee_arithmetic";
 }
 
 Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics,
     SymbolTable *symbol_table, bool symtab_only,
-    CompilerOptions &compiler_options)
+    CompilerOptions &compiler_options, LCompilers::LocationManager &lm)
 {
     std::map<uint64_t, std::map<std::string, ASR::ttype_t*>> implicit_mapping;
     std::map<uint64_t, ASR::symbol_t*> common_variables_hash;
     std::map<uint64_t, std::vector<std::string>> external_procedures_mapping;
+    std::map<uint64_t, std::vector<std::string>> explicit_intrinsic_procedures_mapping;
     std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> instantiate_types;
     std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> instantiate_symbols;
     std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> entry_functions;
@@ -73,7 +73,8 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::asr_t *unit;
     auto res = symbol_table_visitor(al, ast, diagnostics, symbol_table,
         compiler_options, implicit_mapping, common_variables_hash, external_procedures_mapping,
-        instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+        explicit_intrinsic_procedures_mapping, instantiate_types, instantiate_symbols, entry_functions,
+        entry_function_arguments_mapping, data_structure, lm);
     if (res.ok) {
         unit = res.result;
     } else {
@@ -82,7 +83,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     ASR::TranslationUnit_t *tu = ASR::down_cast2<ASR::TranslationUnit_t>(unit);
     if (compiler_options.po.dump_all_passes) {
         std::ofstream outfile ("pass_00_initial_asr_01.clj");
-        outfile << ";; ASR after SymbolTable Visitor\n" << pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
+        outfile << ";; ASR after SymbolTable Visitor\n" << LCompilers::pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
         outfile.close();
     }
     if (compiler_options.po.dump_fortran) {
@@ -101,9 +102,13 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
     };
 #endif
     if (!symtab_only) {
-        auto res = body_visitor(al, ast, diagnostics, unit, compiler_options,
+        auto res = body_visitor(
+            al, ast, diagnostics, unit, compiler_options,
             implicit_mapping, common_variables_hash, external_procedures_mapping,
-            instantiate_types, instantiate_symbols, entry_functions, entry_function_arguments_mapping, data_structure);
+            explicit_intrinsic_procedures_mapping, instantiate_types,
+            instantiate_symbols, entry_functions, entry_function_arguments_mapping,
+            data_structure, lm
+        );
         if (res.ok) {
             tu = res.result;
         } else {
@@ -112,7 +117,7 @@ Result<ASR::TranslationUnit_t*> ast_to_asr(Allocator &al,
         if (compiler_options.rtlib) load_rtlib();
         if (compiler_options.po.dump_all_passes) {
             std::ofstream outfile ("pass_00_initial_asr_02.clj");
-            outfile << ";; Initial ASR after Body Visitor\n" << pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
+            outfile << ";; Initial ASR after Body Visitor\n" << LCompilers::pickle(*tu, false, true, compiler_options.po.with_intrinsic_mods) << "\n";
             outfile.close();
         }
         if (compiler_options.po.dump_fortran) {

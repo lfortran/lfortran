@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_09
@@ -53,9 +57,13 @@
                             ()
                         )
                         [(Print
-                            [(Var 2 z)]
-                            ()
-                            ()
+                            (StringFormat
+                                ()
+                                [(Var 2 z)]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
                         )]
                         []
                     )]

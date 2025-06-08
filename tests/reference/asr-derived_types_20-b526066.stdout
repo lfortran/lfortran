@@ -33,6 +33,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -44,12 +48,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -57,6 +65,7 @@
                                     []
                                     [working_dir
                                     verbose]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -91,6 +100,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -102,12 +115,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             with_bare:
@@ -131,6 +148,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             with_example:
                                                 (Variable
@@ -152,6 +173,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             with_executable:
@@ -175,6 +200,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             with_full:
                                                 (Variable
@@ -196,6 +225,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             with_lib:
@@ -219,6 +252,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             with_test:
                                                 (Variable
@@ -241,6 +278,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
@@ -253,6 +294,7 @@
                                     with_full
                                     with_bare
                                     backfill]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -276,7 +318,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 fpm_cmd_settings
                                                         )
                                                     )
@@ -285,12 +330,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 4 fpm_cmd_settings
                                             )
                                         )]
@@ -313,6 +365,9 @@
                                         []
                                         ()
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             4 fpm_new_settings
                                         ))]
                                         ()
@@ -330,7 +385,7 @@
                                                         50
                                                         ["src", "lib", "app", "test", "example"]
                                                         (Array
-                                                            (Character 1 10 ())
+                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                                             FixedSizeArray
@@ -371,7 +426,7 @@
                                                 ))
                                                 ((StringConstant
                                                     "xyz"
-                                                    (Character 1 3 ())
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 ))
                                                 ((LogicalConstant
                                                     .true.
@@ -389,18 +444,28 @@
                                                     .false.
                                                     (Logical 4)
                                                 ))
-                                                (())
-                                                (())
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
+                                                ((LogicalConstant
+                                                    .false.
+                                                    (Logical 4)
+                                                ))
                                                 ((LogicalConstant
                                                     .false.
                                                     (Logical 4)
                                                 ))]
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     4 fpm_new_settings
                                                 )
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -445,11 +510,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             specified:
@@ -467,11 +536,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     specified
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -493,6 +566,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 10 specified)
                                     Public
@@ -521,7 +595,10 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 fpm_cmd_settings
                                         )
                                     )
@@ -529,6 +606,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             fpm_cmd_settings:
@@ -562,9 +643,6 @@
                         ()
                         [((Var 2 cmd_settings))]
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 cmd_settings)]
                     )]
                 )
         })

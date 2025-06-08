@@ -33,19 +33,29 @@
             []
             []
             ()
-            1
-            Equal
+            ()
+            None
             ())
             (two
             []
             []
             ()
-            2
-            Equal
+            ()
+            None
             ())]
             ()
         )]
-        [(Assignment
+        [(DataStmt
+            0
+            [(DataStmtSet
+                [one
+                two]
+                [(Real "1.0")
+                (Real "2.0")]
+            )]
+            ()
+        )
+        (Assignment
             0
             lout
             (+ 1 (/ n 2))

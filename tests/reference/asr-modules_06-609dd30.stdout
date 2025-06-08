@@ -32,6 +32,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     modules_06
@@ -47,11 +51,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 4 i)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 4 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 ),
             modules_06_a:
@@ -79,6 +88,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     b
@@ -99,17 +112,16 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "b()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 r)
                                         (IntegerConstant 5 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 r)
                                     Public

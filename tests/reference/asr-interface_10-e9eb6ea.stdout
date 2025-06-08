@@ -46,11 +46,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             y:
@@ -62,11 +66,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -76,9 +84,10 @@
                         (Var 4 x)
                         (StringConstant
                             "A"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         4 chars@identity
@@ -88,9 +97,7 @@
                         ()
                     )
                     (Print
-                        [(Var 4 x)]
-                        ()
-                        ()
+                        (Var 4 x)
                     )]
                 ),
             interface_10_m:
@@ -119,11 +126,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             y:
@@ -135,18 +146,22 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     identity
                                     (FunctionType
-                                        [(Character 1 1 ())
-                                        (Character 1 -1 ())]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -166,6 +181,7 @@
                                         (Var 3 y)
                                         (Var 3 x)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public

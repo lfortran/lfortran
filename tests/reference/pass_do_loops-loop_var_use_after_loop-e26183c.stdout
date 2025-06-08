@@ -1,0 +1,635 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            main:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            i:
+                                (Variable
+                                    2
+                                    i
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    main
+                    []
+                    [(Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                        )
+                        (Print
+                            (StringFormat
+                                ()
+                                [(StringConstant
+                                    "In loop 1 i ="
+                                    (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                                (Var 2 i)]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
+                        )
+                        (If
+                            (IntegerCompare
+                                (Var 2 i)
+                                Lt
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "After loop 1 i = "
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            []
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                        )
+                        (Print
+                            (StringFormat
+                                ()
+                                [(StringConstant
+                                    "In loop 2 i = "
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                                (Var 2 i)]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
+                        )
+                        (If
+                            (IntegerCompare
+                                (Var 2 i)
+                                Lt
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(Print
+                                (StringConstant
+                                    "if (i < 2) then"
+                                    (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                            )]
+                            [(Assignment
+                                (Var 2 i)
+                                (IntegerBinOp
+                                    (Var 2 i)
+                                    Sub
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                ()
+                                .false.
+                            )
+                            (Exit
+                                ()
+                            )]
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "After loop 2 i = "
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            []
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                        )
+                        (Print
+                            (StringFormat
+                                ()
+                                [(StringConstant
+                                    "In loop 3 i = "
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                                (Var 2 i)]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
+                        )
+                        (If
+                            (IntegerCompare
+                                (Var 2 i)
+                                LtE
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Eq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(If
+                                    (IntegerCompare
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Eq
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(Assignment
+                                        (Var 2 i)
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )
+                                    (Exit
+                                        ()
+                                    )]
+                                    []
+                                )
+                                (Assignment
+                                    (Var 2 i)
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                )
+                                (Exit
+                                    ()
+                                )]
+                                []
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "After loop 3 i = "
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            []
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            Sub
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (WhileLoop
+                        ()
+                        (IntegerCompare
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            LtE
+                            (IntegerConstant 6 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Assignment
+                            (Var 2 i)
+                            (IntegerBinOp
+                                (Var 2 i)
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            )
+                            ()
+                            .false.
+                        )
+                        (Print
+                            (StringFormat
+                                ()
+                                [(StringConstant
+                                    "In loop 4 i = "
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
+                                (Var 2 i)]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
+                                ()
+                            )
+                        )
+                        (If
+                            (IntegerCompare
+                                (Var 2 i)
+                                LtE
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            [(If
+                                (IntegerCompare
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    Eq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                [(If
+                                    (IntegerCompare
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        Eq
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Logical 4)
+                                        ()
+                                    )
+                                    [(Assignment
+                                        (Var 2 i)
+                                        (IntegerBinOp
+                                            (Var 2 i)
+                                            Sub
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )
+                                    (Exit
+                                        ()
+                                    )]
+                                    []
+                                )
+                                (Assignment
+                                    (Var 2 i)
+                                    (IntegerBinOp
+                                        (Var 2 i)
+                                        Sub
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    ()
+                                    .false.
+                                )
+                                (Exit
+                                    ()
+                                )]
+                                [(Print
+                                    (StringConstant
+                                        "i - 1 /= 3"
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    )
+                                )]
+                            )]
+                            []
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 i)
+                        (IntegerBinOp
+                            (Var 2 i)
+                            Add
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "After loop 4 i = "
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 i)
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

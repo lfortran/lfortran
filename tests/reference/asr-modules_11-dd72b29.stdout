@@ -41,13 +41,17 @@
                     access_externally
                     [modules_11_module11]
                     [(Print
-                        [(StringConstant
-                            "j = "
-                            (Character 1 4 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "j = "
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 4 j)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 4 j)]
-                        ()
-                        ()
                     )
                     (SubroutineCall
                         4 access_internally
@@ -86,13 +90,17 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "i = "
-                                            (Character 1 4 ())
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "i = "
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 i)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
                                         )
-                                        (Var 2 i)]
-                                        ()
-                                        ()
                                     )]
                                     ()
                                     Public
@@ -115,6 +123,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -130,6 +142,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

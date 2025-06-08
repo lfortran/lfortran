@@ -1,0 +1,5 @@
+style suggestion: Use complex(8) instead of complex*16
+ --> tests/implicit6.f90:3:17
+  |
+3 | IMPLICIT COMPLEX*16 (C,Z)
+  |                 ^ help: write this as 'complex(8)'

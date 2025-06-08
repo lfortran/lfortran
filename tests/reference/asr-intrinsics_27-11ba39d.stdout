@@ -37,87 +37,99 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_27
                     []
                     [(Print
-                        [(IntrinsicArrayFunction
-                            Shape
-                            [(ArrayPhysicalCast
-                                (Var 2 a)
-                                FixedSizeArray
-                                DescriptorArray
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant -1 (Integer 4) Decimal)
-                                    )
-                                    (IntegerConstant 3 (Integer 4) Decimal))
-                                    ((IntegerUnaryMinus
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant -1 (Integer 4) Decimal)
-                                    )
-                                    (IntegerConstant 4 (Integer 4) Decimal))]
+                        (StringFormat
+                            ()
+                            [(IntrinsicArrayFunction
+                                Shape
+                                [(ArrayPhysicalCast
+                                    (Var 2 a)
+                                    FixedSizeArray
                                     DescriptorArray
-                                )
-                                ()
-                            )]
-                            0
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 2 (Integer 4) Decimal))]
-                                FixedSizeArray
-                            )
-                            (ArrayConstant
-                                8
-                                [3, 4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        (IntegerConstant 3 (Integer 4) Decimal))
+                                        ((IntegerUnaryMinus
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            (IntegerConstant -1 (Integer 4) Decimal)
+                                        )
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        DescriptorArray
+                                    )
+                                    ()
+                                )]
+                                0
                                 (Array
                                     (Integer 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
                                     FixedSizeArray
                                 )
-                                ColMajor
-                            )
-                        )]
-                        ()
-                        ()
+                                (ArrayConstant
+                                    8
+                                    [3, 4]
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ColMajor
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(ArraySize
-                            (IntrinsicArrayFunction
-                                Shape
-                                [(IntegerConstant 42 (Integer 4) Decimal)]
-                                0
-                                (Array
-                                    (Integer 4)
-                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 0 (Integer 4) Decimal))]
-                                    FixedSizeArray
-                                )
-                                (ArrayConstructor
-                                    []
+                        (StringFormat
+                            ()
+                            [(ArraySize
+                                (IntrinsicArrayFunction
+                                    Shape
+                                    [(IntegerConstant 42 (Integer 4) Decimal)]
+                                    0
                                     (Array
                                         (Integer 4)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 0 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
-                                    ()
-                                    ColMajor
+                                    (ArrayConstructor
+                                        []
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 0 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ()
+                                        ColMajor
+                                    )
                                 )
-                            )
+                                ()
+                                (Integer 4)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            (Integer 4)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

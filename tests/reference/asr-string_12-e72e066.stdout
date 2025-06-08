@@ -24,22 +24,26 @@
                                         )
                                         (IntegerConstant 10 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "0123456789"
-                                            (Character 1 22 ())
+                                            (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "0123456789"
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (String 1 (IntegerConstant 22 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             fullhex_digits:
@@ -50,18 +54,22 @@
                                     Local
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "0123456789ABCDEFabcdef"
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (String 1 (IntegerConstant 22 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             hex_digits:
@@ -81,22 +89,26 @@
                                         )
                                         (IntegerConstant 16 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "0123456789ABCDEF"
-                                            (Character 1 22 ())
+                                            (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "0123456789ABCDEF"
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (String 1 (IntegerConstant 22 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             letters:
@@ -107,18 +119,22 @@
                                     Local
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             lowercase:
@@ -138,22 +154,26 @@
                                         )
                                         ()
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "abcdefghijklmnopqrstuvwxyz"
-                                            (Character 1 52 ())
+                                            (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "abcdefghijklmnopqrstuvwxyz"
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             lowerhex_digits:
@@ -164,18 +184,22 @@
                                     Local
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 ())
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "0123456789abcdef"
-                                        (Character 1 16 ())
+                                        (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 16 ())
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             octal_digits:
@@ -195,22 +219,26 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "01234567"
-                                            (Character 1 22 ())
+                                            (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "01234567"
-                                        (Character 1 22 ())
+                                        (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 22 ())
+                                    (String 1 (IntegerConstant 22 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             string:
@@ -227,22 +255,26 @@
                                             (IntegerConstant 52 (Integer 4) Decimal)
                                         )]
                                         0
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "4"
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "4"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             uppercase:
@@ -262,84 +294,76 @@
                                         )
                                         (IntegerConstant 26 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                            (Character 1 52 ())
+                                            (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                        (Character 1 52 ())
+                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 52 ())
+                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
                     string_12
                     []
                     [(Print
-                        [(Var 2 fullhex_digits)]
-                        ()
-                        ()
+                        (Var 2 fullhex_digits)
                     )
                     (Print
-                        [(Var 2 hex_digits)]
-                        ()
-                        ()
+                        (Var 2 hex_digits)
                     )
                     (Print
-                        [(Var 2 lowerhex_digits)]
-                        ()
-                        ()
+                        (Var 2 lowerhex_digits)
                     )
                     (Print
-                        [(Var 2 digits)]
-                        ()
-                        ()
+                        (Var 2 digits)
                     )
                     (Print
-                        [(Var 2 octal_digits)]
-                        ()
-                        ()
+                        (Var 2 octal_digits)
                     )
                     (Print
-                        [(Var 2 letters)]
-                        ()
-                        ()
+                        (Var 2 letters)
                     )
                     (Print
-                        [(Var 2 uppercase)]
-                        ()
-                        ()
+                        (Var 2 uppercase)
                     )
                     (Print
-                        [(Var 2 lowercase)]
-                        ()
-                        ()
+                        (Var 2 lowercase)
                     )
                     (Print
-                        [(StringConstant
-                            "char("
-                            (Character 1 5 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "char("
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (StringLen
+                                (Var 2 letters)
+                                (Integer 4)
+                                (IntegerConstant 52 (Integer 4) Decimal)
+                            )
+                            (StringConstant
+                                ") = "
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 2 string)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (StringLen
-                            (Var 2 letters)
-                            (Integer 4)
-                            (IntegerConstant 52 (Integer 4) Decimal)
-                        )
-                        (StringConstant
-                            ") = "
-                            (Character 1 4 ())
-                        )
-                        (Var 2 string)]
-                        ()
-                        ()
                     )
                     (If
                         (StringCompare
@@ -347,7 +371,7 @@
                             NotEq
                             (StringConstant
                                 "4"
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             (LogicalConstant

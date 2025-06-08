@@ -154,7 +154,7 @@ void case_to_if_with_fall_through(Allocator& al, const ASR::Select_t& x,
     ASR::expr_t* a_test, Vec<ASR::stmt_t*>& body, SymbolTable* scope) {
     body.reserve(al, x.n_body + 1);
     const Location& loc = x.base.base.loc;
-    ASR::symbol_t* case_found_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+    ASR::symbol_t* case_found_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, loc, scope, s2c(al, scope->get_unique_name("case_found")), nullptr, 0,
         ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr, ASR::abiType::Source,
@@ -165,7 +165,7 @@ void case_to_if_with_fall_through(Allocator& al, const ASR::Select_t& x,
     ASR::expr_t* false_asr = ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, loc, false,
         ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))));
     ASR::expr_t* case_found = ASRUtils::EXPR(ASR::make_Var_t(al, loc, case_found_sym));
-    body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(al, loc, case_found, false_asr, nullptr)));
+    body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, case_found, false_asr, nullptr, false)));
     int label_id = ASRUtils::LabelGenerator::get_instance()->get_unique_label();
     for( size_t idx = 0; idx < x.n_body; idx++ ) {
         ASR::case_stmt_t* case_body = x.m_body[idx];
@@ -177,8 +177,8 @@ void case_to_if_with_fall_through(Allocator& al, const ASR::Select_t& x,
                     ASR::logicalbinopType::Or, case_found, ASRUtils::expr_type(case_found), nullptr));
                 Vec<ASR::stmt_t*> case_body; case_body.reserve(al, Case_Stmt->n_body);
                 case_body.from_pointer_n(Case_Stmt->m_body, Case_Stmt->n_body);
-                case_body.push_back(al, ASRUtils::STMT(ASR::make_Assignment_t(
-                        al, loc, case_found, true_asr, nullptr)));
+                case_body.push_back(al, ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
+                        al, loc, case_found, true_asr, nullptr, false)));
                 if( !Case_Stmt->m_fall_through ) {
                     case_body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, loc,
                         label_id, s2c(al, scope->get_unique_name("switch_case_label")))));

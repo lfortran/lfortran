@@ -12,12 +12,10 @@
                     modules_37
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "executing modules_37"
-                            (Character 1 20 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 ),
             modules_37_fpm_backend:
@@ -76,6 +74,9 @@
                                                                     Default
                                                                     (Pointer
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             2 build_target_t
                                                                         )
                                                                     )
@@ -83,6 +84,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -96,6 +101,9 @@
                                                                 (Var 9 i)
                                                                 ())]
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 build_target_ptr
                                                                 )
                                                                 ColMajor
@@ -104,19 +112,23 @@
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
                                                                     2 build_target_t
                                                                 )
                                                             )
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
                                                             (Var 9 temp)
                                                             12 1_string_t_s
                                                             (Allocatable
-                                                                (Character 1 -2 ())
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -124,11 +136,12 @@
                                                             (Var 12 target)
                                                             12 1_build_target_t_output_dir
                                                             (Allocatable
-                                                                (Character 1 -2 ())
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 9 build_dirs)
@@ -138,9 +151,12 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         2 string_t
                                                                     )
-                                                                    [(()
+                                                                    [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     ())]
                                                                     DescriptorArray
                                                                 )
@@ -149,6 +165,7 @@
                                                             ColMajor
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                 ),
                                             build_dirs:
@@ -163,6 +180,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 string_t
                                                             )
                                                             [(()
@@ -174,6 +194,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             i:
@@ -191,6 +215,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -207,6 +235,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             model:
                                                 (Variable
@@ -218,12 +250,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_model_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             targets:
@@ -237,6 +276,9 @@
                                                     Default
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_ptr
                                                         )
                                                         [(()
@@ -247,6 +289,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             temp:
@@ -259,12 +305,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             verbose:
@@ -282,12 +335,19 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     build_package
                                     (FunctionType
                                         [(Array
                                             (StructType
+                                                []
+                                                []
+                                                .true.
                                                 2 build_target_ptr
                                             )
                                             [(()
@@ -295,6 +355,9 @@
                                             DescriptorArray
                                         )
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 fpm_model_t
                                         )
                                         (Logical 4)]
@@ -339,9 +402,6 @@
                                             9 associate_block
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 9 build_dirs)]
                                     )]
                                     ()
                                     Public
@@ -363,6 +423,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -370,6 +433,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_t
                                                             )
                                                         )
@@ -377,6 +443,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 build_target_t
                                                         )
                                                     )
@@ -385,11 +454,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     build_target_ptr
                                     [build_target_t]
                                     [ptr]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -413,18 +487,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     build_target_t
                                     []
                                     [output_dir]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -458,12 +537,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_model_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             settings:
@@ -476,12 +562,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 fpm_build_settings
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             targets:
@@ -496,6 +589,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 build_target_ptr
                                                             )
                                                             [(()
@@ -508,11 +604,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     cmd_build
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 fpm_build_settings
                                         )]
                                         ()
@@ -541,9 +644,6 @@
                                             ()
                                         ))]
                                         ()
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 10 targets)]
                                     )]
                                     ()
                                     Public
@@ -559,6 +659,7 @@
                                             
                                         })
                                     fpm_build_settings
+                                    []
                                     []
                                     []
                                     Source
@@ -595,11 +696,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
                                     []
                                     [verbose]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -616,6 +722,7 @@
                                             
                                         })
                                     fpm_model_t
+                                    []
                                     []
                                     []
                                     Source
@@ -641,18 +748,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     string_t
                                     []
                                     [s]
+                                    []
                                     Source
                                     Public
                                     .false.

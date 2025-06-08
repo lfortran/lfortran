@@ -89,9 +89,7 @@
         (Print
             100
             ()
-            [(String
-                "Negative input value"
-            )]
+            [(String "Negative input value")]
             ()
         )
         (ErrorStop
@@ -107,9 +105,7 @@
         (Print
             200
             ()
-            [(String
-                "Input value too large"
-            )]
+            [(String "Input value too large")]
             ()
         )
         (ErrorStop

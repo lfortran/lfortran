@@ -19,6 +19,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 2, i32* %3, align 4
   store float* null, float** %p1, align 8
   store i32* null, i32** %p2, align 8
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -26,3 +27,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

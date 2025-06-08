@@ -2,8 +2,6 @@
     (SymbolTable
         1
         {
-            lfortran_intrinsic_builtin:
-                (IntrinsicModule lfortran_intrinsic_builtin),
             tomlf_structure_vector:
                 (Module
                     (SymbolTable
@@ -69,6 +67,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             key:
                                                 (Variable
@@ -79,11 +81,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ptr:
@@ -96,7 +102,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -104,6 +113,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             self:
@@ -115,7 +128,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -123,16 +139,26 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     find
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             9 toml_vector
                                         )
-                                        (Character 1 -1 ())
+                                        (String 1 () AssumedLength PointerString)
                                         (Pointer
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 9 toml_value
                                             )
                                         )]
@@ -153,7 +179,7 @@
                                     (Var 13 key)
                                     (Var 13 ptr)]
                                     [(Nullify
-                                        [13 ptr]
+                                        [(Var 13 ptr)]
                                     )
                                     (DoLoop
                                         ()
@@ -177,6 +203,9 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
+                                                                        []
+                                                                        []
+                                                                        .true.
                                                                         9 toml_node
                                                                     )
                                                                     [(()
@@ -190,6 +219,9 @@
                                                         (Var 13 i)
                                                         ())]
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 toml_node
                                                         )
                                                         ColMajor
@@ -197,7 +229,10 @@
                                                     )
                                                     13 1_toml_node_val
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -222,6 +257,9 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -235,6 +273,9 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -242,7 +283,10 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 9 toml_value
                                                             )
                                                         )
@@ -259,6 +303,9 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
                                                                             9 toml_node
                                                                         )
                                                                         [(()
@@ -272,6 +319,9 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             ColMajor
@@ -279,7 +329,10 @@
                                                         )
                                                         13 1_toml_node_val
                                                         (Allocatable
-                                                            (ClassType
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
                                                                 9 toml_value
                                                             )
                                                         )
@@ -341,16 +394,10 @@
                                                     Public
                                                     Optional
                                                     .false.
-                                                ),
-                                            present:
-                                                (ExternalSymbol
-                                                    12
-                                                    present
-                                                    15 present
-                                                    lfortran_intrinsic_builtin
-                                                    []
-                                                    present
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -362,6 +409,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         9 toml_vector
                                                     )
                                                     ()
@@ -369,11 +419,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     new_vector
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             9 toml_vector
                                         )
                                         (Integer 4)]
@@ -401,14 +458,14 @@
                                         )
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (If
-                                        (FunctionCall
-                                            12 present
-                                            ()
-                                            [((Var 12 n))]
+                                        (IntrinsicElementalFunction
+                                            Present
+                                            [(Var 12 n)]
+                                            0
                                             (Logical 4)
-                                            ()
                                             ()
                                         )
                                         [(Allocate
@@ -418,6 +475,9 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             9 toml_node
                                                         )
                                                         [(()
@@ -465,7 +525,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             9 toml_value
                                                         )
                                                     )
@@ -474,11 +537,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_node
                                     []
                                     [val]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -514,6 +582,9 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 9 toml_node
                                                             )
                                                             [(()
@@ -525,6 +596,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             n:
@@ -542,12 +617,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_vector
                                     []
                                     [n
                                     lst]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -558,8 +638,7 @@
                                 )
                         })
                     tomlf_structure_vector
-                    [tomlf_type_value
-                    lfortran_intrinsic_builtin]
+                    [tomlf_type_value]
                     .false.
                     .false.
                 ),
@@ -602,7 +681,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         6 toml_keyval
                                                     )
                                                     ()
@@ -610,11 +692,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             6 toml_keyval
                                         )]
                                         ()
@@ -634,11 +723,30 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_value_key
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 8 self)
+                                                    8 1_toml_value_key
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 8 self)
+                                                            8 1_toml_value_key
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -651,7 +759,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_value_key
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -661,11 +769,30 @@
                                     (If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 8 self)
-                                                8 1_toml_keyval_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 8 self)
+                                                    8 1_toml_keyval_raw
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 8 self)
+                                                            8 1_toml_keyval_raw
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -678,7 +805,7 @@
                                                 (Var 8 self)
                                                 8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -704,7 +831,7 @@
                                                     destroy
                                                     6 destroy
                                                     Source
-                                                    .true.
+                                                    .false.
                                                     .false.
                                                 ),
                                             raw:
@@ -717,18 +844,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_keyval
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -772,7 +904,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_value
                                                     )
                                                     ()
@@ -780,11 +915,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_value
                                         )]
                                         ()
@@ -832,11 +974,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             match:
@@ -854,6 +1000,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -864,7 +1014,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_value
                                                     )
                                                     ()
@@ -872,14 +1025,21 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     match_key
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_value
                                         )
-                                        (Character 1 -1 ())]
+                                        (String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -898,11 +1058,30 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 5 self)
-                                                5 1_toml_value_key
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 self)
+                                                    5 1_toml_value_key
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 self)
+                                                            5 1_toml_value_key
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -915,11 +1094,30 @@
                                             (StringCompare
                                                 (Var 5 key)
                                                 Eq
-                                                (StructInstanceMember
-                                                    (Var 5 self)
-                                                    5 1_toml_value_key
+                                                (StringPhysicalCast
+                                                    (StructInstanceMember
+                                                        (Var 5 self)
+                                                        5 1_toml_value_key
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    DescriptorString
+                                                    PointerString
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 (StringLen
+                                                            (StructInstanceMember
+                                                                (Var 5 self)
+                                                                5 1_toml_value_key
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                ()
+                                                            )
+                                                            (Integer 4)
+                                                            ()
+                                                        ) ExpressionLength PointerString)
                                                     )
                                                     ()
                                                 )
@@ -927,6 +1125,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 match)
@@ -935,6 +1134,7 @@
                                                 (Logical 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 match)
@@ -969,12 +1169,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             match_key:
@@ -992,6 +1196,7 @@
                                     toml_value
                                     []
                                     [key]
+                                    []
                                     Source
                                     Public
                                     .false.

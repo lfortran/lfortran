@@ -12,59 +12,61 @@
                     preprocessor8
                     []
                     [(Print
-                        [(IntegerConstant 1 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 1 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__VERSION__ present"
-                            (Character 1 19 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_MAJOR__ present"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_MINOR__ present"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "__LFORTRAN_PATCHLEVEL__ present"
-                            (Character 1 31 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "tests/preprocessor8.f90"
-                            (Character 1 23 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 23 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(IntegerConstant 19 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 19 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntegerConstant 20 (Integer 4) Decimal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntegerConstant 20 (Integer 4) Decimal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

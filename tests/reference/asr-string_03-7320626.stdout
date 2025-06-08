@@ -16,11 +16,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 29 ())
+                                    (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             intro:
@@ -42,11 +46,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 7 ())
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             posit:
@@ -58,11 +66,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 5 ())
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             title:
@@ -74,11 +86,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 4 ())
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             verb:
@@ -90,11 +106,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 8 ())
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -104,33 +124,37 @@
                         (Var 3 verb)
                         (StringConstant
                             "learned "
-                            (Character 1 8 ())
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 posit)
                         (StringConstant
                             "from "
-                            (Character 1 5 ())
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 title)
                         (StringConstant
                             "the "
-                            (Character 1 4 ())
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 last_name)
                         (StringConstant
                             "best"
-                            (Character 1 4 ())
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 combined)
@@ -141,34 +165,33 @@
                                         (StringConcat
                                             (Var 3 intro)
                                             (Var 3 verb)
-                                            (Character 1 13 ())
+                                            (String 1 (IntegerConstant 13 (Integer 8) Decimal) ExpressionLength PointerString)
                                             ()
                                         )
                                         (Var 3 posit)
-                                        (Character 1 18 ())
+                                        (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength PointerString)
                                         ()
                                     )
                                     (Var 3 title)
-                                    (Character 1 22 ())
+                                    (String 1 (IntegerConstant 22 (Integer 8) Decimal) ExpressionLength PointerString)
                                     ()
                                 )
                                 (Var 3 last_name)
-                                (Character 1 29 ())
+                                (String 1 (IntegerConstant 29 (Integer 8) Decimal) ExpressionLength PointerString)
                                 ()
                             )
                             (StringConstant
                                 "."
-                                (Character 1 1 ())
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
-                            (Character 1 30 ())
+                            (String 1 (IntegerConstant 30 (Integer 8) Decimal) ExpressionLength PointerString)
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 3 combined)]
-                        ()
-                        ()
+                        (Var 3 combined)
                     )]
                 ),
             string_03_mod:
@@ -184,18 +207,22 @@
                                     Local
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 ())
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "I've "
-                                        (Character 1 5 ())
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 5 ())
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

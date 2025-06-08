@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -42,6 +46,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             f:
@@ -64,6 +72,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -79,6 +91,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -122,6 +138,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -170,9 +190,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 res)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (SubroutineCall
                                         3 f
@@ -182,9 +206,13 @@
                                         ()
                                     )
                                     (Print
-                                        [(Var 3 res)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (Assignment
                                         (Var 3 res)
@@ -202,11 +230,16 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Print
-                                        [(Var 3 res)]
-                                        ()
-                                        ()
+                                        (StringFormat
+                                            ()
+                                            [(Var 3 res)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )]
                                     ()
                                     Public
@@ -234,6 +267,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -249,6 +286,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             f:
@@ -271,6 +312,10 @@
                                                                     Public
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -286,6 +331,10 @@
                                                                     Source
                                                                     Public
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 )
                                                         })
@@ -326,6 +375,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Public
@@ -348,6 +398,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -363,6 +417,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -400,6 +458,7 @@
                                         (Var 5 foo)
                                         (Var 5 res)
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 foo)
                                     Public
@@ -464,6 +523,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     main
@@ -487,6 +550,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                 )
         })

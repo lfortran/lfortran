@@ -19,17 +19,18 @@
         )
         []
         [(Implicit
-            (AttrType
-                TypeInteger
-                []
-                ()
-                ()
-                None
-            )
-            []
-            [(LetterSpec
-                a
-                z
+            [(ImplicitSpec
+                (AttrType
+                    TypeInteger
+                    []
+                    ()
+                    ()
+                    None
+                )
+                [(LetterSpec
+                    a
+                    z
+                )]
             )]
             ()
         )]
@@ -82,9 +83,7 @@
                 [(Print
                     0
                     ()
-                    [(String
-                        "pass"
-                    )]
+                    [(String "pass")]
                     ()
                 )]
                 []

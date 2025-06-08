@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f:
                                 (Variable
@@ -43,6 +47,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             get_elem_table@get_value:
@@ -110,6 +118,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ptr:
                                 (Variable
@@ -127,6 +139,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -177,6 +193,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -192,6 +212,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ptr:
@@ -211,6 +235,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -226,6 +254,10 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -255,7 +287,7 @@
                                     (Var 3 ptr)
                                     (Var 3 stat)]
                                     [(Nullify
-                                        [3 ptr]
+                                        [(Var 3 ptr)]
                                     )
                                     (Assignment
                                         (Var 3 stat)
@@ -264,6 +296,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Private
@@ -291,6 +324,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             def:
                                                 (Variable
@@ -307,6 +344,10 @@
                                                     Private
                                                     Optional
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -322,6 +363,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ptr:
@@ -341,6 +386,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -356,6 +405,10 @@
                                                     Source
                                                     Private
                                                     Optional
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -387,7 +440,7 @@
                                     (Var 4 def)
                                     (Var 4 stat)]
                                     [(Nullify
-                                        [4 ptr]
+                                        [(Var 4 ptr)]
                                     )
                                     (Assignment
                                         (Var 4 stat)
@@ -396,6 +449,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Private

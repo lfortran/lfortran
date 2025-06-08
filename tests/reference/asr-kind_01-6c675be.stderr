@@ -1,0 +1,5 @@
+semantic error: `kind` argument of `aint` intrinsic must be a scalar
+ --> tests/errors/kind_01.f90:3:36
+  |
+3 |     print *, aint([1.0, 2.0, 3.0], [4, 4])
+  |                                    ^^^^^^ 

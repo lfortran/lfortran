@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             all_zeros:
                                 (Variable
@@ -43,6 +47,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             bits_kind:
@@ -91,24 +99,40 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     bits_02
                     [iso_fortran_env]
                     [(Print
-                        [(Var 2 block_size)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 block_size)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(Var 2 all_zeros)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 all_zeros)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(Var 2 all_ones)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 all_ones)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 ),
             iso_fortran_env:

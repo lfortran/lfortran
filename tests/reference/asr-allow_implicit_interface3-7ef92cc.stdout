@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             lsame:
                                 (Function
@@ -37,11 +41,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             lsame_arg_1:
@@ -53,11 +61,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             lsame_return_var_name:
@@ -75,12 +87,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     lsame
                                     (FunctionType
-                                        [(Character 1 1 ())
-                                        (Character 1 1 ())]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (Logical 4)
                                         BindC
                                         Interface
@@ -112,17 +128,21 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     ssyr2
                     (FunctionType
-                        [(Character 1 1 ())]
+                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                         ()
                         Source
                         Implementation
@@ -141,6 +161,7 @@
                         (Var 2 info)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp
@@ -151,7 +172,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "U"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ))]
                                     (Logical 4)
                                     ()
@@ -168,7 +189,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "L"
-                                        (Character 1 1 ())
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ))]
                                     (Logical 4)
                                     ()
@@ -184,11 +205,13 @@
                             (Var 2 info)
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ()
+                            .false.
                         )]
                         [(Assignment
                             (Var 2 info)
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ()
+                            .false.
                         )]
                     )
                     (Return)]

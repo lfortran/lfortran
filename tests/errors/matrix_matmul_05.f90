@@ -1,4 +1,4 @@
-program matrix_matmul_01
+program matrix_matmul_05
     implicit none
     integer :: a(3, 3)
     integer :: b(3, 3, 3, 3)

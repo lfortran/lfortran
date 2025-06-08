@@ -21,13 +21,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         3 ~abstract_type
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             ~abstract_type:
@@ -38,6 +45,7 @@
                                                             
                                                         })
                                                     ~abstract_type
+                                                    []
                                                     []
                                                     []
                                                     Source
@@ -51,7 +59,10 @@
                                         })
                                     subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             3 ~abstract_type
                                         )]
                                         ()

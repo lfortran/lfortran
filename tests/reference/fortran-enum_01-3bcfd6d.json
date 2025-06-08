@@ -1,0 +1,13 @@
+{
+    "basename": "fortran-enum_01-3bcfd6d",
+    "cmd": "lfortran --show-fortran --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/enum_01.f90",
+    "infile_hash": "5dba9f630102c9e10a43f8075bc95880e0892b33a7fb16524b5ea275",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "fortran-enum_01-3bcfd6d.stdout",
+    "stdout_hash": "46202d796cd96d7c3c507b59536814f0c04eb9e72b7a7798c6abdf9f",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

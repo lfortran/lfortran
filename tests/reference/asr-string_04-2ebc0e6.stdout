@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -28,6 +28,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             str:
@@ -40,12 +44,16 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (Character 1 -2 ())
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             user_data:
@@ -59,7 +67,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 40 ())
+                                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -69,6 +77,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -90,15 +102,16 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Mr. "
-                            (Character 1 4 ())
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -106,15 +119,16 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Rowan "
-                            (Character 1 6 ())
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -122,15 +136,16 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (Character 1 40 ())
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Atkinson"
-                            (Character 1 8 ())
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Allocate
                         [((Var 2 greetings)
@@ -148,15 +163,16 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "h"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -164,15 +180,16 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "e"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -180,15 +197,16 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -196,15 +214,16 @@
                             [(()
                             (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -212,55 +231,64 @@
                             [(()
                             (IntegerConstant 5 (Integer 4) Decimal)
                             ())]
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "o"
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(StringConstant
-                            "Here is "
-                            (Character 1 8 ())
-                        )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Here is "
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                ())]
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                ColMajor
+                                ()
+                            )
+                            (ArrayItem
+                                (Var 2 user_data)
+                                [(()
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                ())]
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
-                            ()
-                        )
-                        (ArrayItem
-                            (Var 2 user_data)
-                            [(()
-                            (IntegerConstant 3 (Integer 4) Decimal)
-                            ())]
-                            (Character 1 40 ())
-                            ColMajor
-                            ()
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(Var 2 greetings)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 greetings)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Allocate
                         [((Var 2 str)
@@ -273,17 +301,38 @@
                     )
                     (Assignment
                         (Var 2 str)
-                        (StringConstant
-                            "abcd"
-                            (Character 1 4 ())
+                        (StringPhysicalCast
+                            (StringConstant
+                                "abcd"
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            PointerString
+                            DescriptorString
+                            (Allocatable
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
                             (StringLen
                                 (StringSection
-                                    (Var 2 str)
+                                    (StringPhysicalCast
+                                        (Var 2 str)
+                                        DescriptorString
+                                        PointerString
+                                        (Allocatable
+                                            (String 1 (StringLen
+                                                (Var 2 str)
+                                                (Integer 4)
+                                                ()
+                                            ) ExpressionLength PointerString)
+                                        )
+                                        ()
+                                    )
                                     (IntegerBinOp
                                         (IntegerConstant 2 (Integer 4) Decimal)
                                         Sub
@@ -293,7 +342,7 @@
                                     )
                                     ()
                                     (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Character 1 -1 ())
+                                    (String 1 () DeferredLength PointerString)
                                     ()
                                 )
                                 (Integer 4)
@@ -308,11 +357,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 greetings)
-                        (Var 2 str)
-                        (Var 2 user_data)]
                     )]
                 )
         })

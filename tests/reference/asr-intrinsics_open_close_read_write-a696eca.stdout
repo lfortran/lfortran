@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -31,18 +35,22 @@
                                     Local
                                     (StringConstant
                                         "Some error occured"
-                                        (Character 1 18 ())
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "Some error occured"
-                                        (Character 1 18 ())
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (Character 1 20 ())
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             p:
@@ -65,6 +73,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -86,6 +98,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -101,6 +117,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             u_ptr:
@@ -119,6 +139,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -141,6 +165,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -161,6 +189,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -202,6 +234,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )
                         (Assignment
                             (ArrayItem
@@ -272,6 +305,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -280,12 +314,15 @@
                         (Var 2 u_ptr)
                         (StringConstant
                             "data.dat"
-                            (Character 1 8 ())
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         (StringConstant
                             "replace"
-                            (Character 1 7 ())
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
+                        ()
+                        ()
+                        ()
                         ()
                     )
                     (DoLoop
@@ -303,7 +340,7 @@
                             [(StringFormat
                                 (StringConstant
                                     "(10F8.2)"
-                                    (Character 1 8 ())
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                 )
                                 [(ArrayItem
                                     (Var 2 x)
@@ -324,12 +361,13 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (Character -1 0 ())
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )]
                             ()
                             ()
                             ()
+                            .true.
                         )]
                         []
                     )
@@ -350,12 +388,15 @@
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
                             "data.dat"
-                            (Character 1 8 ())
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         (StringConstant
                             "old"
-                            (Character 1 3 ())
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
+                        ()
+                        ()
+                        ()
                         ()
                     )
                     (DoLoop
@@ -367,6 +408,7 @@
                         [(FileRead
                             0
                             (IntegerConstant 2 (Integer 4) Decimal)
+                            ()
                             ()
                             ()
                             ()
@@ -391,6 +433,7 @@
                                 ()
                             )]
                             ()
+                            .true.
                         )]
                         []
                     )
@@ -414,27 +457,34 @@
                             ()
                             ()
                             ()
-                            [(ArrayItem
-                                (Var 2 p)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
+                            [(StringFormat
                                 ()
-                            )
-                            (ArrayItem
-                                (Var 2 q)
-                                [(()
-                                (Var 2 i)
-                                ())]
-                                (Real 4)
-                                ColMajor
+                                [(ArrayItem
+                                    (Var 2 p)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )
+                                (ArrayItem
+                                    (Var 2 q)
+                                    [(()
+                                    (Var 2 i)
+                                    ())]
+                                    (Real 4)
+                                    ColMajor
+                                    ()
+                                )]
+                                FormatFortran
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )]
                             ()
                             ()
                             ()
+                            .true.
                         )]
                         []
                     )]

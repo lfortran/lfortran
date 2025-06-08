@@ -1,0 +1,13 @@
+{
+    "basename": "asr_preprocess-preprocessor21-aded728",
+    "cmd": "lfortran --cpp --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/preprocessor21.f90",
+    "infile_hash": "c56b907f2bb83ae0b8a1d585925a2f710a26f6252ca5e6a21bce4e16",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_preprocess-preprocessor21-aded728.stdout",
+    "stdout_hash": "e56c404fb10faaa728c4767aa321c84696b958da35534c71dd7ded03",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

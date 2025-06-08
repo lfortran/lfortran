@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ap:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             b:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             bp:
                                 (Variable
@@ -69,6 +81,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c:
@@ -92,6 +108,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             cp:
                                 (Variable
@@ -113,6 +133,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             d:
@@ -136,6 +160,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -157,6 +185,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             eps:
@@ -180,6 +212,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             number:
                                 (Variable
@@ -195,6 +231,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -212,6 +252,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     flip_sign_dead_code
@@ -220,6 +264,7 @@
                         (Var 2 number)
                         (IntegerConstant 123 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -228,6 +273,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -252,6 +298,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -294,6 +341,7 @@
                         (Var 2 number)
                         (IntegerConstant 124 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -302,6 +350,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -326,6 +375,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -369,20 +419,16 @@
                             )
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "ap == bp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "ap /= bp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )
                     (If
@@ -397,20 +443,16 @@
                             )
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "cp == dp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "cp /= dp"
-                                (Character 1 8 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )
                     (If
@@ -422,12 +464,10 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "a == b"
-                                (Character 1 6 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (If
                             (IntegerCompare
@@ -441,20 +481,16 @@
                                 )
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "ap == bp"
-                                    (Character 1 8 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "ap /= bp"
-                                    (Character 1 8 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )]
                         )]
                         [(If
@@ -477,12 +513,10 @@
                                 )
                             )
                             [(Print
-                                [(StringConstant
+                                (StringConstant
                                     "ap == cp"
-                                    (Character 1 8 ())
-                                )]
-                                ()
-                                ()
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                )
                             )
                             (If
                                 (RealCompare
@@ -496,20 +530,16 @@
                                     )
                                 )
                                 [(Print
-                                    [(StringConstant
+                                    (StringConstant
                                         "cp == dp"
-                                        (Character 1 8 ())
-                                    )]
-                                    ()
-                                    ()
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    )
                                 )]
                                 [(Print
-                                    [(StringConstant
+                                    (StringConstant
                                         "cp /= dp"
-                                        (Character 1 8 ())
-                                    )]
-                                    ()
-                                    ()
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    )
                                 )]
                             )]
                             [(If
@@ -521,12 +551,10 @@
                                     ()
                                 )
                                 [(Print
-                                    [(StringConstant
+                                    (StringConstant
                                         "c == d"
-                                        (Character 1 6 ())
-                                    )]
-                                    ()
-                                    ()
+                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    )
                                 )]
                                 []
                             )]

@@ -92,9 +92,7 @@
             (/= stop 15)
             [(Stop
                 0
-                (String
-                    "message"
-                )
+                (String "message")
                 ()
                 ()
             )]
@@ -104,9 +102,7 @@
                 (/= errstop 25)
                 [(ErrorStop
                     0
-                    (String
-                        "message"
-                    )
+                    (String "message")
                     ()
                     ()
                 )]

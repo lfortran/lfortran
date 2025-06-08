@@ -61,9 +61,7 @@
         (Print
             0
             ()
-            [(String
-                "10.0 =="
-            )
+            [(String "10.0 ==")
             z]
             (TriviaNode
                 []
@@ -94,9 +92,7 @@
         (Print
             0
             ()
-            [(String
-                "49.0 =="
-            )
+            [(String "49.0 ==")
             z]
             (TriviaNode
                 []
@@ -127,9 +123,7 @@
         (Print
             0
             ()
-            [(String
-                "10.0 =="
-            )
+            [(String "10.0 ==")
             z]
             (TriviaNode
                 []

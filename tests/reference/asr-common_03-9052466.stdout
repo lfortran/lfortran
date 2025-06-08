@@ -2,11 +2,21 @@
     (SymbolTable
         1
         {
-            common1:
+            common3:
                 (Program
                     (SymbolTable
                         5
                         {
+                            1_b_e:
+                                (ExternalSymbol
+                                    5
+                                    1_b_e
+                                    7 e
+                                    b
+                                    []
+                                    e
+                                    Public
+                                ),
                             1_sample_a:
                                 (ExternalSymbol
                                     5
@@ -37,6 +47,16 @@
                                     sample
                                     Public
                                 ),
+                            struct_instance_b:
+                                (ExternalSymbol
+                                    5
+                                    struct_instance_b
+                                    6 struct_instance_b
+                                    file_common_block_b
+                                    []
+                                    struct_instance_b
+                                    Public
+                                ),
                             struct_instance_sample:
                                 (ExternalSymbol
                                     5
@@ -48,20 +68,33 @@
                                     Public
                                 )
                         })
-                    common1
+                    common3
                     []
                     [(Assignment
                         (StructInstanceMember
                             (Var 5 struct_instance_sample)
                             5 1_sample_a
-                            (Real 4)
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
                             ()
                         )
-                        (RealConstant
-                            10.000000
-                            (Real 4)
+                        (ArrayConstant
+                            8
+                            [1.00000000e+01, 1.10000000e+01]
+                            (Array
+                                (Real 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -75,6 +108,18 @@
                             (Real 4)
                         )
                         ()
+                        .false.
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 5 struct_instance_b)
+                            5 1_b_e
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 123 (Integer 4) Decimal)
+                        ()
+                        .false.
                     )
                     (SubroutineCall
                         1 pass
@@ -86,16 +131,16 @@
             file_common_block_b:
                 (Module
                     (SymbolTable
-                        8
+                        6
                         {
                             b:
                                 (Struct
                                     (SymbolTable
-                                        9
+                                        7
                                         {
                                             d:
                                                 (Variable
-                                                    9
+                                                    7
                                                     d
                                                     []
                                                     Local
@@ -108,10 +153,14 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             e:
                                                 (Variable
-                                                    9
+                                                    7
                                                     e
                                                     []
                                                     Local
@@ -124,10 +173,14 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
-                                                    9
+                                                    7
                                                     f
                                                     []
                                                     Local
@@ -140,6 +193,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     b
@@ -147,6 +204,7 @@
                                     [d
                                     e
                                     f]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -157,7 +215,7 @@
                                 ),
                             struct_instance_b:
                                 (Variable
-                                    8
+                                    6
                                     struct_instance_b
                                     []
                                     Local
@@ -165,12 +223,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        8 b
+                                        []
+                                        []
+                                        .true.
+                                        6 b
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -179,19 +244,114 @@
                     .false.
                     .false.
                 ),
+            file_common_block_blank#block:
+                (Module
+                    (SymbolTable
+                        8
+                        {
+                            blank#block:
+                                (Struct
+                                    (SymbolTable
+                                        9
+                                        {
+                                            z1:
+                                                (Variable
+                                                    9
+                                                    z1
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            z2:
+                                                (Variable
+                                                    9
+                                                    z2
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    blank#block
+                                    []
+                                    [z1
+                                    z2]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            struct_instance_blank#block:
+                                (Variable
+                                    8
+                                    struct_instance_blank#block
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        8 blank#block
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    file_common_block_blank#block
+                    []
+                    .false.
+                    .false.
+                ),
             file_common_block_c:
                 (Module
                     (SymbolTable
-                        6
+                        10
                         {
                             c:
                                 (Struct
                                     (SymbolTable
-                                        7
+                                        11
                                         {
                                             c:
                                                 (Variable
-                                                    7
+                                                    11
                                                     c
                                                     []
                                                     Local
@@ -204,10 +364,14 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
-                                                    7
+                                                    11
                                                     g
                                                     []
                                                     Local
@@ -220,10 +384,14 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             h:
                                                 (Variable
-                                                    7
+                                                    11
                                                     h
                                                     []
                                                     Local
@@ -236,10 +404,14 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
-                                                    7
+                                                    11
                                                     j
                                                     []
                                                     Local
@@ -252,6 +424,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     c
@@ -260,6 +436,7 @@
                                     g
                                     h
                                     j]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -270,7 +447,7 @@
                                 ),
                             struct_instance_c:
                                 (Variable
-                                    6
+                                    10
                                     struct_instance_c
                                     []
                                     Local
@@ -278,12 +455,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        6 c
+                                        []
+                                        []
+                                        .true.
+                                        10 c
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -311,11 +495,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Real 4)
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (IntegerConstant 2 (Integer 4) Decimal))]
+                                                        FixedSizeArray
+                                                    )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             b:
@@ -332,6 +525,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             i:
@@ -354,6 +551,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     sample
@@ -361,6 +562,7 @@
                                     [a
                                     b
                                     i]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -379,12 +581,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         3 sample
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -433,6 +642,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             sample:
                                 (ExternalSymbol
@@ -477,10 +690,23 @@
                             (IntrinsicElementalFunction
                                 Abs
                                 [(RealBinOp
-                                    (StructInstanceMember
-                                        (Var 2 struct_instance_sample)
-                                        2 1_sample_a
+                                    (ArrayItem
+                                        (StructInstanceMember
+                                            (Var 2 struct_instance_sample)
+                                            2 1_sample_a
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            ()
+                                        )
+                                        [(()
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        ())]
                                         (Real 4)
+                                        ColMajor
                                         ()
                                     )
                                     Sub
@@ -545,21 +771,30 @@
                         []
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 2 struct_instance_sample)
-                            2 1_sample_a
-                            (Real 4)
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 2 struct_instance_sample)
+                                2 1_sample_a
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 2 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 2 struct_instance_sample)
+                                2 1_sample_b
+                                (Real 4)
+                                ()
+                            )
+                            (Var 2 e)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (StructInstanceMember
-                            (Var 2 struct_instance_sample)
-                            2 1_sample_b
-                            (Real 4)
-                            ()
-                        )
-                        (Var 2 e)]
-                        ()
-                        ()
                     )]
                     ()
                     Public

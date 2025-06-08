@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             m:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             n:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             prinf:
                                 (Function
@@ -69,11 +81,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 6 ())
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             prinf_arg_1:
@@ -91,6 +107,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             prinf_arg_2:
                                                 (Variable
@@ -107,11 +127,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     prinf
                                     (FunctionType
-                                        [(Character 1 6 ())
+                                        [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (Integer 4)
                                         (Integer 4)]
                                         ()
@@ -152,6 +176,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -168,6 +196,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -183,6 +215,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -216,7 +252,7 @@
                         ()
                         [((StringConstant
                             "lw = *"
-                            (Character 1 6 ())
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                         ))
                         ((Var 2 lw))
                         ((IntegerConstant 1 (Integer 4) Decimal))]
@@ -227,7 +263,7 @@
                         ()
                         [((StringConstant
                             "16m+70 = *"
-                            (Character 1 10 ())
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                         ))
                         ((IntegerBinOp
                             (IntegerBinOp

@@ -1,0 +1,951 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            min_min:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            int_inp1:
+                                (Variable
+                                    2
+                                    int_inp1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            int_inp2:
+                                (Variable
+                                    2
+                                    int_inp2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_amin0:
+                                (Variable
+                                    2
+                                    output_amin0
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_amin1:
+                                (Variable
+                                    2
+                                    output_amin1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_dmin1:
+                                (Variable
+                                    2
+                                    output_dmin1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_min:
+                                (Variable
+                                    2
+                                    output_min
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_min0:
+                                (Variable
+                                    2
+                                    output_min0
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_min1:
+                                (Variable
+                                    2
+                                    output_min1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            output_min_different_kinds:
+                                (Variable
+                                    2
+                                    output_min_different_kinds
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp1:
+                                (Variable
+                                    2
+                                    real_inp1
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp2:
+                                (Variable
+                                    2
+                                    real_inp2
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp3:
+                                (Variable
+                                    2
+                                    real_inp3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp4:
+                                (Variable
+                                    2
+                                    real_inp4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp5:
+                                (Variable
+                                    2
+                                    real_inp5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real_inp6:
+                                (Variable
+                                    2
+                                    real_inp6
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    min_min
+                    []
+                    [(Assignment
+                        (Var 2 real_inp1)
+                        (RealConstant
+                            5.000000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 real_inp2)
+                        (RealConstant
+                            10.000000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 real_inp3)
+                        (RealConstant
+                            5.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 real_inp4)
+                        (RealConstant
+                            10.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 int_inp1)
+                        (IntegerConstant 5 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 int_inp2)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 real_inp5)
+                        (RealConstant
+                            5.200000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 real_inp6)
+                        (RealConstant
+                            9.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 output_min)
+                        (IntrinsicElementalFunction
+                            Min
+                            [(Var 2 real_inp1)
+                            (Var 2 real_inp2)]
+                            0
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_min)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 output_min)
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            5.000000
+                                            (Real 8)
+                                        )
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            GtE
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 8)
+                                (Var 2 output_min)
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_min0)
+                        (IntrinsicElementalFunction
+                            Min
+                            [(Var 2 int_inp1)
+                            (Var 2 int_inp2)]
+                            0
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_min0)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 output_min0)
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Integer 4)
+                                (Var 2 output_min0)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_amin0)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Min
+                                [(Var 2 int_inp1)
+                                (Var 2 int_inp2)]
+                                0
+                                (Integer 4)
+                                ()
+                            )
+                            IntegerToReal
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_amin0)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 output_amin0)
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            5.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            GtE
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 4)
+                                (Var 2 output_amin0)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_min1)
+                        (Cast
+                            (IntrinsicElementalFunction
+                                Min
+                                [(Var 2 real_inp3)
+                                (Var 2 real_inp4)]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_min1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (Var 2 output_min1)
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Integer 4)
+                                (Var 2 output_min1)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_amin1)
+                        (IntrinsicElementalFunction
+                            Min
+                            [(Var 2 real_inp3)
+                            (Var 2 real_inp4)]
+                            0
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_amin1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 output_amin1)
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 4)
+                                        (RealConstant
+                                            5.000000
+                                            (Real 4)
+                                        )
+                                    )
+                                    (Real 4)
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )
+                            GtE
+                            (RealConstant
+                                0.000000
+                                (Real 4)
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 4)
+                                (Var 2 output_amin1)
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 4 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_dmin1)
+                        (IntrinsicElementalFunction
+                            Min
+                            [(Var 2 real_inp1)
+                            (Var 2 real_inp1)]
+                            0
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_dmin1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 output_dmin1)
+                                    Sub
+                                    (Cast
+                                        (IntegerConstant 5 (Integer 4) Decimal)
+                                        IntegerToReal
+                                        (Real 8)
+                                        (RealConstant
+                                            5.000000
+                                            (Real 8)
+                                        )
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            GtE
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 8)
+                                (Var 2 output_dmin1)
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 output_min_different_kinds)
+                        (IntrinsicElementalFunction
+                            Min
+                            [(Var 2 real_inp5)
+                            (Cast
+                                (Var 2 real_inp6)
+                                RealToReal
+                                (Real 8)
+                                ()
+                            )]
+                            0
+                            (Real 8)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(Var 2 output_min_different_kinds)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (RealCompare
+                            (IntrinsicElementalFunction
+                                Abs
+                                [(RealBinOp
+                                    (Var 2 output_min_different_kinds)
+                                    Sub
+                                    (RealConstant
+                                        5.200000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )
+                            Gt
+                            (Cast
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
+                                RealToReal
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (If
+                        (IntegerCompare
+                            (TypeInquiry
+                                Kind
+                                (Real 8)
+                                (Var 2 output_min_different_kinds)
+                                (Integer 4)
+                                (IntegerConstant 8 (Integer 4) Decimal)
+                            )
+                            NotEq
+                            (IntegerConstant 8 (Integer 4) Decimal)
+                            (Logical 4)
+                            (LogicalConstant
+                                .false.
+                                (Logical 4)
+                            )
+                        )
+                        [(ErrorStop
+                            (StringConstant
+                                "Incorrect kind for min"
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                        )]
+                        []
+                    )]
+                )
+        })
+    []
+)

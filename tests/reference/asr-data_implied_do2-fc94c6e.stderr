@@ -1,0 +1,5 @@
+semantic error: The increment variable of the data implied do loop must be a constant
+ --> tests/errors/data_implied_do2.f90:5:27
+  |
+5 |     data(iarx(i), i=1, 3, k) / 1, 2, 3 /
+  |                           ^ 

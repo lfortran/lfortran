@@ -5,6 +5,7 @@
 #include <libasr/assert.h>
 #include <libasr/exception.h>
 #include <libasr/utils.h>
+#include <libasr/string_utils.h>
 
 namespace LCompilers::diag {
 
@@ -85,8 +86,8 @@ std::string Diagnostics::render(LocationManager &lm,
             } else {
                 out += render_diagnostic_human(d, lm, compiler_options.use_colors,
                     compiler_options.show_stacktrace);
+                if (&d != &this->diagnostics.back()) out += "\n";
             }
-            if (&d != &this->diagnostics.back()) out += "\n";
         } else if (compiler_options.error_format == "short") {
             out += render_diagnostic_short(d, lm);
         } else {
@@ -138,9 +139,12 @@ void populate_span(diag::Span &s, const LocationManager &lm) {
     lm.pos_to_linecol(lm.output_to_input_pos(s.loc.last, true),
         s.last_line, s.last_column, s.filename);
     std::string input;
-    read_file(s.filename, input);
-    for (uint32_t i = s.first_line; i <= s.last_line; i++) {
-        s.source_code.push_back(get_line(input, i));
+    if (read_file(s.filename, input)) {
+        for (uint32_t i = s.first_line; i <= s.last_line; i++) {
+            s.source_code.push_back(get_line(input, i));
+        }
+    } else {
+        s.source_code.push_back("File not found.\n");
     }
     LCOMPILERS_ASSERT(s.source_code.size() > 0)
 }

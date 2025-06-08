@@ -2,11 +2,11 @@
     "basename": "asr-fn6-a24010a",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/fn6.f90",
-    "infile_hash": "1d783a2cb3a06fd1e8b47f091cf9cb4602a8e1a08dffb4ea8b72cd6c",
+    "infile_hash": "635454a138db38c61d94f257c35b7c909eb0b9603372d17c77f7e1fd",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-fn6-a24010a.stdout",
-    "stdout_hash": "a818f96406f1430b1c7c33415b6ec4e70055c80999385ddcc88dc300",
+    "stdout_hash": "664052099c78bf886fd473a09a261db8d03b9b161f9627f50671569c",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

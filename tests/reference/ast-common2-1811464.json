@@ -2,11 +2,11 @@
     "basename": "ast-common2-1811464",
     "cmd": "lfortran --fixed-form --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/common2.f",
-    "infile_hash": "a30d92cf5f1406c227922d6d2bd235773f1dae3e62d3007600faea21",
+    "infile_hash": "761ba9bcb69efc19ad1828c9ebc8deab710d02f98f6722736d6a4dd2",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-common2-1811464.stdout",
-    "stdout_hash": "986a8a7e482568cc8f45cc8300a28a25b48bc3e5dbe237299123289e",
+    "stdout_hash": "a4c08f6f4de3cee96ae4ee89d420bdeeaf16a21bb8a2d807bc848206",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

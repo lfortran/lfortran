@@ -1,0 +1,13 @@
+{
+    "basename": "asr-array_op_simplifier_test-ba92920",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/array_op_simplifier_test.f90",
+    "infile_hash": "c0b02cecb6f724cd809c6ed591f08c805e9d87dc0635842a5eca99be",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-array_op_simplifier_test-ba92920.stdout",
+    "stdout_hash": "fd1d3c82c86b8b9daec4b31d7f22c4742dae5189e5d7a706cc549633",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

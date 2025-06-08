@@ -28,6 +28,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i64:
                                 (Variable
@@ -49,6 +53,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             y:
@@ -81,6 +89,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -112,61 +124,73 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_23
                     []
                     [(Print
-                        [(Var 2 i32)
-                        (Var 2 i64)
-                        (Var 2 y)
-                        (Var 2 z)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i32)
+                            (Var 2 i64)
+                            (Var 2 y)
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(TypeInquiry
-                            Huge
-                            (Integer 4)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (Integer 4)
-                            (IntegerConstant 2147483647 (Integer 4) Decimal)
-                        )
-                        (TypeInquiry
-                            Huge
-                            (Integer 8)
-                            (IntegerConstant 0 (Integer 8) Decimal)
-                            (Integer 8)
-                            (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
-                        )
-                        (TypeInquiry
-                            Huge
-                            (Real 4)
-                            (RealConstant
-                                0.000000
+                        (StringFormat
+                            ()
+                            [(TypeInquiry
+                                Huge
+                                (Integer 4)
+                                (IntegerConstant 0 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant 2147483647 (Integer 4) Decimal)
+                            )
+                            (TypeInquiry
+                                Huge
+                                (Integer 8)
+                                (IntegerConstant 0 (Integer 8) Decimal)
+                                (Integer 8)
+                                (IntegerConstant 9223372036854775807 (Integer 8) Decimal)
+                            )
+                            (TypeInquiry
+                                Huge
                                 (Real 4)
-                            )
-                            (Real 4)
-                            (RealConstant
-                                340282346638528859811704183484516925440.000000
+                                (RealConstant
+                                    0.000000
+                                    (Real 4)
+                                )
                                 (Real 4)
+                                (RealConstant
+                                    340282346638528859811704183484516925440.000000
+                                    (Real 4)
+                                )
                             )
+                            (TypeInquiry
+                                Huge
+                                (Real 8)
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                (Real 8)
+                                (RealConstant
+                                    179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
+                                    (Real 8)
+                                )
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (TypeInquiry
-                            Huge
-                            (Real 8)
-                            (RealConstant
-                                0.000000
-                                (Real 8)
-                            )
-                            (Real 8)
-                            (RealConstant
-                                179769313486231570814527423731704356798070567525844996598917476803157260780028538760589558632766878171540458953514382464234321326889464182768467546703537516986049910576551282076245490090389328944075868508455133942304583236903222948165808559332123348274797826204144723168738177180919299881250404026184124858368.000000
-                                (Real 8)
-                            )
-                        )]
-                        ()
-                        ()
                     )]
                 )
         })

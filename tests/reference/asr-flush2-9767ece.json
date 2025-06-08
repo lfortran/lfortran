@@ -1,0 +1,13 @@
+{
+    "basename": "asr-flush2-9767ece",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/flush2.f90",
+    "infile_hash": "e4912e2bc379b34e493cdd9c89f76794bb32113af915d2ca96793675",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-flush2-9767ece.stdout",
+    "stdout_hash": "7101b68279d4fb01e6ae7322e6eccadb03e4da44f504ee60c6c261f0",
+    "stderr": "asr-flush2-9767ece.stderr",
+    "stderr_hash": "9a387f3a8657746f5eb56f5e5a03771cfe161a73d9fb1a50cc03e6ae",
+    "returncode": 0
+}

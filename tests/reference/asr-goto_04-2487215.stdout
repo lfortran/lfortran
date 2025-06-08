@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     goto_04
@@ -46,11 +54,13 @@
                         (Var 2 n)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Select
                         (IntegerBinOp
@@ -97,6 +107,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         1
@@ -112,6 +123,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         2
@@ -127,6 +139,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         3
@@ -142,6 +155,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -201,6 +215,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         4
@@ -216,6 +231,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         5
@@ -231,6 +247,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         6
@@ -246,6 +263,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -305,6 +323,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         7
@@ -320,6 +339,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         8
@@ -335,6 +355,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (GoToTarget
                         9
@@ -350,6 +371,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

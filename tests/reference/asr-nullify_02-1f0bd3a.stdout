@@ -24,6 +24,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             p2:
                                 (Variable
@@ -42,6 +46,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -58,6 +66,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             t2:
                                 (Variable
@@ -73,6 +85,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -94,6 +110,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Associate
                         (Var 2 p2)
@@ -111,10 +128,11 @@
                             (IntegerConstant 2 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Nullify
-                        [2 p1
-                        2 p2]
+                        [(Var 2 p1)
+                        (Var 2 p2)]
                     )]
                 )
         })

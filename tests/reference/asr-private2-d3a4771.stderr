@@ -1,5 +1,5 @@
 semantic error: Private variable `y` cannot be imported
- --> tests/errors/private2.f90:7:5
+ --> tests/errors/private2.f90:7:21
   |
 7 |     use foo2, only: y
-  |     ^^^^^^^^^^^^^^^^^ 
+  |                     ^ 

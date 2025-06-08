@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     f
@@ -50,11 +54,13 @@
                             (IntegerConstant 6 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f1)
                         (Var 1 x)
                         ()
+                        .false.
                     )]
                     (Var 2 f1)
                     Public
@@ -76,6 +82,10 @@
                     Source
                     Public
                     Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
                     .false.
                 )
         })

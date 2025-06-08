@@ -30,9 +30,7 @@
         (Print
             15
             ()
-            [(String
-                "run"
-            )]
+            [(String "run")]
             ()
         )]
         []

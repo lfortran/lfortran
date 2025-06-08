@@ -1,4 +1,4 @@
-program merge_bits_comp
+program merge_bits_run
     integer :: a, c 
     integer(kind=8) :: b
     a = 8

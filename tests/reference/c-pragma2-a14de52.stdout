@@ -11,6 +11,16 @@ struct dimension_descriptor
     int32_t lower_bound, length, stride;
 };
 
+struct i32
+{
+    int32_t *data;
+    struct dimension_descriptor dims[32];
+    int32_t n_dims;
+    int32_t offset;
+    bool is_allocated;
+};
+
+
 struct r32
 {
     float *data;
@@ -27,6 +37,15 @@ struct r32
 int main(int argc, char* argv[])
 {
     _lpython_set_argv(argc, argv);
+    const struct i32 __libasr_created__array_constant__value;
+    struct i32* __libasr_created__array_constant_ = &__libasr_created__array_constant__value;
+    int32_t __libasr_created__array_constant__data[1];
+    __libasr_created__array_constant_->data = __libasr_created__array_constant__data;
+    __libasr_created__array_constant_->n_dims = 1;
+    __libasr_created__array_constant_->offset = 0;
+    __libasr_created__array_constant_->dims[0].lower_bound = 1;
+    __libasr_created__array_constant_->dims[0].length = 1;
+    __libasr_created__array_constant_->dims[0].stride = 1;
     float a __attribute__ (( vector_size(sizeof(float) * 8) ));
     a = (float __attribute__ (( vector_size(sizeof(float) * 8) ))) {(float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1), (float)(1)};
     return 0;

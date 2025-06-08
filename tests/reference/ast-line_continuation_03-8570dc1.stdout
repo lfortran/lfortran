@@ -111,9 +111,7 @@
         (Print
             0
             ()
-            [(String
-                "some string is continued"
-            )]
+            [(String "some string is continued")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -130,9 +128,7 @@
         (Print
             0
             ()
-            [(String
-                "some string can contain & as a regular character is continued"
-            )]
+            [(String "some string can contain & as a regular character is continued")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -142,9 +138,7 @@
         (Print
             0
             ()
-            [(String
-                "Even here: && <- there will be two &"
-            )]
+            [(String "Even here: && <- there will be two &")]
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -195,12 +189,27 @@
         (Print
             0
             ()
-            [(String
-                "some string is continued"
-            )]
+            [(String "some string is continued")]
             (TriviaNode
                 []
                 [(EndOfLine)
+                (EndOfLine)]
+            )
+        )
+        (Print
+            0
+            ()
+            [(String "*t")
+            (String "")]
+            (TriviaNode
+                []
+                [(EndOfLine)
+                (Comment
+                    "!!     call set_args ( \\'  &"
+                )
+                (Comment
+                    "!! & \\n"
+                )
                 (EndOfLine)]
             )
         )]

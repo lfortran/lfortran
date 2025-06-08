@@ -45,6 +45,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         [(Function
             add_real
             [(x)
@@ -910,6 +911,7 @@
             )]
         )]
         []
+        []
     )
     (Module
         template_travel_01_m
@@ -941,6 +943,7 @@
                 (EndOfLine)]
             )
         )]
+        []
         []
         [(Subroutine
             test_template
@@ -1119,18 +1122,14 @@
             (Print
                 0
                 ()
-                [(String
-                    "s1="
-                )
+                [(String "s1=")
                 s1]
                 ()
             )
             (Print
                 0
                 ()
-                [(String
-                    "s2="
-                )
+                [(String "s2=")
                 s2]
                 ()
             )]

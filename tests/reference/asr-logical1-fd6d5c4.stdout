@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     logical1
@@ -49,6 +57,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -57,12 +66,17 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 a)
-                        (Var 2 b)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 a)
+                            (Var 2 b)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

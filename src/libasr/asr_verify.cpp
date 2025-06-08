@@ -6,6 +6,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 
+#include <set>
+
 namespace LCompilers {
 
 namespace ASR {
@@ -38,6 +40,7 @@ private:
     SymbolTable *current_symtab;
     bool check_external;
     diag::Diagnostics &diagnostics;
+    std::string current_name;
 
     // For checking that all symtabs have a unique ID.
     // We first walk all symtabs, and then we check that everything else
@@ -78,19 +81,19 @@ public:
                         // The symbol table was found and the symbol `sym` is in it
                         return true;
                     } else {
-                        diagnostics.message_label("ASR verify: The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
+                        diagnostics.message_label("The symbol table was found and the symbol in it shares the name, but is not equal to `sym`",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                         return false;
                     }
                 } else {
-                    diagnostics.message_label("ASR verify: The symbol table was found, but the symbol `sym` is not in it",
+                    diagnostics.message_label("The symbol table was found, but the symbol `sym` is not in it",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
                     return false;
                 }
             }
             s = s->parent;
         }
-        diagnostics.message_label("ASR verify: The symbol table was not found in the scope of `symtab`.",
+        diagnostics.message_label("The symbol table was not found in the scope of `symtab`.",
                         {sym->base.loc}, "failed here", diag::Level::Error, diag::Stage::ASRVerify);
         return false;
     }
@@ -380,6 +383,18 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
+        // it's possible that the target is an external symbol, and during
+        // initial deserialization pass, so we don't do the below verification
+        if ( check_external && x.m_realloc_lhs ) {
+            ASR::expr_t* a_target = x.m_target;
+            bool is_allocatable = ASRUtils::is_allocatable(a_target);
+            if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
+                ASR::StructInstanceMember_t* a_target_struct = ASR::down_cast<ASR::StructInstanceMember_t>(a_target);
+                is_allocatable |= ASRUtils::is_allocatable(a_target_struct->m_v);
+            }
+            require(is_allocatable,
+                "Reallocation of non allocatable variable is not allowed");
+        }
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
@@ -422,10 +437,6 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
-        if (ASRUtils::get_FunctionType(&x)->m_abi == abiType::Interactive) {
-            require(x.n_body == 0,
-            "The Function::n_body should be 0 if abi set to Interactive");
-        }
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -528,7 +539,7 @@ public:
             if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::Struct_t>(*a.second) ||
-                ASR::is_a<ASR::UnionType_t>(*a.second) ||
+                ASR::is_a<ASR::Union_t>(*a.second) ||
                 ASR::is_a<ASR::ExternalSymbol_t>(*a.second) ||
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
@@ -544,11 +555,8 @@ public:
             } else if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::Union_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::Union_t>(var_type)->m_union_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
+            } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
+                sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
@@ -638,11 +646,13 @@ public:
                                      "to Enum::m_enum_value_type");
     }
 
-    void visit_UnionType(const UnionType_t& x) {
+    void visit_Union(const Union_t& x) {
         visit_UserDefinedType(x);
     }
 
     void visit_Variable(const Variable_t &x) {
+        std::string current_name_copy = current_name;
+        current_name = x.m_name;
         variable_dependencies.clear();
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
@@ -653,6 +663,8 @@ public:
         const symbol_t *current_sym = &x.base;
         require(symtab_sym == current_sym,
             "Variable's parent symbol table does not point to it");
+        require(current_symtab == symtab,
+            "Variable's parent-symbolTable and actuall parent symbolTable don't match (Maybe inserted from another symbolTable)");
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
             "Variable::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
@@ -672,11 +684,26 @@ public:
             !is_module && !is_struct) {
             // For now restrict this check only to variables which are present
             // inside symbols which have a body.
-            require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
-                     (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                     (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
-                    "Initialisation of " + std::string(x.m_name) +
-                    " must reduce to a compile time constant.");
+            ASR::ArrayConstructor_t *array_construct = nullptr;
+            if (x.m_symbolic_value && ASR::is_a<ASR::ArrayConstructor_t>(*x.m_symbolic_value)) {
+                array_construct = ASR::down_cast<ASR::ArrayConstructor_t>(x.m_symbolic_value);
+            }
+
+            if (array_construct && array_construct->n_args > 0 && ASR::is_a<ASR::StructConstructor_t>(*array_construct->m_args[0])) {
+                for (size_t j = 0; j < array_construct->n_args; j++) {
+                    require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                            (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                            (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(array_construct->m_args[j])),
+                            "Initialisation of " + std::string(x.m_name) +
+                            " must reduce to a compile time constant.");
+                }
+            } else {
+                require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
+                        (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        "Initialisation of " + std::string(x.m_name) +
+                        " must reduce to a compile time constant.");
+            }
         }
 
         if (x.m_symbolic_value)
@@ -708,6 +735,7 @@ public:
                 "Variable " + std::string(x.m_name) + " depends on " +
                 std::string(variable_dependencies[i]) + " but isn't found in its dependency list.");
         }
+        current_name = current_name_copy;
     }
 
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
@@ -722,7 +750,7 @@ public:
             ASR::Module_t *m = ASRUtils::get_sym_module(x.m_external);
             ASR::Struct_t* sm = nullptr;
             ASR::Enum_t* em = nullptr;
-            ASR::UnionType_t* um = nullptr;
+            ASR::Union_t* um = nullptr;
             ASR::Function_t* fm = nullptr;
             bool is_valid_owner = false;
             is_valid_owner = m != nullptr && ((ASR::symbol_t*) m == ASRUtils::get_asr_owner(x.m_external));
@@ -732,15 +760,15 @@ public:
                 is_valid_owner = (ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ||
                                   ASR::is_a<ASR::Function_t>(*asr_owner_sym) ||
-                                  ASR::is_a<ASR::UnionType_t>(*asr_owner_sym));
+                                  ASR::is_a<ASR::Union_t>(*asr_owner_sym));
                 if( ASR::is_a<ASR::Struct_t>(*asr_owner_sym) ) {
                     sm = ASR::down_cast<ASR::Struct_t>(asr_owner_sym);
                     asr_owner_name = sm->m_name;
                 } else if( ASR::is_a<ASR::Enum_t>(*asr_owner_sym) ) {
                     em = ASR::down_cast<ASR::Enum_t>(asr_owner_sym);
                     asr_owner_name = em->m_name;
-                } else if( ASR::is_a<ASR::UnionType_t>(*asr_owner_sym) ) {
-                    um = ASR::down_cast<ASR::UnionType_t>(asr_owner_sym);
+                } else if( ASR::is_a<ASR::Union_t>(*asr_owner_sym) ) {
+                    um = ASR::down_cast<ASR::Union_t>(asr_owner_sym);
                     asr_owner_name = um->m_name;
                 } else if( ASR::is_a<ASR::Function_t>(*asr_owner_sym) ) {
                     fm = ASR::down_cast<ASR::Function_t>(asr_owner_sym);
@@ -802,7 +830,9 @@ public:
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
         require(symtab_in_scope(current_symtab, x.m_v),
             "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
-        variable_dependencies.push_back(x_mv_name);
+        if ( x_mv_name != current_name ) {
+            variable_dependencies.push_back(x_mv_name);
+        }
     }
 
     void visit_ImplicitDeallocate(const ImplicitDeallocate_t &x) {
@@ -840,7 +870,7 @@ public:
             check_var_external(*x.m_v);
             int n_dims = ASRUtils::extract_n_dims_from_ttype(
                     ASRUtils::expr_type(x.m_v));
-            if (ASR::is_a<ASR::Character_t>(*x.m_type) && n_dims == 0) {
+            if (ASR::is_a<ASR::String_t>(*x.m_type) && n_dims == 0) {
                 // TODO: This seems like a bug, we should not use ArrayItem with
                 // strings but StringItem. For now we ignore it, but we should
                 // fix it
@@ -852,10 +882,31 @@ public:
     }
 
     void visit_ArrayItem(const ArrayItem_t &x) {
+        if( check_external ) {
+            if( ASRUtils::is_array_indexed_with_array_indices(x.m_args, x.n_args) ) {
+                require(ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type with array indices must be an array.")
+            } else {
+                require(!ASRUtils::is_array(x.m_type),
+                    "ArrayItem::m_type cannot be array.")
+            }
+        }
         handle_ArrayItemSection(x);
     }
 
+    void visit_ArraySize(const ArraySize_t& x) {
+        if (check_external) {
+            require(ASRUtils::is_array(ASRUtils::expr_type(x.m_v)),
+                "ArraySize::m_v must be an array");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_ArraySize(x);
+    }
+
     void visit_ArraySection(const ArraySection_t &x) {
+        require(
+            ASR::is_a<ASR::Array_t>(*x.m_type),
+            "ArrayItemSection::m_type can only be an Array"
+        );
         handle_ArrayItemSection(x);
     }
 
@@ -912,7 +963,7 @@ public:
             ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_name);
             if (ASR::is_a<ASR::Variable_t>(*s)) {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(s);
-                require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*v->m_type_declaration),
+                require(v->m_type_declaration && ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(v->m_type_declaration)),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but does not point to Function");
                 require(ASR::is_a<ASR::FunctionType_t>(*v->m_type),
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
@@ -975,13 +1026,9 @@ public:
                 type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
                 break;
             }
-            case (ASR::ttypeType::ClassType): {
-                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
-                break;
-            }
             default :
                 require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType or ClassType)",
+                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType)",
                     dt->base.loc);
         }
         return get_dt_symtab(type_sym);
@@ -1014,15 +1061,6 @@ public:
                 type_sym = ASRUtils::symbol_get_past_external(type_sym);
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
                 parent = der_type->m_parent;
-                break;
-            }
-            case (ASR::ttypeType::ClassType): {
-                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
-                type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                if( type_sym->type == ASR::symbolType::Struct ) {
-                    ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
-                    parent = der_type->m_parent;
-                }
                 break;
             }
             default :
@@ -1080,6 +1118,7 @@ public:
     void visit_FunctionCall(const FunctionCall_t &x) {
         require(x.m_name,
             "FunctionCall::m_name must be present");
+        variable_dependencies.push_back(std::string(ASRUtils::symbol_name(x.m_name)));
         ASR::symbol_t* asr_owner_sym = nullptr;
         if(current_symtab->asr_owner &&  ASR::is_a<ASR::symbol_t>(*current_symtab->asr_owner) ) {
             asr_owner_sym = ASR::down_cast<ASR::symbol_t>(current_symtab->asr_owner);
@@ -1161,7 +1200,9 @@ public:
         int64_t n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASRUtils::extract_kind_from_ttype_t(x.m_type);
         if (ASRUtils::is_character(*x.m_type)) {
             ASR::ttype_t* t = ASRUtils::type_get_past_array(x.m_type);
-            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * ASR::down_cast<ASR::Character_t>(t)->m_len;
+            int64_t len;
+            require(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(t)->m_len, len), "Constant array of strings should have constant string length");
+            n_data = ASRUtils::get_fixed_size_of_array(x.m_type) * len;
         }
         require(n_data == x.m_n_data, "ArrayConstant::m_n_data must match the byte size of the array");
         visit_ttype(*x.m_type);
@@ -1215,8 +1256,15 @@ public:
     }
 
     void visit_Allocatable(const Allocatable_t &x) {
-        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
+        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type) &&
+                !ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
+        ASR::dimension_t* m_dims = nullptr;
+        size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);
+        for( size_t i = 0; i < n_dims; i++ ) {
+            require(m_dims[i].m_length == nullptr,
+                "Length of allocatable should be deferred (empty).");
+        }
         visit_ttype(*x.m_type);
     }
 
@@ -1228,7 +1276,18 @@ public:
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
             }
+
+            if( x.m_source == nullptr ) {
+                for( size_t i = 0; i < x.n_args; i++ ) {
+                    if( ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_a)) ) {
+                        require(x.m_args[i].n_dims > 0,
+                            "Allocate for arrays should have dimensions specified, "
+                            "found only array variable with no dimensions");
+                    }
+                }
+            }
         }
+
         BaseWalkVisitor<VerifyVisitor>::visit_Allocate(x);
     }
 

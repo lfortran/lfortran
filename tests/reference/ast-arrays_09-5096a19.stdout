@@ -42,9 +42,7 @@
                 []
                 []
             )
-            (String
-                "Substring"
-            )
+            (String "Substring")
             ()
         )
         (If
@@ -63,9 +61,7 @@
                 1
                 0)]
                 []
-            ) (String
-                "string"
-            ))
+            ) (String "string"))
             [(ErrorStop
                 0
                 ()

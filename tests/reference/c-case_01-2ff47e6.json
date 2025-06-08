@@ -2,11 +2,11 @@
     "basename": "c-case_01-2ff47e6",
     "cmd": "lfortran --no-color --show-c {infile}",
     "infile": "tests/../integration_tests/case_01.f90",
-    "infile_hash": "b0377013ea9328e6a8544ad056d49280c21a7b4c96cd9ee7670ddf0d",
+    "infile_hash": "003a23367180e7f228e7e4ef5a6dfdb6749801b29ccf2002e2559e41",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "c-case_01-2ff47e6.stdout",
-    "stdout_hash": "b3b4a353e08c27adc5dbbae378127ca55924d46a7cf6657f2e486a27",
+    "stdout_hash": "e47d0d678fec6d42d2bd1b503b34991411d09633fb062004f371c8ef",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

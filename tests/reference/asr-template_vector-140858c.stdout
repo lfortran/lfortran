@@ -47,6 +47,26 @@
                                     (SymbolTable
                                         7
                                         {
+                                            1___asr_push_back:
+                                                (ExternalSymbol
+                                                    7
+                                                    1___asr_push_back
+                                                    8 push_back
+                                                    intvector
+                                                    []
+                                                    push_back
+                                                    Public
+                                                ),
+                                            1_intvector_elements:
+                                                (ExternalSymbol
+                                                    7
+                                                    1_intvector_elements
+                                                    8 elements
+                                                    intvector
+                                                    []
+                                                    elements
+                                                    Public
+                                                ),
                                             __asr_push_back:
                                                 (Function
                                                     (SymbolTable
@@ -97,6 +117,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -113,6 +137,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -123,7 +151,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -131,11 +162,18 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -169,6 +207,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         9 1_intvector_resize
@@ -200,6 +239,7 @@
                                                         )
                                                         (Var 9 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -210,6 +250,7 @@
                                                         )
                                                         (Var 9 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -257,6 +298,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -273,6 +318,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -283,13 +332,20 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -314,11 +370,18 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -460,6 +523,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -508,43 +572,23 @@
                                                                 ()
                                                             )
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
-                                                                )
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                         )
                                                         (Var 10 tmp)
                                                         ()
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 10 tmp)]
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
                                                     .false.
                                                     .false.
                                                     ()
-                                                ),
-                                            i:
-                                                (Variable
-                                                    7
-                                                    i
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
                                                 ),
                                             intvector:
                                                 (Struct
@@ -572,6 +616,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             push_back:
@@ -602,8 +650,8 @@
                                                                     sz
                                                                     []
                                                                     Local
-                                                                    ()
-                                                                    ()
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                                                    (IntegerConstant 0 (Integer 4) Decimal)
                                                                     Save
                                                                     (Integer 4)
                                                                     ()
@@ -611,12 +659,17 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     intvector
                                                     []
                                                     [elements
                                                     sz]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.
@@ -634,13 +687,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         7 intvector
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -661,18 +721,44 @@
                                     )
                                     []
                                     []
-                                    [(Assignment
+                                    [(SubroutineCall
+                                        7 1___asr_push_back
+                                        ()
+                                        [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (Var 7 v)
-                                        (StructConstructor
-                                            7 intvector
-                                            [(())
-                                            (())]
-                                            (StructType
-                                                7 intvector
+                                    )
+                                    (If
+                                        (IntegerCompare
+                                            (ArrayItem
+                                                (StructInstanceMember
+                                                    (Var 7 v)
+                                                    7 1_intvector_elements
+                                                    (Allocatable
+                                                        (Array
+                                                            (Integer 4)
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    ()
+                                                )
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
                                             )
+                                            NotEq
+                                            (IntegerConstant 10 (Integer 4) Decimal)
+                                            (Logical 4)
                                             ()
                                         )
-                                        ()
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
                                     )]
                                     ()
                                     Private
@@ -737,6 +823,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -753,6 +843,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -763,7 +857,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -771,11 +868,18 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (TypeParameter
@@ -811,6 +915,7 @@
                                                             ()
                                                         )
                                                         ()
+                                                        .false.
                                                     )
                                                     (SubroutineCall
                                                         5 1_resize
@@ -846,6 +951,7 @@
                                                         )
                                                         (Var 5 item)
                                                         ()
+                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember
@@ -856,6 +962,7 @@
                                                         )
                                                         (Var 5 new_size)
                                                         ()
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -903,6 +1010,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -919,6 +1030,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -929,13 +1044,20 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -962,11 +1084,18 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (Integer 4)]
@@ -1118,6 +1247,7 @@
                                                                 ()
                                                             )
                                                             ()
+                                                            .false.
                                                         )]
                                                         []
                                                     )
@@ -1170,23 +1300,19 @@
                                                                 ()
                                                             )
                                                             (IntegerConstant 1 (Integer 4) Decimal))]
-                                                            (Allocatable
-                                                                (Array
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
                                                                 )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
                                                             )
                                                             ()
                                                         )
                                                         (Var 6 tmp)
                                                         ()
-                                                    )
-                                                    (ImplicitDeallocate
-                                                        [(Var 6 tmp)]
+                                                        .false.
                                                     )]
                                                     ()
                                                     Private
@@ -1210,6 +1336,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             vector:
@@ -1240,6 +1370,10 @@
                                                                     Source
                                                                     Private
                                                                     Required
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
                                                                     .false.
                                                                 ),
                                                             push_back:
@@ -1279,12 +1413,17 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     vector
                                                     []
                                                     [elements
                                                     sz]
+                                                    []
                                                     Source
                                                     Private
                                                     .false.

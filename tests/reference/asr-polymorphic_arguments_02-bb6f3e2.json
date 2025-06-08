@@ -1,0 +1,13 @@
+{
+    "basename": "asr-polymorphic_arguments_02-bb6f3e2",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/polymorphic_arguments_02.f90",
+    "infile_hash": "56e8d7a53ae767686c5bb655fe9c19c37e8cf8112500fed026cd8dc1",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-polymorphic_arguments_02-bb6f3e2.stdout",
+    "stdout_hash": "8d81e702f94fb8ed22db353e834de5dbee02889277072d3ef1e4e110",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -8,6 +8,8 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/asr_builder.h>
 
+#include <set>
+
 namespace LCompilers {
 
 using ASR::down_cast;
@@ -198,9 +200,13 @@ public:
     ASR::expr_t* basic_str(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_str_sym = create_bindc_function(loc,
             "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr)));
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::CString)));
         return FunctionCall(loc, basic_str_sym, {x},
-            ASRUtils::TYPE(ASR::make_Character_t(al, loc, 1, -2, nullptr)));
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::CString)));
     }
 
     ASR::expr_t* basic_get_type(const Location& loc, ASR::expr_t* value) {
@@ -231,7 +237,9 @@ public:
     ASR::stmt_t *symbol_set(const Location &loc, ASR::expr_t *target, ASR::expr_t *value) {
         ASR::symbol_t* symbol_set_sym = create_bindc_function(loc, "symbol_set",
             {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
-            ASR::make_Character_t(al, loc, 1, -2, nullptr))});
+            ASR::make_String_t(al, loc, 1, nullptr,
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::CString))});
         return SubroutineCall(loc, symbol_set_sym, {target, value});
     }
 
@@ -363,7 +371,7 @@ public:
             if(xx.m_intent == ASR::intentType::Local){
                 ASR::ttype_t *type2 = ASRUtils::TYPE(ASR::make_Integer_t(al, xx.base.base.loc, 8));
                 ASR::symbol_t* sym2 = ASR::down_cast<ASR::symbol_t>(
-                    ASR::make_Variable_t(al, xx.base.base.loc, current_scope,
+                    ASRUtils::make_Variable_t_util(al, xx.base.base.loc, current_scope,
                                         s2c(al, placeholder), nullptr, 0,
                                         xx.m_intent, nullptr,
                                         nullptr, xx.m_storage,
@@ -394,9 +402,9 @@ public:
                     CPtr_type, nullptr));
 
                 // defining the assignment statement
-                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target1, value1, nullptr));
-                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target2, value2, nullptr));
-                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASR::make_Assignment_t(al, xx.base.base.loc, target2, value3, nullptr));
+                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target1, value1, nullptr, false));
+                ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value2, nullptr, false));
+                ASR::stmt_t* stmt3 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, xx.base.base.loc, target2, value3, nullptr, false));
                 // statement 4
                 ASR::stmt_t* stmt4 = basic_new_stack(x.base.base.loc, target2);
 
@@ -458,7 +466,7 @@ public:
                 // Define necessary variables
                 ASR::ttype_t* CPtr_type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
                 std::string args_str = current_scope->get_unique_name("_lcompilers_symbolic_argument_container");
-                ASR::symbol_t* args_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t* args_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, loc, current_scope, s2c(al, args_str), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, CPtr_type, nullptr,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
@@ -467,7 +475,7 @@ public:
                 // Statement 1
                 ASR::expr_t* args = ASRUtils::EXPR(ASR::make_Var_t(al, loc, args_sym));
                 ASR::expr_t* function_call1 = vecbasic_new(loc);
-                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, args, function_call1, nullptr));
+                ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, args, function_call1, nullptr, false));
                 pass_result.push_back(al, stmt1);
 
                 // Statement 2
@@ -478,8 +486,11 @@ public:
                 ASR::expr_t* test = ASRUtils::EXPR(ASR::make_IntegerCompare_t(al, loc, function_call2, ASR::cmpopType::Gt,
                         x->m_args[1], ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr));
                 std::string error_str = "tuple index out of range";
-                ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_Character_t(al, loc,
-                        1, error_str.size(), nullptr));
+                ASR::ttype_t *str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc,
+                    1, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, error_str.size(),
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)))),
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::PointerString));
                 ASR::expr_t* error = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, error_str), str_type));
                 ASR::stmt_t *stmt3 = ASRUtils::STMT(ASR::make_Assert_t(al, loc, test, error));
                 pass_result.push_back(al, stmt3);
@@ -538,7 +549,7 @@ public:
             } else if (intrinsic_func->m_type->type == ASR::ttypeType::Logical) {
                 if (is_logical_intrinsic_symbolic(x.m_value)) {
                     ASR::expr_t* function_call = process_attributes(x.base.base.loc, x.m_value);
-                    ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, x.m_target, function_call, nullptr));
+                    ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr, false));
                     pass_result.push_back(al, stmt);
                 }
             }
@@ -594,7 +605,7 @@ public:
                             std::string placeholder = "_" + std::string(list_name);
 
                             ASR::symbol_t* placeholder_sym = ASR::down_cast<ASR::symbol_t>(
-                                ASR::make_Variable_t(al, list_variable->base.base.loc, current_scope,
+                                ASRUtils::make_Variable_t_util(al, list_variable->base.base.loc, current_scope,
                                                     s2c(al, placeholder), nullptr, 0,
                                                     list_variable->m_intent, nullptr,
                                                     nullptr, list_variable->m_storage,
@@ -616,26 +627,26 @@ public:
 
                             ASR::expr_t* temp_list_const1 = ASRUtils::EXPR(ASR::make_ListConstant_t(al, x.base.base.loc, temp_list1.p,
                                             temp_list1.size(), list_type));
-                            ASR::stmt_t* stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, placeholder_target, temp_list_const1, nullptr));
+                            ASR::stmt_t* stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, placeholder_target, temp_list_const1, nullptr, false));
                             pass_result.push_back(al, stmt1);
 
                             // Step2: Add the empty list variable
                             ASR::expr_t* temp_list_const2 = ASRUtils::EXPR(ASR::make_ListConstant_t(al, x.base.base.loc, temp_list2.p,
                                             temp_list2.size(), list_type));
-                            ASR::stmt_t* stmt2 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, x.m_target, temp_list_const2, nullptr));
+                            ASR::stmt_t* stmt2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, temp_list_const2, nullptr, false));
                             pass_result.push_back(al, stmt2);
 
                             // Step3: Add the list index to the function scope
                             std::string symbolic_list_index = current_scope->get_unique_name("symbolic_list_index");
                             ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                             ASR::symbol_t* index_sym = ASR::down_cast<ASR::symbol_t>(
-                                ASR::make_Variable_t(al, x.base.base.loc, current_scope, s2c(al, symbolic_list_index),
+                                ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope, s2c(al, symbolic_list_index),
                                 nullptr, 0, ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                 int32_type, nullptr, ASR::abiType::Source, ASR::Public, ASR::presenceType::Required, false));
                             current_scope->add_symbol(symbolic_list_index, index_sym);
                             ASR::expr_t* index = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, index_sym));
-                            ASR::stmt_t* stmt3 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, index,
-                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int32_type)), nullptr));
+                            ASR::stmt_t* stmt3 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, index,
+                                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0, int32_type)), nullptr, false));
                             pass_result.push_back(al, stmt3);
 
                             // Step4: Add the DoLoop for appending elements into the list
@@ -645,8 +656,8 @@ public:
                             ASR::expr_t* tmp_var = b.Variable(block_symtab, tmp_var_name, CPtr_type,
                                 ASR::intentType::Local, ASR::abiType::Source, false);
                             Vec<ASR::stmt_t*> block_body; block_body.reserve(al, 1);
-                            ASR::stmt_t* block_stmt1 = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, tmp_var,
-                                basic_new_heap(x.base.base.loc), nullptr));
+                            ASR::stmt_t* block_stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, tmp_var,
+                                basic_new_heap(x.base.base.loc), nullptr, false));
                             block_body.push_back(al, block_stmt1);
                             ASR::stmt_t* block_stmt2 = ASRUtils::STMT(ASR::make_ListAppend_t(al, x.base.base.loc, x.m_target, tmp_var));
                             block_body.push_back(al, block_stmt2);
@@ -687,7 +698,7 @@ public:
                 } else {
                     function_call = basic_compare(x.base.base.loc, "basic_neq", s->m_left, s->m_right);
                 }
-                ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, x.base.base.loc, x.m_target, function_call, nullptr));
+                ASR::stmt_t* stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, x.m_target, function_call, nullptr, false));
                 pass_result.push_back(al, stmt);
             }
         }
@@ -742,7 +753,7 @@ public:
                 ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
                 std::string symengine_var = symengine_stack.push();
-                ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+                ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                     al, x.base.base.loc, current_scope, s2c(al, symengine_var), nullptr, 0, ASR::intentType::Local,
                     nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
@@ -781,98 +792,100 @@ public:
         pass_result.push_back(al, stmt);
     }
 
-    void visit_Print(const ASR::Print_t &x) {
-        std::vector<ASR::expr_t*> print_tmp;
-        for (size_t i=0; i<x.n_values; i++) {
-            ASR::expr_t* val = x.m_values[i];
-            if (ASR::is_a<ASR::Var_t>(*val) && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(val))) {
-                ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(val)->m_v;
-                if ((symbolic_vars_to_free.find(v) == symbolic_vars_to_free.end()) &&
-                    (symbolic_vars_to_omit.find(v) == symbolic_vars_to_omit.end())) return;
-                print_tmp.push_back(basic_str(x.base.base.loc, val));
-            } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*val)) {
-                ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
-                if (ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
-                    ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
-                    std::string symengine_var = symengine_stack.push();
-                    ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
-                        al, x.base.base.loc, current_scope, s2c(al, symengine_var), nullptr, 0, ASR::intentType::Local,
-                        nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
-                        ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
-                    current_scope->add_symbol(s2c(al, symengine_var), arg);
-                    for (auto &item : current_scope->get_scope()) {
-                        if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                            ASR::Variable_t *s = ASR::down_cast<ASR::Variable_t>(item.second);
-                            this->visit_Variable(*s);
-                        }
-                    }
+    //TODO :: Use the below implementation for stringFormat visitor.
 
-                    ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg));
-                    process_intrinsic_function(x.base.base.loc, intrinsic_func, target);
+    // void visit_Print(const ASR::Print_t &x) {
+    //     std::vector<ASR::expr_t*> print_tmp;
+    //     for (size_t i=0; i<x.n_values; i++) {
+    //         ASR::expr_t* val = x.m_values[i];
+    //         if (ASR::is_a<ASR::Var_t>(*val) && ASR::is_a<ASR::CPtr_t>(*ASRUtils::expr_type(val))) {
+    //             ASR::symbol_t *v = ASR::down_cast<ASR::Var_t>(val)->m_v;
+    //             if ((symbolic_vars_to_free.find(v) == symbolic_vars_to_free.end()) &&
+    //                 (symbolic_vars_to_omit.find(v) == symbolic_vars_to_omit.end())) return;
+    //             print_tmp.push_back(basic_str(x.base.base.loc, val));
+    //         } else if (ASR::is_a<ASR::IntrinsicElementalFunction_t>(*val)) {
+    //             ASR::IntrinsicElementalFunction_t* intrinsic_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(val);
+    //             if (ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(val))) {
+    //                 ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
+    //                 std::string symengine_var = symengine_stack.push();
+    //                 ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
+    //                     al, x.base.base.loc, current_scope, s2c(al, symengine_var), nullptr, 0, ASR::intentType::Local,
+    //                     nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+    //                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
+    //                 current_scope->add_symbol(s2c(al, symengine_var), arg);
+    //                 for (auto &item : current_scope->get_scope()) {
+    //                     if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+    //                         ASR::Variable_t *s = ASR::down_cast<ASR::Variable_t>(item.second);
+    //                         this->visit_Variable(*s);
+    //                     }
+    //                 }
 
-                    // Now create the FunctionCall node for basic_str
-                    print_tmp.push_back(basic_str(x.base.base.loc, target));
-                } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(val))) {
-                    if (is_logical_intrinsic_symbolic(val)) {
-                        ASR::expr_t* function_call = process_attributes(x.base.base.loc, val);
-                        print_tmp.push_back(function_call);
-                    }
-                } else {
-                    print_tmp.push_back(val);
-                }
-            } else if (ASR::is_a<ASR::Cast_t>(*val)) {
-                ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(val);
-                if(cast_t->m_kind != ASR::cast_kindType::IntegerToSymbolicExpression) return;
-                this->visit_Cast(*cast_t);
-                ASR::symbol_t *var_sym = current_scope->get_symbol(symengine_stack.pop());
-                ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
+    //                 ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, arg));
+    //                 process_intrinsic_function(x.base.base.loc, intrinsic_func, target);
 
-                // Now create the FunctionCall node for basic_str
-                print_tmp.push_back(basic_str(x.base.base.loc, target));
-            } else if (ASR::is_a<ASR::SymbolicCompare_t>(*val)) {
-                ASR::SymbolicCompare_t *s = ASR::down_cast<ASR::SymbolicCompare_t>(val);
-                if (s->m_op == ASR::cmpopType::Eq || s->m_op == ASR::cmpopType::NotEq) {
-                    ASR::expr_t* function_call = nullptr;
-                    if (s->m_op == ASR::cmpopType::Eq) {
-                        function_call = basic_compare(x.base.base.loc, "basic_eq", s->m_left, s->m_right);
-                    } else {
-                        function_call = basic_compare(x.base.base.loc, "basic_neq", s->m_left, s->m_right);
-                    }
-                    print_tmp.push_back(function_call);
-                }
-            } else if (ASR::is_a<ASR::ListItem_t>(*val)) {
-                ASR::ListItem_t* list_item = ASR::down_cast<ASR::ListItem_t>(val);
-                if (list_item->m_type->type == ASR::ttypeType::SymbolicExpression) {
-                    ASR::expr_t *value = ASRUtils::EXPR(ASR::make_ListItem_t(al,
-                        x.base.base.loc, list_item->m_a, list_item->m_pos,
-                        ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
-                    print_tmp.push_back(basic_str(x.base.base.loc, value));
-                } else {
-                    print_tmp.push_back(val);
-                }
-            } else {
-                print_tmp.push_back(x.m_values[i]);
-            }
-        }
-        if (!print_tmp.empty()) {
-            Vec<ASR::expr_t*> tmp_vec;
-            tmp_vec.reserve(al, print_tmp.size());
-            for (auto &e: print_tmp) {
-                tmp_vec.push_back(al, e);
-            }
-            ASR::stmt_t *print_stmt = ASRUtils::STMT(
-                ASR::make_Print_t(al, x.base.base.loc, tmp_vec.p, tmp_vec.size(),
-                            x.m_separator, x.m_end));
-            print_tmp.clear();
-            pass_result.push_back(al, print_stmt);
-        }
-    }
+    //                 // Now create the FunctionCall node for basic_str
+    //                 print_tmp.push_back(basic_str(x.base.base.loc, target));
+    //             } else if (ASR::is_a<ASR::Logical_t>(*ASRUtils::expr_type(val))) {
+    //                 if (is_logical_intrinsic_symbolic(val)) {
+    //                     ASR::expr_t* function_call = process_attributes(x.base.base.loc, val);
+    //                     print_tmp.push_back(function_call);
+    //                 }
+    //             } else {
+    //                 print_tmp.push_back(val);
+    //             }
+    //         } else if (ASR::is_a<ASR::Cast_t>(*val)) {
+    //             ASR::Cast_t* cast_t = ASR::down_cast<ASR::Cast_t>(val);
+    //             if(cast_t->m_kind != ASR::cast_kindType::IntegerToSymbolicExpression) return;
+    //             this->visit_Cast(*cast_t);
+    //             ASR::symbol_t *var_sym = current_scope->get_symbol(symengine_stack.pop());
+    //             ASR::expr_t* target = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, var_sym));
+
+    //             // Now create the FunctionCall node for basic_str
+    //             print_tmp.push_back(basic_str(x.base.base.loc, target));
+    //         } else if (ASR::is_a<ASR::SymbolicCompare_t>(*val)) {
+    //             ASR::SymbolicCompare_t *s = ASR::down_cast<ASR::SymbolicCompare_t>(val);
+    //             if (s->m_op == ASR::cmpopType::Eq || s->m_op == ASR::cmpopType::NotEq) {
+    //                 ASR::expr_t* function_call = nullptr;
+    //                 if (s->m_op == ASR::cmpopType::Eq) {
+    //                     function_call = basic_compare(x.base.base.loc, "basic_eq", s->m_left, s->m_right);
+    //                 } else {
+    //                     function_call = basic_compare(x.base.base.loc, "basic_neq", s->m_left, s->m_right);
+    //                 }
+    //                 print_tmp.push_back(function_call);
+    //             }
+    //         } else if (ASR::is_a<ASR::ListItem_t>(*val)) {
+    //             ASR::ListItem_t* list_item = ASR::down_cast<ASR::ListItem_t>(val);
+    //             if (list_item->m_type->type == ASR::ttypeType::SymbolicExpression) {
+    //                 ASR::expr_t *value = ASRUtils::EXPR(ASR::make_ListItem_t(al,
+    //                     x.base.base.loc, list_item->m_a, list_item->m_pos,
+    //                     ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+    //                 print_tmp.push_back(basic_str(x.base.base.loc, value));
+    //             } else {
+    //                 print_tmp.push_back(val);
+    //             }
+    //         } else {
+    //             print_tmp.push_back(x.m_values[i]);
+    //         }
+    //     }
+    //     if (!print_tmp.empty()) {
+    //         Vec<ASR::expr_t*> tmp_vec;
+    //         tmp_vec.reserve(al, print_tmp.size());
+    //         for (auto &e: print_tmp) {
+    //             tmp_vec.push_back(al, e);
+    //         }
+    //         ASR::stmt_t *print_stmt = ASRUtils::STMT(
+    //             ASR::make_Print_t(al, x.base.base.loc, tmp_vec.p, tmp_vec.size(),
+    //                         x.m_separator, x.m_end));
+    //         print_tmp.clear();
+    //         pass_result.push_back(al, print_stmt);
+    //     }
+    // }
 
     void visit_IntrinsicFunction(const ASR::IntrinsicElementalFunction_t &x) {
         if(x.m_type && x.m_type->type == ASR::ttypeType::SymbolicExpression) {
             ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
             std::string symengine_var = symengine_stack.push();
-            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+            ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
                 al, x.base.base.loc, current_scope, s2c(al, symengine_var), nullptr, 0, ASR::intentType::Local,
                 nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
                 ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));
@@ -895,7 +908,7 @@ public:
 
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_SymbolicExpression_t(al, x.base.base.loc));
         std::string symengine_var = symengine_stack.push();
-        ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASR::make_Variable_t(
+        ASR::symbol_t *arg = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, x.base.base.loc, current_scope, s2c(al, symengine_var), nullptr, 0, ASR::intentType::Local,
             nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
             ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required, false));

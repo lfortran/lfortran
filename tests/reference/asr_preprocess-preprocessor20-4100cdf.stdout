@@ -1,0 +1,50 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            preprocessor20:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    preprocessor20
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "PI: "
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (RealConstant
+                                3.140000
+                                (Real 4)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "negative one: "
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (IntegerUnaryMinus
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                (IntegerConstant -1 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

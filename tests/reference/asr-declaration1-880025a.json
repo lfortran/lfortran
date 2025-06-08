@@ -1,0 +1,13 @@
+{
+    "basename": "asr-declaration1-880025a",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/declaration1.f90",
+    "infile_hash": "cd7f955f4afa5639a06727dad7fd12ea533d7de45b0159dc213a6490",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-declaration1-880025a.stdout",
+    "stdout_hash": "2cc60927a4a1d4c4bad6c79910e64f971c7dc7d003a5a3d9522065a5",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

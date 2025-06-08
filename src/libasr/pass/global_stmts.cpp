@@ -52,7 +52,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 int a_kind = down_cast<ASR::Integer_t>(ASRUtils::expr_type(value))->m_kind;
 
                 type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, a_kind));
-                return_var = ASR::make_Variable_t(al, loc,
+                return_var = ASRUtils::make_Variable_t_util(al, loc,
                     fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
                     ASR::storage_typeType::Default, type,
                     nullptr, ASR::abiType::BindC,
@@ -69,7 +69,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 int a_kind = down_cast<ASR::Logical_t>(ASRUtils::expr_type(value))->m_kind;
 
                 type = ASRUtils::TYPE(ASR::make_Logical_t(al, loc, a_kind));
-                return_var = ASR::make_Variable_t(al, loc,
+                return_var = ASRUtils::make_Variable_t_util(al, loc,
                     fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
                     ASR::storage_typeType::Default, type,
                     nullptr, ASR::abiType::BindC,
@@ -83,7 +83,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 s.from_str(al, fn_name_s + std::to_string(idx));
                 var_name = s.c_str(al);
                 type = ASRUtils::expr_type(value);
-                return_var = ASR::make_Variable_t(al, loc,
+                return_var = ASRUtils::make_Variable_t_util(al, loc,
                     fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
                     ASR::storage_typeType::Default, type,
                     nullptr, ASR::abiType::BindC,
@@ -97,7 +97,7 @@ void pass_wrap_global_stmts(Allocator &al,
                 s.from_str(al, fn_name_s + std::to_string(idx));
                 var_name = s.c_str(al);
                 type = ASRUtils::expr_type(value);
-                return_var = ASR::make_Variable_t(al, loc,
+                return_var = ASRUtils::make_Variable_t_util(al, loc,
                     fn_scope, var_name, nullptr, 0, ASRUtils::intent_local, nullptr, nullptr,
                     ASR::storage_typeType::Default, type,
                     nullptr, ASR::abiType::BindC,
@@ -110,7 +110,7 @@ void pass_wrap_global_stmts(Allocator &al,
             } else {
                 throw LCompilersException("Return type not supported in interactive mode");
             }
-            ASR::stmt_t* asr_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, loc, target, value, nullptr));
+            ASR::stmt_t* asr_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, loc, target, value, nullptr, false));
             body.push_back(al, asr_stmt);
         } else if (unit.m_items[i]->type == ASR::asrType::stmt) {
             ASR::stmt_t* asr_stmt = ASRUtils::STMT(unit.m_items[i]);

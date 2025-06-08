@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     logical3
@@ -49,6 +57,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -57,6 +66,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp
@@ -67,23 +77,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 1 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )
                     (If
@@ -95,20 +101,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 2 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 2 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -123,20 +125,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line xor - Condition is true"
-                                (Character 1 28 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line xor - Condition is false"
-                                (Character 1 29 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -149,6 +147,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -157,6 +156,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (LogicalNot
@@ -171,20 +171,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 3 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 3 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -199,20 +195,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 4 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 4 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -227,23 +219,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 5 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 5 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )
                     (Assignment
@@ -253,6 +241,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 b)
@@ -261,6 +250,7 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (LogicalBinOp
@@ -271,20 +261,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 6 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 6 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -299,20 +285,16 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 7 - Condition is true"
-                                (Character 1 26 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 7 - Condition is false"
-                                (Character 1 27 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
@@ -327,23 +309,19 @@
                             ()
                         )
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 8 xor - Condition is true"
-                                (Character 1 30 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )
                         (ErrorStop
                             ()
                         )]
                         [(Print
-                            [(StringConstant
+                            (StringConstant
                                 "Line 8 xor - Condition is false"
-                                (Character 1 31 ())
-                            )]
-                            ()
-                            ()
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
                         )]
                     )]
                 )

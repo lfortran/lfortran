@@ -28,8 +28,8 @@ public:
     cpp_symtab macro_definitions;
     CPreprocessor(CompilerOptions &compiler_options);
     std::string token(unsigned char *tok, unsigned char* cur) const;
-    std::string run(const std::string &input, LocationManager &lm,
-        cpp_symtab &macro_definitions) const;
+    Result<std::string> run(const std::string &input, LocationManager &lm,
+        cpp_symtab &macro_definitions, diag::Diagnostics &diagnostics) const;
 
     // Return the current token's location
     void token_loc(Location &loc, unsigned char *tok, unsigned char* cur,

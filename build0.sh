@@ -3,6 +3,9 @@
 set -e
 set -x
 
+RE2C=${RE2C:-re2c}
+BISON=${BISON:-bison}
+
 # Generate the `version` file
 ci/version.sh
 
@@ -16,9 +19,12 @@ python src/libasr/wasm_instructions_visitor.py
 python src/libasr/intrinsic_func_registry_util_gen.py
 
 # Generate the tokenizer and parser
-(cd src/lfortran && re2c -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
-(cd src/lfortran && re2c -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
-(cd src/lfortran/parser && bison -Wall -d -r all parser.yy)
+(cd src/lfortran && ${RE2C} -W -b parser/tokenizer.re -o parser/tokenizer.cpp)
+(cd src/lfortran && ${RE2C} -W -b parser/preprocessor.re -o parser/preprocessor.cpp)
+(cd src/lfortran/parser && ${BISON} -Wall -d -r all parser.yy)
+
+# Generate the LSP sources
+python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
 
 grep -n "'" src/lfortran/parser/parser.yy && echo "Single quote not allowed" && exit 1
 echo "OK"

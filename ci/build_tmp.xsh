@@ -48,6 +48,9 @@ pushd src/lfortran/parser && re2c -W -b tokenizer.re -o tokenizer.cpp && popd
 pushd src/lfortran/parser && re2c -W -b preprocessor.re -o preprocessor.cpp && popd
 pushd src/lfortran/parser && bison -Wall -d -r all parser.yy && popd
 
+# Generate the LSP sources
+python src/server/generator/generate_lsp_code.py --schema src/server/generator/metaModel.json --target-language c++ --output-dir src/server
+
 pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
 
 $lfortran_version=$(cat version).strip()
@@ -61,11 +64,11 @@ cd test-bld
 # Note: we have to build in Release mode on Windows, because `llvmdev` is
 # compiled in Release mode and we get link failures if we mix and match build
 # modes:
-if $IS_LINUX:
+if $IS_LINUX or $IS_MAC:
     BUILD_TYPE = "Debug"
 else:
     BUILD_TYPE = "Release"
-cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
+cmake -G$LFORTRAN_CMAKE_GENERATOR -DCMAKE_VERBOSE_MAKEFILE=ON -DWITH_LSP=yes -DWITH_LLVM=yes -DWITH_XEUS=yes -DCMAKE_PREFIX_PATH=$CONDA_PREFIX -DCMAKE_INSTALL_PREFIX=$CONDA_PREFIX -DCMAKE_BUILD_TYPE=@(BUILD_TYPE) -DWITH_RUNTIME_STACKTRACE=$ENABLE_RUNTIME_STACKTRACE ..
 cmake --build . --target install
 ./src/lfortran/tests/test_lfortran
 ./src/bin/lfortran < ../src/bin/example_input.txt
@@ -86,7 +89,6 @@ jupyter nbconvert --to notebook --execute --ExecutePreprocessor.timeout=120 --ou
 cd ../../..
 
 cp lfortran-$lfortran_version/test-bld/src/bin/lfortran src/bin
-cp lfortran-$lfortran_version/test-bld/src/bin/cpptranslate src/bin
 if $IS_WIN:
     cp lfortran-$lfortran_version/test-bld/src/runtime/legacy/lfortran_runtime* src/runtime/
 else:

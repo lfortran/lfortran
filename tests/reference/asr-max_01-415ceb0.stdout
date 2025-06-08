@@ -1,0 +1,95 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            max_01:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    max_01
+                    []
+                    [(Assignment
+                        (Var 2 y)
+                        (RealConstant
+                            5.200000
+                            (Real 8)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 z)
+                        (RealConstant
+                            9.000000
+                            (Real 4)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Max
+                                [(Var 2 y)
+                                (Cast
+                                    (Var 2 z)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )]
+                                0
+                                (Real 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

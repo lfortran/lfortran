@@ -30,6 +30,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i1:
                                 (Variable
@@ -46,6 +50,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i2:
                                 (Variable
@@ -61,6 +69,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             i32:
@@ -84,6 +96,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i64:
                                 (Variable
@@ -106,6 +122,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             l:
                                 (Variable
@@ -121,6 +141,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             l_knd:
@@ -147,6 +171,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -163,6 +191,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r2:
                                 (Variable
@@ -178,6 +210,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             sp:
@@ -203,6 +239,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     parameter_04
@@ -214,15 +254,20 @@
                             (Logical 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 l_knd)
-                        (Var 2 sp)
-                        (Var 2 dp)
-                        (Var 2 i32)
-                        (Var 2 i64)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 l_knd)
+                            (Var 2 sp)
+                            (Var 2 dp)
+                            (Var 2 i32)
+                            (Var 2 i64)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

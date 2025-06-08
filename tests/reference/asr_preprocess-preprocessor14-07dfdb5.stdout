@@ -12,52 +12,40 @@
                     preprocessor14
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "X == 1"
-                            (Character 1 6 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

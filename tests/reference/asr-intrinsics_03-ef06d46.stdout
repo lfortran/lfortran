@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -52,6 +56,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -67,6 +75,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             r2:
@@ -84,6 +96,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -100,6 +116,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_03
@@ -111,6 +131,7 @@
                             (Real 8)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 x)
@@ -128,6 +149,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -320,6 +342,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 r2)
@@ -335,6 +358,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -365,15 +389,19 @@
                         []
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Abs
-                            [(Var 2 i)]
-                            0
-                            (Integer 4)
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(IntrinsicElementalFunction
+                                Abs
+                                [(Var 2 i)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare

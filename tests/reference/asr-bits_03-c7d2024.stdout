@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             from8:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             to:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             to8:
                                 (Variable
@@ -70,6 +82,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     bits_03
@@ -78,36 +94,34 @@
                         (Var 2 from)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 from8)
                         (IntegerConstant 10 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to8)
                         (IntegerConstant 4 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to)
-                            (IntegerConstant 0 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 0 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -135,20 +149,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from8)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to8)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from8)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to8)
-                            (IntegerConstant 0 (Integer 4) Decimal)]
-                            0
-                            (Integer 8)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 0 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -181,20 +189,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 2 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -222,20 +224,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from8)
+                        (IntegerConstant 0 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to8)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from8)
-                            (IntegerConstant 0 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to8)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 8)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 2 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -276,11 +272,13 @@
                             (IntegerConstant -20 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to)
                         (IntegerConstant 4 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 from8)
@@ -290,26 +288,22 @@
                             (IntegerConstant -20 (Integer 8) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 to8)
                         (IntegerConstant 4 (Integer 8) Decimal)
                         ()
+                        .false.
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from)
+                        (IntegerConstant 29 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from)
-                            (IntegerConstant 29 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 2 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -341,20 +335,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from8)
+                        (IntegerConstant 29 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to8)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from8)
-                            (IntegerConstant 29 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to8)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 8)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 2 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -391,20 +379,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to)
-                            (IntegerConstant 29 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 29 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare
@@ -436,20 +418,14 @@
                         )]
                         []
                     )
-                    (Assignment
+                    (IntrinsicImpureSubroutine
+                        Mvbits
+                        [(Var 2 from8)
+                        (IntegerConstant 2 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 to8)
-                        (IntrinsicElementalFunction
-                            Mvbits
-                            [(Var 2 from8)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)
-                            (Var 2 to8)
-                            (IntegerConstant 29 (Integer 4) Decimal)]
-                            0
-                            (Integer 8)
-                            ()
-                        )
-                        ()
+                        (IntegerConstant 29 (Integer 4) Decimal)]
+                        0
                     )
                     (If
                         (IntegerCompare

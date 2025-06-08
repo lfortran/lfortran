@@ -30,6 +30,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -56,6 +60,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             z:
@@ -84,16 +92,24 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     paramter_05
                     []
                     [(Print
-                        [(Var 2 x)
-                        (Var 2 y)
-                        (Var 2 z)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)
+                            (Var 2 z)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

@@ -86,6 +86,7 @@ define i32 @main(i32 %0, i8** %1) {
   %60 = sitofp i32 %59 to float
   %61 = fdiv float %58, %60
   store float %61, float* %x, align 4
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -93,3 +94,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

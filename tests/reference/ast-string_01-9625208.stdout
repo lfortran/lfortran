@@ -26,9 +26,7 @@
             []
             []
             ()
-            (String
-                "Dominic"
-            )
+            (String "Dominic")
             Equal
             ())]
             (TriviaNode
@@ -40,9 +38,7 @@
         [(Print
             0
             ()
-            [(String
-                "My name is "
-            )
+            [(String "My name is ")
             my_name]
             (TriviaNode
                 []

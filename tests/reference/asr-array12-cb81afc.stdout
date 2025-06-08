@@ -67,6 +67,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             cpath:
                                                 (Variable
@@ -79,7 +83,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (Character 1 1 ())
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -89,6 +93,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             path:
@@ -101,12 +109,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             tmp:
@@ -124,12 +136,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     get_current_directory
                                     (FunctionType
                                         [(Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         ()
                                         Source
@@ -160,13 +176,25 @@
                                         (FunctionCall
                                             2 getcwd
                                             ()
-                                            [((Var 12 cpath))
+                                            [((ArrayPhysicalCast
+                                                (Var 12 cpath)
+                                                DescriptorArray
+                                                StringArraySinglePointer
+                                                (Array
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    [(()
+                                                    ())]
+                                                    StringArraySinglePointer
+                                                )
+                                                ()
+                                            ))
                                             ((Var 12 buffersize))]
                                             (CPtr)
                                             ()
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (If
                                         (PointerAssociated
@@ -176,18 +204,19 @@
                                             ()
                                         )
                                         [(Print
-                                            [(StringConstant
-                                                "PWD: "
-                                                (Character 1 5 ())
+                                            (StringFormat
+                                                ()
+                                                [(StringConstant
+                                                    "PWD: "
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (Var 12 tmp)]
+                                                FormatFortran
+                                                (String 1 () ExpressionLength CString)
+                                                ()
                                             )
-                                            (Var 12 tmp)]
-                                            ()
-                                            ()
                                         )]
                                         []
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 12 cpath)]
                                     )]
                                     ()
                                     Public
@@ -209,11 +238,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 1 ())
+                                                    (Array
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        [(()
+                                                        ())]
+                                                        StringArraySinglePointer
+                                                    )
                                                     ()
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             bufsize:
@@ -231,6 +269,10 @@
                                                     Public
                                                     Required
                                                     .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             path:
                                                 (Variable
@@ -247,11 +289,20 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     getcwd
                                     (FunctionType
-                                        [(Character 1 1 ())
+                                        [(Array
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            [(()
+                                            ())]
+                                            StringArraySinglePointer
+                                        )
                                         (Integer 4)]
                                         (CPtr)
                                         BindC

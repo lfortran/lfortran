@@ -2,11 +2,11 @@
     "basename": "ast-line_continuation_03-8570dc1",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/line_continuation_03.f90",
-    "infile_hash": "836158ccd658c186087092584dd94e6f41652b2d22b6aaffbd379969",
+    "infile_hash": "e87783d3a61e68a07124b8821a85b1916933fb83e5fbc63d09e3f32d",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-line_continuation_03-8570dc1.stdout",
-    "stdout_hash": "cdd4532be76b1fd5fb64bfcef2e5029435d92c5a3f5420021c6cd09b",
+    "stdout_hash": "3168dbfc4d5c1c83c77793c657add32f20641859abab4f1e905e4b0d",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

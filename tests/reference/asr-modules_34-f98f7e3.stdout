@@ -64,12 +64,16 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             version:
@@ -82,6 +86,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         15 version_t
                                                     )
                                                     ()
@@ -89,12 +96,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     package_config_t
                                     [version_t]
                                     [name
                                     version]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -191,6 +203,10 @@
                                                                     Private
                                                                     Required
                                                                     .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     associate_block
@@ -199,9 +215,13 @@
                                                         (Var 5 i)
                                                     )
                                                     (Print
-                                                        [(Var 6 ii)]
-                                                        ()
-                                                        ()
+                                                        (StringFormat
+                                                            ()
+                                                            [(Var 6 ii)]
+                                                            FormatFortran
+                                                            (String 1 () ExpressionLength CString)
+                                                            ()
+                                                        )
                                                     )
                                                     (SubroutineCall
                                                         6 1_to_string
@@ -211,6 +231,9 @@
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 6 fpm_versioning_modules_34_version_t
                                                             )
                                                             ()
@@ -232,6 +255,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             package:
                                                 (Variable
@@ -243,12 +270,19 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         4 package_config_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             version:
@@ -261,18 +295,25 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     build_model
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             4 package_config_t
                                         )]
                                         ()
@@ -291,9 +332,6 @@
                                     [(Var 5 package)]
                                     [(AssociateBlockCall
                                         5 associate_block
-                                    )
-                                    (ImplicitDeallocate
-                                        [(Var 5 version)]
                                     )]
                                     ()
                                     Public
@@ -347,13 +385,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 version_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string:
@@ -366,22 +411,29 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     as_string
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 version_t
                                         )]
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -429,13 +481,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 version_t
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string:
@@ -448,22 +507,29 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     to_string
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 version_t
                                         )
                                         (Allocatable
-                                            (Character 1 -2 ())
+                                            (String 1 () DeferredLength DescriptorString)
                                         )]
                                         ()
                                         Source
@@ -514,6 +580,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             to_string:
                                                 (ClassProcedure
@@ -530,6 +600,7 @@
                                     version_t
                                     []
                                     [num]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -554,12 +625,10 @@
                     modules_34
                     []
                     [(Print
-                        [(StringConstant
+                        (StringConstant
                             "running modules_34 program"
-                            (Character 1 26 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

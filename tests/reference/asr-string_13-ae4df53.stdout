@@ -16,7 +16,7 @@
                                     (Iachar
                                         (StringConstant
                                             "0"
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 48 (Integer 4) Decimal)
@@ -29,6 +29,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ia5:
                                 (Variable
@@ -39,7 +43,7 @@
                                     (Iachar
                                         (StringConstant
                                             "5"
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 53 (Integer 4) Decimal)
@@ -52,6 +56,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             ia9:
                                 (Variable
@@ -62,7 +70,7 @@
                                     (Iachar
                                         (StringConstant
                                             "9"
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (Integer 4)
                                         (IntegerConstant 57 (Integer 4) Decimal)
@@ -74,6 +82,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -128,11 +140,15 @@
                         []
                     )
                     (Print
-                        [(Var 2 ia0)
-                        (Var 2 ia5)
-                        (Var 2 ia9)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 ia0)
+                            (Var 2 ia5)
+                            (Var 2 ia9)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

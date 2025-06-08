@@ -37,11 +37,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 ())
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -71,11 +71,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 ())
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .true.
@@ -105,11 +105,11 @@
                                                 StringFindSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 ())
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -180,6 +180,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     test_verify_intrinsic
@@ -205,11 +209,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "ao"
-                                                    (Character 1 2 ())
+                                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -239,11 +243,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "foo"
-                                                    (Character 1 3 ())
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -273,11 +277,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 ())
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -307,11 +311,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "c++"
-                                                    (Character 1 3 ())
+                                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .true.
@@ -341,11 +345,11 @@
                                                 StringContainsSet
                                                 [(StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (StringConstant
                                                     "fortran"
-                                                    (Character 1 7 ())
+                                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 (LogicalConstant
                                                     .false.
@@ -376,6 +380,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 5 r)
                                     Public
@@ -393,16 +398,20 @@
                         ()
                     )
                     (Print
-                        [(FunctionCall
-                            4 test_verify_intrinsic
+                        (StringFormat
                             ()
-                            []
-                            (Logical 4)
+                            [(FunctionCall
+                                4 test_verify_intrinsic
+                                ()
+                                []
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

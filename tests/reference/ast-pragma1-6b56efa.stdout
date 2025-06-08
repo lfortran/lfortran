@@ -267,12 +267,8 @@
             OMPPragma
             .false.
             "parallel"
-            [(String
-                "private(partial_sum)"
-            )
-            (String
-                "shared(total_sum)"
-            )]
+            [(String "private(partial_sum)")
+            (String "shared(total_sum)")]
             ()
         )
         (Pragma

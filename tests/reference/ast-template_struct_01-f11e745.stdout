@@ -261,6 +261,7 @@
                 []
             )]
         )]
+        []
         [(Subroutine
             test_template
             []
@@ -364,9 +365,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "First element: "
-                )
+                [(String "First element: ")
                 (FuncCallOrArray
                     get_int_fst
                     []
@@ -390,9 +389,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "Second element: "
-                )
+                [(String "Second element: ")
                 (FuncCallOrArray
                     get_int_snd
                     []
@@ -416,9 +413,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "First element: "
-                )
+                [(String "First element: ")
                 (FuncCallOrArray
                     get_real_fst
                     []
@@ -442,9 +437,7 @@
             (Print
                 0
                 ()
-                [(String
-                    "Second element: "
-                )
+                [(String "Second element: ")
                 (FuncCallOrArray
                     get_real_snd
                     []

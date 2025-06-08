@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -45,6 +49,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -60,6 +68,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -118,29 +130,34 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
                                         (Var 2 myreal)
                                     )
                                     (Print
-                                        [(RealBinOp
-                                            (Var 2 a)
-                                            Add
-                                            (Var 3 z)
-                                            (Real 4)
+                                        (StringFormat
+                                            ()
+                                            [(RealBinOp
+                                                (Var 2 a)
+                                                Add
+                                                (Var 3 z)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (RealBinOp
+                                                (Var 2 a)
+                                                Sub
+                                                (Var 3 z)
+                                                (Real 4)
+                                                ()
+                                            )
+                                            (Var 3 v)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
-                                        (RealBinOp
-                                            (Var 2 a)
-                                            Sub
-                                            (Var 3 z)
-                                            (Real 4)
-                                            ()
-                                        )
-                                        (Var 3 v)]
-                                        ()
-                                        ()
                                     )
                                     (Assignment
                                         (Var 3 v)
@@ -157,6 +174,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                 ),
                             myreal:
@@ -174,6 +192,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             theta:
                                 (Variable
@@ -189,6 +211,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -206,6 +232,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -222,6 +252,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     associate_04
@@ -233,6 +267,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -241,6 +276,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 myreal)
@@ -249,6 +285,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -257,6 +294,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -265,14 +303,19 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block
                     )
                     (Print
-                        [(Var 2 myreal)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 myreal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (LogicalBinOp
@@ -281,7 +324,7 @@
                                     (Var 2 myreal)
                                     Sub
                                     (RealConstant
-                                        41.860000
+                                        41.860001
                                         (Real 4)
                                     )
                                     (Real 4)
@@ -301,7 +344,7 @@
                                     (Var 2 myreal)
                                     Sub
                                     (RealConstant
-                                        41.860000
+                                        41.860001
                                         (Real 4)
                                     )
                                     (Real 4)

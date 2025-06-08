@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -47,6 +51,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c:
@@ -69,6 +77,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -84,6 +96,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             nsize:
@@ -101,6 +117,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             scalar:
                                 (Variable
@@ -116,6 +136,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             triad:
@@ -143,6 +167,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -163,6 +191,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -185,6 +217,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -200,6 +236,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             n:
@@ -217,6 +257,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             scalar:
                                                 (Variable
@@ -232,6 +276,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -282,12 +330,13 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoConcurrentLoop
-                                        ((Var 3 i)
+                                        [((Var 3 i)
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n)
-                                        ())
+                                        ())]
                                         []
                                         []
                                         []
@@ -331,6 +380,7 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     ()
@@ -354,6 +404,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 nsize)
@@ -364,12 +415,13 @@
                             (IntegerConstant 10000 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 nsize)
-                        ())
+                        ())]
                         []
                         []
                         []
@@ -393,6 +445,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )
                         (Assignment
                             (ArrayItem
@@ -414,6 +467,7 @@
                                 )
                             )
                             ()
+                            .false.
                         )]
                     )
                     (SubroutineCall
@@ -459,12 +513,10 @@
                         ()
                     )
                     (Print
-                        [(StringConstant
+                        (StringConstant
                             "End Stream Triad"
-                            (Character 1 16 ())
-                        )]
-                        ()
-                        ()
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })

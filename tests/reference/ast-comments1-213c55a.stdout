@@ -15,9 +15,7 @@
         [(Print
             0
             ()
-            [(String
-                "1"
-            )]
+            [(String "1")]
             (TriviaNode
                 []
                 [(EOLComment
@@ -31,9 +29,7 @@
         (Print
             0
             ()
-            [(String
-                "2"
-            )]
+            [(String "2")]
             (TriviaNode
                 []
                 [(EOLComment

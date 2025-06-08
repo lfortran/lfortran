@@ -33,27 +33,27 @@ unit
 
 mod
     = Module(identifier name, trivia? trivia, unit_decl1* use, implicit_statement* implicit,
-        unit_decl2* decl, program_unit* contains)
+        unit_decl2* decl, stmt* body, program_unit* contains, location start_name, location end_name)
     | Submodule(identifier id, identifier? parent_name, identifier name, trivia? trivia,
         unit_decl1* use, implicit_statement* implicit,
-        unit_decl2* decl, program_unit* contains)
+        unit_decl2* decl, stmt* body, program_unit* contains, location start_name, location end_name)
     | BlockData(identifier? name, trivia? trivia, unit_decl1* use,
         implicit_statement* implicit, unit_decl2* decl, stmt* body)
     | Program(identifier name, trivia? trivia, unit_decl1* use, implicit_statement* implicit,
-        unit_decl2* decl, stmt* body, program_unit* contains)
+        unit_decl2* decl, stmt* body, program_unit* contains, location start_name, location end_name)
 
 program_unit
     = Subroutine(identifier name, arg* args, decl_attribute* attributes,
         bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl,
-        stmt* body, program_unit* contains, identifier* temp_args)
+        stmt* body, program_unit* contains, identifier* temp_args, location start_name, location end_name)
     | Procedure(identifier name, arg* args, decl_attribute* attributes, trivia? trivia,
         unit_decl1* use, import_statement* import, implicit_statement* implicit,
         unit_decl2* decl, stmt* body, program_unit* contains)
     | Function(identifier name, generic_type_param* generic_type_params, arg* args, decl_attribute* attributes,
         expr? return_var, bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl, stmt* body,
-        program_unit* contains, identifier* temp_args)
+        program_unit* contains, identifier* temp_args, location start_name, location end_name)
 
 unit_decl1
     = Use(decl_attribute* nature, identifier module, use_symbol* symbols,
@@ -110,7 +110,10 @@ import_modifier
 
 implicit_statement
     = ImplicitNone(implicit_none_spec* specs, trivia? trivia)
-    | Implicit(decl_attribute type, letter_spec* kind, letter_spec* specs, trivia? trivia)
+    | Implicit(implicit_spec* specs, trivia? trivia)
+
+implicit_spec
+    = ImplicitSpec(decl_attribute type, letter_spec* specs)
 
 implicit_none_spec
     = ImplicitNoneExternal(int dummy)
@@ -288,6 +291,7 @@ decl_attribute
     = AttrBind(bind bind)
     | AttrDimension(dimension* dim)
     | AttrCodimension(codimension* codim)
+    | AttrCommon(common_block* blks)
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
@@ -305,7 +309,6 @@ simple_attribute
     = AttrAbstract
     | AttrAllocatable
     | AttrAsynchronous
-    | AttrCommon
     | AttrContiguous
     | AttrDeferred
     | AttrElemental
@@ -361,6 +364,8 @@ team_attribute = CoarrayAssociation(expr coarray, expr selector)
 
 var_sym = (identifier? name, dimension* dim, codimension* codim,
  expr? length, expr? initializer, symbol sym, decl_attribute? spec)
+
+common_block = (identifier? name, var_sym* objects)
 
 kind_item = (identifier? id, expr? value, kind_item_type type)
 

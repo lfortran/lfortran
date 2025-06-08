@@ -1,17 +1,17 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [9 x i8] c"%13.8e%s\00", align 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"R4\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_dflt_intent_foo(float* %c, float* %d) {
 .entry:
   %e = alloca float, align 4
   %g = alloca float, align 4
-  %0 = call float @__module_dflt_intent_f(float* %c)
+  %0 = call float @foo.__module_dflt_intent_f(float* %c)
   store float %0, float* %e, align 4
-  %1 = call float @__module_dflt_intent_f(float* %d)
+  %1 = call float @foo.__module_dflt_intent_f(float* %d)
   store float %1, float* %g, align 4
   br label %return
 
@@ -19,21 +19,22 @@ return:                                           ; preds = %.entry
   ret void
 }
 
-define float @__module_dflt_intent_f(float* %x) {
+define float @foo.__module_dflt_intent_f(float* %x) {
 .entry:
   %f = alloca float, align 4
   %0 = load float, float* %x, align 4
   %1 = fmul float 2.000000e+00, %0
   store float %1, float* %f, align 4
-  %2 = load float, float* %f, align 4
-  %3 = fpext float %2 to double
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([9 x i8], [9 x i8]* @2, i32 0, i32 0), double %3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %2 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %f)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   br label %return
 
 return:                                           ; preds = %.entry
-  %4 = load float, float* %f, align 4
-  ret float %4
+  %3 = load float, float* %f, align 4
+  ret float %3
 }
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
 
 declare void @_lfortran_printf(i8*, ...)
 
@@ -45,6 +46,7 @@ define i32 @main(i32 %0, i8** %1) {
   store float 0.000000e+00, float* %call_arg_value, align 4
   store float 2.000000e+00, float* %call_arg_value1, align 4
   call void @__module_dflt_intent_foo(float* %call_arg_value, float* %call_arg_value1)
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -52,3 +54,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

@@ -27,6 +27,8 @@ log.setLevel(level)
 TESTER_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__)))
 LIBASR_DIR = os.path.dirname(TESTER_DIR)
 SRC_DIR = os.path.dirname(LIBASR_DIR)
+if "lpython" in SRC_DIR:
+    SRC_DIR = os.path.join(os.path.dirname(os.path.dirname(SRC_DIR)), "src")
 ROOT_DIR = os.path.dirname(SRC_DIR)
 
 no_color = False
@@ -256,6 +258,7 @@ def get_error_diff(reference_file, output_file, full_err_str) -> str:
 
 
 def do_update_reference(jo, jr, do):
+    os.makedirs(os.path.dirname(jr), exist_ok=True)
     shutil.copyfile(jo, jr)
     for f in ["outfile", "stdout", "stderr"]:
         if do[f]:
@@ -401,8 +404,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         help="Skip LLVM tests")
     parser.add_argument("--skip-run-with-dbg", action="store_true",
                         help="Skip runtime tests with debugging information enabled")
-    parser.add_argument("--skip-cpptranslate", action="store_true",
-                        help="Skip tests for ast_openmp that depend on cpptranslate")
     parser.add_argument("-s", "--sequential", action="store_true",
                         help="Run all tests sequentially")
     parser.add_argument("--no-color", action="store_true",
@@ -424,9 +425,18 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
     verbose = args.verbose
     no_llvm = args.no_llvm
     skip_run_with_dbg = args.skip_run_with_dbg
-    skip_cpptranslate = args.skip_cpptranslate
     global no_color
     no_color = args.no_color
+
+    # Remove all old test references while updating
+    if update_reference:
+        log.debug("REMOVE: old test references")
+        cmd = "rm -rf ./tests/reference/*"
+        log.debug(f"+ {cmd}")
+        process = subprocess.run(cmd, shell=True)
+        if process.returncode != 0:
+            print("Removing Old test references failed!")
+            exit(1)
 
     # So that the tests find the `lcompiler` executable
     if not is_lcompilers_executable_installed:
@@ -459,7 +469,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                 verbose=verbose,
                 no_llvm=no_llvm,
                 skip_run_with_dbg=True,
-                skip_cpptranslate=True,
                 no_color=True)
     filtered_tests = [test for test in filtered_tests if 'extrafiles' not in test]
 
@@ -473,7 +482,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
                         verbose=verbose,
                         no_llvm=no_llvm,
                         skip_run_with_dbg=skip_run_with_dbg,
-                        skip_cpptranslate=skip_cpptranslate,
                         no_color=no_color)
     # run in parallel
     else:
@@ -486,7 +494,6 @@ def tester_main(compiler, single_test, is_lcompilers_executable_installed=False)
             verbose=verbose,
             no_llvm=no_llvm,
             skip_run_with_dbg=skip_run_with_dbg,
-            skip_cpptranslate=skip_cpptranslate,
             no_color=no_color)
         with ThreadPoolExecutor() as ex:
             futures = ex.map(single_tester_partial_args, filtered_tests)

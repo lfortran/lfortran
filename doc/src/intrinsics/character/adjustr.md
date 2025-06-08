@@ -47,7 +47,6 @@ end function
 
 ```fortran
 program intrinsics_adjustr
-    use lfortran_intrinsic_string, only: adjustr
     implicit none
     character(*), parameter :: s1 = "A B "
     print *, adjustr(s1)

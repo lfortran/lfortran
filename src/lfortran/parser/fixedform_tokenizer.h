@@ -39,11 +39,11 @@ public:
     // token
     // Returns True if successful, otherwise there will be errors in
     // `diagnostics`
-    bool tokenize_input(diag::Diagnostics &diagnostics, Allocator &al);
+    bool tokenize_input(diag::Diagnostics &diagnostics, Allocator &al, bool continue_compilation);
 
     // Get next token. Token ID is returned as function result, the semantic
     // value is put into `yylval`.
-    int lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics);
+    int lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation);
 
     // Return the current token as std::string
     std::string token() const

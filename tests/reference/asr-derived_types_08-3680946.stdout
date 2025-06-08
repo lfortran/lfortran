@@ -7,10 +7,10 @@
                     (SymbolTable
                         6
                         {
-                            1_initialize:
+                            1_initialize_subrout:
                                 (ExternalSymbol
                                     6
-                                    1_initialize
+                                    1_initialize_subrout
                                     3 initialize
                                     shape
                                     []
@@ -97,12 +97,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 rectangle
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             rectangle:
@@ -135,6 +142,9 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         6 shape
                                     )
                                     ()
@@ -142,12 +152,16 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     derived_types_08
                     [shape_mod]
                     [(SubroutineCall
-                        6 1_initialize
+                        6 1_initialize_subrout
                         ()
                         [((IntegerConstant 1 (Integer 4) Decimal))
                         ((LogicalConstant
@@ -159,7 +173,7 @@
                         (Var 6 shp)
                     )
                     (SubroutineCall
-                        6 1_initialize
+                        6 1_initialize_subrout
                         ()
                         [((IntegerConstant 2 (Integer 4) Decimal))
                         ((LogicalConstant
@@ -171,60 +185,68 @@
                         (Var 6 rect)
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_color
-                            (Integer 4)
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_color
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_filled
+                                (Logical 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_x
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 shp)
+                                6 1_shape_y
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_filled
-                            (Logical 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_x
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 shp)
-                            6 1_shape_y
-                            (Integer 4)
-                            ()
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_color
-                            (Integer 4)
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_color
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_filled
+                                (Logical 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_x
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_shape_y
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_filled
-                            (Logical 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_x
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_shape_y
-                            (Integer 4)
-                            ()
-                        )]
-                        ()
-                        ()
                     )
                     (Assignment
                         (StructInstanceMember
@@ -235,6 +257,7 @@
                         )
                         (IntegerConstant 100 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -245,22 +268,27 @@
                         )
                         (IntegerConstant 200 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_length
-                            (Integer 4)
+                        (StringFormat
+                            ()
+                            [(StructInstanceMember
+                                (Var 6 rect)
+                                6 1_rectangle_length
+                                (Integer 4)
+                                ()
+                            )
+                            (StructInstanceMember
+                                (Var 6 rect)
+                                6 1_rectangle_width
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (StructInstanceMember
-                            (Var 6 rect)
-                            6 1_rectangle_width
-                            (Integer 4)
-                            ()
-                        )]
-                        ()
-                        ()
                     )]
                 ),
             shape_mod:
@@ -328,6 +356,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -344,6 +376,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             sh:
                                                 (Variable
@@ -354,13 +390,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 shape
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             x:
@@ -378,6 +421,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -394,11 +441,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     initialize_subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 shape
                                         )
                                         (Integer 4)
@@ -432,6 +486,7 @@
                                         )
                                         (Var 5 color)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -442,6 +497,7 @@
                                         )
                                         (Var 5 filled)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -452,6 +508,7 @@
                                         )
                                         (Var 5 x)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (StructInstanceMember
@@ -462,6 +519,7 @@
                                         )
                                         (Var 5 y)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -489,6 +547,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             width:
                                                 (Variable
@@ -505,12 +567,17 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     rectangle
                                     []
                                     [length
                                     width]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -539,6 +606,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -554,6 +625,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             initialize:
@@ -582,6 +657,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -598,6 +677,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     shape
@@ -606,6 +689,7 @@
                                     filled
                                     x
                                     y]
+                                    []
                                     Source
                                     Public
                                     .false.

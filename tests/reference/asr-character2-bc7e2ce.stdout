@@ -15,18 +15,22 @@
                                     Local
                                     (StringConstant
                                         "Goat"
-                                        (Character 1 4 ())
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "Goat"
-                                        (Character 1 4 ())
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (Character 1 4 ())
+                                    (String 1 (IntegerConstant 4 (Integer 8) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             char2:
@@ -38,11 +42,15 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 4 ())
+                                    (String 1 (IntegerConstant 4 (Integer 8) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             char_param:
@@ -53,18 +61,22 @@
                                     Local
                                     (StringConstant
                                         "App"
-                                        (Character 1 3 ())
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "App"
-                                        (Character 1 3 ())
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 3 ())
+                                    (String 1 (IntegerConstant 3 (Integer 8) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -74,9 +86,10 @@
                         (Var 2 char2)
                         (StringConstant
                             "Balle"
-                            (Character 1 5 ())
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
+                        .false.
                     )]
                 )
         })

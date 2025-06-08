@@ -48,5 +48,19 @@ program intrinsics_298
     if (abs(abs(dot_product(c3, c4)) - 245.0_8) > 1e-12) error stop
     print *, dot_product(l1, l2)
     if (.not. dot_product(l1, l2)) error stop
-    
+
+    ! Cases with mixture of real, integer and complex
+    print *, dot_product(i1, r2)
+    if (abs(dot_product(i1, r2) - 189.0) > 1e-6) error stop
+    print *, dot_product(r1, i2)
+    if (abs(dot_product(i1, r2) - 189.0) > 1e-6) error stop
+    print *, dot_product(c1, i2)
+    if (abs(abs(dot_product(c1, i2)) - 197.699265) > 1e-6) error stop
+    print *, dot_product(i1, c2) 
+    if (abs(abs(dot_product(i1, c2)) - 197.699265) > 1e-6) error stop
+    print *, dot_product(c4, r3)
+    if (abs(abs(dot_product(c4, r3)) - 197.6992665641428_8) > 1e-12) error stop
+    print *, dot_product(r4, c3)
+    if (abs(abs(dot_product(r4, c3)) - 197.6992665641428_8) > 1e-12) error stop
+
 end program

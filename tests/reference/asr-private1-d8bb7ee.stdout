@@ -50,6 +50,7 @@
                                             (Real 4)
                                         )
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -82,6 +83,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -119,9 +124,13 @@
                     test
                     [foo2]
                     [(Print
-                        [(Var 5 y)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 5 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare
@@ -161,9 +170,13 @@
                         ()
                     )
                     (Print
-                        [(Var 5 y)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 5 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare

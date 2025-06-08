@@ -1,0 +1,13 @@
+{
+    "basename": "asr-common_13-fa7cbf0",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/common_13.f90",
+    "infile_hash": "c06b84e80775a9b491a5bb86de409be83180247a70c7c75af9e92a4e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-common_13-fa7cbf0.stdout",
+    "stdout_hash": "5a54daa30bbab6b1055831932644058f62b0936edb0daf03191ff79b",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

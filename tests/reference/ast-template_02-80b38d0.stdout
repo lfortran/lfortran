@@ -436,6 +436,7 @@
             )]
         )]
         []
+        []
     )
     (Program
         template_02
@@ -521,27 +522,13 @@
                 (ArrayInitializer
                     ()
                     ()
-                    [(String
-                        "a"
-                    )
-                    (String
-                        "a"
-                    )
-                    (String
-                        "b"
-                    )
-                    (String
-                        "p"
-                    )
-                    (String
-                        "p"
-                    )
-                    (String
-                        "p"
-                    )
-                    (String
-                        "o"
-                    )]
+                    [(String "a")
+                    (String "a")
+                    (String "b")
+                    (String "p")
+                    (String "p")
+                    (String "p")
+                    (String "o")]
                 )
                 ()
                 0)]

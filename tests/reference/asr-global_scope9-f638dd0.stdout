@@ -17,6 +17,10 @@
                     Public
                     Required
                     .false.
+                    .false.
+                    .false.
+                    ()
+                    .false.
                 )
         })
     [(Assignment
@@ -28,6 +32,7 @@
             (IntegerConstant 6 (Integer 8) Decimal)
         )
         ()
+        .false.
     )
     (Var 1 x)]
 )

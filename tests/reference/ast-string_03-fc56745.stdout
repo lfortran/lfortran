@@ -28,13 +28,12 @@
             []
             []
             ()
-            (String
-                "I've "
-            )
+            (String "I've ")
             Equal
             ())]
             ()
         )]
+        []
         []
     )
     (Program
@@ -165,33 +164,25 @@
         [(Assignment
             0
             verb
-            (String
-                "learned "
-            )
+            (String "learned ")
             ()
         )
         (Assignment
             0
             posit
-            (String
-                "from "
-            )
+            (String "from ")
             ()
         )
         (Assignment
             0
             title
-            (String
-                "the "
-            )
+            (String "the ")
             ()
         )
         (Assignment
             0
             last_name
-            (String
-                "best"
-            )
+            (String "best")
             (TriviaNode
                 []
                 [(EndOfLine)
@@ -220,9 +211,7 @@
                     last_name
                 )
                 Concat
-                (String
-                    "."
-                )
+                (String ".")
             )
             (TriviaNode
                 []

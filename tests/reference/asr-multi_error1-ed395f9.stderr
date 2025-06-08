@@ -1,0 +1,23 @@
+syntax error: Newline is unexpected here
+ --> tests/multi_error1.f90:3:15
+  |
+3 | integer :: x =
+  |               ^ 
+
+syntax error: Newline is unexpected here
+ --> tests/multi_error1.f90:5:15
+  |
+5 | integer :: y =
+  |               ^ 
+
+syntax error: Newline is unexpected here
+ --> tests/multi_error1.f90:6:13
+  |
+6 | print *, x +
+  |             ^ 
+
+syntax error: Token 'y' (of type 'identifier') is unexpected here
+ --> tests/multi_error1.f90:7:12
+  |
+7 | print *, x y
+  |            ^ 

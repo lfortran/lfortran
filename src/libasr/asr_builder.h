@@ -39,7 +39,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -50,7 +50,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
@@ -61,7 +61,7 @@ class ASRBuilder {
             ASR::ttype_t *type, ASR::intentType intent,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
-            ASR::make_Variable_t(al, loc, symtab, s2c(al, var_name), nullptr, 0,
+            ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
             intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_or_overwrite_symbol(s2c(al, var_name), sym);
@@ -96,17 +96,21 @@ class ASRBuilder {
         false, nullptr, 0, false, false, false));
 
     // Types -------------------------------------------------------------------
-    #define int8         TYPE(ASR::make_Integer_t(al, loc, 1))
-    #define int16        TYPE(ASR::make_Integer_t(al, loc, 2))
-    #define int32        TYPE(ASR::make_Integer_t(al, loc, 4))
-    #define int64        TYPE(ASR::make_Integer_t(al, loc, 8))
-    #define real32       TYPE(ASR::make_Real_t(al, loc, 4))
-    #define real64       TYPE(ASR::make_Real_t(al, loc, 8))
-    #define complex32    TYPE(ASR::make_Complex_t(al, loc, 4))
-    #define complex64    TYPE(ASR::make_Complex_t(al, loc, 8))
-    #define logical      TYPE(ASR::make_Logical_t(al, loc, 4))
-    #define character(x) TYPE(ASR::make_Character_t(al, loc, 1, x, nullptr))
-    #define List(x)      TYPE(ASR::make_List_t(al, loc, x))
+    #define int8         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 1))
+    #define int16        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 2))
+    #define int32        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))
+    #define int64        ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8))
+    #define real32       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4))
+    #define real64       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 8))
+    #define complex32    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 4))
+    #define complex64    ASRUtils::TYPE(ASR::make_Complex_t(al, loc, 8))
+    #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
+    #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,\
+                            ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
+                            al, loc, x, int32)),\
+                            ASR::string_length_kindType::ExpressionLength,\
+                            ASR::string_physical_typeType::PointerString))
+    #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
         Vec<ASR::ttype_t*> m_tuple_type; m_tuple_type.reserve(al, 3);
@@ -143,15 +147,65 @@ class ASRBuilder {
     }
 
     ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, nullptr));
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t* type = ASRUtils::expr_type(x);
+        if ( ASRUtils::is_array(type) ) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
+            ASR::dimension_t* dims = array_type->m_dims;
+            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int new_dim = dim - 1;
+            if( dims[new_dim].m_start && dims[new_dim].m_length ) {
+                ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
+                ASR::expr_t* length = ASRUtils::expr_value(dims[new_dim].m_length);
+                if( ASRUtils::is_value_constant(start) &&
+                ASRUtils::is_value_constant(length) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    int64_t const_length = -1;
+                    if( !ASRUtils::extract_value(length, const_length) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    value = i32(const_lbound + const_length - 1);
+                }
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::UBound, value));
     }
 
     ASR::expr_t* ArrayLBound(ASR::expr_t* x, int64_t dim) {
-        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, nullptr));
+        ASR::expr_t* value = nullptr;
+        ASR::ttype_t* type = ASRUtils::expr_type(x);
+        if ( ASRUtils::is_array(type) ) {
+            ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(type)));
+            ASR::dimension_t* dims = array_type->m_dims;
+            ASRUtils::extract_dimensions_from_ttype(type, dims);
+            int new_dim = dim - 1;
+            if( dims[new_dim].m_start ) {
+                ASR::expr_t* start = ASRUtils::expr_value(dims[new_dim].m_start);
+                if( ASRUtils::is_value_constant(start) ) {
+                    int64_t const_lbound = -1;
+                    if( !ASRUtils::extract_value(start, const_lbound) ) {
+                        LCOMPILERS_ASSERT(false);
+                    }
+                    value = i32(const_lbound);
+                }
+            }
+        }
+        return ASRUtils::EXPR(ASR::make_ArrayBound_t(al, loc, x, i32(dim), int32, ASR::arrayboundType::LBound, value));
     }
 
     inline ASR::expr_t* i_t(int64_t x, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerConstant_t(al, loc, x, t));
+    }
+
+    inline ASR::expr_t* logical_true() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, true, logical));
+    }
+
+    inline ASR::expr_t* logical_false() {
+        return EXPR(ASR::make_LogicalConstant_t(al, loc, false, logical));
     }
 
     inline ASR::expr_t* i32(int64_t x) {
@@ -245,7 +299,7 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* ArraySize(ASR::expr_t* x, ASR::expr_t* dim, ASR::ttype_t* t) {
-        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr));
+        return EXPR(make_ArraySize_t_util(al, loc, x, dim, t, nullptr, false));
     }
 
     inline ASR::expr_t* Ichar(std::string s, ASR::ttype_t* type, ASR::ttype_t* t) {
@@ -259,24 +313,92 @@ class ASRBuilder {
 
     // Cast --------------------------------------------------------------------
 
+    #define avoid_cast(x, t) if( ASRUtils::extract_kind_from_ttype_t(t) <= \
+        ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x)) ) { \
+        return x; \
+    } \
+
     inline ASR::expr_t* r2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            value = i_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToInteger, t, value));
+    }
+
+    inline ASR::expr_t* c2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        // TODO: handle value
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToInteger, t, nullptr));
     }
 
     inline ASR::expr_t* i2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, nullptr));
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            value = f_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToReal, t, value));
     }
 
     inline ASR::expr_t* i2i_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, nullptr));
+        // avoid_cast(x, t); // TODO: adding this makes intrinsics_61 fail, that shall not happen, add a flag for force casting
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            int64_t val = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            value = i_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::IntegerToInteger, t, value));
     }
 
     inline ASR::expr_t* r2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
-        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, nullptr));
+        int kind_x = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x));
+        int kind_t = ASRUtils::extract_kind_from_ttype_t(t);
+        if (kind_x == kind_t) {
+            return x;
+        }
+        ASR::expr_t* value = ASRUtils::expr_value(x);
+        if ( value != nullptr ) {
+            double val = ASR::down_cast<ASR::RealConstant_t>(value)->m_r;
+            value = f_t(val, t);
+        }
+        return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::RealToReal, t, value));
     }
 
     inline ASR::expr_t* c2r_t(ASR::expr_t* x, ASR::ttype_t* t) {
+        // TODO: handle value
         return EXPR(ASR::make_Cast_t(al, loc, x, ASR::cast_kindType::ComplexToReal, t, nullptr));
+    }
+
+    inline ASR::expr_t* t2t(ASR::expr_t* x, ASR::ttype_t* t1, ASR::ttype_t* t2) {
+        // TODO: improve this function to handle all types
+        if (ASRUtils::is_real(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return r2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return r2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else if (ASRUtils::is_integer(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return i2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return i2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else if (ASRUtils::is_complex(*t1)) {
+            if (ASRUtils::is_real(*t2)) {
+                return c2r_t(x, t2);
+            } else if (ASRUtils::is_integer(*t2)) {
+                return c2i_t(x, t2);
+            } else {
+                throw LCompilersException("Type not supported");
+            }
+        } else {
+            throw LCompilersException("Type not supported");
+        }
     }
 
     // Binop -------------------------------------------------------------------
@@ -287,6 +409,10 @@ class ASRBuilder {
 
     inline ASR::expr_t* BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
+    }
+
+    inline ASR::expr_t* LBitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::LBitRShift, bits, t, nullptr));
     }
 
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
@@ -302,7 +428,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -321,7 +447,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -340,7 +466,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -357,7 +483,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(x)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(x)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -376,7 +502,7 @@ class ASRBuilder {
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
                     ASR::binopType::Add, right, type, nullptr));
             }
-            case ASR::ttypeType::Character : {
+            case ASR::ttypeType::String : {
                 return EXPR(ASR::make_StringConcat_t(al, loc, left,
                     right, type, nullptr));
             }
@@ -386,7 +512,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -411,7 +537,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -423,12 +549,26 @@ class ASRBuilder {
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
+                int64_t left_value = 0, right_value = 0;
+                ASR::expr_t* value = nullptr;
+                if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_value(right, right_value) ) {
+                    int64_t mul_value = left_value * right_value;
+                    value = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, mul_value, type));
+                }
                 return EXPR(ASR::make_IntegerBinOp_t(al, loc, left,
-                    ASR::binopType::Mul, right, type, nullptr));
+                    ASR::binopType::Mul, right, type, value));
             }
             case ASR::ttypeType::Real: {
+                double left_value = 0, right_value = 0;
+                ASR::expr_t* value = nullptr;
+                if( ASRUtils::extract_value(left, left_value) &&
+                    ASRUtils::extract_value(right, right_value) ) {
+                    double mul_value = left_value * right_value;
+                    value = ASRUtils::EXPR(ASR::make_RealConstant_t(al, loc, mul_value, type));
+                }
                 return EXPR(ASR::make_RealBinOp_t(al, loc, left,
-                    ASR::binopType::Mul, right, type, nullptr));
+                    ASR::binopType::Mul, right, type, value));
             }
             case ASR::ttypeType::Complex: {
                 return EXPR(ASR::make_ComplexBinOp_t(al, loc, left,
@@ -436,7 +576,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -461,7 +601,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -486,7 +626,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -532,7 +672,7 @@ class ASRBuilder {
         return intrinsic_func(al, loc, scope, arg_types, return_type, new_args, overload_id);
     }
 
-    // Compare -----------------------------------------------------------------   
+    // Compare -----------------------------------------------------------------
     ASR::expr_t *Gt(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
         ASR::ttype_t *type = expr_type(left);
@@ -543,7 +683,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Gt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -551,7 +691,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -567,7 +707,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Lt, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -575,7 +715,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -591,7 +731,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::GtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -599,7 +739,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -615,7 +755,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::LtE, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -623,7 +763,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -639,15 +779,18 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
                 return EXPR(ASR::make_LogicalCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
             }
+            case ASR::ttypeType::Complex: {
+                return EXPR(ASR::make_ComplexCompare_t(al, loc, left, ASR::cmpopType::Eq, right, logical, nullptr));
+            }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -663,7 +806,7 @@ class ASRBuilder {
             case ASR::ttypeType::Real: {
                 return EXPR(ASR::make_RealCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
-            case ASR::ttypeType::Character: {
+            case ASR::ttypeType::String: {
                 return EXPR(ASR::make_StringCompare_t(al, loc, left, ASR::cmpopType::NotEq, right, logical, nullptr));
             }
             case ASR::ttypeType::Logical: {
@@ -671,7 +814,7 @@ class ASRBuilder {
             }
             default: {
                 throw LCompilersException("Expression type, " +
-                    std::to_string(expr_type(left)->type) + " not yet supported");
+                    ASRUtils::type_to_str_python(expr_type(left)) + " not yet supported");
                 return nullptr;
             }
         }
@@ -732,6 +875,8 @@ class ASRBuilder {
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
+        // LCOMPILERS_ASSERT(
+        //     ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(arr)) == idx.size());
         Vec<ASR::expr_t*> idx_vars; idx_vars.reserve(al, 1);
         for (auto &x: idx) idx_vars.push_back(al, x);
         return PassUtils::create_array_ref(arr, idx_vars, al);
@@ -776,8 +921,9 @@ class ASRBuilder {
     }
 
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
-        LCOMPILERS_ASSERT(check_equal_type(expr_type(lhs), expr_type(rhs)));
-        return STMT(ASR::make_Assignment_t(al, loc, lhs, rhs, nullptr));
+        LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs)),
+            type_to_str_python(expr_type(lhs)) + ", " + type_to_str_python(expr_type(rhs)));
+        return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false));
     }
 
     ASR::stmt_t* CPtrToPointer(ASR::expr_t* cptr, ASR::expr_t* ptr, ASR::expr_t* shape = nullptr, ASR::expr_t* lower_bounds = nullptr) {
@@ -849,6 +995,25 @@ class ASRBuilder {
         return STMT(ASR::make_DoLoop_t(al, loc, nullptr, head, body.p, body.n, nullptr, 0));
     }
 
+    /*
+    if loop_body contains A(i, j, k) then set idx_vars=(k, j, i)
+    in order to iterate on the array left to right, the inner-most
+    loop on the fastest index on the left, as is common in Fortran
+    ```
+        idx_vars=(k, j, i)
+        body A(i, j, k)
+
+        produces
+
+        do k = 1, n
+            do j = 1, n
+                do i = 1, n
+                    A(i, j, k)
+                end do
+            end do
+        end do
+    ```
+    */
     template <typename LOOP_BODY>
     ASR::stmt_t* create_do_loop(
         const Location& loc, int rank, ASR::expr_t* array,
@@ -857,7 +1022,7 @@ class ASRBuilder {
         PassUtils::create_idx_vars(idx_vars, rank, loc, al, scope, "_i");
 
         ASR::stmt_t* doloop = nullptr;
-        for( int i = (int) idx_vars.size() - 1; i >= 0; i-- ) {
+        for ( int i = 0; i < (int) idx_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = idx_vars[i];
             head.m_start = PassUtils::get_bound(array, i + 1, "lbound", al);
@@ -884,7 +1049,7 @@ class ASRBuilder {
         Vec<ASR::stmt_t*>& doloop_body, LOOP_BODY loop_body) {
 
         ASR::stmt_t* doloop = nullptr;
-        for( int i = (int) loop_vars.size() - 1; i >= 0; i-- ) {
+        for ( int i = 0; i < (int) loop_vars.size(); i++ ) {
             ASR::do_loop_head_t head;
             head.m_v = loop_vars[i];
             head.m_start = PassUtils::get_bound(array, loop_dims[i], "lbound", al);
@@ -969,8 +1134,7 @@ class ASRBuilder {
         // Used for debugging
         Vec<ASR::expr_t *> x_exprs;
         x_exprs.from_pointer_n_copy(al, &items[0], items.size());
-        return STMT(ASR::make_Print_t(al, loc, x_exprs.p, x_exprs.n,
-            nullptr, nullptr));
+        return STMT(ASRUtils::make_print_t_util(al, loc, x_exprs.p, x_exprs.n));
     }
 
     ASR::symbol_t* create_c_func(std::string c_func_name, SymbolTable* fn_symtab, ASR::ttype_t* return_type, int n_args, Vec<ASR::ttype_t*>& arg_types) {
@@ -983,6 +1147,41 @@ class ASRBuilder {
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
             return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
 
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+
+    ASR::symbol_t* create_c_func_subroutines(std::string c_func_name, SymbolTable* fn_symtab, int n_args, ASR::ttype_t* arg_types) {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        for (int i = 0; i < n_args; i++) {
+            args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types,
+                ASR::intentType::InOut, ASR::abiType::BindC, true));
+        }
+        ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
+           ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types)),
+           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+
+    ASR::symbol_t* create_c_func_subroutines_with_return_type(std::string c_func_name, SymbolTable* fn_symtab, int n_args, std::vector<ASR::ttype_t*> arg_types,
+            ASR::ttype_t* return_type) {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        for (int i = 0; i < n_args; i++) {
+            args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
+                ASR::intentType::InOut, ASR::abiType::BindC, true));
+        }
+        ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
+           return_type,
+           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,

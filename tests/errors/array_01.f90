@@ -3,6 +3,5 @@ implicit none
 
 integer :: a(5)
 a = []
-print *, a
 
 end program

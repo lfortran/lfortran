@@ -44,6 +44,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -55,6 +59,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -62,11 +69,18 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     len_string
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
                                         (Integer 4)
@@ -86,11 +100,30 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 4 string)
-                                                4 1_string_type_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 4 string)
+                                                    4 1_string_type_raw
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 4 string)
+                                                            4 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -105,7 +138,7 @@
                                                     (Var 4 string)
                                                     4 1_string_type_raw
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -113,11 +146,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 4 length)
                                             (IntegerConstant 0 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 4 length)
@@ -145,23 +180,28 @@
                                                 (Variable
                                                     5
                                                     maybe_string
-                                                    [string]
+                                                    [len_string
+                                                    string]
                                                     ReturnVar
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (FunctionCall
+                                                    (String 1 (FunctionCall
                                                         2 len_string
                                                         2 len
                                                         [((Var 5 string))]
                                                         (Integer 4)
                                                         ()
                                                         ()
-                                                    ))
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string:
@@ -174,6 +214,9 @@
                                                     ()
                                                     Default
                                                     (StructType
+                                                        []
+                                                        []
+                                                        .true.
                                                         2 string_type
                                                     )
                                                     ()
@@ -181,19 +224,29 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     maybe
                                     (FunctionType
                                         [(StructType
+                                            []
+                                            []
+                                            .true.
                                             2 string_type
                                         )]
-                                        (Character 1 -3 (FunctionCall
+                                        (String 1 (FunctionCall
                                             2 len_string
                                             2 len
                                             [((FunctionParam
                                                 0
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 string_type
                                                 )
                                                 ()
@@ -201,7 +254,7 @@
                                             (Integer 4)
                                             ()
                                             ()
-                                        ))
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -218,11 +271,30 @@
                                     [(If
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StructInstanceMember
-                                                (Var 5 string)
-                                                5 1_string_type_raw
+                                            [(StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 string)
+                                                    5 1_string_type_raw
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -232,23 +304,44 @@
                                         )
                                         [(Assignment
                                             (Var 5 maybe_string)
-                                            (StructInstanceMember
-                                                (Var 5 string)
-                                                5 1_string_type_raw
+                                            (StringPhysicalCast
+                                                (StructInstanceMember
+                                                    (Var 5 string)
+                                                    5 1_string_type_raw
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                PointerString
                                                 (Allocatable
-                                                    (Character 1 -2 ())
+                                                    (String 1 (StringLen
+                                                        (StructInstanceMember
+                                                            (Var 5 string)
+                                                            5 1_string_type_raw
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            ()
+                                                        )
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 5 maybe_string)
                                             (StringConstant
                                                 ""
-                                                (Character 1 0 ())
+                                                (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 5 maybe_string)
@@ -272,18 +365,23 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (Character 1 -2 ())
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     string_type
                                     []
                                     [raw]
+                                    []
                                     Source
                                     Private
                                     .false.

@@ -144,7 +144,7 @@ public:
                 r += "c";
                 r += std::to_string(ASRUtils::extract_kind_from_ttype_t(t)*8);
                 break;
-            } case ASR::ttypeType::Character : {
+            } case ASR::ttypeType::String : {
                 r = "str";
                 break;
             } case ASR::ttypeType::Logical : {
@@ -253,11 +253,20 @@ public:
     void visit_Print(const ASR::Print_t &x) {
         std::string r = indent;
         r += "print(";
-        for (size_t i = 0; i < x.n_values; i++) {
-            visit_expr(*x.m_values[i]);
+         if (ASR::is_a<ASR::StringFormat_t>(*x.m_text)) {
+            ASR::StringFormat_t str_fmt = *ASR::down_cast<ASR::StringFormat_t>(x.m_text);
+            for (size_t i = 0; i < str_fmt.n_args; i++) {
+                visit_expr(*str_fmt.m_args[i]);
+                r += s;
+                if (i < str_fmt.n_args-1)
+                    r += ", ";
+            }
+        } else if (ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
+            visit_expr(*x.m_text);
             r += s;
-            if (i < x.n_values-1)
-                r += ", ";
+        } else {
+            throw CodeGenError("print statment supported for stringformat and single character argument",
+                x.base.base.loc);
         }
         r += ")";
         r += "\n";

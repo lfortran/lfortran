@@ -31,17 +31,13 @@
         (Print
             0
             ()
-            [(String
-                "no"
-            )]
+            [(String "no")]
             ()
         )
         (Print
             101
             ()
-            [(String
-                "yes"
-            )]
+            [(String "yes")]
             ()
         )]
         []

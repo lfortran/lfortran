@@ -1,0 +1,13 @@
+{
+    "basename": "asr-program_without_line_cc-b84ba02",
+    "cmd": "lfortran --continue-compilation --show-asr --no-color {infile}",
+    "infile": "tests/errors/program_without_line_cc.f90",
+    "infile_hash": "516860f9855615c6727a984cf5f5ac39055860c9659a3dc0a17b814b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-program_without_line_cc-b84ba02.stdout",
+    "stdout_hash": "e1a7a56c2fdec9113efc2f9a7c10bbbd39e0de2e1903ed5c74e50578",
+    "stderr": "asr-program_without_line_cc-b84ba02.stderr",
+    "stderr_hash": "5bf23eca2f01a20110dbbe0e400d96bb19ea04c284afe403a158d374",
+    "returncode": 1
+}

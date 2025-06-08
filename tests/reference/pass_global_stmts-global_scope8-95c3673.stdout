@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     f
@@ -45,11 +49,13 @@
                         (Var 1 x)
                         (IntegerConstant 6 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 f1)
                         (Var 1 x)
                         ()
+                        .false.
                     )]
                     (Var 2 f1)
                     Public
@@ -71,6 +77,10 @@
                     Source
                     Public
                     Required
+                    .false.
+                    .false.
+                    .false.
+                    ()
                     .false.
                 )
         })

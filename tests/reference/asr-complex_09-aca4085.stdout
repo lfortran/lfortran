@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -44,6 +48,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z1:
                                 (Variable
@@ -60,6 +68,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             z2:
                                 (Variable
@@ -75,6 +87,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -94,30 +110,46 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 z1)
-                        (ComplexConstructor
-                            (Cast
-                                (Var 2 x)
-                                RealToReal
-                                (Real 8)
-                                ()
-                            )
-                            (RealConstant
-                                0.000000
-                                (Real 8)
-                            )
-                            (Complex 8)
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(Var 2 z1)
+                            (ComplexConstructor
+                                (Cast
+                                    (Var 2 x)
+                                    RealToReal
+                                    (Real 8)
+                                    ()
+                                )
+                                (RealConstant
+                                    0.000000
+                                    (Real 8)
+                                )
+                                (Complex 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 z2)
-                        (Var 2 z2)
+                        (Cast
+                            (Cast
+                                (Var 2 z2)
+                                ComplexToComplex
+                                (Complex 8)
+                                ()
+                            )
+                            ComplexToComplex
+                            (Complex 4)
+                            ()
+                        )
                         ()
+                        .false.
                     )]
                 )
         })

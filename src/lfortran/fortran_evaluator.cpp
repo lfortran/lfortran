@@ -1,4 +1,3 @@
-#include <iostream>
 #include <fstream>
 
 #include <lfortran/fortran_evaluator.h>
@@ -18,10 +17,15 @@
 #include <lfortran/pickle.h>
 #include <libasr/pickle.h>
 #include <libasr/utils.h>
+#include <libasr/asr_lookup_name.h>
+
 
 #ifdef HAVE_LFORTRAN_LLVM
 #include <libasr/codegen/evaluator.h>
 #include <libasr/codegen/asr_to_llvm.h>
+#ifdef HAVE_LFORTRAN_MLIR
+#include <libasr/codegen/asr_to_mlir.h>
+#endif
 #else
 namespace LCompilers {
     class LLVMEvaluator {};
@@ -34,7 +38,7 @@ namespace LCompilers {
 /* ------------------------------------------------------------------------- */
 // FortranEvaluator
 
-FortranEvaluator::FortranEvaluator(CompilerOptions compiler_options)
+FortranEvaluator::FortranEvaluator(CompilerOptions& compiler_options)
     :
     compiler_options{compiler_options},
     al{1024*1024},
@@ -92,7 +96,7 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
     }
 
     // AST -> ASR
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics, lm);
     ASR::TranslationUnit_t* asr;
     if (res2.ok) {
         asr = res2.result;
@@ -107,7 +111,8 @@ Result<FortranEvaluator::EvalResult> FortranEvaluator::evaluate(
 
     // ASR -> LLVM
     Result<std::unique_ptr<LLVMModule>> res3 = get_llvm3(*asr,
-        pass_manager, diagnostics, lm.files.back().in_filename);
+        pass_manager, diagnostics, lm.files.back().in_filename,
+        nullptr);
     std::unique_ptr<LCompilers::LLVMModule> m;
     if (res3.ok) {
         m = std::move(res3.result);
@@ -197,7 +202,13 @@ Result<LFortran::AST::TranslationUnit_t*> FortranEvaluator::get_ast2(
     if (compiler_options.c_preprocessor) {
         // Preprocessor
         LFortran::CPreprocessor cpp(compiler_options);
-        tmp = cpp.run(code_orig, lm, cpp.macro_definitions);
+        Result<std::string> res = cpp.run(code_orig, lm, cpp.macro_definitions, diagnostics);
+        if (res.ok) {
+            tmp = res.result;
+        } else {
+            LCOMPILERS_ASSERT(diagnostics.has_error())
+            return res.error;
+        }
         code = &tmp;
     }
     if (compiler_options.prescan || compiler_options.fixed_form) {
@@ -237,6 +248,16 @@ Result<std::string> FortranEvaluator::get_asr(const std::string &code,
     }
 }
 
+LCompilers::ASR::asr_t* FortranEvaluator::handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos) {
+    LCompilers::LFortran::LookupNameVisitor lnv(pos);
+    lnv.visit_TranslationUnit(*tu);
+    if (lnv.node_to_return != nullptr) {
+        return lnv.node_to_return;
+    } else {
+        return ( LCompilers::ASR::asr_t*) tu;
+    }
+}
+
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
             const std::string &code_orig, LocationManager &lm,
             diag::Diagnostics &diagnostics)
@@ -251,9 +272,8 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return res.error;
     }
-
     // AST -> ASR
-    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics);
+    Result<ASR::TranslationUnit_t*> res2 = get_asr3(*ast, diagnostics, lm);
     if (res2.ok) {
         return res2.result;
     } else {
@@ -263,7 +283,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr2(
 }
 
 Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
-    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics)
+    LFortran::AST::TranslationUnit_t &ast, diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm)
 {
     ASR::TranslationUnit_t* asr;
     // AST -> ASR
@@ -275,7 +295,7 @@ Result<ASR::TranslationUnit_t*> FortranEvaluator::get_asr3(
         symbol_table->mark_all_variables_external(al);
     }
     auto res = LFortran::ast_to_asr(al, ast, diagnostics, symbol_table,
-        compiler_options.symtab_only, compiler_options);
+        compiler_options.symtab_only, compiler_options, lm);
     if (res.ok) {
         asr = res.result;
     } else {
@@ -314,7 +334,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
         return asr.error;
     }
     Result<std::unique_ptr<LLVMModule>> res = get_llvm3(*asr.result, pass_manager,
-        diagnostics, lm.files.back().in_filename);
+        diagnostics, lm.files.back().in_filename, nullptr);
     if (res.ok) {
 #ifdef HAVE_LFORTRAN_LLVM
         std::unique_ptr<LLVMModule> m = std::move(res.result);
@@ -328,6 +348,11 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm2(
     }
 }
 
+/*
+    time_opt: keeps track of time taken by using `--fast` flag
+        i.e. time taken by optimizations, and used when
+        `--time-report` flag is used
+*/
 Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
 #ifdef HAVE_LFORTRAN_LLVM
     ASR::TranslationUnit_t &asr, LCompilers::PassManager& pass_manager,
@@ -336,11 +361,16 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     ASR::TranslationUnit_t &/*asr*/, LCompilers::PassManager &/*pass_manager*/,
     diag::Diagnostics &/*diagnostics*/
 #endif
-, [[maybe_unused]] const std::string &infile)
+, [[maybe_unused]] const std::string &infile,
+  [[maybe_unused]] int* time_opt=nullptr)
 {
 #ifdef HAVE_LFORTRAN_LLVM
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
+
+    if (compiler_options.separate_compilation) {
+        compiler_options.po.intrinsic_symbols_mangling = true;
+    }
 
     if (compiler_options.emit_debug_info) {
         if (!compiler_options.emit_debug_line_column) {
@@ -360,7 +390,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     Result<std::unique_ptr<LCompilers::LLVMModule>> res
         = asr_to_llvm(asr, diagnostics,
             e->get_context(), al, pass_manager,
-            compiler_options, run_fn, infile);
+            compiler_options, run_fn, "", infile);
     if (res.ok) {
         m = std::move(res.result);
     } else {
@@ -369,7 +399,12 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     }
 
     if (compiler_options.po.fast) {
+        auto t1 = std::chrono::high_resolution_clock::now();
         e->opt(*m->m_m);
+        auto t2 = std::chrono::high_resolution_clock::now();
+        if (compiler_options.po.time_report && time_opt) {
+            *time_opt = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
+        }
     }
 
     return m;
@@ -512,6 +547,40 @@ Result<std::string> FortranEvaluator::get_julia(const std::string &code,
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return asr.error;
     }
+}
+
+// asr_t &asr accepts only TranslationUnit and Module's type for now
+Result<std::unique_ptr<MLIRModule>> FortranEvaluator::get_mlir(
+#ifdef HAVE_LFORTRAN_MLIR
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics
+#else
+        ASR::asr_t &/*asr*/, diag::Diagnostics &/*diagnostics*/
+#endif
+) {
+#ifdef HAVE_LFORTRAN_MLIR
+    // ASR -> MLIR
+    std::unique_ptr<LCompilers::MLIRModule> m;
+    LCompilers::PassManager pass_manager;
+    if (ASR::is_a<ASR::unit_t>(asr)) {
+        pass_manager.use_default_passes();
+        pass_manager.apply_passes(al, (ASR::TranslationUnit_t *)&asr,
+            compiler_options.po, diagnostics);
+    }
+    Result<std::unique_ptr<MLIRModule>> res = asr_to_mlir(al,
+        (ASR::asr_t &)asr, diagnostics);
+    if (res.ok) {
+        m = std::move(res.result);
+    } else {
+        LCOMPILERS_ASSERT(diagnostics.has_error())
+        return res.error;
+    }
+
+    // MLIR -> LLVM
+    m->mlir_to_llvm(*m->llvm_ctx);
+    return m;
+#else
+    throw LCompilersException("MLIR is not enabled");
+#endif
 }
 
 Result<std::string> FortranEvaluator::get_fortran(const std::string &code,

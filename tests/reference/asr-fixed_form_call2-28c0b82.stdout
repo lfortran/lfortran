@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             m:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             prinf:
                                 (Function
@@ -53,11 +61,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 6 ())
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             prinf_arg_1:
@@ -75,11 +87,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     prinf
                                     (FunctionType
-                                        [(Character 1 6 ())
+                                        [(String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                                         (Integer 4)]
                                         ()
                                         BindC
@@ -125,13 +141,14 @@
                         (Var 2 a)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         2 prinf
                         ()
                         [((StringConstant
                             "lw = *"
-                            (Character 1 6 ())
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                         ))
                         ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
@@ -141,7 +158,7 @@
                         ()
                         [((StringConstant
                             "16m+70 = *"
-                            (Character 1 10 ())
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                         ))
                         ((IntegerConstant 1 (Integer 4) Decimal))]
                         ()
@@ -150,6 +167,7 @@
                         (Var 2 m)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Return)]
                     ()

@@ -31,6 +31,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             sp:
                                 (Variable
@@ -56,73 +60,85 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     print_intrinsics
                     []
                     [(Print
-                        [(StringConstant
-                            "pi=acos(-1.0_sp)  =\""
-                            (Character 1 20 ())
-                        )
-                        (IntrinsicElementalFunction
-                            Acos
-                            [(RealUnaryMinus
-                                (RealConstant
-                                    1.000000
-                                    (Real 4)
-                                )
-                                (Real 4)
-                                (RealConstant
-                                    -1.000000
-                                    (Real 4)
-                                )
-                            )]
-                            0
-                            (Real 4)
-                            (RealConstant
-                                3.141593
-                                (Real 4)
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "pi=acos(-1.0_sp)  =\""
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
+                            (IntrinsicElementalFunction
+                                Acos
+                                [(RealUnaryMinus
+                                    (RealConstant
+                                        1.000000
+                                        (Real 4)
+                                    )
+                                    (Real 4)
+                                    (RealConstant
+                                        -1.000000
+                                        (Real 4)
+                                    )
+                                )]
+                                0
+                                (Real 4)
+                                (RealConstant
+                                    3.141593
+                                    (Real 4)
+                                )
+                            )
+                            (StringConstant
+                                "\""
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (StringConstant
-                            "\""
-                            (Character 1 1 ())
-                        )]
-                        ()
-                        ()
                     )
                     (Print
-                        [(StringConstant
-                            "pi=acos(-1.0_dp)  =\""
-                            (Character 1 20 ())
-                        )
-                        (IntrinsicElementalFunction
-                            Acos
-                            [(RealUnaryMinus
-                                (RealConstant
-                                    1.000000
-                                    (Real 8)
-                                )
-                                (Real 8)
-                                (RealConstant
-                                    -1.000000
-                                    (Real 8)
-                                )
-                            )]
-                            0
-                            (Real 8)
-                            (RealConstant
-                                3.141593
-                                (Real 8)
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "pi=acos(-1.0_dp)  =\""
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
+                            (IntrinsicElementalFunction
+                                Acos
+                                [(RealUnaryMinus
+                                    (RealConstant
+                                        1.000000
+                                        (Real 8)
+                                    )
+                                    (Real 8)
+                                    (RealConstant
+                                        -1.000000
+                                        (Real 8)
+                                    )
+                                )]
+                                0
+                                (Real 8)
+                                (RealConstant
+                                    3.141593
+                                    (Real 8)
+                                )
+                            )
+                            (StringConstant
+                                "\""
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (StringConstant
-                            "\""
-                            (Character 1 1 ())
-                        )]
-                        ()
-                        ()
                     )]
                 )
         })

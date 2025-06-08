@@ -1,0 +1,5 @@
+C preprocessor error: Unexpected token '/' in factor()
+ --> tests/errors/cpp_err2.f90:2:13
+  |
+2 | #if 2 < 1+2+ / 1 2
+  |             ^^^ 

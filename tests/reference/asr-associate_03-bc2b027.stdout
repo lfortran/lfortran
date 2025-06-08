@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             p1:
                                 (Variable
@@ -40,6 +44,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -55,6 +63,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             t2:
@@ -72,15 +84,23 @@
                                     Public
                                     Required
                                     .false.
+                                    .true.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     associate_03
                     []
                     [(Print
-                        [(Var 2 t1)
-                        (Var 2 t2)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 t1)
+                            (Var 2 t2)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (IntegerCompare
@@ -100,14 +120,19 @@
                         )]
                     )
                     (Print
-                        [(Var 2 p1)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 p1)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 i)
                         (Var 2 p1)
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare

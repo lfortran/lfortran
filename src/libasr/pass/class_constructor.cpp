@@ -6,8 +6,6 @@
 #include <libasr/pass/replace_class_constructor.h>
 #include <libasr/pass/pass_utils.h>
 
-#include <vector>
-#include <utility>
 
 namespace LCompilers {
 
@@ -21,6 +19,7 @@ class ReplaceStructConstructor: public ASR::BaseExprReplacer<ReplaceStructConstr
     Allocator& al;
     Vec<ASR::stmt_t*>& pass_result;
     bool& remove_original_statement;
+    bool realloc_lhs;
 
     SymbolTable* current_scope;
     ASR::expr_t* result_var;
@@ -34,7 +33,8 @@ class ReplaceStructConstructor: public ASR::BaseExprReplacer<ReplaceStructConstr
     void replace_StructConstructor(ASR::StructConstructor_t* x) {
         Vec<ASR::stmt_t*>* result_vec = &pass_result;
         PassUtils::ReplacerUtils::replace_StructConstructor(
-            x, this, false, remove_original_statement, result_vec);
+            x, this, false, remove_original_statement, result_vec, false,
+        ASR::cast_kindType::IntegerToInteger, nullptr, realloc_lhs);
     }
 };
 
@@ -46,12 +46,13 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
         bool remove_original_statement;
         ReplaceStructConstructor replacer;
         Vec<ASR::stmt_t*> pass_result;
+        bool realloc_lhs;
 
     public:
 
-        StructConstructorVisitor(Allocator& al_) :
+        StructConstructorVisitor(Allocator& al_, bool realloc_lhs_) :
         al(al_), remove_original_statement(false),
-        replacer(al_, pass_result, remove_original_statement) {
+        replacer(al_, pass_result, remove_original_statement), realloc_lhs(realloc_lhs_) {
             pass_result.n = 0;
             pass_result.reserve(al, 0);
         }
@@ -59,6 +60,7 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
         void call_replacer() {
             replacer.current_expr = current_expr;
             replacer.current_scope = current_scope;
+            replacer.realloc_lhs = realloc_lhs;
             replacer.replace_expr(*current_expr);
         }
 
@@ -98,7 +100,14 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
                 return ;
             }
 
-            replacer.result_var = x.m_target;
+            ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
+            if (ASR::is_a<ASR::Allocatable_t>(*target_type) &&
+                ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(target_type))) {
+                replacer.result_var = nullptr;
+            } else {
+                replacer.result_var = x.m_target;
+            }
+
             ASR::expr_t** current_expr_copy_9 = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
@@ -112,8 +121,8 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
 
 void pass_replace_class_constructor(Allocator &al,
     ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
-    StructConstructorVisitor v(al);
+    const LCompilers::PassOptions& pass_options) {
+    StructConstructorVisitor v(al, pass_options.realloc_lhs);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
     w.visit_TranslationUnit(unit);

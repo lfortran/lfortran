@@ -29,6 +29,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -53,6 +57,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c:
@@ -81,6 +89,142 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            d:
+                                (Variable
+                                    2
+                                    d
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        20
+                                        [1, 2, 3, 4, 5]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        20
+                                        [1, 2, 3, 4, 5]
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 5 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Save
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            e:
+                                (Variable
+                                    2
+                                    e
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Integer 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            f:
+                                (Variable
+                                    2
+                                    f
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            g:
+                                (Variable
+                                    2
+                                    g
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (Complex 4)
+                                            [(()
+                                            ())
+                                            (()
+                                            ())
+                                            (()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -96,6 +240,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             ierr:
@@ -113,6 +261,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -128,6 +280,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             k:
@@ -145,6 +301,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -161,6 +321,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -176,6 +340,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             reduce_sum:
@@ -207,6 +375,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -222,6 +394,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             j:
@@ -239,6 +415,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -255,6 +435,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -270,6 +454,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -312,6 +500,7 @@
                                             )
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -391,6 +580,7 @@
                                                         ()
                                                     )
                                                     ()
+                                                    .false.
                                                 )]
                                                 []
                                             )]
@@ -431,6 +621,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -455,6 +649,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -483,6 +681,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             c_copy:
                                                 (Variable
@@ -510,6 +712,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -525,6 +731,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             j:
@@ -542,6 +752,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -557,6 +771,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -923,6 +1141,7 @@
                                                         ()
                                                     )
                                                     ()
+                                                    .false.
                                                 )
                                                 (Assignment
                                                     (ArrayItem
@@ -977,6 +1196,7 @@
                                                         ()
                                                     )
                                                     ()
+                                                    .false.
                                                 )]
                                                 []
                                             )]
@@ -985,9 +1205,6 @@
                                         []
                                     )
                                     (ExplicitDeallocate
-                                        [(Var 3 c_copy)]
-                                    )
-                                    (ImplicitDeallocate
                                         [(Var 3 c_copy)]
                                     )]
                                     ()
@@ -1003,6 +1220,241 @@
                         (Var 2 n)
                         (IntegerConstant 10 (Integer 4) Decimal)
                         ()
+                        .false.
+                    )
+                    (Allocate
+                        [((Var 2 e)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArraySize
+                                (Var 2 e)
+                                ()
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Allocate
+                        [((Var 2 a)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 e)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArraySize
+                                (Var 2 a)
+                                ()
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 5 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 a)]
+                    )
+                    (Allocate
+                        [((Var 2 b)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 f)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 b)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (LogicalBinOp
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 f)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 f)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 3 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 b)]
+                    )
+                    (Allocate
+                        [((Var 2 c)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 2 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 3 (Integer 4) Decimal))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (IntegerConstant 4 (Integer 4) Decimal))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Allocate
+                        [((Var 2 g)
+                        [((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 2 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))
+                        ((IntegerConstant 1 (Integer 4) Decimal)
+                        (ArraySize
+                            (Var 2 c)
+                            (IntegerConstant 3 (Integer 4) Decimal)
+                            (Integer 4)
+                            ()
+                        ))]
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (If
+                        (LogicalBinOp
+                            (LogicalBinOp
+                                (IntegerCompare
+                                    (ArraySize
+                                        (Var 2 g)
+                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                Or
+                                (IntegerCompare
+                                    (ArraySize
+                                        (Var 2 g)
+                                        (IntegerConstant 2 (Integer 4) Decimal)
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    NotEq
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Logical 4)
+                                    ()
+                                )
+                                (Logical 4)
+                                ()
+                            )
+                            Or
+                            (IntegerCompare
+                                (ArraySize
+                                    (Var 2 g)
+                                    (IntegerConstant 3 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    ()
+                                )
+                                NotEq
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (Logical 4)
+                                ()
+                            )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (ExplicitDeallocate
+                        [(Var 2 c)]
                     )
                     (Allocate
                         [((Var 2 a)
@@ -1164,6 +1616,7 @@
                             )
                             (Var 2 i)
                             ()
+                            .false.
                         )]
                         []
                     )
@@ -1229,6 +1682,7 @@
                                     ()
                                 )
                                 ()
+                                .false.
                             )]
                             []
                         )]
@@ -1605,6 +2059,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (ComplexCompare
@@ -1633,11 +2088,6 @@
                             ()
                         )]
                         []
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 a)
-                        (Var 2 b)
-                        (Var 2 c)]
                     )]
                 )
         })

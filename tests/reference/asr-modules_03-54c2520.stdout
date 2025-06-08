@@ -32,22 +32,30 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
-                                            "priv = "
-                                            (Character 1 7 ())
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "priv = "
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 priv)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
                                         )
-                                        (Var 2 priv)]
-                                        ()
-                                        ()
                                     )
                                     (Print
-                                        [(StringConstant
-                                            "publ = "
-                                            (Character 1 7 ())
+                                        (StringFormat
+                                            ()
+                                            [(StringConstant
+                                                "publ = "
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                            (Var 2 publ)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
                                         )
-                                        (Var 2 publ)]
-                                        ()
-                                        ()
                                     )]
                                     ()
                                     Public
@@ -76,6 +84,10 @@
                                     Private
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             publ:
                                 (Variable
@@ -97,6 +109,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

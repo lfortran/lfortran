@@ -1,78 +1,103 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-%foo_c = type { %foo_b, %bar_c }
-%foo_b = type { %foo_a, %bar_b }
-%foo_a = type { %bar_a }
-%bar_a = type { i32 }
-%bar_b = type { %bar_a, i32 }
-%bar_c = type { %bar_b, i32 }
+%__vtab_foo_c = type { i64 }
+%foo_c = type <{ %foo_b, %bar_c }>
+%foo_b = type <{ %foo_a, %bar_b }>
+%foo_a = type <{ %bar_a }>
+%bar_a = type <{ i32 }>
+%bar_b = type <{ %bar_a, i32 }>
+%bar_c = type <{ %bar_b, i32 }>
 
-@0 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
-@3 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.1 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 @4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@5 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
-@6 = private unnamed_addr constant [2 x i8] c" \00", align 1
+@serialization_info.2 = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@6 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @7 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@8 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
-@9 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@8 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %2 = alloca %__vtab_foo_c, align 8
+  %3 = getelementptr %__vtab_foo_c, %__vtab_foo_c* %2, i32 0, i32 0
+  store i64 0, i64* %3, align 4
   %foo = alloca %foo_c, align 8
-  %2 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %3 = getelementptr %bar_c, %bar_c* %2, i32 0, i32 1
-  %4 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %5 = getelementptr %foo_b, %foo_b* %4, i32 0, i32 0
-  %6 = getelementptr %foo_a, %foo_a* %5, i32 0, i32 0
-  %7 = getelementptr %bar_a, %bar_a* %6, i32 0, i32 0
-  store i32 -20, i32* %7, align 4
-  %8 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %9 = getelementptr %foo_b, %foo_b* %8, i32 0, i32 1
-  %10 = getelementptr %bar_b, %bar_b* %9, i32 0, i32 1
-  store i32 9, i32* %10, align 4
-  %11 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %12 = getelementptr %bar_c, %bar_c* %11, i32 0, i32 1
-  store i32 11, i32* %12, align 4
-  %13 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %14 = getelementptr %foo_b, %foo_b* %13, i32 0, i32 0
-  %15 = getelementptr %foo_a, %foo_a* %14, i32 0, i32 0
-  %16 = getelementptr %bar_a, %bar_a* %15, i32 0, i32 0
-  %17 = load i32, i32* %16, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i32 %17, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %4 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %5 = getelementptr %bar_c, %bar_c* %4, i32 0, i32 1
+  %6 = getelementptr %bar_c, %bar_c* %4, i32 0, i32 0
+  %7 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 1
+  %8 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 0
+  %9 = getelementptr %bar_a, %bar_a* %8, i32 0, i32 0
+  %10 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %11 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 1
+  %12 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 1
+  %13 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 0
+  %14 = getelementptr %bar_a, %bar_a* %13, i32 0, i32 0
+  %15 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 0
+  %16 = getelementptr %foo_a, %foo_a* %15, i32 0, i32 0
+  %17 = getelementptr %bar_a, %bar_a* %16, i32 0, i32 0
   %18 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %19 = getelementptr %foo_b, %foo_b* %18, i32 0, i32 1
-  %20 = getelementptr %bar_b, %bar_b* %19, i32 0, i32 1
-  %21 = load i32, i32* %20, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i32 %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
-  %22 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %23 = getelementptr %bar_c, %bar_c* %22, i32 0, i32 1
-  %24 = load i32, i32* %23, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i32 %24, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
-  %25 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %26 = getelementptr %foo_b, %foo_b* %25, i32 0, i32 0
-  %27 = getelementptr %foo_a, %foo_a* %26, i32 0, i32 0
-  %28 = getelementptr %bar_a, %bar_a* %27, i32 0, i32 0
-  %29 = load i32, i32* %28, align 4
-  %30 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %31 = getelementptr %foo_b, %foo_b* %30, i32 0, i32 1
-  %32 = getelementptr %bar_b, %bar_b* %31, i32 0, i32 1
-  %33 = load i32, i32* %32, align 4
-  %34 = add i32 %29, %33
-  %35 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %36 = getelementptr %bar_c, %bar_c* %35, i32 0, i32 1
+  %19 = getelementptr %foo_b, %foo_b* %18, i32 0, i32 0
+  %20 = getelementptr %foo_a, %foo_a* %19, i32 0, i32 0
+  %21 = getelementptr %bar_a, %bar_a* %20, i32 0, i32 0
+  store i32 -20, i32* %21, align 4
+  %22 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %23 = getelementptr %foo_b, %foo_b* %22, i32 0, i32 1
+  %24 = getelementptr %bar_b, %bar_b* %23, i32 0, i32 1
+  store i32 9, i32* %24, align 4
+  %25 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %26 = getelementptr %bar_c, %bar_c* %25, i32 0, i32 1
+  store i32 11, i32* %26, align 4
+  %27 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %28 = getelementptr %foo_b, %foo_b* %27, i32 0, i32 0
+  %29 = getelementptr %foo_a, %foo_a* %28, i32 0, i32 0
+  %30 = getelementptr %bar_a, %bar_a* %29, i32 0, i32 0
+  %31 = load i32, i32* %30, align 4
+  %32 = alloca i32, align 4
+  store i32 %31, i32* %32, align 4
+  %33 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %32)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %34 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %35 = getelementptr %foo_b, %foo_b* %34, i32 0, i32 1
+  %36 = getelementptr %bar_b, %bar_b* %35, i32 0, i32 1
   %37 = load i32, i32* %36, align 4
-  %38 = add i32 %34, %37
-  %39 = icmp ne i32 %38, 0
-  br i1 %39, label %then, label %else
+  %38 = alloca i32, align 4
+  store i32 %37, i32* %38, align 4
+  %39 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %38)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %40 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %41 = getelementptr %bar_c, %bar_c* %40, i32 0, i32 1
+  %42 = load i32, i32* %41, align 4
+  %43 = alloca i32, align 4
+  store i32 %42, i32* %43, align 4
+  %44 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i32 0, i32* %43)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %44, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  %45 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %46 = getelementptr %foo_b, %foo_b* %45, i32 0, i32 0
+  %47 = getelementptr %foo_a, %foo_a* %46, i32 0, i32 0
+  %48 = getelementptr %bar_a, %bar_a* %47, i32 0, i32 0
+  %49 = load i32, i32* %48, align 4
+  %50 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %51 = getelementptr %foo_b, %foo_b* %50, i32 0, i32 1
+  %52 = getelementptr %bar_b, %bar_b* %51, i32 0, i32 1
+  %53 = load i32, i32* %52, align 4
+  %54 = add i32 %49, %53
+  %55 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %56 = getelementptr %bar_c, %bar_c* %55, i32 0, i32 1
+  %57 = load i32, i32* %56, align 4
+  %58 = add i32 %54, %57
+  %59 = icmp ne i32 %58, 0
+  br i1 %59, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @9, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont
 
@@ -80,6 +105,7 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -88,8 +114,12 @@ return:                                           ; preds = %ifcont
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+
 declare void @_lfortran_printf(i8*, ...)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
+
+declare void @_lpython_free_argv()

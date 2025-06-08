@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -38,33 +42,45 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     shiftl1
                     []
                     [(Print
-                        [(IntrinsicElementalFunction
-                            Shiftl
-                            [(IntegerConstant 1 (Integer 4) Decimal)
-                            (IntegerConstant 2 (Integer 4) Decimal)]
-                            0
-                            (Integer 4)
-                            (IntegerConstant 4 (Integer 4) Decimal)
-                        )]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Shiftl
+                                [(IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 2 (Integer 4) Decimal)]
+                                0
+                                (Integer 4)
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Print
-                        [(IntrinsicElementalFunction
-                            Shiftl
-                            [(Var 2 x)
-                            (Var 2 y)]
-                            0
-                            (Integer 4)
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
+                            [(IntrinsicElementalFunction
+                                Shiftl
+                                [(Var 2 x)
+                                (Var 2 y)]
+                                0
+                                (Integer 4)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

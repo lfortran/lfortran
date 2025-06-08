@@ -1,7 +1,6 @@
 #ifndef LFORTRAN_FORTRAN_EVALUATOR_H
 #define LFORTRAN_FORTRAN_EVALUATOR_H
 
-#include <iostream>
 #include <memory>
 
 #include <libasr/alloc.h>
@@ -18,6 +17,7 @@
 namespace LCompilers {
 
 class LLVMModule;
+class MLIRModule;
 class LLVMEvaluator;
 
 /*
@@ -34,9 +34,9 @@ class LLVMEvaluator;
 class FortranEvaluator
 {
 public:
-    CompilerOptions compiler_options;
+    CompilerOptions& compiler_options;
 
-    FortranEvaluator(CompilerOptions compiler_options);
+    FortranEvaluator(CompilerOptions& compiler_options);
     ~FortranEvaluator();
 
     struct EvalResult {
@@ -69,13 +69,14 @@ public:
     Result<LCompilers::LFortran::AST::TranslationUnit_t*> get_ast2(
         const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
-    Result<ASR::TranslationUnit_t*> get_asr3(
-        LCompilers::LFortran::AST::TranslationUnit_t &ast,
-        diag::Diagnostics &diagnostics);
     Result<std::string> get_asr(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    ASR::asr_t* handle_lookup_name(LCompilers::ASR::TranslationUnit_t* tu, uint64_t pos);
     Result<ASR::TranslationUnit_t*> get_asr2(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    Result<ASR::TranslationUnit_t*> get_asr3(
+        LCompilers::LFortran::AST::TranslationUnit_t &ast,
+        diag::Diagnostics &diagnostics, LCompilers::LocationManager &lm);
     Result<std::string> get_llvm(const std::string &code,
         LocationManager &lm, LCompilers::PassManager& pass_manager,
         diag::Diagnostics &diagnostics);
@@ -84,7 +85,8 @@ public:
         diag::Diagnostics &diagnostics);
     Result<std::unique_ptr<LLVMModule>> get_llvm3(ASR::TranslationUnit_t &asr,
         LCompilers::PassManager& pass_manager,
-        diag::Diagnostics &diagnostics, const std::string &infile);
+        diag::Diagnostics &diagnostics, const std::string &infile,
+        int* time_opt);
     Result<std::string> get_asm(const std::string &code,
         LocationManager &lm,
         LCompilers::PassManager& pass_manager,
@@ -106,10 +108,13 @@ public:
         int64_t default_lower_bound);
     Result<std::string> get_julia(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
+    Result<std::unique_ptr<MLIRModule>> get_mlir(
+        ASR::asr_t &asr, diag::Diagnostics &diagnostics);
     Result<std::string> get_fortran(const std::string &code,
         LocationManager &lm, diag::Diagnostics &diagnostics);
     Result<std::string> get_fmt(const std::string &code, LocationManager &lm,
         diag::Diagnostics &diagnostics);
+    Allocator &get_al() { return al; };
 
 private:
     Allocator al;

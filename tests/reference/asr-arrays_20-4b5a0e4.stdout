@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (Character 1 5 ())
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -28,6 +28,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             list_integer:
@@ -52,6 +56,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             list_logical:
                                 (Variable
@@ -75,6 +83,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     arrays_20
@@ -93,6 +105,7 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 list_logical)
@@ -108,13 +121,32 @@
                             ColMajor
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 list_character)
                         (ArrayConstructor
                             []
                             (Array
-                                (Character 1 1 ())
+                                (String 1 (StringLen
+                                    (ArrayItem
+                                        (Var 2 list_character)
+                                        [(()
+                                        (ArrayBound
+                                            (Var 2 list_character)
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            LBound
+                                            ()
+                                        )
+                                        ())]
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        ColMajor
+                                        ()
+                                    )
+                                    (Integer 4)
+                                    (IntegerConstant 5 (Integer 4) Decimal)
+                                ) ExpressionLength PointerString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray
@@ -123,11 +155,7 @@
                             ColMajor
                         )
                         ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 list_character)
-                        (Var 2 list_integer)
-                        (Var 2 list_logical)]
+                        .false.
                     )]
                 )
         })

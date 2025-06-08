@@ -37,6 +37,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -52,6 +56,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -81,12 +89,17 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)
-                        (Var 2 y)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)
+                            (Var 2 y)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (If
                         (RealCompare

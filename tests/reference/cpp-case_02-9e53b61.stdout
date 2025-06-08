@@ -30,31 +30,31 @@ void main2() {
     marks = 81;
     if (91 <= marks <= 100) {
         out = 0;
-        std::cout << "Excellent!" << std::endl;
+std::cout<< "Excellent!"<<std::endl;
     }
     else if (81 <= marks <= 90) {
         out = 1;
-        std::cout << "Very good!" << std::endl;
+std::cout<< "Very good!"<<std::endl;
     }
     else if (71 <= marks <= 80) {
         out = 2;
-        std::cout << "Well done!" << std::endl;
+std::cout<< "Well done!"<<std::endl;
     }
     else if (61 <= marks <= 70) {
         out = 3;
-        std::cout << "Not bad!" << std::endl;
+std::cout<< "Not bad!"<<std::endl;
     }
     else if (41 <= marks <= 60) {
         out = 4;
-        std::cout << "You passed!" << std::endl;
+std::cout<< "You passed!"<<std::endl;
     }
     else if (marks <= 40) {
         out = 5;
-        std::cout << "Better try again!" << std::endl;
+std::cout<< "Better try again!"<<std::endl;
     }
     else {
         out = 6;
-        std::cout << "Invalid marks" << std::endl;
+std::cout<< "Invalid marks"<<std::endl;
     }
     std::cout << "Your marks are " << " " << marks << std::endl;
     if (out != 1) {
@@ -62,47 +62,47 @@ void main2() {
         exit(1);
     }
     if (91 <= marks <= 100) {
-        std::cout << "Excellent!" << std::endl;
+std::cout<< "Excellent!"<<std::endl;
     }
     else if (81 <= marks <= 90) {
-        std::cout << "Very good!" << std::endl;
+std::cout<< "Very good!"<<std::endl;
     }
     else if (71 <= marks <= 80) {
-        std::cout << "Well done!" << std::endl;
+std::cout<< "Well done!"<<std::endl;
     }
     else if (61 <= marks <= 70) {
-        std::cout << "Not bad!" << std::endl;
+std::cout<< "Not bad!"<<std::endl;
     }
     else if (41 <= marks <= 60) {
-        std::cout << "You passed!" << std::endl;
+std::cout<< "You passed!"<<std::endl;
     }
     else if (marks <= 40) {
-        std::cout << "Better try again!" << std::endl;
+std::cout<< "Better try again!"<<std::endl;
     }
     else {
-        std::cout << "Invalid marks" << std::endl;
+std::cout<< "Invalid marks"<<std::endl;
     }
     std::cout << "Your marks are " << " " << marks << std::endl;
     if (91 <= marks <= 100) {
-        std::cout << "Excellent!" << std::endl;
+std::cout<< "Excellent!"<<std::endl;
     }
     else if (81 <= marks <= 90) {
-        std::cout << "Very good!" << std::endl;
+std::cout<< "Very good!"<<std::endl;
     }
     else if (71 <= marks <= 80) {
-        std::cout << "Well done!" << std::endl;
+std::cout<< "Well done!"<<std::endl;
     }
     else if (61 <= marks <= 70) {
-        std::cout << "Not bad!" << std::endl;
+std::cout<< "Not bad!"<<std::endl;
     }
     else if (41 <= marks <= 60) {
-        std::cout << "You passed!" << std::endl;
+std::cout<< "You passed!"<<std::endl;
     }
     else if (marks <= 40) {
-        std::cout << "Better try again!" << std::endl;
+std::cout<< "Better try again!"<<std::endl;
     }
     else {
-        std::cout << "Invalid marks" << std::endl;
+std::cout<< "Invalid marks"<<std::endl;
     }
     std::cout << "Your marks are " << " " << marks << std::endl;
 }

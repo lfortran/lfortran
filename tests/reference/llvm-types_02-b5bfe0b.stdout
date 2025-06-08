@@ -12,6 +12,7 @@ define i32 @main(i32 %0, i8** %1) {
   %2 = load i32, i32* %i1, align 4
   %3 = sitofp i32 %2 to float
   store float %3, float* %r, align 4
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %.entry
@@ -19,3 +20,5 @@ return:                                           ; preds = %.entry
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

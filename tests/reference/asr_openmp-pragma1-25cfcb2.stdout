@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -48,6 +52,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -64,6 +72,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -79,6 +91,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -122,10 +138,10 @@
                     (Var 2 a)
                     (Var 2 b)]
                     [(DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        ())]
                         []
                         []
                         []
@@ -183,6 +199,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )]
                     ()
@@ -216,6 +233,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -231,6 +252,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             n:
@@ -248,6 +273,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             partial_sum:
                                 (Variable
@@ -264,6 +293,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             total_sum:
                                 (Variable
@@ -279,6 +312,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -310,17 +347,19 @@
                         (Var 3 partial_sum)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 3 total_sum)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (DoConcurrentLoop
-                        ((Var 3 i)
+                        [((Var 3 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 3 n)
-                        ())
+                        ())]
                         [(Var 3 total_sum)]
                         [(Var 3 partial_sum)]
                         []
@@ -342,6 +381,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )]
                     ()

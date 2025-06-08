@@ -32,22 +32,30 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     intrinsics_26
                     [stdlib_bitsets_64]
                     [(Print
-                        [(FunctionCall
-                            4 all_set
+                        (StringFormat
                             ()
-                            [((Var 4 i))
-                            ((IntegerConstant 5 (Integer 4) Decimal))]
-                            (Logical 4)
+                            [(FunctionCall
+                                4 all_set
+                                ()
+                                [((Var 4 i))
+                                ((IntegerConstant 5 (Integer 4) Decimal))]
+                                (Logical 4)
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             stdlib_bitsets_64:
@@ -75,6 +83,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -90,6 +102,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             res:
@@ -107,6 +123,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -122,6 +142,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -151,6 +175,7 @@
                                             (Logical 4)
                                         )
                                         ()
+                                        .false.
                                     )
                                     (DoLoop
                                         ()
@@ -184,6 +209,7 @@
                                                     (Logical 4)
                                                 )
                                                 ()
+                                                .false.
                                             )]
                                             []
                                         )]

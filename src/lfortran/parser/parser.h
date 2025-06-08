@@ -1,9 +1,6 @@
 #ifndef LFORTRAN_PARSER_PARSER_H
 #define LFORTRAN_PARSER_PARSER_H
 
-#include <fstream>
-#include <algorithm>
-#include <memory>
 #include <filesystem>
 
 #include <libasr/utils.h>
@@ -27,9 +24,10 @@ public:
     FixedFormTokenizer f_tokenizer;
     Vec<AST::ast_t*> result;
     bool fixed_form;
+    bool continue_compilation;
 
-    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false)
-            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}{
+    Parser(Allocator &al, diag::Diagnostics &diagnostics, const bool &fixed_form=false, const bool &continue_compilation=false)
+            : diag{diagnostics}, m_a{al}, fixed_form{fixed_form}, continue_compilation(continue_compilation){
         result.reserve(al, 32);
     }
 
@@ -48,7 +46,8 @@ Result<std::vector<int>> tokens(Allocator &al, const std::string &input,
         diag::Diagnostics &diagnostics,
         std::vector<YYSTYPE> *stypes,
         std::vector<Location> *locations,
-        bool fixed_form);
+        bool fixed_form,
+        bool continue_compilation = false);
 
 // Converts token number to text
 std::string token2text(const int token);

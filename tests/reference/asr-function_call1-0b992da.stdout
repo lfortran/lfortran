@@ -1,0 +1,372 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            module_function_call1:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            eval_1d:
+                                (Function
+                                    (SymbolTable
+                                        4
+                                        {
+                                            res:
+                                                (Variable
+                                                    4
+                                                    res
+                                                    [x]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (ArraySize
+                                                            (Var 4 x)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerToDataArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    4
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        2 softmax
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    4
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    eval_1d
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
+                                            2 softmax
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (ArraySize
+                                                (FunctionParam
+                                                    1
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 4 self)
+                                    (Var 4 x)]
+                                    []
+                                    (Var 4 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            eval_1d_prime:
+                                (Function
+                                    (SymbolTable
+                                        5
+                                        {
+                                            1_eval_1d:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_eval_1d
+                                                    3 eval_1d
+                                                    softmax
+                                                    []
+                                                    eval_1d
+                                                    Public
+                                                ),
+                                            res:
+                                                (Variable
+                                                    5
+                                                    res
+                                                    [x]
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (ArraySize
+                                                            (Var 5 x)
+                                                            ()
+                                                            (Integer 4)
+                                                            ()
+                                                        ))]
+                                                        PointerToDataArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            self:
+                                                (Variable
+                                                    5
+                                                    self
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        2 softmax
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            x:
+                                                (Variable
+                                                    5
+                                                    x
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    eval_1d_prime
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
+                                            2 softmax
+                                        )
+                                        (Array
+                                            (Real 4)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )]
+                                        (Array
+                                            (Real 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (ArraySize
+                                                (FunctionParam
+                                                    1
+                                                    (Array
+                                                        (Real 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                    ()
+                                                )
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            ))]
+                                            PointerToDataArray
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .true.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 5 self)
+                                    (Var 5 x)]
+                                    [(Assignment
+                                        (Var 5 res)
+                                        (FunctionCall
+                                            5 1_eval_1d
+                                            ()
+                                            [((ArrayPhysicalCast
+                                                (Var 5 x)
+                                                DescriptorArray
+                                                DescriptorArray
+                                                (Array
+                                                    (Real 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                                ()
+                                            ))]
+                                            (Array
+                                                (Real 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (ArraySize
+                                                    (Var 5 x)
+                                                    ()
+                                                    (Integer 4)
+                                                    ()
+                                                ))]
+                                                PointerToDataArray
+                                            )
+                                            ()
+                                            (Var 5 self)
+                                        )
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 5 res)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            softmax:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            eval_1d:
+                                                (ClassProcedure
+                                                    3
+                                                    eval_1d
+                                                    ()
+                                                    eval_1d
+                                                    2 eval_1d
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    softmax
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                )
+                        })
+                    module_function_call1
+                    [module_function_call1]
+                    .false.
+                    .false.
+                )
+        })
+    []
+)

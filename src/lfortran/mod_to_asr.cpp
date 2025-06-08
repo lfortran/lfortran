@@ -3,7 +3,6 @@
 #include <iterator>
 #include <vector>
 #include <map>
-#include <memory>
 
 #ifdef HAVE_ZLIB
     #include <zlib.h>
@@ -273,7 +272,7 @@ ASR::TranslationUnit_t* parse_gfortran_mod_file(Allocator &al, const std::string
                 a.from_str_view(s.name);
                 char *name = a.c_str(al);
                 Location loc;
-                ASR::asr_t *asr = ASR::make_Variable_t(al, loc, nullptr,
+                ASR::asr_t *asr = ASRUtils::make_Variable_t_util(al, loc, nullptr,
                     name, nullptr, 0, ASR::intentType::In, nullptr, nullptr,
                     ASR::storage_typeType::Default, s.v.type, nullptr,
                     ASR::abiType::GFortranModule,

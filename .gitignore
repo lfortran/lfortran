@@ -1,7 +1,6 @@
 # LFortran
 
 src/bin/lfortran
-src/bin/cpptranslate
 src/bin/parse
 src/bin/parse2
 src/bin/parse3
@@ -9,6 +8,7 @@ src/lfortran/parser/parser.output
 tests/output
 src/lfortran/tests/test_asm
 src/lfortran/tests/test_ast
+src/lfortran/tests/test_asr
 src/lfortran/tests/test_llvm
 src/lfortran/tests/test_parse
 src/lfortran/tests/test_pickle
@@ -26,6 +26,19 @@ src/lfortran/tests/print_integer
 src/lfortran/tests/cmp32
 src/lfortran/tests/x
 src/lfortran/tests/ref_pickle.txt.new
+src/server/lsp_language_server.cpp
+src/server/lsp_language_server.h
+src/server/lsp_specification.cpp
+src/server/lsp_specification.h
+src/server/lsp_transformer.cpp
+src/server/lsp_transformer.h
+**/*.log
+
+.#*
+*.sw?
+
+expr2
+lfortran-*-dirty/
 
 # fortran_parser
 
@@ -44,6 +57,10 @@ CPackConfig.cmake
 CPackSourceConfig.cmake
 _CPack_Packages
 /CMakeSettings.json
+.cmake
+
+## Pixi
+.pixi/
 
 ## libraries
 *.a
@@ -74,6 +91,21 @@ src/lfortran/ast.h
 src/lfortran/asr.h
 src/libasr/asr.h
 src/libasr/ast.h
+src/libasr/asr_base_visitor.h
+src/libasr/asr_deserialization_visitor.h
+src/libasr/asr_expr_base_replacer_visitor.h
+src/libasr/asr_expr_call_replacer_visitor.h
+src/libasr/asr_expr_stmt_duplicator_visitor.h
+src/libasr/asr_expr_type_visitor.h
+src/libasr/asr_expr_value_visitor.h
+src/libasr/asr_json_visitor.h
+src/libasr/asr_lookup_name_visitor.h
+src/libasr/asr_pass_walk_visitor.h
+src/libasr/asr_pickle_visitor.h
+src/libasr/asr_serialization_visitor.h
+src/libasr/asr_stmt_base_replacer_visitor.h
+src/libasr/asr_tree_visitor.h
+src/libasr/asr_walk_visitor.h
 src/libasr/wasm_visitor.h
 src/libasr/pass/intrinsic_function_registry_util.h
 src/lfortran/config.h

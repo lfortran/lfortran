@@ -7,7 +7,6 @@
 
 #include <config.h>
 
-#include <fstream>
 #include <iostream>
 
 #include <bin/tpl/whereami/whereami.h>

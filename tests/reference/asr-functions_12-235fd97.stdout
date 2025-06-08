@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -37,11 +41,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             string_local:
@@ -53,15 +61,19 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (StringLen
+                                                    (String 1 (StringLen
                                                         (Var 3 string)
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             x:
@@ -97,11 +109,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     decodebase
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation

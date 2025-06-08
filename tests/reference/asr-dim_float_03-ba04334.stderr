@@ -1,0 +1,5 @@
+semantic error: `dim` argument to `Sum` must be a scalar and of integer type
+ --> tests/errors/dim_float_03.f90:2:34
+  |
+2 |  print *, sum([1, 2, 3], .true., 1.1)
+  |                                  ^^^ 

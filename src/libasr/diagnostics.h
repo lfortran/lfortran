@@ -187,6 +187,10 @@ struct Diagnostics {
         message_label(message, locations, error_label,
             Level::Style, Stage::Parser);
     }
+
+    void clear() {
+        diagnostics.clear();
+    }
 };
 
 struct ColorsANSI {

@@ -9,6 +9,7 @@
 
 #include <vector>
 #include <string>
+#include <set>
 
 /*
 Need for the pass
@@ -72,6 +73,36 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
 
     ReplacePresentCalls(Allocator& al_, ASR::Function_t* f_) : al{al_}, f{f_}
     {}
+
+    void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
+        if (x->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present)) {
+            ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
+            size_t i;
+            for( i = 0; i < f->n_args; i++ ) {
+                if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v ) {
+                    if( ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v == present_arg ) {
+                        i++;
+                        break;
+                    }
+                }
+            }
+
+            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
+                                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
+            return;
+        }
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::expr_t** current_expr_copy_12 = current_expr;
+            current_expr = &(x->m_args[i]);
+            replace_expr(x->m_args[i]);
+            current_expr = current_expr_copy_12;
+        }
+        replace_ttype(x->m_type);
+        ASR::expr_t** current_expr_copy_13 = current_expr;
+        current_expr = &(x->m_value);
+        replace_expr(x->m_value);
+        current_expr = current_expr_copy_13;
+    }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
         ASR::symbol_t* x_sym = x->m_name;
@@ -305,6 +336,14 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
 
     ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(x.m_name);
+    if (ASR::is_a<ASR::Variable_t>(*x.m_name)) {
+        // possible it is a `procedure(cb) :: call_back`
+        ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(x.m_name);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::FunctionType_t>(*v->m_type));
+        func_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration);
+        v->m_type = ASRUtils::duplicate_type(al, ASR::down_cast<ASR::Function_t>(
+            ASRUtils::symbol_get_past_external(v->m_type_declaration))->m_function_signature);
+    }
     bool is_nopass { false };
     bool is_class_procedure { false };
     if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
@@ -338,23 +377,33 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     // which is depicted in `func.n_args` while isn't depicted in
     // `x.n_args` (as it only represents the "FunctionCall" arguments)
     // hence to adjust for that, `is_method` introduces an offset
-    bool is_method = is_class_procedure && (!is_nopass);
+    int is_method = is_class_procedure && (!is_nopass);
 
     new_args.reserve(al, func->n_args);
-    for( size_t i = 0, j = 0; j < func->n_args; j++, i++ ) {
-        LCOMPILERS_ASSERT(i < x.n_args + is_method);
+    for( int i = 0, j = 0; j < (int)func->n_args; j++, i++ ) {
         if( std::find(sym2optionalargidx[func_sym].begin(),
                       sym2optionalargidx[func_sym].end(), j)
             != sym2optionalargidx[func_sym].end() ) {
             ASR::Variable_t* func_arg_j = ASRUtils::EXPR2VAR(func->m_args[j]);
-            if( x.m_args[i - is_method].m_value == nullptr ) {
+            if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 std::string m_arg_i_name = scope->get_unique_name("__libasr_created_variable_");
                 ASR::ttype_t* arg_type = func_arg_j->m_type;
-                if( ASR::is_a<ASR::Array_t>(*arg_type) ) {
+                if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))){// Create String type with dummy len info.
+                    arg_type = ASRUtils::duplicate_type(al, arg_type); // New-duplicated node
+                    ASR::String_t* str = ASR::down_cast<ASR::String_t>(
+                        ASRUtils::extract_type(arg_type));
+                    if( str->m_len &&
+                        !ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){
+                        str->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 0,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
+                    }
+                }
+                ASR::symbol_t* arg_decl = func_arg_j->m_type_declaration;
+                if( ASR::is_a<ASR::Array_t>(*arg_type) ) { // Create dummy array dims
                     ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(arg_type);
                     Vec<ASR::dimension_t> dims;
                     dims.reserve(al, array_t->n_dims);
-                    for( size_t i = 0; i < array_t->n_dims; i++ ) {
+                    for( int i = 0; i < (int)array_t->n_dims; i++ ) {
                         ASR::dimension_t dim;
                         dim.m_length = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, arg_type->base.loc, 1,
                                             ASRUtils::TYPE(ASR::make_Integer_t(al, arg_type->base.loc, 4))));
@@ -367,7 +416,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                                 array_t->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type);
+                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl);
                 arg_type = ASRUtils::expr_type(m_arg_i);
                 if( ASRUtils::is_array(arg_type) &&
                     ASRUtils::extract_physical_type(arg_type) !=
@@ -388,19 +437,19 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             ASR::ttype_t* logical_t = ASRUtils::TYPE(ASR::make_Logical_t(al,
                                         x.m_args[i - is_method].loc, 4));
             ASR::expr_t* is_present = nullptr;
-            if( x.m_args[i - is_method].m_value == nullptr ) {
+            if( i - is_method >= (int)x.n_args || x.m_args[i - is_method].m_value == nullptr ) {
                 is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-                    al, x.m_args[i - is_method].loc, false, logical_t));
+                    al, x.m_args[0].loc, false, logical_t));
             } else {
                 if( owning_function != nullptr ) {
                     size_t k;
                     bool k_found = false;
+                    ASR::expr_t* original_expr = nullptr;
+                    if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i - is_method].m_value)) {
+                        ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i - is_method].m_value);
+                        original_expr = x_array_cast->m_arg;
+                    }
                     for( k = 0; k < owning_function->n_args; k++ ) {
-                        ASR::expr_t* original_expr = nullptr;
-                        if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*x.m_args[i - is_method].m_value)) {
-                            ASR::ArrayPhysicalCast_t *x_array_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(x.m_args[i - is_method].m_value);
-                            original_expr = x_array_cast->m_arg;
-                        }
                         if( original_expr && ASR::is_a<ASR::Var_t>(*original_expr) && ASR::down_cast<ASR::Var_t>(owning_function->m_args[k])->m_v ==
                             ASR::down_cast<ASR::Var_t>(original_expr)->m_v ) {
                             k_found = true;
@@ -422,13 +471,24 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                 }
 
                 if( is_present == nullptr ) {
-                    is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
-                        al, x.m_args[i - is_method].loc, true, logical_t));
+                    ASR::expr_t* arg_i = x.m_args[i - is_method].m_value;
+                    const Location& loc = arg_i->base.loc;
+                    LCOMPILERS_ASSERT(arg_i != nullptr);
+                    if( ASRUtils::is_pointer(ASRUtils::expr_type(arg_i)) ) {
+                        ASR::ttype_t* associated_type_ = ASRUtils::TYPE(
+                            ASR::make_Logical_t(al, loc, 4));
+                        is_present = ASRUtils::EXPR(ASR::make_PointerAssociated_t(
+                            al, loc, arg_i, nullptr, associated_type_, nullptr));
+                    } else {
+                        is_present = ASRUtils::EXPR(ASR::make_LogicalConstant_t(
+                            al, loc, true, logical_t));
+                    }
                 }
             }
             ASR::call_arg_t present_arg;
             present_arg.loc = x.m_args[i - is_method].loc;
-            if( x.m_args[i - is_method].m_value &&
+            if( i - is_method < (int)x.n_args &&
+                x.m_args[i - is_method].m_value &&
                 ASRUtils::is_allocatable(x.m_args[i - is_method].m_value) &&
                 !ASRUtils::is_allocatable(func_arg_j->m_type) ) {
                 ASR::expr_t* is_allocated = ASRUtils::EXPR(ASR::make_IntrinsicImpureFunction_t(
@@ -440,7 +500,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
             present_arg.m_value = is_present;
             new_args.push_back(al, present_arg);
             j++;
-        } else if (!is_method) {
+        } else {
+            if(i - is_method < 0) continue;
             // not needed to have `i - is_method` can be simply
             // `i` as well, just for consistency with code above
             new_args.push_back(al, x.m_args[i - is_method]);

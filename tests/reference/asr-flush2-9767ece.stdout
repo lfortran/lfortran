@@ -1,0 +1,59 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            flush2:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            
+                        })
+                    flush2
+                    []
+                    [(Flush
+                        0
+                        (IntegerUnaryMinus
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -1 (Integer 4) Decimal)
+                        )
+                        ()
+                        ()
+                        ()
+                    )
+                    (FileOpen
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        (StringConstant
+                            "file_01_data.txt"
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                        ()
+                        ()
+                        ()
+                        ()
+                        ()
+                    )
+                    (Flush
+                        0
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        ()
+                        ()
+                    )
+                    (Flush
+                        0
+                        (IntegerUnaryMinus
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Integer 4)
+                            (IntegerConstant -1 (Integer 4) Decimal)
+                        )
+                        ()
+                        ()
+                        ()
+                    )]
+                )
+        })
+    []
+)

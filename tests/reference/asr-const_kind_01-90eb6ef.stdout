@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -43,6 +47,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             r2:
@@ -66,6 +74,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r3:
                                 (Variable
@@ -81,6 +93,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             sp:
@@ -98,6 +114,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     const_kind_01
@@ -109,6 +129,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 r3)
@@ -125,15 +146,20 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 sp)
-                        (Var 2 dp)
-                        (Var 2 r1)
-                        (Var 2 r2)
-                        (Var 2 r3)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 sp)
+                            (Var 2 dp)
+                            (Var 2 r1)
+                            (Var 2 r2)
+                            (Var 2 r3)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

@@ -1,5 +1,4 @@
 program test_sin
-use lfortran_intrinsic_math, only: sin
 implicit none
 real :: x
 x = sin(1.5)

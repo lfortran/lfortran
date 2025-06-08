@@ -32,28 +32,33 @@
                                                         Achar
                                                         [(IntegerConstant 10 (Integer 4) Decimal)]
                                                         0
-                                                        (Character 1 1 ())
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         (StringConstant
                                                             "\n"
-                                                            (Character 1 1 ())
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "\n"
-                                                        (Character 1 1 ())
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Save
-                                                    (Character 1 1 ())
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
                                     enum_escape
                                     []
                                     [newline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -71,33 +76,37 @@
                                     (StringConcat
                                         (StringConstant
                                             " "
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                         (StructInstanceMember
                                             (Var 2 toml_escape)
                                             2 1_enum_escape_newline
-                                            (Character 1 1 ())
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             (StringConstant
                                                 "\n"
-                                                (Character 1 1 ())
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                         )
-                                        (Character 1 2 ())
+                                        (String 1 (IntegerConstant 2 (Integer 8) Decimal) ExpressionLength PointerString)
                                         (StringConstant
                                             " \n"
-                                            (Character 1 2 ())
+                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (StringConstant
                                         " \n"
-                                        (Character 1 2 ())
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Parameter
-                                    (Character 1 2 ())
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) AssumedLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             tfc:
@@ -110,7 +119,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "DEFAULT"
-                                            (Character 1 7 ())
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )]
                                         0
                                         (Integer 4)
@@ -124,6 +133,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             toml_escape:
                                 (Variable
@@ -131,23 +144,47 @@
                                     toml_escape
                                     []
                                     Local
-                                    (StructConstructor
+                                    (StructConstant
                                         2 enum_escape
-                                        [(())]
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        ))]
                                         (StructType
+                                            []
+                                            []
+                                            .true.
                                             2 enum_escape
                                         )
-                                        ()
                                     )
-                                    ()
+                                    (StructConstant
+                                        2 enum_escape
+                                        [((StringConstant
+                                            "\n"
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        ))]
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            2 enum_escape
+                                        )
+                                    )
                                     Parameter
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         2 enum_escape
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

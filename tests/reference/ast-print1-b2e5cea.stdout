@@ -41,9 +41,7 @@
         )
         (Print
             0
-            (String
-                "(f6.3)"
-            )
+            (String "(f6.3)")
             [pi]
             ()
         )

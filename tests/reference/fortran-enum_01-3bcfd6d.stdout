@@ -1,0 +1,28 @@
+program enum_01
+implicit none
+enum, bind(c)
+    enumerator :: blue = 3
+    enumerator :: red = 0
+    enumerator :: yellow = 4
+end enum
+enum, bind(c)
+    enumerator :: green = 10
+    enumerator :: purple = 11
+end enum
+integer(4), parameter :: compiler_enum = 4
+if (red /= 0) then
+    error stop
+end if
+if (blue /= 3) then
+    error stop
+end if
+if (yellow /= 4) then
+    error stop
+end if
+if (green /= 10) then
+    error stop
+end if
+if (purple /= 11) then
+    error stop
+end if
+end program enum_01

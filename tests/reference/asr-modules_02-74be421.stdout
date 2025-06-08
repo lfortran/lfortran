@@ -90,12 +90,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "b()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -139,12 +137,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "d()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public
@@ -177,12 +173,10 @@
                                     []
                                     []
                                     [(Print
-                                        [(StringConstant
+                                        (StringConstant
                                             "e()"
-                                            (Character 1 3 ())
-                                        )]
-                                        ()
-                                        ()
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        )
                                     )]
                                     ()
                                     Public

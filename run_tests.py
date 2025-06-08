@@ -18,7 +18,7 @@ def run_cmd(cmd, cwd=None):
         exit(1)
 
 def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: bool,
-                skip_cpptranslate: bool, update_reference: bool, verify_hash: bool,
+                update_reference: bool, verify_hash: bool,
                 no_color: bool, specific_backends=None,
                 excluded_backends=None) -> None:
     def is_included(backend):
@@ -37,7 +37,14 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     ast_f90 = is_included("ast_f90")
     ast_cpp = is_included("ast_cpp")
     ast_cpp_hip = is_included("ast_cpp_hip")
-    ast_openmp = is_included("ast_openmp")
+    lookup_name = is_included("lookup_name")
+    rename_symbol = is_included("rename_symbol")
+    line = "-1"
+    if is_included("line"):
+        line = str(test["line"])
+    column = "-1"
+    if is_included("column"):
+        column = str(test["column"])
     asr = is_included("asr")
     asr_ignore_pragma = is_included("asr_ignore_pragma")
     asr_implicit_typing = is_included("asr_implicit_typing")
@@ -45,6 +52,15 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_implicit_interface_and_typing = is_included("asr_implicit_interface_and_typing")
     asr_implicit_argument_casting = is_included("asr_implicit_argument_casting")
     asr_implicit_interface_and_typing_with_llvm = is_included("asr_implicit_interface_and_typing_with_llvm")
+    asr_no_warnings = is_included("asr_no_warnings")
+    asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
+    continue_compilation = is_included("continue_compilation")
+    fixed_form_cc_asr = is_included("fixed_form_cc_asr")
+    semantics_only_cc = is_included("semantics_only_cc")
+    show_errors = is_included("show_errors")
+    document_symbols = is_included("document_symbols")
+    syntax_only_cc = is_included("syntax_only_cc")
+    show_asr_with_cc = is_included("show_asr_with_cc")
     asr_use_loop_variable_after_loop = is_included("asr_use_loop_variable_after_loop")
     asr_preprocess = is_included("asr_preprocess")
     asr_indent = is_included("asr_indent")
@@ -66,6 +82,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     fast = is_included("fast")
     print_leading_space = is_included("print_leading_space")
     interactive = is_included("interactive")
+    options = test.get("options", "")
     pass_ = test.get("pass", None)
     extrafiles = test.get("extrafiles", "").split(",")
     run = test.get("run")
@@ -84,7 +101,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                         "array_op", "select_case",
                         "class_constructor", "implied_do_loops",
                         "pass_array_by_data", "init_expr", "where",
-                        "nested_vars"] and
+                        "nested_vars", "insert_deallocate", "openmp",
+                        "array_struct_temporary"] and
                 _pass not in optimization_passes):
                 raise Exception(f"Unknown pass: {_pass}")
     if update_reference:
@@ -101,6 +119,12 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         extra_args += " --interactive-parse"
     if cpp_infer:
         extra_args += " --cpp-infer"
+    if line:
+        extra_args += " --line=" + line
+    if column:
+        extra_args += " --column=" + column
+    if options:
+        extra_args += " " + options
 
     if tokens:
         run_test(
@@ -123,7 +147,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
         else:
-            # Use free form
             run_test(
                 filename,
                 "ast",
@@ -195,16 +218,44 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
-    if ast_openmp:
-        if skip_cpptranslate:
-            log.info(f"{filename} * cpptranslate    SKIPPED as requested")
-        else:
-            run_test(
-                filename,
-                "ast_openmp",
-                "cpptranslate --show-ast-openmp {infile}",
-                filename,
-                update_reference)
+    if lookup_name:
+        run_test(
+            filename,
+            "lookup_name",
+            "lfortran --lookup-name --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+    if rename_symbol:
+        run_test(
+            filename,
+            "rename_symbol",
+            "lfortran --rename-symbol --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_no_warnings:
+        run_test(
+            filename,
+            "asr_no_warnings",
+            "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if asr_disable_style_and_warnings:
+        run_test(
+            filename,
+            "asr_disable_style_and_warnings",
+            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
 
     if asr:
         # run fixed form
@@ -312,6 +363,76 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 verify_hash,
                 extra_args)
 
+    if semantics_only_cc:
+        run_test(filename, "asr", "lfortran --semantics-only --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if document_symbols:
+        skip_test = False
+        for extrafile in extrafiles:
+            extrafile_ = extrafile.rstrip().lstrip()
+
+            if no_llvm and len(extrafile_) > 0:
+                log.info(f"{filename} * asr   SKIPPED because LLVM is not enabled")
+                skip_test = True
+                break
+
+            if len(extrafile_) > 0:
+                extrafile_ = os.path.join("tests", extrafile_)
+                modfile = extrafile_[:-4] + ".mod"
+                if not os.path.exists(modfile):
+                    run_cmd("lfortran -c {}".format(extrafile_))
+        if not skip_test:
+            run_test(filename, "asr", "lfortran --show-document-symbols --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
+    if show_errors:
+        run_test(filename, "asr", "lfortran --show-errors --continue-compilation --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if syntax_only_cc:
+        run_test(filename, "asr", "lfortran --continue-compilation --show-ast --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if show_asr_with_cc:
+        run_test(filename, "asr", "lfortran --continue-compilation --show-asr --no-color {infile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+
+    if continue_compilation:
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(filename, "run", "lfortran --continue-compilation --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+            
+    if fixed_form_cc_asr:
+        run_test(
+                filename,
+                "asr",
+                "lfortran --fixed-form --continue-compilation --show-asr --no-color {infile} -o {outfile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
+
     if asr_implicit_typing:
         run_test(
             filename,
@@ -391,7 +512,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             update_reference,
             verify_hash,
             extra_args)
-        
+
     if mod_to_asr:
         run_test(
             filename,

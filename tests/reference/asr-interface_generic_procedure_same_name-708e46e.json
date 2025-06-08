@@ -1,0 +1,13 @@
+{
+    "basename": "asr-interface_generic_procedure_same_name-708e46e",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/interface_generic_procedure_same_name.f90",
+    "infile_hash": "29ffbcf68bc154604f8f4e5acd8bb8776602725ac76db9608e253dc0",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-interface_generic_procedure_same_name-708e46e.stdout",
+    "stdout_hash": "5af701216ebac7103c4e373070636dcf08cd31705cdb5c40e40ef8f1",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

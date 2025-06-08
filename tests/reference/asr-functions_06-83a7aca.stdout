@@ -35,18 +35,22 @@
                                     Local
                                     (StringConstant
                                         "  abc"
-                                        (Character 1 5 ())
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     (StringConstant
                                         "  abc"
-                                        (Character 1 5 ())
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     )
                                     Save
-                                    (Character 1 5 ())
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             trim_wrapper:
@@ -63,62 +67,68 @@
                     functions_06
                     [functions_06_m]
                     [(Print
-                        [(FunctionCall
+                        (FunctionCall
                             6 trim_wrapper
                             ()
                             [((Var 6 string))]
-                            (Character 1 -3 (StringLen
+                            (String 1 (StringLen
                                 (Var 6 string)
                                 (Integer 4)
                                 ()
-                            ))
+                            ) ExpressionLength PointerString)
                             ()
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(FunctionCall
-                            6 int_return
+                        (StringFormat
                             ()
-                            [((Var 6 string))]
-                            (Array
-                                (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (StringLen
-                                    (Var 6 string)
+                            [(FunctionCall
+                                6 int_return
+                                ()
+                                [((Var 6 string))]
+                                (Array
                                     (Integer 4)
-                                    ()
-                                ))]
-                                PointerToDataArray
-                            )
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (StringLen
+                                        (Var 6 string)
+                                        (Integer 4)
+                                        ()
+                                    ))]
+                                    PointerToDataArray
+                                )
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Print
-                        [(FunctionCall
-                            6 real_return
+                        (StringFormat
                             ()
-                            [((Var 6 string))]
-                            (Array
-                                (Real 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (StringLen
-                                    (Var 6 string)
-                                    (Integer 4)
-                                    ()
-                                ))]
-                                PointerToDataArray
-                            )
+                            [(FunctionCall
+                                6 real_return
+                                ()
+                                [((Var 6 string))]
+                                (Array
+                                    (Real 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (StringLen
+                                        (Var 6 string)
+                                        (Integer 4)
+                                        ()
+                                    ))]
+                                    PointerToDataArray
+                                )
+                                ()
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 ),
             functions_06_m:
@@ -146,6 +156,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -171,6 +185,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -181,24 +199,28 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     int_return
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -241,6 +263,7 @@
                                             )
                                             (IntegerConstant 2 (Integer 4) Decimal)
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -270,6 +293,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -295,6 +322,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -305,24 +336,28 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     real_return
                                     (FunctionType
-                                        [(Character 1 -1 ())]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -368,6 +403,7 @@
                                                 (Real 4)
                                             )
                                             ()
+                                            .false.
                                         )]
                                         []
                                     )]
@@ -382,16 +418,6 @@
                                     (SymbolTable
                                         3
                                         {
-                                            len_trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    len_trim
-                                                    8 len_trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    len_trim
-                                                    Private
-                                                ),
                                             r:
                                                 (Variable
                                                     3
@@ -401,15 +427,19 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -3 (StringLen
+                                                    (String 1 (StringLen
                                                         (Var 3 s)
                                                         (Integer 4)
                                                         ()
-                                                    ))
+                                                    ) ExpressionLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             s:
@@ -421,28 +451,30 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
                                                     .false.
-                                                ),
-                                            trim:
-                                                (ExternalSymbol
-                                                    3
-                                                    trim
-                                                    8 trim
-                                                    lfortran_intrinsic_string
-                                                    []
-                                                    trim
-                                                    Private
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     trim_wrapper
                                     (FunctionType
-                                        [(Character 1 -1 ())]
-                                        (Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)]
+                                        (String 1 (StringLen
+                                            (FunctionParam
+                                                0
+                                                (String 1 () AssumedLength PointerString)
+                                                ()
+                                            )
+                                            (Integer 4)
+                                            ()
+                                        ) ExpressionLength PointerString)
                                         Source
                                         Implementation
                                         ()
@@ -458,22 +490,15 @@
                                     [(Var 3 s)]
                                     [(Assignment
                                         (Var 3 r)
-                                        (FunctionCall
-                                            3 trim
-                                            ()
-                                            [((Var 3 s))]
-                                            (Character 1 -3 (FunctionCall
-                                                3 len_trim
-                                                ()
-                                                [((Var 3 s))]
-                                                (Integer 4)
-                                                ()
-                                                ()
-                                            ))
-                                            ()
+                                        (IntrinsicElementalFunction
+                                            StringTrim
+                                            [(Var 3 s)]
+                                            0
+                                            (String 1 () AssumedLength PointerString)
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 r)
                                     Public
@@ -483,14 +508,10 @@
                                 )
                         })
                     functions_06_m
-                    [lfortran_intrinsic_string]
+                    []
                     .false.
                     .false.
-                ),
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            lfortran_intrinsic_string:
-                (IntrinsicModule lfortran_intrinsic_string)
+                )
         })
     []
 )

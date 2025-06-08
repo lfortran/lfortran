@@ -31,6 +31,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -46,6 +50,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -67,11 +75,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -89,11 +102,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -111,11 +129,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -141,11 +164,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -163,11 +191,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -185,11 +218,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 x)
@@ -207,11 +245,16 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 x)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 x)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

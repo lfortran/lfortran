@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             to_negative:
                                 (ExternalSymbol
@@ -88,6 +92,7 @@
                             (IntegerConstant -4 (Integer 4) Decimal)
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -146,6 +151,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             neg_int:
                                                 (Variable
@@ -161,6 +170,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -197,11 +210,13 @@
                                                 ()
                                             )
                                             ()
+                                            .false.
                                         )]
                                         [(Assignment
                                             (Var 3 neg_int)
                                             (Var 3 int)
                                             ()
+                                            .false.
                                         )]
                                     )]
                                     (Var 3 neg_int)

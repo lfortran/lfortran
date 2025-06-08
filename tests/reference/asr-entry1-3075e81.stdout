@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     entry1
@@ -38,6 +42,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         1 x
@@ -71,6 +76,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -124,6 +133,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             entry__lcompilers:
                                 (Variable
@@ -139,6 +152,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -194,13 +211,17 @@
                         1
                     )
                     (Print
-                        [(StringConstant
-                            "Printed using subroutine call: "
-                            (Character 1 31 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using subroutine call: "
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 5 dummy)]
-                        ()
-                        ()
                     )
                     (Assignment
                         (Var 5 dummy)
@@ -209,6 +230,7 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Return)
                     (GoToTarget
@@ -216,13 +238,17 @@
                         2
                     )
                     (Print
-                        [(StringConstant
-                            "Printed using entry statement: "
-                            (Character 1 31 ())
+                        (StringFormat
+                            ()
+                            [(StringConstant
+                                "Printed using entry statement: "
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                            )
+                            (Var 5 dummy)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
                         )
-                        (Var 5 dummy)]
-                        ()
-                        ()
                     )
                     (Return)]
                     ()
@@ -250,6 +276,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })

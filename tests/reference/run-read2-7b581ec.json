@@ -1,0 +1,13 @@
+{
+    "basename": "run-read2-7b581ec",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/read2.f90",
+    "infile_hash": "1d82aaea9497b527bc71286e7053079e21db7085521af2c81a4e6b6e",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-read2-7b581ec.stdout",
+    "stdout_hash": "14f1bb8c720632369fe153b6b0337f3a67ded4bc92024f3129b8624c",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

@@ -68,4 +68,9 @@ print *, "some string &
 
     &is continued"
 
+print *, '*t',&
+&''
+!!     call set_args ( \'  &
+!! & \n
+
 end program

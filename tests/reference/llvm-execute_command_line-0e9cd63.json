@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-execute_command_line-0e9cd63",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/execute_command_line.f90",
+    "infile_hash": "7a0db461a1008c62034590b9709aea78a170f8cfe3b3d9181dddee66",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-execute_command_line-0e9cd63.stdout",
+    "stdout_hash": "8e8ef367d92eb4b63c3f4b5bf0d719870b854bb0f5ace021e416b8ce",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

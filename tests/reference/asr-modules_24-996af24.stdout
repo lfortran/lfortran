@@ -27,12 +27,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         7 toml_tokenizer_
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .true.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             tokenizer_ptr:
@@ -45,7 +52,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_tokenizer
                                         )
                                     )
@@ -53,6 +63,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             toml_table:
@@ -128,13 +142,20 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_tokenizer
                                                     )
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             table:
@@ -148,6 +169,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_table
                                                         )
                                                     )
@@ -156,11 +180,18 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_tokenizer
                                         )]
                                         ()
@@ -178,7 +209,7 @@
                                     []
                                     [(Var 6 de)]
                                     [(Nullify
-                                        [6 table]
+                                        [(Var 6 table)]
                                     )
                                     (Associate
                                         (StructInstanceMember
@@ -186,6 +217,9 @@
                                             6 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
+                                                    []
+                                                    []
+                                                    .true.
                                                     2 toml_table
                                                 )
                                             )
@@ -225,11 +259,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
                                     []
                                     [inline]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -252,6 +291,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 toml_table
                                                             )
                                                         )
@@ -259,6 +301,9 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
+                                                                []
+                                                                []
+                                                                .true.
                                                                 2 toml_table
                                                             )
                                                         )
@@ -266,6 +311,9 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            []
+                                                            []
+                                                            .true.
                                                             2 toml_table
                                                         )
                                                     )
@@ -274,11 +322,16 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     toml_tokenizer
                                     [toml_table]
                                     [current]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -295,6 +348,7 @@
                                             
                                         })
                                     toml_tokenizer_
+                                    []
                                     []
                                     []
                                     Source

@@ -33,6 +33,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             f:
                                 (Function
@@ -64,6 +68,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -127,6 +135,7 @@
                                         )
                                         (IntegerConstant 99 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -154,6 +163,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -180,6 +193,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -212,23 +229,27 @@
                                     [f]
                                     [(Var 4 x)]
                                     [(Print
-                                        [(ArrayItem
-                                            (Var 4 x)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        (StringFormat
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                            [(ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (If
                                         (IntegerCompare
@@ -267,23 +288,27 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 4 x)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        (StringFormat
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                            [(ArrayItem
+                                                (Var 4 x)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (If
                                         (IntegerCompare
@@ -330,11 +355,13 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (Var 4 r)
                                         (IntegerConstant 0 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     (Var 4 r)
                                     Public
@@ -372,6 +399,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -426,23 +457,27 @@
                                         ()
                                     )
                                     (Print
-                                        [(ArrayItem
-                                            (Var 5 c)
-                                            [(()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())
-                                            (()
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            ())]
-                                            (Integer 4)
-                                            ColMajor
+                                        (StringFormat
                                             ()
-                                        )]
-                                        ()
-                                        ()
+                                            [(ArrayItem
+                                                (Var 5 c)
+                                                [(()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())
+                                                (()
+                                                (IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                (Integer 4)
+                                                ColMajor
+                                                ()
+                                            )]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
+                                            ()
+                                        )
                                     )
                                     (If
                                         (IntegerCompare
@@ -489,6 +524,7 @@
                                         )
                                         (IntegerConstant 8 (Integer 4) Decimal)
                                         ()
+                                        .false.
                                     )]
                                     ()
                                     Public
@@ -511,6 +547,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             stat:
                                 (Variable
@@ -527,6 +567,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     allocate_03
@@ -535,6 +579,7 @@
                         (Var 2 stat)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Allocate
                         [((Var 2 c)
@@ -581,6 +626,7 @@
                         )
                         (IntegerConstant 3 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (ImplicitDeallocate
                         [(Var 2 c)]
@@ -602,6 +648,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -631,26 +678,27 @@
                         []
                     )
                     (Print
-                        [(ArrayItem
-                            (Var 2 c)
-                            [(()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())
-                            (()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())
-                            (()
-                            (IntegerConstant 1 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                        (StringFormat
                             ()
-                        )]
-                        ()
-                        ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 c)]
+                            [(ArrayItem
+                                (Var 2 c)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())
+                                (()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

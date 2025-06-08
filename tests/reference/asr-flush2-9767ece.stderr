@@ -1,0 +1,17 @@
+warning: The 'flush' intrinsic function is an LFortran extension
+ --> tests/flush2.f90:3:5
+  |
+3 |     call flush()
+  |     ^^^^^^^^^^^^ help: use the 'flush' statement instead
+
+warning: The 'flush' intrinsic function is an LFortran extension
+ --> tests/flush2.f90:5:5
+  |
+5 |     call flush(10)
+  |     ^^^^^^^^^^^^^^ help: use the 'flush' statement instead
+
+warning: The 'flush' intrinsic function is an LFortran extension
+ --> tests/flush2.f90:6:5
+  |
+6 |     call flush()
+  |     ^^^^^^^^^^^^ help: use the 'flush' statement instead

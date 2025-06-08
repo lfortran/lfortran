@@ -1,0 +1,408 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            f:
+                (Function
+                    (SymbolTable
+                        5
+                        {
+                            f:
+                                (Variable
+                                    5
+                                    f
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            x:
+                                (Variable
+                                    5
+                                    x
+                                    []
+                                    Unspecified
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    f
+                    (FunctionType
+                        [(Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 5 x)]
+                    [(Assignment
+                        (Var 5 f)
+                        (Var 5 x)
+                        ()
+                        .false.
+                    )]
+                    (Var 5 f)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            hinit853:
+                (Function
+                    (SymbolTable
+                        4
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        8
+                                        {
+                                            f_arg_0:
+                                                (Variable
+                                                    8
+                                                    f_arg_0
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            f_return_var_name:
+                                                (Variable
+                                                    8
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        [(Real 4)]
+                                        (Real 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 8 f_arg_0)]
+                                    []
+                                    (Var 8 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            hinit853:
+                                (Variable
+                                    4
+                                    hinit853
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    hinit853
+                    (FunctionType
+                        [(Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 4 f)]
+                    [(Assignment
+                        (Var 4 hinit853)
+                        (FunctionCall
+                            4 f
+                            ()
+                            [((RealConstant
+                                3.000000
+                                (Real 4)
+                            ))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                    )]
+                    (Var 4 hinit853)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            main:
+                (Program
+                    (SymbolTable
+                        6
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        7
+                                        {
+                                            f_return_var_name:
+                                                (Variable
+                                                    7
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 7 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                )
+                        })
+                    main
+                    []
+                    [(SubroutineCall
+                        1 sub
+                        ()
+                        [((Var 6 f))]
+                        ()
+                    )]
+                ),
+            sub:
+                (Function
+                    (SymbolTable
+                        2
+                        {
+                            f:
+                                (Function
+                                    (SymbolTable
+                                        3
+                                        {
+                                            f_return_var_name:
+                                                (Variable
+                                                    3
+                                                    f_return_var_name
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Real 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    f
+                                    (FunctionType
+                                        []
+                                        (Real 4)
+                                        BindC
+                                        Interface
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 3 f_return_var_name)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            h:
+                                (Variable
+                                    2
+                                    h
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    sub
+                    (FunctionType
+                        [(FunctionType
+                            []
+                            (Real 4)
+                            BindC
+                            Interface
+                            ()
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            .false.
+                            []
+                            .false.
+                        )]
+                        ()
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    [hinit853]
+                    [(Var 2 f)]
+                    [(Assignment
+                        (Var 2 h)
+                        (FunctionCall
+                            1 hinit853
+                            ()
+                            [((Var 2 f))]
+                            (Real 4)
+                            ()
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Return)]
+                    ()
+                    Public
+                    .false.
+                    .false.
+                    ()
+                )
+        })
+    []
+)

@@ -2,11 +2,11 @@
     "basename": "asr-implicit_typing1-bccf386",
     "cmd": "lfortran --show-asr --implicit-typing --no-color {infile} -o {outfile}",
     "infile": "tests/implicit_typing1.f90",
-    "infile_hash": "7b72454628a12976a3b4d5b784857cb1e4cffd5125c703543c20bf84",
+    "infile_hash": "e6d1a0c4cb70b6dec80c447e80d4567c3a25f29c7164e956ddfba662",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-implicit_typing1-bccf386.stdout",
-    "stdout_hash": "a29d2d2878b9142d41c4f741fce90ad712f4e83077fe27562092a286",
+    "stdout_hash": "a24038527a568477cca6e71e6473ff5378024750379324d9c3ffa7ee",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

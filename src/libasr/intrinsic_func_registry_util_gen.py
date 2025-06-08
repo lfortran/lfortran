@@ -29,7 +29,7 @@ intrinsic_funcs_args = {
     "Mod": [
         {
             "args": [("int", "int"), ("real", "real")],
-            "ret_type_arg_idx": 0
+            "ret_type_arg_idx": "dynamic"
         },
     ],
     "Trailz": [
@@ -60,12 +60,6 @@ intrinsic_funcs_args = {
         {
             "args": [("int", "real")],
             "ret_type_arg_idx": 1
-        },
-    ],
-    "Mvbits": [
-        {
-            "args": [("int", "int", "int", "int", "int")],
-            "ret_type_arg_idx": 3
         },
     ],
     "Leadz": [
@@ -180,7 +174,7 @@ intrinsic_funcs_args = {
     "Logical": [
         {
             "args": [("bool", )],
-            "ret_type_arg_idx": 0, 
+            "ret_type_arg_idx": 0,
             "kind_arg": True
         }
     ],
@@ -257,6 +251,12 @@ intrinsic_funcs_args = {
             "return": "int32"
         },
     ],
+    "OutOfRange": [
+        {
+            "args": [("int", "real", "bool"), ("real", "real", "bool"), ("int", "int", "bool"), ("real", "int", "bool")],
+            "return": "logical"
+        },
+    ],
     "StorageSize": [
         {
             "args": [("any",)],
@@ -295,11 +295,23 @@ intrinsic_funcs_args = {
             "return": "logical",
         }
     ],
+    "SameTypeAs": [
+        {
+            "args": [("any", "any")],
+            "return": "logical"
+        }
+    ],
     "Nint": [
         {
             "args": [("real",)],
             "return": "int32",
             "kind_arg": True
+        }
+    ],
+    "Idnint": [
+        {
+            "args": [("real",)],
+            "return": "int32"
         }
     ],
     "Anint": [
@@ -558,6 +570,12 @@ intrinsic_funcs_args = {
             "same_kind_arg": 2
         },
     ],
+    "And": [
+        {
+            "args": [("int", "int"),("bool","bool")],
+            "ret_type_arg_idx": 0,
+        },
+    ],
     "Ior": [
         {
             "args": [("int", "int")],
@@ -565,11 +583,23 @@ intrinsic_funcs_args = {
             "same_kind_arg": 2
         },
     ],
+    "Or": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
+        },
+    ],
     "Ieor": [
         {
             "args": [("int", "int")],
             "ret_type_arg_idx": 0,
             "same_kind_arg": 2
+        },
+    ],
+    "Xor": [
+        {
+            "args": [("int", "int"), ("bool", "bool")],
+            "ret_type_arg_idx": 0,
         },
     ],
     "Ibclr": [
@@ -642,7 +672,7 @@ intrinsic_funcs_args = {
     "NewLine": [
         {
             "args": [("char",)],
-            "return": "character(-1)"
+            "return": "character(1)"
         }
     ],
     "Range": [
@@ -725,7 +755,7 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0,
             "same_kind_arg": 3
         }
-    ], 
+    ],
     "Ishftc": [
         {
             "args": [("int", "int", "int")],
@@ -783,38 +813,60 @@ intrinsic_funcs_args = {
            "ret_type_arg_idx": 0,
            "same_kind_arg": 2
        },
-   ],
-   "Dshiftr": [
-       {
-           "args": [("int", "int", "int",)],
-           "ret_type_arg_idx": 0
-       },
-   ],
-   "Popcnt": [
-       {
-           "args": [("int",)],
-           "return": "int32",
-       },
-   ],
-   "Poppar": [
-       {
-           "args": [("int",)],
-           "return": "int32",
-       },
-   ],
+    ],
+    "Dshiftr": [
+        {
+            "args": [("int", "int", "int",)],
+            "ret_type_arg_idx": 0
+        },
+    ],
+    "Popcnt": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+        },
+    ],
+    "Poppar": [
+        {
+            "args": [("int",)],
+            "return": "int32",
+        },
+    ],
     "Real": [
-       {
-           "args": [("int",), ("real",), ("complex",)],
-           "return": "real32",
-           "kind_arg": True,
-       },
-   ],
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "real32",
+            "kind_arg": True,
+            "real_32_except_complex": True
+        },
+    ],
+    "Int": [
+        {
+            "args": [("int",), ("real",), ("complex",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
+    "StringLenTrim": [
+        {
+            "args": [("char",)],
+            "return": "int32",
+            "kind_arg": True
+        }
+    ],
+    "StringTrim": [
+        {
+            "args": [("char",)],
+            "ret_type_arg_idx": 0
+        }
+    ],
 }
 
 skip_create_func = ["Partition"]
 compile_time_only_fn = [
     "Epsilon",
     "Radix",
+    "IsContiguous",
     "StorageSize",
     "Range",
     "Precision",
@@ -826,6 +878,8 @@ compile_time_only_fn = [
     "Kind",
     "MaxExponent",
     "MinExponent",
+    "SameTypeAs",
+    "Digits",
 ]
 
 type_to_asr_type_check = {
@@ -970,7 +1024,16 @@ def add_create_func_return_src(func_name):
     else:
         src += indent * 2 + "ASRUtils::ExprStmtDuplicator expr_duplicator(al);\n"
         src += indent * 2 + "expr_duplicator.allow_procedure_calls = true;\n"
-        src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(expr_type(args[{ret_type_arg_idx}]));\n"
+        if ( ret_type_arg_idx == "dynamic"):
+            src += indent * 2 + f"int upper_kind = 0;\n"
+            src += indent * 2 + f"for(size_t i=0;i<args.size();i++){{\n"
+            src += indent * 3 + f"upper_kind = std::max(upper_kind,ASRUtils::extract_kind_from_ttype_t(expr_type(args[i])));\n"
+            src += indent * 2 + f"}}\n"
+            src += indent * 2 + f"ASR::ttype_t* type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(args[0])));\n"
+            src += indent * 2 + f"set_kind_to_ttype_t(type_,upper_kind);\n"
+        else:
+            src += indent * 2 + "ASR::ttype_t* type_ = nullptr;\n"
+            src += indent * 2 + f"type_ = expr_duplicator.duplicate_ttype(ASRUtils::extract_type(expr_type(args[{ret_type_arg_idx}])));\n"
         ret_type = "type_"
     kind_arg = arg_infos[0].get("kind_arg", False)
     src += indent * 2 + f"ASR::ttype_t *return_type = {ret_type};\n"
@@ -982,7 +1045,16 @@ def add_create_func_return_src(func_name):
         src += indent * 4 +         "return nullptr;\n"
         src += indent * 3 +     "}\n"
         src += indent * 3 +     "set_kind_to_ttype_t(return_type, kind);\n"
-        src += indent * 2 + "}\n"        
+        src += indent * 2 + "}\n"
+    real_32_except_complex = arg_infos[0].get("real_32_except_complex", False)
+    if real_32_except_complex:
+        src += indent * 2 + "else { \n"
+        src += indent * 3 + "ASR::ttype_t* arg_type = ASRUtils::expr_type(args[0]);\n"
+        src += indent * 3 + "if (is_complex(*arg_type)) { \n"
+        src += indent * 4 + "int kind = ASRUtils::extract_kind_from_ttype_t(arg_type); \n"
+        src += indent * 4 + "set_kind_to_ttype_t(return_type, kind); \n"
+        src += indent * 3 + "} \n"
+        src += indent * 2 + "} \n"
     src += indent * 2 + "ASR::expr_t *m_value = nullptr;\n"
     src += indent * 2 + f"Vec<ASR::expr_t*> m_args; m_args.reserve(al, {no_of_args});\n"
     for _i in range(no_of_args):
@@ -998,12 +1070,18 @@ def add_create_func_return_src(func_name):
             "ASRUtils::expr_type(m_args[0]), m_args[0], return_type, m_value);\n"
 
     else:
-        if ret_type_val:
-            src += indent * 2 + "ASR::ttype_t* type = ASRUtils::expr_type(args[0]);\n"
-            src += indent * 2 + "if (ASR::is_a<ASR::Array_t>(*type)) {\n"
-            src += indent * 3 + "ASR::Array_t* e = ASR::down_cast<ASR::Array_t>(type);\n"
-            src += indent * 3 + f"return_type = TYPE(ASR::make_Array_t(al, type->base.loc,  return_type, e->m_dims, e->n_dims, ASR::array_physical_typeType::FixedSizeArray));\n"
-            src += indent * 2 + "}\n"
+        src += indent * 2 +     f"for( size_t i = 0; i < {no_of_args}; i++ ) " + "{\n"
+        src += indent * 3 +         "ASR::ttype_t* type = ASRUtils::expr_type(args[i]);\n"
+        src += indent * 3 +         "if (ASRUtils::is_array(type)) {\n"
+        src += indent * 4 +             "ASR::dimension_t* m_dims = nullptr;\n"
+        src += indent * 4 +             "size_t n_dims = ASRUtils::extract_dimensions_from_ttype(type, m_dims);\n"
+        src += indent * 4 +             "return_type = ASRUtils::make_Array_t_util(al, type->base.loc, "
+        src +=                              "return_type, m_dims, n_dims, ASR::abiType::Source, false, "
+        src +=                              "ASR::array_physical_typeType::DescriptorArray);\n"
+        src += indent * 4 +             "break;\n"
+        src += indent * 3 +         "}\n"
+        src += indent * 2 +     "}\n"
+
         src += indent * 2 + "if (all_args_evaluated(m_args)) {\n"
         src += indent * 3 +     f"Vec<ASR::expr_t*> args_values; args_values.reserve(al, {no_of_args});\n"
         for _i in range(no_of_args):
@@ -1052,6 +1130,7 @@ def get_registry_funcs_src():
 HEAD = """#ifndef LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 #define LIBASR_PASS_INTRINSIC_FUNC_REG_UTIL_H
 
+#include <libasr/asr_utils.h>
 #include <libasr/pass/intrinsic_functions.h>
 
 namespace LCompilers {

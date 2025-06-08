@@ -21,11 +21,15 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (Character 1 -1 ())
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             line:
@@ -43,11 +47,15 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     f90_assert
                                     (FunctionType
-                                        [(Character 1 -1 ())
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -65,26 +73,30 @@
                                     [(Var 4 file)
                                     (Var 4 line)]
                                     [(Print
-                                        [(StringConcat
-                                            (StringConcat
-                                                (StringConstant
-                                                    "Assertion failed at "
-                                                    (Character 1 20 ())
+                                        (StringFormat
+                                            ()
+                                            [(StringConcat
+                                                (StringConcat
+                                                    (StringConstant
+                                                        "Assertion failed at "
+                                                        (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    )
+                                                    (Var 4 file)
+                                                    (String 1 () ExpressionLength PointerString)
+                                                    ()
                                                 )
-                                                (Var 4 file)
-                                                (Character 1 -1 ())
+                                                (StringConstant
+                                                    ":"
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                )
+                                                (String 1 () ExpressionLength PointerString)
                                                 ()
                                             )
-                                            (StringConstant
-                                                ":"
-                                                (Character 1 1 ())
-                                            )
-                                            (Character 1 -1 ())
+                                            (Var 4 line)]
+                                            FormatFortran
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
-                                        (Var 4 line)]
-                                        ()
-                                        ()
                                     )
                                     (ErrorStop
                                         ()
@@ -115,6 +127,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -131,6 +147,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             fn:
                                                 (Variable
@@ -146,6 +166,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -178,6 +202,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                     (Var 3 fn)
                                     Public
@@ -205,7 +230,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 ())
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))
                             ((IntegerConstant 7 (Integer 4) Decimal))]
                             ()
@@ -235,7 +260,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 ())
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))
                             ((IntegerConstant 8 (Integer 4) Decimal))]
                             ()
@@ -277,7 +302,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 ())
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))
                             ((IntegerConstant 9 (Integer 4) Decimal))]
                             ()
@@ -303,7 +328,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 ())
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))
                             ((IntegerConstant 11 (Integer 4) Decimal))]
                             ()
@@ -333,7 +358,7 @@
                             ()
                             [((StringConstant
                                 "tests/preprocessor12.f90"
-                                (Character 1 24 ())
+                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))
                             ((IntegerConstant 13 (Integer 4) Decimal))]
                             ()

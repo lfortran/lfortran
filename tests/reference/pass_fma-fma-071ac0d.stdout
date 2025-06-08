@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             b:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -69,6 +81,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -109,6 +125,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                     (Var 3 _lcompilers_optimization_fma_f32)
                     Public
@@ -136,6 +153,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -151,6 +172,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             b:
@@ -168,6 +193,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -183,6 +212,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -223,8 +256,271 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                     (Var 4 _lcompilers_optimization_fma_f321)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_fma_f322:
+                (Function
+                    (SymbolTable
+                        6
+                        {
+                            _lcompilers_optimization_fma_f322:
+                                (Variable
+                                    6
+                                    _lcompilers_optimization_fma_f322
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    6
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    6
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    6
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_fma_f322
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 6 a)
+                    (Var 6 b)
+                    (Var 6 c)]
+                    [(Assignment
+                        (Var 6 _lcompilers_optimization_fma_f322)
+                        (RealBinOp
+                            (Var 6 a)
+                            Add
+                            (RealBinOp
+                                (Var 6 b)
+                                Mul
+                                (Var 6 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )]
+                    (Var 6 _lcompilers_optimization_fma_f322)
+                    Public
+                    .false.
+                    .false.
+                    ()
+                ),
+            _lcompilers_optimization_fma_f323:
+                (Function
+                    (SymbolTable
+                        7
+                        {
+                            _lcompilers_optimization_fma_f323:
+                                (Variable
+                                    7
+                                    _lcompilers_optimization_fma_f323
+                                    []
+                                    ReturnVar
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            a:
+                                (Variable
+                                    7
+                                    a
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            b:
+                                (Variable
+                                    7
+                                    b
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            c:
+                                (Variable
+                                    7
+                                    c
+                                    []
+                                    In
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    _lcompilers_optimization_fma_f323
+                    (FunctionType
+                        [(Real 4)
+                        (Real 4)
+                        (Real 4)]
+                        (Real 4)
+                        Source
+                        Implementation
+                        ()
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        .false.
+                        []
+                        .false.
+                    )
+                    []
+                    [(Var 7 a)
+                    (Var 7 b)
+                    (Var 7 c)]
+                    [(Assignment
+                        (Var 7 _lcompilers_optimization_fma_f323)
+                        (RealBinOp
+                            (Var 7 a)
+                            Add
+                            (RealBinOp
+                                (Var 7 b)
+                                Mul
+                                (Var 7 c)
+                                (Real 4)
+                                ()
+                            )
+                            (Real 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )]
+                    (Var 7 _lcompilers_optimization_fma_f323)
                     Public
                     .false.
                     .false.
@@ -250,6 +546,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -265,6 +565,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             b:
@@ -282,6 +586,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -297,6 +605,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -337,6 +649,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                     (Var 5 _lcompilers_optimization_fma_f64)
                     Public
@@ -349,6 +662,31 @@
                     (SymbolTable
                         2
                         {
+                            b:
+                                (Variable
+                                    2
+                                    b
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 10 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
                             pi:
                                 (Variable
                                     2
@@ -369,6 +707,30 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            r:
+                                (Variable
+                                    2
+                                    r
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Real 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             s1:
@@ -400,6 +762,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             s2:
                                 (Variable
@@ -430,6 +796,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -451,6 +821,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             z:
@@ -481,6 +855,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -539,6 +917,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 z)
@@ -553,6 +932,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (RealCompare
@@ -624,6 +1004,203 @@
                                     (Real 8)
                                 )
                             )
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (ArrayBroadcast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (ArrayConstant
+                                4
+                                [10]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                            (Array
+                                (Integer 4)
+                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                (IntegerConstant 10 (Integer 4) Decimal))]
+                                FixedSizeArray
+                            )
+                            (ArrayConstant
+                                40
+                                [1, 1, 1, ...., 1, 1, 1]
+                                (Array
+                                    (Integer 4)
+                                    [((IntegerConstant 1 (Integer 4) Decimal)
+                                    (IntegerConstant 10 (Integer 4) Decimal))]
+                                    FixedSizeArray
+                                )
+                                ColMajor
+                            )
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 r)
+                        (Cast
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            IntegerToReal
+                            (Real 4)
+                            (RealConstant
+                                1.000000
+                                (Real 4)
+                            )
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (IntrinsicElementalFunction
+                            Nint
+                            [(IntrinsicElementalFunction
+                                Sign
+                                [(RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                (FunctionCall
+                                    1 _lcompilers_optimization_fma_f322
+                                    1 _lcompilers_optimization_fma_f322
+                                    [((Var 2 r))
+                                    ((Var 2 r))
+                                    ((Var 2 r))]
+                                    (Real 4)
+                                    ()
+                                    ()
+                                )]
+                                0
+                                (Real 4)
+                                ()
+                            )]
+                            0
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (Assignment
+                        (ArrayItem
+                            (Var 2 b)
+                            [(()
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            ())]
+                            (Integer 4)
+                            ColMajor
+                            ()
+                        )
+                        (Cast
+                            (FunctionCall
+                                1 _lcompilers_optimization_fma_f323
+                                1 _lcompilers_optimization_fma_f323
+                                [((Var 2 r))
+                                ((RealUnaryMinus
+                                    (Var 2 r)
+                                    (Real 4)
+                                    ()
+                                ))
+                                ((Var 2 r))]
+                                (Real 4)
+                                ()
+                                ()
+                            )
+                            RealToInteger
+                            (Integer 4)
+                            ()
+                        )
+                        ()
+                        .false.
+                    )
+                    (Print
+                        (StringFormat
+                            ()
+                            [(ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )
+                    (If
+                        (IntegerCompare
+                            (ArrayItem
+                                (Var 2 b)
+                                [(()
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 0 (Integer 4) Decimal)
                             (Logical 4)
                             ()
                         )

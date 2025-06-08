@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             associate_block:
                                 (AssociateBlock
@@ -55,6 +59,10 @@
                                                     Private
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -75,6 +83,10 @@
                                                     Source
                                                     Private
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -212,6 +224,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Associate
                                         (Var 3 v)
@@ -232,6 +245,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArrayItem
@@ -262,6 +276,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -314,6 +329,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )
                                     (Assignment
                                         (ArraySection
@@ -390,6 +406,7 @@
                                             ()
                                         )
                                         ()
+                                        .false.
                                     )]
                                 ),
                             myreal:
@@ -414,6 +431,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             theta:
                                 (Variable
@@ -434,6 +455,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             x:
@@ -456,6 +481,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -476,6 +505,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -528,6 +561,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 y)
@@ -566,6 +600,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 myreal)
@@ -597,6 +632,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 theta)
@@ -635,6 +671,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -673,17 +710,19 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (AssociateBlockCall
                         2 associate_block
                     )
                     (Print
-                        [(Var 2 myreal)]
-                        ()
-                        ()
-                    )
-                    (ImplicitDeallocate
-                        [(Var 2 myreal)]
+                        (StringFormat
+                            ()
+                            [(Var 2 myreal)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

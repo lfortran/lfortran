@@ -22,23 +22,31 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     array_03_transfer
                     []
                     [(Print
-                        [(BitCast
-                            (Var 2 x)
-                            (RealConstant
-                                1.000000
+                        (StringFormat
+                            ()
+                            [(BitCast
+                                (Var 2 x)
+                                (RealConstant
+                                    1.000000
+                                    (Real 4)
+                                )
+                                ()
                                 (Real 4)
-                            )
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
-                            (Real 4)
-                            ()
-                        )]
-                        ()
-                        ()
+                        )
                     )]
                 )
         })

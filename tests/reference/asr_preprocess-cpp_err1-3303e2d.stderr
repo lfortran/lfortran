@@ -1,0 +1,5 @@
+C preprocessor error: factor(): The expression is not complete, expecting integer, name, +, - or (
+ --> tests/errors/cpp_err1.f90:4:13
+  |
+4 | #if 2 < 1+2+
+  |             ^ 

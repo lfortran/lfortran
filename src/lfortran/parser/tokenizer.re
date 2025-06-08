@@ -5,6 +5,11 @@
 #include <lfortran/parser/parser.tab.hh>
 #include <libasr/bigint.h>
 
+using LCompilers::diag::Level;
+using LCompilers::diag::Stage;
+using LCompilers::diag::Label;
+using LCompilers::diag::Diagnostic;
+
 namespace LCompilers::LFortran {
 
 void Tokenizer::set_string(const std::string &str)
@@ -144,7 +149,7 @@ void Tokenizer::add_rel_warning(diag::Diagnostics &diagnostics, bool fixed_form,
     }
 }
 
-int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics)
+int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnostics &diagnostics, bool continue_compilation)
 {
     if (enddo_state == 1) {
         enddo_state = 2;
@@ -255,12 +260,17 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
 
             * { token_loc(loc);
                 std::string t = token();
-                throw parser_local::TokenizerError(diag::Diagnostic(
-                    "Token '" + t + "' is not recognized",
-                    diag::Level::Error, diag::Stage::Tokenizer, {
+                diagnostics.add(diag::Diagnostic(
+                        "Token '" + t + "' is not recognized",
+                        diag::Level::Error, diag::Stage::Tokenizer, {
                         diag::Label("token not recognized", {loc})
-                    })
-                );
+                    }));
+
+                if(!continue_compilation) {
+                    throw parser_local::TokenizerAbort();
+                } else {
+                    continue;
+                }
             }
             end { RET(END_OF_FILE); }
             whitespace { continue; }
@@ -411,7 +421,7 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'format' {
                 if (last_token == yytokentype::TK_LABEL) {
                     unsigned char *start;
-                    lex_format(cur, loc, start);
+                    lex_format(cur, loc, start, diagnostics, continue_compilation, this->string_start);
                     yylval.string.p = (char*) start;
                     yylval.string.n = cur-start-1;
                     RET(TK_FORMAT)
@@ -637,8 +647,12 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     } else {
                         token_loc(loc);
                         std::string t = token();
-                        throw LFortran::parser_local::TokenizerError("Integer '" + t + "' too large",
-                            loc);
+                        diagnostics.add(diag::Diagnostic(
+                            "Integer '" + t + "' too large",
+                            diag::Level::Error, diag::Stage::Tokenizer, {
+                            diag::Label("", {loc})}
+                        ));
+                        throw parser_local::TokenizerAbort();
                     }
                 } else {
                     lex_int_large(al, tok, cur,
@@ -718,6 +732,13 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
                     "help: use the '--cpp' command line option to preprocess it");
                 line_num++; cur_line=cur; continue;
             }
+            "#" whitespace? "include" whitespace ignore_till_newline {
+                Location loc; token_loc(loc);
+                diagnostics.tokenizer_warning_label(
+                    "#include ignored", {loc},
+                    "help: use the '--cpp' command line option to preprocess it");
+                line_num++; cur_line=cur; continue;
+            }
             // Rest of the Macros are ignored with warning:
             "#" ignore_till_newline {
                 Location loc; token_loc(loc);
@@ -741,14 +762,14 @@ std::string token(unsigned char *tok, unsigned char* cur)
     return std::string((char *)tok, cur - tok);
 }
 
-void token_loc(Location &loc)
+void token_loc(Location &loc, unsigned char *cur, unsigned char *tok, unsigned char *string_start)
 {
-    loc.first = 1;
-    loc.last = 1;
+    loc.first = tok-string_start;
+    loc.last = cur-string_start-1;
 }
 
 void lex_format(unsigned char *&cur, Location &loc,
-        unsigned char *&start) {
+        unsigned char *&start, diag::Diagnostics &diagnostics, bool continue_compilation, unsigned char *&string_start) {
     int num_paren = 0;
     for (;;) {
         unsigned char *tok = cur;
@@ -783,7 +804,7 @@ void lex_format(unsigned char *&cur, Location &loc,
                 ;
 
             position_edit_desc
-                = 'T' whitespace? int ('L' | 'R')? whitespace? int
+                = 'T' whitespace? ('L' | 'R')? whitespace? int
                 | int whitespace? 'X'
                 ;
             control_edit_desc
@@ -793,10 +814,18 @@ void lex_format(unsigned char *&cur, Location &loc,
                 ;
 
             * {
-                token_loc(loc);
+                token_loc(loc, cur, tok, string_start);
                 std::string t = token(tok, cur);
-                throw LFortran::parser_local::TokenizerError("Token '" + t
-                    + "' is not recognized in `format` statement", loc);
+                diagnostics.add(diag::Diagnostic(
+                    "Token '" + t + "' is not recognized in `format` statement",
+                    diag::Level::Error, diag::Stage::Tokenizer, {
+                    diag::Label("", {loc})}
+                ));
+                if(!continue_compilation) {
+                    throw parser_local::TokenizerAbort();
+                } else {
+                    continue;
+                }
             }
             '(' {
                 if (num_paren == 0) {
@@ -806,20 +835,20 @@ void lex_format(unsigned char *&cur, Location &loc,
                 } else {
                     cur--;
                     unsigned char *tmp;
-                    lex_format(cur, loc, tmp);
+                    lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
                     continue;
                 }
             }
             int whitespace? '(' {
                 cur--;
                 unsigned char *tmp;
-                lex_format(cur, loc, tmp);
+                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
                 continue;
             }
             '*' whitespace? '(' {
                 cur--;
                 unsigned char *tmp;
-                lex_format(cur, loc, tmp);
+                lex_format(cur, loc, tmp, diagnostics, continue_compilation, string_start);
                 continue;
             }
             ')' {
@@ -827,10 +856,18 @@ void lex_format(unsigned char *&cur, Location &loc,
                 return;
             }
             end {
-                token_loc(loc);
+                token_loc(loc, cur, tok, string_start);
                 std::string t = token(tok, cur);
-                throw LFortran::parser_local::TokenizerError(
-                    "End of file not expected in `format` statement '" + t + "'", loc);
+                diagnostics.add(diag::Diagnostic(
+                    "End of file not expected in `format` statement '" + t + "'",
+                    diag::Level::Error, diag::Stage::Tokenizer, {
+                    diag::Label("", {loc})}
+                ));
+                if(!continue_compilation) {
+                    throw parser_local::TokenizerAbort();
+                } else {
+                    continue;
+                }
             }
             whitespace { continue; }
             ',' { continue; }

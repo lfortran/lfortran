@@ -1,0 +1,40 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [19 x i8] c"echo \22Hello World\22\00", align 1
+@1 = private unnamed_addr constant [3 x i8] c"ls\00", align 1
+
+define void @_lcompilers_execute_command_line_(i8** %command) {
+.entry:
+  %0 = load i8*, i8** %command, align 8
+  %1 = call i8* @_lfortran_exec_command(i8* %0)
+  store i8* %1, i8** %command, align 8
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare i8* @_lfortran_exec_command(i8*)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value1 = alloca i8*, align 8
+  %call_arg_value = alloca i8*, align 8
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @0, i32 0, i32 0), i8** %call_arg_value, align 8
+  %2 = load i8*, i8** %call_arg_value, align 8
+  %3 = call i8* @_lfortran_exec_command(i8* %2)
+  store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @1, i32 0, i32 0), i8** %call_arg_value1, align 8
+  %4 = load i8*, i8** %call_arg_value1, align 8
+  %5 = call i8* @_lfortran_exec_command(i8* %4)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

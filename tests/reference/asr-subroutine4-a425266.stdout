@@ -27,6 +27,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -47,6 +51,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             c:
@@ -69,6 +77,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -84,6 +96,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             n:
@@ -101,6 +117,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             scalar:
                                 (Variable
@@ -116,6 +136,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -166,12 +190,13 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        ())]
                         []
                         []
                         []
@@ -215,6 +240,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )]
                     ()

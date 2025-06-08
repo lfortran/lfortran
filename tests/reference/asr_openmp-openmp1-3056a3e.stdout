@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -37,6 +41,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 ),
                             local_ctr:
@@ -54,6 +62,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -69,6 +81,10 @@
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -92,10 +108,10 @@
                     [(Var 2 n)
                     (Var 2 ctr)]
                     [(DoConcurrentLoop
-                        ((Var 2 i)
+                        [((Var 2 i)
                         (IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n)
-                        ())
+                        ())]
                         []
                         [(Var 2 i)]
                         [(ReduceAdd
@@ -110,6 +126,7 @@
                                 ()
                             )
                             ()
+                            .false.
                         )]
                     )
                     (Assignment
@@ -122,6 +139,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )]
                     ()
                     Public
@@ -149,6 +167,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -165,6 +187,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     openmp1
@@ -173,6 +199,7 @@
                         (Var 3 ctr)
                         (IntegerConstant 0 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (SubroutineCall
                         1 increment_ctr
@@ -182,9 +209,13 @@
                         ()
                     )
                     (Print
-                        [(Var 3 ctr)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 3 ctr)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

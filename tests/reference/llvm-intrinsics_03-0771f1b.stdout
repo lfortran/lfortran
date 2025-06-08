@@ -1,7 +1,7 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@intrinsics_03.i = internal global i32 0
+@intrinsics_03.i = internal global i32 -12
 @0 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
@@ -14,12 +14,12 @@ source_filename = "LFortran"
 @9 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
 @10 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@12 = private unnamed_addr constant [2 x i8] c" \00", align 1
-@13 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@14 = private unnamed_addr constant [5 x i8] c"%d%s\00", align 1
-@15 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@16 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@17 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [3 x i8] c"I4\00", align 1
+@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@14 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
+@15 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@16 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define float @_lcompilers_abs_f32(float* %x) {
 .entry:
@@ -122,10 +122,8 @@ define i32 @main(i32 %0, i8** %1) {
   %call_arg_value5 = alloca double, align 8
   %call_arg_value1 = alloca double, align 8
   %call_arg_value = alloca float, align 4
-  store i32 -12, i32* @intrinsics_03.i, align 4
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
   %a = alloca double, align 8
-  store i32 -12, i32* @intrinsics_03.i, align 4
   %r1 = alloca double, align 8
   %r2 = alloca double, align 8
   %x = alloca float, align 4
@@ -148,10 +146,10 @@ else:                                             ; preds = %.entry
 
 ifcont:                                           ; preds = %else, %then
   %6 = call double @_lcompilers_cos_f64(double* %a)
-  %7 = fadd double %6, 0x3FDF606EEB1A3FC7
+  %7 = fadd double %6, 0x3FDF606EE0000000
   store double %7, double* %call_arg_value1, align 8
   %8 = call double @_lcompilers_abs_f64(double* %call_arg_value1)
-  %9 = fcmp ogt double %8, 0x3E7AD7F29ABCAF48
+  %9 = fcmp ogt double %8, 0x3E7AD7F2A0000000
   br i1 %9, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
@@ -171,10 +169,10 @@ ifcont4:                                          ; preds = %else3, %then2
   %14 = fadd double 0x3FB21BD54FC5F9A7, %13
   store double %14, double* %call_arg_value6, align 8
   %15 = call double @_lcompilers_cos_f64(double* %call_arg_value6)
-  %16 = fsub double %15, 0x3FE6ECC71DE13C70
+  %16 = fsub double %15, 0x3FE6ECC720000000
   store double %16, double* %call_arg_value7, align 8
   %17 = call double @_lcompilers_abs_f64(double* %call_arg_value7)
-  %18 = fcmp ogt double %17, 0x3E7AD7F29ABCAF48
+  %18 = fcmp ogt double %17, 0x3E7AD7F2A0000000
   br i1 %18, label %then8, label %else9
 
 then8:                                            ; preds = %ifcont4
@@ -207,13 +205,16 @@ else13:                                           ; preds = %ifcont10
 
 ifcont14:                                         ; preds = %else13, %then12
   %25 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @14, i32 0, i32 0), i32 %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @13, i32 0, i32 0))
-  %26 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
-  %27 = icmp ne i32 %26, 12
-  br i1 %27, label %then15, label %else16
+  %26 = alloca i32, align 4
+  store i32 %25, i32* %26, align 4
+  %27 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %26)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  %28 = call i32 @_lcompilers_abs_i32(i32* @intrinsics_03.i)
+  %29 = icmp ne i32 %28, 12
+  br i1 %29, label %then15, label %else16
 
 then15:                                           ; preds = %ifcont14
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @15, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @16, i32 0, i32 0))
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @14, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @15, i32 0, i32 0))
   call void @exit(i32 1)
   br label %ifcont17
 
@@ -221,6 +222,7 @@ else16:                                           ; preds = %ifcont14
   br label %ifcont17
 
 ifcont17:                                         ; preds = %else16, %then15
+  call void @_lpython_free_argv()
   br label %return
 
 return:                                           ; preds = %ifcont17
@@ -233,4 +235,8 @@ declare void @_lcompilers_print_error(i8*, ...)
 
 declare void @exit(i32)
 
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+
 declare void @_lfortran_printf(i8*, ...)
+
+declare void @_lpython_free_argv()

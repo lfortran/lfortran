@@ -1,0 +1,77 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            min_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            y:
+                                (Variable
+                                    2
+                                    y
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 8)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            z:
+                                (Variable
+                                    2
+                                    z
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    min_02
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                Min
+                                [(Var 2 y)
+                                (Cast
+                                    (Var 2 z)
+                                    IntegerToInteger
+                                    (Integer 8)
+                                    ()
+                                )]
+                                0
+                                (Integer 8)
+                                ()
+                            )]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

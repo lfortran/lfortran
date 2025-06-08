@@ -759,9 +759,7 @@
                     (Bind
                         [C]
                         [(name
-                        (String
-                            "_cf5"
-                        ))]
+                        (String "_cf5"))]
                     )
                     ()
                     []

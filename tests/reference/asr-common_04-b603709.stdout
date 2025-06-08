@@ -27,6 +27,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -42,6 +46,10 @@
                                                     Source
                                                     Public
                                                     Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
                                                     .false.
                                                 ),
                                             c:
@@ -64,6 +72,10 @@
                                                     Public
                                                     Required
                                                     .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     block_1
@@ -71,6 +83,7 @@
                                     [a
                                     b
                                     c]
+                                    []
                                     Source
                                     Public
                                     .false.
@@ -89,12 +102,19 @@
                                     ()
                                     Default
                                     (StructType
+                                        []
+                                        []
+                                        .true.
                                         3 block_1
                                     )
                                     ()
                                     Source
                                     Public
                                     Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
                                     .false.
                                 )
                         })
@@ -163,6 +183,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             struct_instance_block_1:
                                 (ExternalSymbol
@@ -186,6 +210,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -196,6 +221,7 @@
                         )
                         (IntegerConstant 1 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 d)
@@ -206,6 +232,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -251,6 +278,7 @@
                             )
                         )
                         ()
+                        .false.
                     )
                     (Assignment
                         (ArrayItem
@@ -274,6 +302,7 @@
                         )
                         (IntegerConstant 2 (Integer 4) Decimal)
                         ()
+                        .false.
                     )
                     (Assignment
                         (StructInstanceMember
@@ -302,6 +331,7 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (If
                         (IntegerCompare
@@ -508,30 +538,20 @@
                         []
                     )
                     (Print
-                        [(StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_a
-                            (Integer 4)
+                        (StringFormat
                             ()
-                        )
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_b
-                            (Integer 4)
-                            ()
-                        )
-                        (StructInstanceMember
-                            (Var 2 struct_instance_block_1)
-                            2 1_block_1_c
-                            (Array
+                            [(StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_a
                                 (Integer 4)
-                                [((IntegerConstant 1 (Integer 4) Decimal)
-                                (IntegerConstant 5 (Integer 4) Decimal))]
-                                FixedSizeArray
+                                ()
                             )
-                            ()
-                        )
-                        (ArrayItem
+                            (StructInstanceMember
+                                (Var 2 struct_instance_block_1)
+                                2 1_block_1_b
+                                (Integer 4)
+                                ()
+                            )
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
                                 2 1_block_1_c
@@ -543,16 +563,30 @@
                                 )
                                 ()
                             )
-                            [(()
-                            (IntegerConstant 5 (Integer 4) Decimal)
-                            ())]
-                            (Integer 4)
-                            ColMajor
+                            (ArrayItem
+                                (StructInstanceMember
+                                    (Var 2 struct_instance_block_1)
+                                    2 1_block_1_c
+                                    (Array
+                                        (Integer 4)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 5 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                )
+                                [(()
+                                (IntegerConstant 5 (Integer 4) Decimal)
+                                ())]
+                                (Integer 4)
+                                ColMajor
+                                ()
+                            )
+                            (Var 2 d)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
-                        (Var 2 d)]
-                        ()
-                        ()
                     )]
                 )
         })

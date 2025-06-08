@@ -16,17 +16,21 @@
                                     ()
                                     ()
                                     Default
-                                    (Character 1 1 ())
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     xerror
                     (FunctionType
-                        [(Character 1 1 ())]
+                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                         ()
                         Source
                         Implementation
@@ -42,14 +46,12 @@
                     []
                     [(Var 2 mess)]
                     [(Print
-                        [(StringItem
+                        (StringItem
                             (Var 2 mess)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (Character 1 1 ())
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ()
-                        )]
-                        ()
-                        ()
+                        )
                     )
                     (Return)]
                     ()

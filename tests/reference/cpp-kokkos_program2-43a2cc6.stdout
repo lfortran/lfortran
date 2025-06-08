@@ -80,7 +80,7 @@ void main2() {
         b->data->operator[](i - b->dims[0].lower_bound) = (float)(5);
     });
     triad(a, b, scalar, c);
-    std::cout << "End Stream Triad" << std::endl;
+std::cout<< "End Stream Triad"<<std::endl;
 }
 
 }

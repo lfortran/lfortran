@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             v:
                                 (Variable
@@ -43,15 +47,23 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     int_dp
                     []
                     [(Print
-                        [(Var 2 u)
-                        (Var 2 v)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 u)
+                            (Var 2 v)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

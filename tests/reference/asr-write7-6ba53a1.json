@@ -1,0 +1,13 @@
+{
+    "basename": "asr-write7-6ba53a1",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/write7.f90",
+    "infile_hash": "72e9fcaf8f4630dca63e67f6803d98543e8fdedc2ba0e20224168db8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-write7-6ba53a1.stdout",
+    "stdout_hash": "364dba3b3b056891a69a2ea5a6a27a362911f27efb4d3b5c139e88aa",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

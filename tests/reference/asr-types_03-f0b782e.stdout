@@ -22,6 +22,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -38,6 +42,10 @@
                                     Public
                                     Required
                                     .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
                                 )
                         })
                     types_03
@@ -49,11 +57,16 @@
                             (Real 4)
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 r)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 r)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )
                     (Assignment
                         (Var 2 i)
@@ -64,11 +77,16 @@
                             ()
                         )
                         ()
+                        .false.
                     )
                     (Print
-                        [(Var 2 i)]
-                        ()
-                        ()
+                        (StringFormat
+                            ()
+                            [(Var 2 i)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
                     )]
                 )
         })

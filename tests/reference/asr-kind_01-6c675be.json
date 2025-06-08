@@ -1,0 +1,13 @@
+{
+    "basename": "asr-kind_01-6c675be",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/kind_01.f90",
+    "infile_hash": "b5be2245f43395dd32e9fbc5f06c07ac6c70905e5b83bf65ca745c30",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-kind_01-6c675be.stderr",
+    "stderr_hash": "a4f46f313141003cd8a07b34744cfb6be4d780ac89b7bef22e149f74",
+    "returncode": 2
+}

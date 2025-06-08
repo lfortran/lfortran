@@ -1,0 +1,5 @@
+semantic error: Variable 'foo' is not declared
+ --> tests/errors/program_variable.f90:3:7
+  |
+3 | bar = foo
+  |       ^^^ 'foo' is undeclared
