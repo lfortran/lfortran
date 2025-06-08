@@ -5587,7 +5587,10 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::Dict_t* value_dict_type = ASR::down_cast<ASR::Dict_t>(asr_value_type);
             llvm_utils->set_dict_api(value_dict_type);
-            llvm_utils->dict_api->dict_deepcopy(value_dict, target_dict,
+
+            std::string key_type_code = ASRUtils::get_type_code(value_dict_type->m_key_type);
+            std::string value_type_code = ASRUtils::get_type_code(value_dict_type->m_value_type);
+            llvm_utils->dict_api->dict_deepcopy2(key_type_code, value_type_code, value_dict, target_dict,
                                     value_dict_type, module.get(), name2memidx);
             return ;
         } else if( is_target_set && is_value_set ) {

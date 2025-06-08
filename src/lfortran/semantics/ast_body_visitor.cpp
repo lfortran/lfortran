@@ -3634,8 +3634,39 @@ public:
                     return ASRUtils::make_Assignment_t_util(al, x.base.base.loc, 
                                         ASRUtils::EXPR(ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                                              contained_type, nullptr)), 
-                                        args[2], 
-                                        nullptr, false);
+                                                            args[2], nullptr, false);
+                } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+                    ASR::Dict_t *dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
+                    ASR::ttype_t *key_type = ASRUtils::expr_type(args[1]);
+                    ASR::ttype_t *value_type = ASRUtils::expr_type(args[2]);
+
+                    ASR::ttype_t *dict_key_type = dict_type->m_key_type;
+                    ASR::ttype_t *dict_value_type = dict_type->m_value_type;
+                    if (!ASRUtils::check_equal_type(dict_key_type, key_type)) {
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_key_type);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(key_type);
+                        diag.add(Diagnostic(
+                            "Type mismatch in " + var_name + ", the key types must be compatible",
+                            Level::Error, Stage::Semantic, {
+                                Label("Types mismatch (found '" + 
+                            arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    if (!ASRUtils::check_equal_type(dict_value_type, value_type)) {
+                        std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_value_type);
+                        std::string arg_type_str = ASRUtils::type_to_str_fortran(value_type);
+                        diag.add(Diagnostic(
+                            "Type mismatch in " + var_name + ", the value types must be compatible",
+                            Level::Error, Stage::Semantic, {
+                                Label("Types mismatch (found '" + 
+                            arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+
+                    return ASR::make_DictInsert_t(al, x.base.base.loc, args[0], args[1], args[2]);
                 } else {
                     std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
                     diag.add(Diagnostic(

@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    226 // shift/reduce conflicts
+%expect    232 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -2702,4 +2702,6 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
+    | KW_LF_LIST { $$ = SYMBOL($1, @$); }
+    | KW_LF_SET { $$ = SYMBOL($1, @$); }
     ;
