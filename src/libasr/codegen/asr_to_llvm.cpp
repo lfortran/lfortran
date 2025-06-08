@@ -1115,10 +1115,8 @@ public:
                         if (m_source && !m_source_is_class) {
                             dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
                         } else if (dest_asr_type == nullptr) {
-                            // If no type specified then use curr_arg_m_a_type as default
-                            dest_asr_type = ASRUtils::TYPE(
-                                    ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc,
-                                        ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_derived_type));
+                        // If no type specified then use curr_arg_m_a_type as default
+                            dest_asr_type = ASRUtils::duplicate_type(al, curr_arg_m_a_type);
                         }
                         llvm::Value* malloc_size = SizeOfTypeUtil(dest_asr_type, llvm_utils->getIntType(4),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -1655,7 +1653,7 @@ public:
             init_values.push_back(tmp);
         }
         ptr_loads = ptr_loads_copy;
-        tuple_api->tuple_init(const_tuple, init_values, tuple_type,
+        tuple_api->tuple_init(const_cast<ASR::expr_t*>(&x.base), const_tuple, init_values, tuple_type,
                               module.get(), name2memidx);
         tmp = const_tuple;
     }
@@ -2524,7 +2522,7 @@ public:
         llvm::Value* concat_tuple = llvm_utils->CreateAlloca(*builder, concat_tuple_type, nullptr, "concat_tuple");
         ASR::Tuple_t* tuple_type = (ASR::Tuple_t*)(ASR::make_Tuple_t(
                                     al, x.base.base.loc, v_type.p, v_type.n));
-        tuple_api->concat(left, right, tuple_type_left, tuple_type_right, concat_tuple,
+        tuple_api->concat(x.m_left, left, right, tuple_type_left, tuple_type_right, concat_tuple,
                           tuple_type, module.get(), name2memidx);
         tmp = concat_tuple;
     }
@@ -5760,7 +5758,7 @@ public:
             ASR::List_t* value_asr_list = ASR::down_cast<ASR::List_t>(
                                             ASRUtils::expr_type(x.m_value));
             std::string value_type_code = ASRUtils::get_type_code(value_asr_list->m_type);
-            list_api->list_deepcopy(value_list, target_list,
+            list_api->list_deepcopy(x.m_value, value_list, target_list,
                                     value_asr_list, module.get(),
                                     name2memidx);
             return ;
@@ -5792,7 +5790,7 @@ public:
                     llvm::Value* llvm_tuple_i = llvm_utils->CreateAlloca(*builder, llvm_tuple_i_type);
                     ptr_loads = !LLVM::is_llvm_struct(asr_tuple_i_type);
                     visit_expr(*asr_value_tuple->m_elements[i]);
-                    llvm_utils->deepcopy(tmp, llvm_tuple_i, asr_tuple_i_type, module.get(), name2memidx);
+                    llvm_utils->deepcopy(asr_value_tuple->m_elements[i], tmp, llvm_tuple_i, asr_tuple_i_type, module.get(), name2memidx);
                     src_deepcopies.push_back(al, llvm_tuple_i);
                 }
                 ASR::TupleConstant_t* asr_target_tuple = ASR::down_cast<ASR::TupleConstant_t>(x.m_target);
@@ -5815,7 +5813,7 @@ public:
                 ASR::Tuple_t* value_tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_value_type);
                 std::string type_code = ASRUtils::get_type_code(value_tuple_type->m_type,
                                                                 value_tuple_type->n_type);
-                tuple_api->tuple_deepcopy(value_tuple, target_tuple,
+                tuple_api->tuple_deepcopy(x.m_value, value_tuple, target_tuple,
                                           value_tuple_type, module.get(),
                                           name2memidx);
             }
@@ -5846,7 +5844,7 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::Set_t* value_set_type = ASR::down_cast<ASR::Set_t>(asr_value_type);
             llvm_utils->set_set_api(value_set_type);
-            llvm_utils->set_api->set_deepcopy(value_set, target_set,
+            llvm_utils->set_api->set_deepcopy(x.m_value, value_set, target_set,
                                     value_set_type, module.get(), name2memidx);
             return ;
         } else if( is_target_struct && is_value_struct ) {
@@ -5868,7 +5866,7 @@ public:
                 llvm::Type* val_type = llvm_utils->get_type_from_ttype_t_util(asr_value_type, module.get());
                 value_struct = llvm_utils->CreateLoad2(val_type, value_struct);
             }
-            llvm_utils->deepcopy(value_struct, target_struct,
+            llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
                 ASRUtils::type_get_past_allocatable(asr_target_type), module.get(), name2memidx);
             return ;
         } else if (is_target_class && is_value_class) {
@@ -5945,7 +5943,7 @@ public:
             ptr_loads = ptr_loads_copy;
             llvm::Value* target_struct = tmp;
 
-            llvm_utils->deepcopy(value_struct, target_struct,
+            llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
                 asr_value_type, module.get(), name2memidx);
             return;
         }
@@ -10650,7 +10648,7 @@ public:
                                     target_type, nullptr, "call_arg_value");
                                 if( ASR::is_a<ASR::Tuple_t>(*arg_type) ||
                                     ASR::is_a<ASR::List_t>(*arg_type) ) {
-                                    llvm_utils->deepcopy(value, target, arg_type, module.get(), name2memidx);
+                                    llvm_utils->deepcopy(x.m_args[i].m_value, value, target, arg_type, module.get(), name2memidx);
                                 } else {
                                     builder->CreateStore(value, target);
                                 }

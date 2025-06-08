@@ -129,7 +129,7 @@ ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
     switch (expression->type) {
         case ASR::exprType::Var: {
             // The symbol m_v has to be `Variable` for a Struct expression.
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(expression)->m_v));
             return ASR::down_cast<ASR::Var_t>(expression)->m_v;
         } 
         case ASR::exprType::StructInstanceMember: {
@@ -138,17 +138,17 @@ ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
         } 
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
-            return get_struct_symbol_from_expr(array_item->m_v);
+            return get_variable_symbol_from_struct_expr(array_item->m_v);
         }
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
-            return get_struct_symbol_from_expr(array_section->m_v);
+            return get_variable_symbol_from_struct_expr(array_section->m_v);
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
             // `func_call->m_dt` will be non-null for Struct expressions
             LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
-            return get_struct_symbol_from_expr(func_call->m_dt);
+            return get_variable_symbol_from_struct_expr(func_call->m_dt);
         }
         default: {
             return nullptr;
@@ -669,7 +669,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::Struct_t *left_struct = nullptr;
     if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(left)));
+                ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(left)));
         left_struct = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
     }
     bool found = false;
@@ -1095,7 +1095,7 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
     if( sym == nullptr ) {
         if( ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type) ) {
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(args[0])));
+                ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(args[0])));
             ASR::Struct_t* arg_struct = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
             sym = arg_struct->m_symtab->resolve_symbol(read_write);
             expr_dt = args[0];
@@ -1143,9 +1143,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     ASR::Struct_t *left_struct, *right_struct = nullptr;
 
     ASR::Variable_t* left_var = ASR::down_cast<ASR::Variable_t>(
-        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(left)));
-    ASR::Variable_t* right_var = ASR::down_cast<ASR::Variable_t>(
-        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(right)));
+        ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(left)));
 
     if (ASR::is_a<ASR::StructType_t>(*left_type)) {
         left_struct = ASR::down_cast<ASR::Struct_t>(left_var->m_type_declaration);
@@ -1243,10 +1241,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::Struct_t *right_sym = right_struct;
 
                                 ASR::Variable_t* left_arg_var = ASR::down_cast<ASR::Variable_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(func->m_args[0])));
+                                    ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(func->m_args[0])));
 
                                 ASR::Variable_t* right_arg_var = ASR::down_cast<ASR::Variable_t>(
-                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(func->m_args[1])));
+                                    ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(func->m_args[1])));
 
 
                                 ASR::Struct_t *left_arg_sym = ASR::down_cast<ASR::Struct_t>(left_arg_var->m_type_declaration);

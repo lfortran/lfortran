@@ -2050,7 +2050,7 @@ namespace LCompilers {
         }
     }
 
-    void LLVMUtils::deepcopy(llvm::Value* src, llvm::Value* dest,
+    void LLVMUtils::deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                              ASR::ttype_t* asr_type, llvm::Module* module,
                              std::map<std::string, std::map<std::string, int>>& name2memidx) {
         switch( ASRUtils::type_get_past_array(asr_type)->type ) {
@@ -2114,12 +2114,12 @@ namespace LCompilers {
             }
             case ASR::ttypeType::Tuple: {
                 ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);
-                tuple_api->tuple_deepcopy(src, dest, tuple_type, module, name2memidx);
+                tuple_api->tuple_deepcopy(src_expr, src, dest, tuple_type, module, name2memidx);
                 break ;
             }
             case ASR::ttypeType::List: {
                 ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(asr_type);
-                list_api->list_deepcopy(src, dest, list_type, module, name2memidx);
+                list_api->list_deepcopy(src_expr, src, dest, list_type, module, name2memidx);
                 break ;
             }
             case ASR::ttypeType::Pointer: {
@@ -2131,13 +2131,13 @@ namespace LCompilers {
             case ASR::ttypeType::Dict: {
                 ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(asr_type);
                 set_dict_api(dict_type);
-                dict_api->dict_deepcopy(src, dest, dict_type, module, name2memidx);
+                dict_api->dict_deepcopy(src_expr, src, dest, dict_type, module, name2memidx);
                 break ;
             }
             case ASR::ttypeType::StructType: {
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(asr_type);
-                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
+                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::get_variable_symbol_from_struct_expr(src_expr));
+                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
                 std::string der_type_name = std::string(struct_sym->m_name);
                 while( struct_sym != nullptr ) {
                     for (size_t i = 0; i < struct_sym->n_members; i++) {
@@ -2179,7 +2179,7 @@ namespace LCompilers {
                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         }
                         create_if_else(is_allocated, [&]() {
-                            deepcopy(src_member, dest_member,
+                            deepcopy(src_expr, src_member, dest_member,
                             ASRUtils::symbol_type(mem_sym),
                             module, name2memidx);
                         }, [=]() {});
@@ -2521,13 +2521,13 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, rehash_flag, rehash_flag_ptr);
     }
 
-    void LLVMList::list_deepcopy(llvm::Value* src, llvm::Value* dest,
+    void LLVMList::list_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
         ASR::List_t* list_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        list_deepcopy(src, dest, list_type->m_type, module, name2memidx);
+        list_deepcopy(src_expr, src, dest, list_type->m_type, module, name2memidx);
     }
 
-    void LLVMList::list_deepcopy(llvm::Value* src, llvm::Value* dest,
+    void LLVMList::list_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                                  ASR::ttype_t* element_type, llvm::Module* module,
                                  std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
@@ -2607,7 +2607,7 @@ namespace LCompilers {
         }
     }
 
-    void LLVMDict::dict_deepcopy(llvm::Value* src, llvm::Value* dest,
+    void LLVMDict::dict_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                                  ASR::Dict_t* dict_type, llvm::Module* module,
                                  std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
@@ -2647,7 +2647,7 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, dest_key_mask, dest_key_mask_ptr);
     }
 
-    void LLVMDictSeparateChaining::deepcopy_key_value_pair_linked_list(
+    void LLVMDictSeparateChaining::deepcopy_key_value_pair_linked_list(ASR::expr_t* src_expr,
         llvm::Value* srci, llvm::Value* desti, llvm::Value* dest_key_value_pairs,
         ASR::Dict_t* dict_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -2700,8 +2700,8 @@ namespace LCompilers {
             }
             llvm::Value* dest_key_ptr = llvm_utils->create_gep2(key_value_pair, curr_dest, 0);
             llvm::Value* dest_value_ptr = llvm_utils->create_gep2(key_value_pair, curr_dest, 1);
-            llvm_utils->deepcopy(src_key, dest_key_ptr, dict_type->m_key_type, module, name2memidx);
-            llvm_utils->deepcopy(src_value, dest_value_ptr, dict_type->m_value_type, module, name2memidx);
+            llvm_utils->deepcopy(src_expr, src_key, dest_key_ptr, dict_type->m_key_type, module, name2memidx);
+            llvm_utils->deepcopy(src_expr, src_value, dest_value_ptr, dict_type->m_value_type, module, name2memidx);
 
             llvm::Value* src_next_ptr = llvm_utils->CreateLoad2(
                 llvm::Type::getInt8Ty(context)->getPointerTo(), llvm_utils->create_gep2(
@@ -2747,7 +2747,7 @@ namespace LCompilers {
     }
 
     void LLVMDictSeparateChaining::write_key_value_pair_linked_list(
-        llvm::Value* kv_ll, llvm::Value* dict, llvm::Value* capacity,
+        ASR::expr_t* dict_expr, llvm::Value* kv_ll, llvm::Value* dict, llvm::Value* capacity,
         ASR::ttype_t* m_key_type, ASR::ttype_t* m_value_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         src_itr = llvm_utils->CreateAlloca(llvm::Type::getInt8Ty(context)->getPointerTo());
@@ -2792,7 +2792,7 @@ namespace LCompilers {
             }
             llvm::Value* key_hash = get_key_hash(capacity, src_key, m_key_type, module);
             resolve_collision_for_write(
-                dict, key_hash, src_key,
+                dict_expr, dict, key_hash, src_key,
                 src_value, module,
                 m_key_type, m_value_type,
                 name2memidx);
@@ -2813,6 +2813,7 @@ namespace LCompilers {
     }
 
     void LLVMDictSeparateChaining::dict_deepcopy(
+        ASR::expr_t* src_expr,
         llvm::Value* src, llvm::Value* dest,
         ASR::Dict_t* dict_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -2889,7 +2890,7 @@ namespace LCompilers {
             llvm_utils->create_if_else(is_key_set, [&]() {
                 llvm::Value* srci = llvm_utils->create_ptr_gep(src_key_value_pairs, itr);
                 llvm::Value* desti = llvm_utils->create_ptr_gep(dest_key_value_pairs, itr);
-                deepcopy_key_value_pair_linked_list(srci, desti, dest_key_value_pairs,
+                deepcopy_key_value_pair_linked_list(src_expr, srci, desti, dest_key_value_pairs,
                     dict_type, module, name2memidx);
             }, [=]() {
             });
@@ -2935,7 +2936,7 @@ namespace LCompilers {
         });
     }
 
-    void LLVMList::write_item(llvm::Value* list, llvm::Value* pos,
+    void LLVMList::write_item(ASR::expr_t* expr, llvm::Value* list, llvm::Value* pos,
                               llvm::Value* item, ASR::ttype_t* asr_type,
                               bool enable_bounds_checking, llvm::Module* module,
                               std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -2948,7 +2949,7 @@ namespace LCompilers {
             ASRUtils::extract_type(asr_type), module);
         llvm::Value* list_data = llvm_utils->CreateLoad2(t_->getPointerTo(), get_pointer_to_list_data_using_type(list_type, list));
         llvm::Value* element_ptr = llvm_utils->create_ptr_gep2(t_, list_data, pos);
-        llvm_utils->deepcopy(item, element_ptr, asr_type, module, name2memidx);
+        llvm_utils->deepcopy(expr, item, element_ptr, asr_type, module, name2memidx);
     }
 
     void LLVMList::write_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
@@ -3281,7 +3282,7 @@ namespace LCompilers {
     }
 
     void LLVMDict::resolve_collision_for_write(
-        llvm::Value* dict, llvm::Value* key_hash,
+        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* value,
         llvm::Module* module, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
@@ -3298,9 +3299,9 @@ namespace LCompilers {
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_typecode(key_type_code, value_type_code, dict));
         this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
-        llvm_utils->list_api->write_item(key_list, pos, key,
+        llvm_utils->list_api->write_item(dict_expr, key_list, pos, key,
                                          key_asr_type, false, module, name2memidx);
-        llvm_utils->list_api->write_item(value_list, pos, value,
+        llvm_utils->list_api->write_item(dict_expr, value_list, pos, value,
                                          value_asr_type, false, module, name2memidx);
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
             llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context)->getPointerTo(), key_mask, pos));
@@ -3320,7 +3321,7 @@ namespace LCompilers {
     }
 
     void LLVMDictOptimizedLinearProbing::resolve_collision_for_write(
-        llvm::Value* dict, llvm::Value* key_hash,
+        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* value,
         llvm::Module* module, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
@@ -3358,9 +3359,9 @@ namespace LCompilers {
         this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), pos_ptr);
-        llvm_utils->list_api->write_item(key_list, pos, key,
+        llvm_utils->list_api->write_item(dict_expr, key_list, pos, key,
                                          key_asr_type, false, module, name2memidx);
-        llvm_utils->list_api->write_item(value_list, pos, value,
+        llvm_utils->list_api->write_item(dict_expr, value_list, pos, value,
                                          value_asr_type, false, module, name2memidx);
 
         llvm::Value* key_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
@@ -3394,7 +3395,7 @@ namespace LCompilers {
     }
 
     void LLVMDictSeparateChaining::resolve_collision_for_write(
-        llvm::Value* dict, llvm::Value* key_hash,
+        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* value,
         llvm::Module* module, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
@@ -3465,8 +3466,8 @@ namespace LCompilers {
                 llvm::Value* malloc_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), kv_struct_size);
                 llvm::Value* new_kv_struct_i8 = LLVM::lfortran_malloc(context, *module, *builder, malloc_size);
                 llvm::Value* new_kv_struct = builder->CreateBitCast(new_kv_struct_i8, kv_struct_type->getPointerTo());
-                llvm_utils->deepcopy(key, llvm_utils->create_gep2(kv_pair_type, new_kv_struct, 0), key_asr_type, module, name2memidx);
-                llvm_utils->deepcopy(value, llvm_utils->create_gep2(kv_pair_type, new_kv_struct, 1), value_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(dict_expr, key, llvm_utils->create_gep2(kv_pair_type, new_kv_struct, 0), key_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(dict_expr, value, llvm_utils->create_gep2(kv_pair_type, new_kv_struct, 1), value_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep2(kv_pair_type, new_kv_struct, 2));
@@ -3475,8 +3476,8 @@ namespace LCompilers {
                 LLVM::CreateStore(*builder, new_kv_struct_i8, llvm_utils->create_gep2(
                     kv_pair_type, kv_struct_prev, 2));
             }, [&]() {
-                llvm_utils->deepcopy(key, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 0), key_asr_type, module, name2memidx);
-                llvm_utils->deepcopy(value, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 1), value_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(dict_expr, key, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 0), key_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(dict_expr, value, llvm_utils->create_gep2(kv_pair_type, key_value_pair_linked_list, 1), value_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep2(
@@ -3494,8 +3495,8 @@ namespace LCompilers {
         llvm_utils->start_new_block(elseBB);
         {
             llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_struct_type->getPointerTo());
-            llvm_utils->deepcopy(key, llvm_utils->create_gep2(kv_pair_type, kv_struct, 0), key_asr_type, module, name2memidx);
-            llvm_utils->deepcopy(value, llvm_utils->create_gep2(kv_pair_type, kv_struct, 1), value_asr_type, module, name2memidx);
+            llvm_utils->deepcopy(dict_expr, key, llvm_utils->create_gep2(kv_pair_type, kv_struct, 0), key_asr_type, module, name2memidx);
+            llvm_utils->deepcopy(dict_expr, value, llvm_utils->create_gep2(kv_pair_type, kv_struct, 1), value_asr_type, module, name2memidx);
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(dict);
@@ -4058,7 +4059,7 @@ namespace LCompilers {
         }
     }
 
-    void LLVMDict::rehash(llvm::Value* dict, llvm::Module* module,
+    void LLVMDict::rehash(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -4146,8 +4147,8 @@ namespace LCompilers {
                 llvm_utils->deepcopy(key, key_dest, key_asr_type, module, name2memidx);
                 llvm::Value* value_dest = llvm_utils->list_api->read_item_using_ttype(value_asr_type,
                                                 new_value_list, pos, false, module, true);
-                llvm_utils->deepcopy(value, value_dest, value_asr_type, module, name2memidx);
-
+                llvm_utils->deepcopy(dict_expr, value, value_dest, value_asr_type, module, name2memidx);
+                
                 llvm::Value* linear_prob_happened = builder->CreateICmpNE(key_hash, pos);
                 llvm::Value* set_max_2 = builder->CreateSelect(linear_prob_happened,
                     llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 2)),
@@ -4183,7 +4184,7 @@ namespace LCompilers {
     }
 
     void LLVMDictSeparateChaining::rehash(
-        llvm::Value* dict, llvm::Module* module,
+        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -4307,7 +4308,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(mergeBB_rehash);
     }
 
-    void LLVMDict::rehash_all_at_once_if_needed(llvm::Value* dict, llvm::Module* module,
+    void LLVMDict::rehash_all_at_once_if_needed(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
@@ -4337,12 +4338,12 @@ namespace LCompilers {
                                 llvm::Type::getInt32Ty(context), llvm::APInt(32, 3)));
         llvm_utils->create_if_else(builder->CreateICmpSGE(occupancy_times_5,
                                     capacity_times_3), [&]() {
-            rehash(dict, module, key_asr_type, value_asr_type, name2memidx);
+            rehash(dict_expr, dict, module, key_asr_type, value_asr_type, name2memidx);
         }, []() {});
     }
 
     void LLVMDictSeparateChaining::rehash_all_at_once_if_needed(
-        llvm::Value* dict, llvm::Module* module,
+        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
@@ -4368,29 +4369,29 @@ namespace LCompilers {
         rehash_condition = builder->CreateAnd(rehash_condition,
             builder->CreateICmpSGE(occupancy, buckets_filled_times_2));
         llvm_utils->create_if_else(rehash_condition, [&]() {
-            rehash(dict, module, key_asr_type, value_asr_type, name2memidx);
+            rehash(dict_expr, dict, module, key_asr_type, value_asr_type, name2memidx);
         }, [=]() {
         });
     }
 
-    void LLVMDictInterface::write_item(llvm::Value* dict, llvm::Value* key,
+    void LLVMDictInterface::write_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
                               llvm::Value* value, llvm::Module* module,
                               ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
                               std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
         std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
         std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
-
-        rehash_all_at_once_if_needed(dict, module, key_asr_type, value_asr_type, name2memidx);
+                 
+        rehash_all_at_once_if_needed(dict_expr, dict, module, key_asr_type, value_asr_type, name2memidx);
         llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                  get_pointer_to_capacity_using_typecode(key_type_code, value_type_code, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, key_asr_type, module);
-        this->resolve_collision_for_write(dict, key_hash, key, value, module,
+        this->resolve_collision_for_write(dict_expr, dict, key_hash, key, value, module,
                                           key_asr_type, value_asr_type, name2memidx);
         // A second rehash ensures that the threshold is not breached at any point.
         // It can be shown mathematically that rehashing twice would only occur for small dictionaries,
         // for example, for threshold set in linear probing, it occurs only when len(dict) <= 2
-        rehash_all_at_once_if_needed(dict, module, key_asr_type, value_asr_type, name2memidx);
+        rehash_all_at_once_if_needed(dict_expr, dict, module, key_asr_type, value_asr_type, name2memidx);
     }
 
     llvm::Value* LLVMDict::read_item(llvm::Value* dict, llvm::Value* key,
@@ -4611,7 +4612,7 @@ namespace LCompilers {
         return llvm_utils->CreateLoad(value_ptr);
     }
 
-    void LLVMDict::get_elements_list(llvm::Value* dict,
+    void LLVMDict::get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
         llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx,
@@ -4678,7 +4679,7 @@ namespace LCompilers {
             llvm_utils->create_if_else(add_el, [&]() {
                 llvm::Value* el = llvm_utils->list_api->read_item_using_ttype(el_asr_type, el_list, idx,
                         false, module, LLVM::is_llvm_struct(el_asr_type));
-                llvm_utils->list_api->append(elements_list, el,
+                llvm_utils->list_api->append(expr, elements_list, el,
                                              el_asr_type, module, name2memidx);
             }, [=]() {
             });
@@ -4694,7 +4695,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopend);
     }
 
-    void LLVMDictSeparateChaining::get_elements_list(llvm::Value* dict,
+    void LLVMDictSeparateChaining::get_elements_list(ASR::expr_t* expr, llvm::Value* dict,
         llvm::Value* elements_list, ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx,
@@ -4759,7 +4760,7 @@ namespace LCompilers {
                     if( !LLVM::is_llvm_struct(el_asr_type) ) {
                         kv_el = llvm_utils->CreateLoad(kv_el);
                     }
-                    llvm_utils->list_api->append(elements_list, kv_el,
+                    llvm_utils->list_api->append(expr, elements_list, kv_el,
                                                  el_asr_type, module, name2memidx);
                     llvm::Value* next_kv_struct = llvm_utils->CreateLoad(llvm_utils->create_gep(kv_struct, 2));
                     LLVM::CreateStore(*builder, next_kv_struct, chain_itr);
@@ -4877,7 +4878,7 @@ namespace LCompilers {
         builder->CreateStore(end_point, end_point_ptr);
     }
 
-    void LLVMList::append(llvm::Value* list, llvm::Value* item,
+    void LLVMList::append(ASR::expr_t* list_expr, llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* asr_type, llvm::Module* module,
                           std::map<std::string, std::map<std::string, int>>& name2memidx) {
         std::string type_code = ASRUtils::get_type_code(asr_type);
@@ -4892,11 +4893,11 @@ namespace LCompilers {
                                                                 get_pointer_to_current_capacity_using_type(list_type, list));
         resize_if_needed_using_typecode(type_code, list, current_end_point, current_capacity,
                          type_size, el_type, module);
-        write_item(list, current_end_point, item, asr_type, false, module, name2memidx);
+        write_item(list_expr, list, current_end_point, item, asr_type, false, module, name2memidx);
         shift_end_point_by_one_using_typecode(type_code, list);
     }
 
-    void LLVMList::insert_item(llvm::Value* list, llvm::Value* pos,
+    void LLVMList::insert_item(ASR::expr_t* list_expr, llvm::Value* list, llvm::Value* pos,
                                llvm::Value* item, ASR::ttype_t* asr_type,
                                llvm::Module* module,
                                std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -5341,7 +5342,7 @@ namespace LCompilers {
         return tmp;
     }
 
-    llvm::Value* LLVMList::pop_position(llvm::Value* list, llvm::Value* pos,
+    llvm::Value* LLVMList::pop_position(ASR::expr_t* list_expr, llvm::Value* list, llvm::Value* pos,
         ASR::ttype_t* list_element_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /* Equivalent in C++:
@@ -5370,7 +5371,7 @@ namespace LCompilers {
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 std::get<2>(typecode2listtype[el_type_code]), nullptr,
                 "pop_position_item");
-            llvm_utils->deepcopy(item, target, list_element_type, module, name2memidx);
+            llvm_utils->deepcopy(list_expr, item, target, list_element_type, module, name2memidx);
             item = target;
         }
 
@@ -5693,7 +5694,7 @@ namespace LCompilers {
         return read_item_using_pos_value(el_type, llvm_tuple, tuple_type, llvm_pos, get_pointer);
     }
 
-    void LLVMTuple::tuple_init(llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
+    void LLVMTuple::tuple_init(ASR::expr_t* tuple_expr, llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         for( size_t i = 0; i < values.size(); i++ ) {
@@ -5705,7 +5706,7 @@ namespace LCompilers {
         }
     }
 
-    void LLVMTuple::tuple_deepcopy(llvm::Value* src, llvm::Value* dest,
+    void LLVMTuple::tuple_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
@@ -5790,7 +5791,7 @@ namespace LCompilers {
         return llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), inequality_holds);
     }
 
-    void LLVMTuple::concat(llvm::Value* t1, llvm::Value* t2, ASR::Tuple_t* tuple_type_1,
+    void LLVMTuple::concat(ASR::expr_t* tuple_1_expr, llvm::Value* t1, llvm::Value* t2, ASR::Tuple_t* tuple_type_1,
                            ASR::Tuple_t* tuple_type_2, llvm::Value* concat_tuple,
                            ASR::Tuple_t* concat_tuple_type, llvm::Module* module,
                            std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -5803,7 +5804,7 @@ namespace LCompilers {
             values.push_back(llvm_utils->tuple_api->read_item(t2, tuple_type_2, i,
                 LLVM::is_llvm_struct(tuple_type_2->m_type[i])));
         }
-        tuple_init(concat_tuple, values, concat_tuple_type,
+        tuple_init(tuple_1_expr, concat_tuple, values, concat_tuple_type,
                    module, name2memidx);
     }
 
@@ -6334,7 +6335,7 @@ namespace LCompilers {
     }
 
     void LLVMSetLinearProbing::resolve_collision_for_write(
-        llvm::Value* set, llvm::Value* el_hash, llvm::Value* el,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Value* el_hash, llvm::Value* el,
         llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
@@ -6361,7 +6362,7 @@ namespace LCompilers {
                                                         get_pointer_to_capacity_using_typecode(el_type_code, set));
         this->resolve_collision(capacity, el_hash, el, el_list, el_mask, module, el_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
-        llvm_utils->list_api->write_item(el_list, pos, el,
+        llvm_utils->list_api->write_item(set_expr, el_list, pos, el,
                                          el_asr_type, false, module, name2memidx);
 
         llvm::Value* el_mask_value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context),
@@ -6394,7 +6395,7 @@ namespace LCompilers {
     }
 
     void LLVMSetSeparateChaining::resolve_collision_for_write(
-        llvm::Value* set, llvm::Value* el_hash, llvm::Value* el,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Value* el_hash, llvm::Value* el,
         llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
@@ -6453,7 +6454,7 @@ namespace LCompilers {
                 llvm::Value* malloc_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), el_struct_size);
                 llvm::Value* new_el_struct_i8 = LLVM::lfortran_malloc(context, *module, *builder, malloc_size);
                 llvm::Value* new_el_struct = builder->CreateBitCast(new_el_struct_i8, el_struct_type->getPointerTo());
-                llvm_utils->deepcopy(el, llvm_utils->create_gep(new_el_struct, 0), el_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(new_el_struct, 0), el_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep(new_el_struct, 1));
@@ -6461,7 +6462,7 @@ namespace LCompilers {
                 llvm::Value* el_struct_prev = builder->CreateBitCast(el_struct_prev_i8, el_struct_type->getPointerTo());
                 LLVM::CreateStore(*builder, new_el_struct_i8, llvm_utils->create_gep(el_struct_prev, 1));
             }, [&]() {
-                llvm_utils->deepcopy(el, llvm_utils->create_gep(el_linked_list, 0), el_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(el_linked_list, 0), el_asr_type, module, name2memidx);
                 LLVM::CreateStore(*builder,
                     llvm::ConstantPointerNull::get(llvm::Type::getInt8Ty(context)->getPointerTo()),
                     llvm_utils->create_gep(el_linked_list, 1));
@@ -6477,7 +6478,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(elseBB);
         {
             llvm::Value* el_struct = builder->CreateBitCast(el_struct_i8, el_struct_type->getPointerTo());
-            llvm_utils->deepcopy(el, llvm_utils->create_gep(el_struct, 0), el_asr_type, module, name2memidx);
+            llvm_utils->deepcopy(set_expr, el, llvm_utils->create_gep(el_struct, 0), el_asr_type, module, name2memidx);
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* buckets_filled_ptr = get_pointer_to_number_of_filled_buckets(set);
@@ -6497,7 +6498,7 @@ namespace LCompilers {
     }
 
     void LLVMSetLinearProbing::rehash(
-        llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
         /**
@@ -6596,7 +6597,7 @@ namespace LCompilers {
                 llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
                 llvm::Value* el_dest = llvm_utils->list_api->read_item_using_ttype(el_asr_type,
                                     new_el_list, pos, false, module, true);
-                llvm_utils->deepcopy(el, el_dest, el_asr_type, module, name2memidx);
+                llvm_utils->deepcopy(set_expr, el, el_dest, el_asr_type, module, name2memidx);
 
                 llvm::Value* linear_prob_happened = builder->CreateICmpNE(el_hash, pos);
                 llvm::Value* set_max_2 = builder->CreateSelect(linear_prob_happened,
@@ -6628,7 +6629,7 @@ namespace LCompilers {
     }
 
     void LLVMSetSeparateChaining::rehash(
-        llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
          * C++ equivalent:
@@ -6724,7 +6725,7 @@ namespace LCompilers {
 
             llvm_utils->create_if_else(is_el_set, [&]() {
                 llvm::Value* srci = llvm_utils->create_ptr_gep(old_elems_value, itr);
-                write_el_linked_list(srci, set, capacity, el_asr_type, module, name2memidx);
+                write_el_linked_list(set_expr, srci, set, capacity, el_asr_type, module, name2memidx);
             }, [=]() {
             });
             llvm::Value* tmp = builder->CreateAdd(
@@ -6768,7 +6769,7 @@ namespace LCompilers {
     }
 
     void LLVMSetSeparateChaining::write_el_linked_list(
-        llvm::Value* el_ll, llvm::Value* set, llvm::Value* capacity,
+        ASR::expr_t* set_expr, llvm::Value* el_ll, llvm::Value* set, llvm::Value* capacity,
         ASR::ttype_t* m_el_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
@@ -6811,7 +6812,7 @@ namespace LCompilers {
                 src_el = llvm_utils->CreateLoad(src_el_ptr);
             }
             llvm::Value* el_hash = get_el_hash(capacity, src_el, m_el_type, module);
-            resolve_collision_for_write(
+            resolve_collision_for_write(set_expr,
                 set, el_hash, src_el, module,
                 m_el_type, name2memidx);
 
@@ -6826,7 +6827,7 @@ namespace LCompilers {
     }
 
     void LLVMSetLinearProbing::rehash_all_at_once_if_needed(
-        llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
         /**
@@ -6853,12 +6854,12 @@ namespace LCompilers {
                                 llvm::Type::getInt32Ty(context), llvm::APInt(32, 3)));
         llvm_utils->create_if_else(builder->CreateICmpSGE(occupancy_times_5,
                                     capacity_times_3), [&]() {
-            rehash(set, module, el_asr_type, name2memidx);
+            rehash(set_expr, set, module, el_asr_type, name2memidx);
         }, []() {});
     }
 
     void LLVMSetSeparateChaining::rehash_all_at_once_if_needed(
-        llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
          * C++ equivalent:
@@ -6877,20 +6878,20 @@ namespace LCompilers {
         rehash_condition = builder->CreateAnd(rehash_condition,
             builder->CreateICmpSGE(occupancy, buckets_filled_times_2));
         llvm_utils->create_if_else(rehash_condition, [&]() {
-            rehash(set, module, el_asr_type, name2memidx);
+            rehash(set_expr, set, module, el_asr_type, name2memidx);
         }, []() {});
     }
 
     void LLVMSetInterface::write_item(
-        llvm::Value* set, llvm::Value* el,
+        ASR::expr_t* set_expr, llvm::Value* set, llvm::Value* el,
         llvm::Module* module, ASR::ttype_t* el_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        rehash_all_at_once_if_needed(set, module, el_asr_type, name2memidx);
+        rehash_all_at_once_if_needed(set_expr, set, module, el_asr_type, name2memidx);
         std::string el_type_code = ASRUtils::get_type_code(el_asr_type);
         llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), 
                                                                 get_pointer_to_capacity_using_typecode(el_type_code, set));
         llvm::Value* el_hash = get_el_hash(current_capacity, el, el_asr_type, module);
-        this->resolve_collision_for_write(set, el_hash, el, module,
+        this->resolve_collision_for_write(set_expr, set, el_hash, el, module,
                                           el_asr_type, name2memidx);
     }
 
@@ -7126,6 +7127,7 @@ namespace LCompilers {
     }
 
     void LLVMSetLinearProbing::set_deepcopy(
+        ASR::expr_t* set_expr,
         llvm::Value* src, llvm::Value* dest,
         ASR::Set_t* set_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -7139,7 +7141,7 @@ namespace LCompilers {
 
         llvm::Value* src_el_list = get_el_list(src);
         llvm::Value* dest_el_list = get_el_list(dest);
-        llvm_utils->list_api->list_deepcopy(src_el_list, dest_el_list,
+        llvm_utils->list_api->list_deepcopy(set_expr, src_el_list, dest_el_list,
                                             set_type->m_type, module,
                                             name2memidx);
 
@@ -7160,7 +7162,7 @@ namespace LCompilers {
     }
 
     void LLVMSetSeparateChaining::set_deepcopy(
-        llvm::Value* src, llvm::Value* dest,
+        ASR::expr_t* set_expr, llvm::Value* src, llvm::Value* dest,
         ASR::Set_t* set_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
 
@@ -7227,7 +7229,7 @@ namespace LCompilers {
             llvm_utils->create_if_else(is_el_set, [&]() {
                 llvm::Value* srci = llvm_utils->create_ptr_gep(src_elems, itr);
                 llvm::Value* desti = llvm_utils->create_ptr_gep(dest_elems, itr);
-                deepcopy_el_linked_list(srci, desti, dest_elems,
+                deepcopy_el_linked_list(set_expr, srci, desti, dest_elems,
                     set_type, module, name2memidx);
             }, []() {});
             llvm::Value* tmp = builder->CreateAdd(
@@ -7244,7 +7246,7 @@ namespace LCompilers {
     }
 
     void LLVMSetSeparateChaining::deepcopy_el_linked_list(
-        llvm::Value* srci, llvm::Value* desti, llvm::Value* dest_elems,
+        ASR::expr_t* set_expr, llvm::Value* srci, llvm::Value* desti, llvm::Value* dest_elems,
         ASR::Set_t* set_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         /**
@@ -7302,7 +7304,7 @@ namespace LCompilers {
                 src_el = llvm_utils->CreateLoad(src_el_ptr);
             }
             llvm::Value* dest_el_ptr = llvm_utils->create_gep(curr_dest, 0);
-            llvm_utils->deepcopy(src_el, dest_el_ptr, set_type->m_type, module, name2memidx);
+            llvm_utils->deepcopy(set_expr, src_el, dest_el_ptr, set_type->m_type, module, name2memidx);
 
             llvm::Value* src_next_ptr = llvm_utils->CreateLoad(llvm_utils->create_gep(curr_src, 1));
             llvm::Value* curr_dest_next_ptr = llvm_utils->create_gep(curr_dest, 1);

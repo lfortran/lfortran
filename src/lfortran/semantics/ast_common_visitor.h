@@ -10450,7 +10450,7 @@ public:
         ASR::Struct_t *left_struct = nullptr;
         if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_symbol_from_expr(left)));
+                ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(left)));
             left_struct = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
         }
 
