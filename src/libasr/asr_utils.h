@@ -1348,6 +1348,7 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         case ASR::exprType::RealUnaryMinus:
         case ASR::exprType::IntegerBinOp:
         case ASR::exprType::ArrayConstructor:
+        case ASR::exprType::StructInstanceMember:
         case ASR::exprType::StringLen: {
             return is_value_constant(expr_value(a_value));
         } case ASR::exprType::ListConstant: {
@@ -1408,10 +1409,6 @@ static inline bool is_value_constant(ASR::expr_t *a_value) {
         } case ASR::exprType::ArrayBroadcast: {
             ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(a_value);
             return is_value_constant(array_broadcast->m_value);
-        } case ASR::exprType::StructInstanceMember: {
-            ASR::StructInstanceMember_t*
-                struct_member_t = ASR::down_cast<ASR::StructInstanceMember_t>(a_value);
-            return is_value_constant(struct_member_t->m_v);
         } case ASR::exprType::Var: {
             ASR::Var_t* var_t = ASR::down_cast<ASR::Var_t>(a_value);
             if( ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var_t->m_v)) ) {
