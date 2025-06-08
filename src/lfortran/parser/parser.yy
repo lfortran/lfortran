@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 
-%expect    247 // shift/reduce conflicts
+%expect    253 // shift/reduce conflicts
 %expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -2791,4 +2791,6 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
+    | KW_LF_LIST { $$ = SYMBOL($1, @$); }
+    | KW_LF_SET { $$ = SYMBOL($1, @$); }
     ;
