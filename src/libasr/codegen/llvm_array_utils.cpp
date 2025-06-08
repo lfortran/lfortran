@@ -682,6 +682,7 @@ namespace LCompilers {
                 llvm::Value* lval = llvm_diminfo[r1];
                 // first cast curr_llvm_idx to 32 bit
                 curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
+                lval = builder->CreateSExtOrTrunc(lval, llvm::Type::getInt32Ty(context));
                 curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
                 if( check_for_bounds ) {
                     // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
@@ -691,6 +692,7 @@ namespace LCompilers {
                     r1 += 1;
                 } else {
                     llvm::Value* dim_size = llvm_diminfo[r1 + 1];
+                    dim_size = builder->CreateSExtOrTrunc(dim_size, llvm::Type::getInt32Ty(context));
                     r1 += 2;
                     prod = builder->CreateMul(prod, dim_size);
                 }
