@@ -5,8 +5,8 @@
 %locations
 %glr-parser
 
-%expect    229 // shift/reduce conflicts
-%expect-rr 224 // reduce/reduce conflicts
+%expect    245 // shift/reduce conflicts
+%expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
 //%define parse.error verbose

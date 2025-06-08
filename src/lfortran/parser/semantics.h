@@ -465,7 +465,8 @@ static inline expr_t* dims2expr(Allocator &al, var_sym_t const &vs) {
 					   args, vs.n_dim,
 					   nullptr, 0, /* keywords */
 					   nullptr, 0, /* subargs */
-					   nullptr, 0 /* temp_args */ ));
+					   nullptr, 0, /* temp_args */ 
+                                           nullptr, 0 /* generic_type_args */));
     }
 }
 
