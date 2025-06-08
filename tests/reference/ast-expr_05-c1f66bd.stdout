@@ -19,6 +19,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -56,6 +57,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 ()
                 None

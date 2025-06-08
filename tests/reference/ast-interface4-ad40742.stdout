@@ -30,6 +30,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -66,11 +67,13 @@
         []
         [(Function
             MULT
+            []
             [(A)
             (B)]
             [(AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -85,6 +88,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -118,6 +122,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -134,6 +139,7 @@
                 (AttrType
                     TypeLogical
                     []
+                    ()
                     ()
                     ()
                     None
@@ -165,6 +171,7 @@
                     []
                     []
                     []
+                    []
                 ) (FuncCallOrArray
                     SIZE
                     []
@@ -172,6 +179,7 @@
                     B
                     ()
                     0)]
+                    []
                     []
                     []
                     []
@@ -221,6 +229,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
                 [(Assignment
@@ -236,6 +245,7 @@
                         []
                         []
                         []
+                        []
                     ) (FuncCallOrArray
                         B
                         []
@@ -243,6 +253,7 @@
                         I
                         ()
                         0)]
+                        []
                         []
                         []
                         []

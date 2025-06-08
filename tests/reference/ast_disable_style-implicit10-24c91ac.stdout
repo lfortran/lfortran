@@ -2,9 +2,11 @@
     [(Function
         a
         []
+        []
         [(AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None
@@ -22,6 +24,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -47,6 +50,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -79,6 +83,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -115,6 +120,7 @@
                 Value)]
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -147,6 +153,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -172,6 +179,7 @@
                 [(()
                 4
                 Value)]
+                ()
                 ()
                 ()
                 None
@@ -201,6 +209,7 @@
                 Value)]
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -217,6 +226,7 @@
             (AttrType
                 TypeDoublePrecision
                 []
+                ()
                 ()
                 ()
                 None
@@ -244,6 +254,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -262,6 +273,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -296,6 +308,7 @@
                 []
                 []
                 []
+                []
             )
             3
             ()
@@ -317,6 +330,7 @@
                 1
                 ()
                 0)]
+                []
                 []
                 []
                 []

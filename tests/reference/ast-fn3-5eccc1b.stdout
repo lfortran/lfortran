@@ -2,6 +2,7 @@
     [(Function
         a
         []
+        []
         [(SimpleAttribute
             AttrRecursive
         )
@@ -11,6 +12,7 @@
         (AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None
@@ -33,12 +35,14 @@
     (Function
         b
         []
+        []
         [(SimpleAttribute
             AttrPure
         )
         (AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None
@@ -64,6 +68,7 @@
     (Function
         c
         []
+        []
         [(SimpleAttribute
             AttrElemental
         )
@@ -73,6 +78,7 @@
         (AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None
@@ -94,6 +100,7 @@
     )
     (Function
         cb
+        []
         []
         [(SimpleAttribute
             AttrElemental
@@ -117,6 +124,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -136,9 +144,11 @@
     (Function
         d
         []
+        []
         [(AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None

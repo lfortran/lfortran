@@ -10,6 +10,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -28,6 +29,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 ()
                 None
@@ -49,6 +51,7 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 doubleprecision
                 None
             )
@@ -68,6 +71,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 integer
                 None
@@ -89,6 +93,7 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 real
                 None
             )
@@ -108,6 +113,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 complex
                 None
@@ -130,6 +136,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -148,6 +155,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -169,6 +177,7 @@
                 []
                 []
                 []
+                []
             )
             Equal
             ())]
@@ -178,6 +187,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 ()
                 None
@@ -198,6 +208,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 ()
                 None

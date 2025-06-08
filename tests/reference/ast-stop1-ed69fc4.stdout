@@ -19,6 +19,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -35,6 +36,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None

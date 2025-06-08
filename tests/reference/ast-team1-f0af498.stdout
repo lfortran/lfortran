@@ -20,6 +20,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -38,6 +39,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 team_type
                 None
@@ -65,6 +67,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrCodimension
@@ -88,6 +91,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -118,6 +122,7 @@
                 []
                 []
                 []
+                []
             )
             (FuncCallOrArray
                 this_image
@@ -126,6 +131,7 @@
                 co_array
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -148,6 +154,7 @@
                 []
                 []
                 []
+                []
             )
             column
             [(AttrNewIndex
@@ -158,6 +165,7 @@
                     1
                     ()
                     0)]
+                    []
                     []
                     []
                     []
@@ -218,6 +226,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
                 0)
@@ -225,6 +234,7 @@
                 2
                 ()
                 0)]
+                []
                 []
                 []
                 []

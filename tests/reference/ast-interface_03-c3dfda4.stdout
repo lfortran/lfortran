@@ -34,6 +34,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -81,6 +82,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -116,6 +118,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -140,6 +143,7 @@
             (AttrType
                 TypeProcedure
                 []
+                ()
                 ()
                 a1
                 None
@@ -189,6 +193,7 @@
                             (AttrType
                                 TypeInteger
                                 []
+                                ()
                                 ()
                                 ()
                                 None

@@ -56,9 +56,11 @@
         (Function
             f2
             []
+            []
             [(AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None

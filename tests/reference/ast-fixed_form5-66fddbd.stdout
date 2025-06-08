@@ -1,6 +1,7 @@
 (TranslationUnit
     [(Function
         zdotc
+        []
         [(n)
         (d1x)]
         [(AttrType
@@ -8,6 +9,7 @@
             [(()
             8
             Value)]
+            ()
             ()
             ()
             None
@@ -22,6 +24,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -44,6 +47,7 @@
                 Value)]
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -64,6 +68,7 @@
                 [(()
                 2
                 Value)]
+                ()
                 ()
                 ()
                 None

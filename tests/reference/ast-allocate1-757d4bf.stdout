@@ -15,6 +15,7 @@
                 Colon)]
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -35,6 +36,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -51,6 +53,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -92,6 +95,7 @@
                     cmdlen
                     ()
                     0)]
+                    []
                     []
                     []
                     []

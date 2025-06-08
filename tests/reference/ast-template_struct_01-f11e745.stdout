@@ -49,6 +49,7 @@
                 )]
                 []
                 []
+                []
             )]
             []
         )
@@ -98,10 +99,12 @@
                     (EndOfLine)]
                 )
                 []
+                []
                 [(Declaration
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         t
                         None
@@ -121,6 +124,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         t
                         None
                     )
@@ -138,6 +142,7 @@
             )]
             [(Function
                 get_fst
+                []
                 [(p)]
                 []
                 r
@@ -154,6 +159,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         tuple
                         None
@@ -174,6 +180,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         t
                         None
@@ -200,6 +207,7 @@
             )
             (Function
                 get_snd
+                []
                 [(p)]
                 []
                 r
@@ -216,6 +224,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         tuple
                         None
@@ -236,6 +245,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         t
                         None
@@ -282,6 +292,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )]
                 [(UseSymbol
@@ -304,6 +315,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )]
                 [(UseSymbol
@@ -324,6 +336,7 @@
                     TypeType
                     []
                     ()
+                    ()
                     int_tuple
                     None
                 )
@@ -341,6 +354,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     real_tuple
                     None
@@ -376,6 +390,7 @@
                     []
                     []
                     []
+                    []
                 )]
                 ()
             )
@@ -397,6 +412,7 @@
                     ti
                     ()
                     0)]
+                    []
                     []
                     []
                     []
@@ -424,6 +440,7 @@
                     []
                     []
                     []
+                    []
                 )]
                 ()
             )
@@ -445,6 +462,7 @@
                     tr
                     ()
                     0)]
+                    []
                     []
                     []
                     []

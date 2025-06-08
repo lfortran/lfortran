@@ -17,12 +17,14 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeCharacter
                     [(len
                     1
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -48,6 +50,7 @@
                 TypeType
                 []
                 ()
+                ()
                 varying_string
                 None
             )
@@ -65,6 +68,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 varying_string
                 None
@@ -89,6 +93,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -109,6 +114,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -133,6 +139,7 @@
                 [(kind
                 4
                 Value)]
+                ()
                 ()
                 ()
                 None
@@ -174,6 +181,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 ()
@@ -188,6 +196,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -206,6 +215,7 @@
                     [(kind
                     4
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -239,6 +249,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 ()
@@ -254,6 +265,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -273,6 +285,7 @@
                     [(kind
                     4
                     Value)]
+                    ()
                     ()
                     ()
                     None

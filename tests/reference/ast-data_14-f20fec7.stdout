@@ -10,6 +10,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -28,6 +29,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -60,10 +62,12 @@
                         []
                         []
                         []
+                        []
                     )]
                     (AttrType
                         TypeInteger
                         []
+                        ()
                         ()
                         ()
                         None

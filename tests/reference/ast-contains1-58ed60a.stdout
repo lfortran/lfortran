@@ -10,6 +10,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -40,6 +41,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -127,6 +129,7 @@
                 []
                 []
                 []
+                []
             ) j)
             (** (FuncCallOrArray
                 n
@@ -135,6 +138,7 @@
                 2
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -180,6 +184,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -202,6 +207,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -222,6 +228,7 @@
                     []
                     ()
                     ()
+                    ()
                     DoubleAsterisk
                 )
                 [(AttrIntent
@@ -240,6 +247,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     ()
                     Asterisk
@@ -264,6 +272,7 @@
                     Value)]
                     ()
                     ()
+                    ()
                     None
                 )
                 [(AttrIntent
@@ -286,6 +295,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -304,6 +314,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -320,6 +331,7 @@
                 (AttrType
                     TypeClass
                     []
+                    ()
                     ()
                     ()
                     Asterisk
@@ -372,6 +384,7 @@
                     []
                     []
                     []
+                    []
                 )
                 (FuncCallOrArray
                     n
@@ -380,6 +393,7 @@
                     2
                     ()
                     0)]
+                    []
                     []
                     []
                     []

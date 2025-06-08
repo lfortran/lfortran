@@ -17,6 +17,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -33,6 +34,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -62,6 +64,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -84,6 +87,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -104,6 +108,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -120,6 +125,7 @@
             (AttrType
                 TypeComplex
                 []
+                ()
                 ()
                 ()
                 None

@@ -17,6 +17,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -33,6 +34,7 @@
                 (Real "0.d0")
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -56,6 +58,7 @@
             []
             []
             []
+            []
         )
         (DerivedType
             C
@@ -65,6 +68,7 @@
                 [(EndOfLine)
                 (EndOfLine)]
             )
+            []
             []
             []
             []
@@ -83,6 +87,7 @@
             (SimpleAttribute
                 AttrPublic
             )]
+            []
             [(Declaration
                 ()
                 [(SimpleAttribute
@@ -97,6 +102,7 @@
                     [(()
                     r8
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -120,6 +126,7 @@
                     TypeType
                     []
                     ()
+                    ()
                     C
                     None
                 )
@@ -137,6 +144,7 @@
                     []
                     []
                     []
+                    []
                 )
                 Arrow
                 ())]
@@ -148,6 +156,7 @@
                     [(()
                     r8
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -168,6 +177,7 @@
                     []
                     []
                     []
+                    []
                 )
                 Arrow
                 ())
@@ -179,6 +189,7 @@
                 ()
                 (FuncCallOrArray
                     null
+                    []
                     []
                     []
                     []
@@ -330,10 +341,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -358,6 +371,7 @@
                     Value)]
                     ()
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -378,6 +392,7 @@
                     [(()
                     k
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -418,6 +433,7 @@
                     TypeClass
                     []
                     ()
+                    ()
                     X
                     None
                 )
@@ -455,6 +471,7 @@
                 (AttrType
                     TypeClass
                     []
+                    ()
                     ()
                     X
                     None

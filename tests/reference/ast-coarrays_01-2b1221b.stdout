@@ -56,6 +56,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -83,6 +84,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -106,6 +108,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -124,6 +127,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -152,6 +156,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -191,6 +196,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -213,6 +219,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -251,6 +258,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrDimension
@@ -279,6 +287,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -311,6 +320,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -335,6 +345,7 @@
                 TypeType
                 []
                 ()
+                ()
                 event_type
                 None
             )
@@ -354,6 +365,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 event_type
                 None
@@ -382,6 +394,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -447,6 +460,7 @@
                 [(()
                 (FuncCallOrArray
                     num_images
+                    []
                     []
                     []
                     []
@@ -522,6 +536,7 @@
                 []
                 []
                 []
+                []
             ) 1)
             [(DoLoop
                 0
@@ -531,6 +546,7 @@
                 2
                 (FuncCallOrArray
                     num_images
+                    []
                     []
                     []
                     []
@@ -587,6 +603,7 @@
                     [(()
                     (FuncCallOrArray
                         this_image
+                        []
                         []
                         []
                         []
@@ -696,6 +713,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
                 0)]
@@ -708,6 +726,7 @@
                     i
                     ()
                     0)]
+                    []
                     []
                     []
                     []
@@ -756,6 +775,7 @@
                 4
                 ()
                 0)]
+                []
                 []
             )
             (String "S")
