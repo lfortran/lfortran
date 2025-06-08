@@ -1356,7 +1356,6 @@ public:
                     ASR::ttype_t* new_caller_type = ASRUtils::type_get_past_pointer(
                         ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(sm->m_v)));
-                    std::cout << "New Caller Type: " << new_caller_type->type << std::flush;
                     if (ASR::is_a<ASR::StructType_t>(*new_caller_type)) {
                         struct_sym = ASRUtils::symbol_get_past_external(
                             ASR::down_cast<ASR::StructType_t>(new_caller_type)->m_derived_type);
@@ -1385,12 +1384,7 @@ public:
                     builder->CreateStore(dt_val, alloca_tmp);
                     dt = alloca_tmp;
                 }
-                if (!dt->getType()->isPointerTy()) {
-                    std::cerr << "Expected pointer type for GEP, got: ";
-                    dt->getType()->print(llvm::errs());
-                    std::cerr << std::endl;
-                    throw CodeGenError("GEP requires a pointer value to struct.");
-                }
+                LCOMPILERS_ASSERT(dt->getType()->isPointerTy());
                 llvm::Value* dt_1 = builder->CreateGEP(name2dertype[curr_struct], dt, idx_vars);
 #if LLVM_VERSION_MAJOR > 16
                 llvm::Type *dt_1_type = llvm_utils->get_type_from_ttype_t_util(

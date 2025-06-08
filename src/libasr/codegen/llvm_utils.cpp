@@ -263,13 +263,10 @@ namespace LCompilers {
         } else if (_type->type == ASR::ttypeType::Pointer) {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(_type);
             ASR::ttype_t* ptr_type = ASRUtils::type_get_past_pointer(ptr->m_type);
-            if (ASR::is_a<ASR::StructType_t>(*ptr_type)) {
-                ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ptr_type);
-                ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-                der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
-            } else {
-                throw CodeGenError("Expected a struct type, but found: " + ASRUtils::type_to_str_fortran(ptr_type));
-            }
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*ptr_type));
+            ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ptr_type);
+            ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
+            der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
         } else {
             LCOMPILERS_ASSERT(false);
             return nullptr; // silence a warning
