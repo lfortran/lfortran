@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 
-%expect    245 // shift/reduce conflicts
+%expect    247 // shift/reduce conflicts
 %expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
