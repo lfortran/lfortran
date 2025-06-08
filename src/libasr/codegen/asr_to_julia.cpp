@@ -393,7 +393,6 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*v_m_type)) {
                 // TODO: handle this
-                ASR::StructType_t* t = ASR::down_cast<ASR::StructType_t>(v_m_type);
                 std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                 if (is_array) {
                     generate_array_decl(sub,
@@ -983,7 +982,6 @@ public:
                 generate_array_decl(
                     out, std::string(v->m_name), type_name, _dims, nullptr, n_dims, true, true);
             } else if (ASR::is_a<ASR::StructType_t>(*v->m_type)) {
-                ASR::StructType_t* t = ASR::down_cast<ASR::StructType_t>(v->m_type);
                 std::string der_type_name = ASRUtils::symbol_name(v->m_type_declaration);
                 generate_array_decl(
                     out, std::string(v->m_name), der_type_name, _dims, nullptr, n_dims, true, true);
