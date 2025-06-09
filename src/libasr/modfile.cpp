@@ -6,7 +6,6 @@
 #include <libasr/modfile.h>
 #include <libasr/serialization.h>
 #include <libasr/bwriter.h>
-#include <iostream>
 
 namespace LCompilers {
 
@@ -217,12 +216,12 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
     return true;
 }
 
-Result<ASR::TranslationUnit_t*> load_modfile(Allocator &al, const std::string &s,
+Result<ASR::TranslationUnit_t*, ErrorMessage> load_modfile(Allocator &al, const std::string &s,
         bool load_symtab_id, SymbolTable &symtab, LCompilers::LocationManager &lm) {
     std::string asr_binary;
     std::string error_message;
     if (!load_serialised_asr(s, asr_binary, lm, error_message)) {
-        return Error(error_message);
+        return ErrorMessage(error_message);
     }
     // take offset as last second element of file_ends
     uint32_t offset = lm.file_ends[lm.file_ends.size()-2];
@@ -231,12 +230,12 @@ Result<ASR::TranslationUnit_t*> load_modfile(Allocator &al, const std::string &s
     return tu;
 }
 
-Result<ASR::TranslationUnit_t*> load_pycfile(Allocator &al, const std::string &s,
+Result<ASR::TranslationUnit_t*, ErrorMessage> load_pycfile(Allocator &al, const std::string &s,
         bool load_symtab_id, LCompilers::LocationManager &lm) {
     std::string asr_binary;
     std::string error_message;
     if (!load_serialised_asr(s, asr_binary, lm, error_message)) {
-        return Error(error_message);
+        return ErrorMessage(error_message);
     }
     uint32_t offset = 0;
     ASR::asr_t *asr = deserialize_asr(al, asr_binary, load_symtab_id, offset);

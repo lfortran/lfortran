@@ -2299,7 +2299,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             LCompilers::LocationManager &lm,
                             bool generate_object_code = false);
 
-ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
+Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm);

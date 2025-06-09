@@ -49,20 +49,22 @@ namespace LCompilers {
     below.
 */
 struct Error {
+};
+
+struct ErrorMessage {
     std::string message;
 
-    Error() = default;
-    Error(const std::string& msg)
+    ErrorMessage(const std::string& msg)
         : message(msg)
     {}
 };
 
-template<typename T>
+template<typename T, typename E = Error>
 struct Result {
     bool ok;
     union {
         T result;
-        Error error;
+        E error;
     };
     // Default constructor
     Result() = delete;
@@ -73,31 +75,41 @@ struct Result {
     // Destructor
     ~Result() {
         if (!ok) {
-            error.~Error();
+            error.~E();
         }
     }
     // Copy constructor
-    Result(const Result<T> &other) : ok{other.ok} {
+    Result(const Result& other)
+        : ok{ other.ok } {
         if (ok) {
-            new(&result) T(other.result);
+            new (&result) T(other.result);
         } else {
-            new(&error) Error(other.error);
+            new (&error) E(other.error);
         }
     }
     // Copy assignment
-    Result<T>& operator=(const Result<T> &other) {
-        ok = other.ok;
-        if (ok) {
-            new(&result) T(other.result);
-        } else {
-            new(&error) Error(other.error);
+    Result& operator=(const Result& other) {
+        if (this != &other) {
+            this->~Result();
+            new (this) Result(other);
         }
         return *this;
     }
+    // Move constructor for success
+    Result(T&& res) : ok(true), result{std::move(res)} {}
+    // Move constructor for error (optional)
+    Result(E&& err) : ok(false), error{std::move(err)} {}
     // Move constructor
-    Result(T &&result) : ok{true}, result{std::move(result)} {}
+    Result(Result&& other)
+        : ok(other.ok) {
+        if (ok) {
+            new (&result) T(std::move(other.result));
+        } else {
+            new (&error) E(std::move(other.error));
+        }
+    }
     // Move assignment
-    Result<T>&& operator=(T &&other) = delete;
+    Result<T>&& operator=(T&& other) = delete;
 };
 
 
