@@ -10449,9 +10449,7 @@ public:
 
         ASR::Struct_t *left_struct = nullptr;
         if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
-            ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(left)));
-            left_struct = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
+            left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(left));
         }
 
         ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);

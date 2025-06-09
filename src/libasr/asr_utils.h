@@ -72,7 +72,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
-ASR::symbol_t* get_variable_symbol_from_struct_expr(ASR::expr_t* expression);
+ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -5314,11 +5314,9 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
     if (!ASRUtils::is_class_type(type)) {
         return false;
     }
-    ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-        ASRUtils::symbol_get_past_external(ASRUtils::get_variable_symbol_from_struct_expr(expr)));
 
     return (st->n_data_member_types == 0 && st->n_member_function_types == 0
-            && v->m_type_declaration == nullptr);
+            && ASRUtils::get_struct_sym_from_struct_expr(expr) == nullptr);
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,

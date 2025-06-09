@@ -1011,20 +1011,6 @@ public:
                 "' cannot point outside of its symbol table");
     }
 
-    SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
-        LCOMPILERS_ASSERT(dt)
-        SymbolTable *symtab = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(dt));
-        require_with_loc(symtab,
-            "m_dt::m_v::m_type::class/derived_type must point to a symbol with a symbol table",
-            dt->base.loc);
-        return symtab;
-    }
-
-    SymbolTable *get_dt_symtab(ASR::expr_t *dt) {
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
-        ASR::symbol_t *type_sym=nullptr;
-    }
-
     ASR::symbol_t *get_parent_type_dt(ASR::symbol_t *dt) {
         ASR::symbol_t *parent = nullptr;
         switch (dt->type) {
@@ -1039,14 +1025,6 @@ public:
                     "m_dt::m_v::m_type must point to a StructType type",
                     dt->base.loc);
         }
-        return parent;
-    }
-
-    ASR::symbol_t *get_parent_type_dt(ASR::expr_t *dt) {
-        // TODO: StructType - Remove this function
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
-        ASR::symbol_t *type_sym=nullptr;
-        ASR::symbol_t *parent = nullptr;
         return parent;
     }
 

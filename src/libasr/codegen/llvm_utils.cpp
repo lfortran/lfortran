@@ -255,28 +255,6 @@ namespace LCompilers {
         return (llvm::Type*) *der_type_llvm;
     }
 
-    llvm::Type* LLVMUtils::getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
-        ASR::Struct_t* der_type;
-        if( ASR::is_a<ASR::StructType_t>(*_type) ) {
-            ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(_type);
-            ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-            der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
-        } else if (_type->type == ASR::ttypeType::Pointer) {
-            ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(_type);
-            ASR::ttype_t* ptr_type = ASRUtils::type_get_past_pointer(ptr->m_type);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*ptr_type));
-            ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ptr_type);
-            ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-            der_type = ASR::down_cast<ASR::Struct_t>(der_sym);
-        } else {
-            LCOMPILERS_ASSERT(false);
-            return nullptr; // silence a warning
-        }
-        llvm::Type* type = getStructType(der_type, module, is_pointer);
-        LCOMPILERS_ASSERT(type != nullptr);
-        return type;
-    }
-
     llvm::Type* LLVMUtils::getUnion(ASR::Union_t* union_type,
         llvm::Module* module, bool is_pointer) {
         std::string union_type_name = std::string(union_type->m_name);
@@ -326,29 +304,29 @@ namespace LCompilers {
         return (llvm::Type*) der_type_llvm;
     }
 
-    llvm::Type* LLVMUtils::getClassType(ASR::ttype_t* _type, bool is_pointer) {
-        ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(_type));
-        ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-        std::string der_sym_name = ASRUtils::symbol_name(der_sym);
-        std::string der_type_name = der_sym_name + std::string("_polymorphic");
-        llvm::StructType* der_type_llvm;
-        if( name2dertype.find(der_type_name) != name2dertype.end() ) {
-            der_type_llvm = name2dertype[der_type_name];
-        } else {
-            std::vector<llvm::Type*> member_types;
-            member_types.push_back(getIntType(8));
-            if( der_sym_name == "~unlimited_polymorphic_type" ) {
-                member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
-            } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
-                member_types.push_back(getStructType(struct_type_t, module, is_pointer));
-            }
-            der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
-            name2dertype[der_type_name] = der_type_llvm;
-        }
+    // llvm::Type* LLVMUtils::getClassType(ASR::ttype_t* _type, bool is_pointer) {
+    //     ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(_type));
+    //     ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
+    //     std::string der_sym_name = ASRUtils::symbol_name(der_sym);
+    //     std::string der_type_name = der_sym_name + std::string("_polymorphic");
+    //     llvm::StructType* der_type_llvm;
+    //     if( name2dertype.find(der_type_name) != name2dertype.end() ) {
+    //         der_type_llvm = name2dertype[der_type_name];
+    //     } else {
+    //         std::vector<llvm::Type*> member_types;
+    //         member_types.push_back(getIntType(8));
+    //         if( der_sym_name == "~abstract_type" ) {
+    //             member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
+    //         } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
+    //             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
+    //             member_types.push_back(getStructType(struct_type_t, module, is_pointer));
+    //         }
+    //         der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
+    //         name2dertype[der_type_name] = der_type_llvm;
+    //     }
 
-        return (llvm::Type*) der_type_llvm;
-    }
+    //     return (llvm::Type*) der_type_llvm;
+    // }
 
     llvm::Type* LLVMUtils::getFPType(int a_kind, bool get_pointer) {
         llvm::Type* type_ptr = nullptr;
@@ -2136,7 +2114,7 @@ namespace LCompilers {
             }
             case ASR::ttypeType::StructType: {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::get_variable_symbol_from_struct_expr(src_expr));
+                    ASRUtils::get_struct_sym_from_struct_expr(src_expr));
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
                 std::string der_type_name = std::string(struct_sym->m_name);
                 while( struct_sym != nullptr ) {
@@ -2622,13 +2600,13 @@ namespace LCompilers {
 
         llvm::Value* src_key_list = get_key_list(src);
         llvm::Value* dest_key_list = get_key_list(dest);
-        llvm_utils->list_api->list_deepcopy(src_key_list, dest_key_list,
+        llvm_utils->list_api->list_deepcopy(dict_expr, src_key_list, dest_key_list,
                                             dict_type->m_key_type, module,
                                             name2memidx);
 
         llvm::Value* src_value_list = get_value_list(src);
         llvm::Value* dest_value_list = get_value_list(dest);
-        llvm_utils->list_api->list_deepcopy(src_value_list, dest_value_list,
+        llvm_utils->list_api->list_deepcopy(dict_expr, src_value_list, dest_value_list,
                                             dict_type->m_value_type, module, name2memidx);
 
         llvm::Value* src_key_mask = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
