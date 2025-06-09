@@ -114,7 +114,14 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            if test -f ci/build_tmp.xsh; then
+              echo "Debug: ci/build_tmp.xsh exists"
+              xonsh ci/build_tmp.xsh
+            else
+              echo "Error: ci/build_tmp.xsh does not exist"
+              exit 1
+            fi
+            # xonsh ci/build_tmp.xsh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
