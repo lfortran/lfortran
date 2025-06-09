@@ -120,6 +120,8 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
