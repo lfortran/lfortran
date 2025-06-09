@@ -581,14 +581,14 @@ Result<int> asr_to_x86(ASR::TranslationUnit_t &asr, Allocator &al,
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        pass_wrap_global_stmts(al, asr, pass_options);
+        pass_wrap_global_stmts(al, asr, pass_options, diagnostics);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_pass_global = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
 
     {
         auto t1 = std::chrono::high_resolution_clock::now();
-        pass_replace_do_loops(al, asr, pass_options);
+        pass_replace_do_loops(al, asr, pass_options, diagnostics);
         auto t2 = std::chrono::high_resolution_clock::now();
         time_pass_do_loops = std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count();
     }
