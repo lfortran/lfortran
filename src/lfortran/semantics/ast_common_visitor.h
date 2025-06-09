@@ -5864,12 +5864,25 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
-            ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, current_scope);
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            type = node_duplicator.duplicate_ttype(type);
+            if (!v_class_proc->m_is_nopass) {
+                ASR::call_arg_t self_arg;
+                self_arg.loc = func->m_args[0]->base.loc;
+                self_arg.m_value = func->m_args[0];
+                args = {};
+                args.reserve(al, func->n_args);
+                visit_expr_list(m_args, n_args, args);
+                args.push_front(al, self_arg);  // push self arg to fulfill correct number of args in definition
+            }
+            // Set the correct return type.
+            type = handle_return_type(type, func->m_return_var->base.loc, args, func);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
+        if (!v_class_proc->m_is_nopass) {
+            args = {};
+            visit_expr_list(m_args, n_args, args);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
