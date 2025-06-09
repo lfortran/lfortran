@@ -727,3 +727,9 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
     |
 314 |     print *, ["aa", string(x+1:x+2), "aaa"]
     |                                      ^^^^^ 
+
+semantic error: The argument `mask` must be of rank 2, provided an array with rank, 1 was provided.
+   --> tests/errors/continue_compilation_1.f90:316:25
+    |
+316 |     print *, pack(arr2, mask1)
+    |                         ^^^^^ 

@@ -4921,7 +4921,7 @@ namespace Pack {
         }
         if (array_rank != mask_rank && mask_rank != 0) {
             append_error(diag, "The argument `mask` must be of rank " + std::to_string(array_rank) +
-                ", provided an array with rank, " + std::to_string(mask_rank), mask->base.loc);
+                ", provided an array with rank, " + std::to_string(mask_rank) + " was provided.", mask->base.loc);
             return nullptr;
         }
          if (array_dim != -1 && mask_dim != -1 && !dimension_expr_equal(array_dims[0].m_length,
