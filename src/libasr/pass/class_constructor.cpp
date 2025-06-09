@@ -121,7 +121,7 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
 
 void pass_replace_class_constructor(Allocator &al,
     ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& pass_options) {
+    const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     StructConstructorVisitor v(al, pass_options.realloc_lhs);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

@@ -7,7 +7,7 @@
 namespace LCompilers {
 
     void pass_promote_allocatable_to_nonallocatable(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options);
+                                const PassOptions &pass_options, diag::Diagnostics &diagnostics);
 
 } // namespace LCompilers
 

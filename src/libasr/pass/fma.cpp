@@ -114,7 +114,7 @@ public :
 
 
 void pass_replace_fma(Allocator &al, ASR::TranslationUnit_t &unit,
-                      const LCompilers::PassOptions& pass_options) {
+                      const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     CallReplacerFMA realBinOpFMA_replacer{al, unit, pass_options};
     realBinOpFMA_replacer.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);

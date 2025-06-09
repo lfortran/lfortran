@@ -596,7 +596,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
 
 void pass_transform_optional_argument_functions(
     Allocator &al, ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
+    const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     std::map<ASR::symbol_t*, std::vector<int32_t>> sym2optionalargidx;
     TransformFunctionsWithOptionalArguments v(al, sym2optionalargidx);
     v.visit_TranslationUnit(unit);

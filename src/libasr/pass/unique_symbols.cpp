@@ -526,7 +526,7 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
 
 
 void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& pass_options) {
+    const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     /*
      * This pass is applied iff the following options are passed; otherwise, return
      * MANGLING_OPTION="--all-mangling"

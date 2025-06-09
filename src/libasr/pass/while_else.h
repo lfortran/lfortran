@@ -7,7 +7,7 @@
 namespace LCompilers {
 
 void pass_while_else(Allocator &al, ASR::TranslationUnit_t &unit,
-                     const PassOptions &pass_options);
+                     const PassOptions &pass_options, diag::Diagnostics &diagnostics);
 } // namespace LCompilers
 
 #endif // LIBASR_PASS_WHILE_ELSE_H

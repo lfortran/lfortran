@@ -100,7 +100,7 @@ public:
 };
 
 void pass_loop_unroll(Allocator &al, ASR::TranslationUnit_t &unit,
-                      const LCompilers::PassOptions& pass_options) {
+                      const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     LoopUnrollVisitor v(al, pass_options.unroll_factor);
     v.visit_TranslationUnit(unit);
 }

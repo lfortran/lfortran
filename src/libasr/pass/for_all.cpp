@@ -46,7 +46,7 @@ public:
 };
 
 void pass_replace_for_all(Allocator &al, ASR::TranslationUnit_t &unit,
-                         const LCompilers::PassOptions& /*pass_options*/) {
+                         const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     ForAllVisitor v(al);
     v.visit_TranslationUnit(unit);
 }

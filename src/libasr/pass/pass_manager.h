@@ -71,7 +71,7 @@
 namespace LCompilers {
 
     typedef void (*pass_function)(Allocator&, ASR::TranslationUnit_t&,
-                                  const LCompilers::PassOptions&);
+                                  const LCompilers::PassOptions&, diag::Diagnostics &diagnostics);
 
     class PassManager {
         private:
@@ -186,7 +186,7 @@ namespace LCompilers {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
                 auto t1 = std::chrono::high_resolution_clock::now();
-                _passes_db[passes[i]](al, *asr, pass_options);
+                _passes_db[passes[i]](al, *asr, pass_options, diagnostics);
 #if defined(WITH_LFORTRAN_ASSERT)
                 if (!asr_verify(*asr, true, diagnostics)) {
                     std::cerr << diagnostics.render2();
@@ -360,7 +360,7 @@ namespace LCompilers {
                 if (pass_options.verbose) {
                     std::cerr << "ASR Pass starts: '" << passes[i] << "'\n";
                 }
-                _passes_db[passes[i]](al, *asr, pass_options);
+                _passes_db[passes[i]](al, *asr, pass_options, diagnostics);
                 if (pass_options.dump_all_passes) {
                     std::string str_i = std::to_string(pass_cnt_asr_dump+1);
                     if ( pass_cnt_asr_dump < 9 )  str_i = "0" + str_i;

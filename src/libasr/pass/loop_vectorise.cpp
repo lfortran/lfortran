@@ -194,7 +194,7 @@ public:
 };
 
 void pass_loop_vectorise(Allocator &al, ASR::TranslationUnit_t &unit,
-                         const LCompilers::PassOptions& pass_options) {
+                         const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     std::string rl_path = pass_options.runtime_library_dir;
     LoopVectoriseVisitor v(al, unit, rl_path);
     v.visit_TranslationUnit(unit);

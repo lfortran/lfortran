@@ -1079,7 +1079,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
 };
 
 void pass_replace_array_op(Allocator &al, ASR::TranslationUnit_t &unit,
-                           const LCompilers::PassOptions& pass_options) {
+                           const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     ArrayOpVisitor v(al, pass_options.realloc_lhs);
     v.call_replacer_on_value = false;
     v.visit_TranslationUnit(unit);

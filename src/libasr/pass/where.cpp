@@ -114,7 +114,7 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
 };
 
 void pass_replace_where(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     TransformWhereVisitor v(al);
     v.visit_TranslationUnit(unit);
 }

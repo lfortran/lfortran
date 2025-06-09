@@ -107,7 +107,7 @@ public:
     }
 };
 void pass_replace_sign_from_value(Allocator &al, ASR::TranslationUnit_t &unit,
-                                  const LCompilers::PassOptions& pass_options) {
+                                  const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     SignFromValueVisitor sign_from_value_visitor(al, unit, pass_options);
     sign_from_value_visitor.visit_TranslationUnit(unit);
     

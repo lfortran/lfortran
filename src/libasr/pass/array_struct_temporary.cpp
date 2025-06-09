@@ -2749,7 +2749,7 @@ class InitialiseExprWithTarget: public ASR::BaseWalkVisitor<InitialiseExprWithTa
 };
 
 void pass_array_struct_temporary(Allocator &al, ASR::TranslationUnit_t &unit,
-                     const PassOptions &pass_options) {
+                     const PassOptions &pass_options, diag::Diagnostics& /*diagnostics*/) {
     // TODO: Add a visitor in asdl_cpp.py which will replace
     // current_expr with its own `m_value` (if `m_value` is not nullptr)
     // Call the visitor here.
