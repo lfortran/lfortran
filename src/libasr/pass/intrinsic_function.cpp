@@ -363,9 +363,27 @@ void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit
         throw LCompilers::LFortran::SemanticAbort();
     }
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
-    u.visit_TranslationUnit(unit);
+    try {
+        u.visit_TranslationUnit(unit);
+    } catch (const LCompilersException& e) {
+        diagnostics.add(diag::Diagnostic(
+            std::string(e.what()),
+            diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {unit.base.base.loc})
+        }));
+        throw LCompilers::LFortran::SemanticAbort();
+    }
     PassUtils::UpdateDependenciesVisitor w(al);
-    w.visit_TranslationUnit(unit);
+    try {
+        w.visit_TranslationUnit(unit);
+    } catch (const LCompilersException& e) {
+        diagnostics.add(diag::Diagnostic(
+            std::string(e.what()),
+            diag::Level::Error, diag::Stage::Semantic, {
+            diag::Label("", {unit.base.base.loc})
+        }));
+        throw LCompilers::LFortran::SemanticAbort();
+    }
 }
 
 
