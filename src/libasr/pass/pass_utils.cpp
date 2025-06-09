@@ -705,6 +705,14 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
+                if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0) {
+                    return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                        b.If(mask, {
+                            b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
+                            b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
+                        }, {}),
+                    }, nullptr);
+                }
                 return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
                         b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
@@ -715,6 +723,15 @@ namespace LCompilers {
             return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
                 create_do_loop_helper_pack(al, loc, do_loop_variables, array, mask, res, idx, curr_idx - 1)
             }, nullptr);
+        }
+
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (n_dims == 1) {
+                return b.ArraySize(array, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));   
+            }
+            ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            return b.Mul(b.ArraySize(array, dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))), create_array_size_pack(al, loc, array, n_dims-1));
         }
 
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {

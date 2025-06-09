@@ -312,4 +312,6 @@ program continue_compilation_1
 
     print *, ["aa", "aaa"]
     print *, ["aa", string(x+1:x+2), "aaa"]
+
+    print *, pack(arr2, mask1)
 end program
