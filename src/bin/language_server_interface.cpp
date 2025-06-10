@@ -274,7 +274,7 @@ namespace LCompilers::LLanguageServer::Interface {
             "Number of threads that will handle sub-tasks of requests."
         )->capture_default_str();
 
-        opts.enableLogging = true;
+        opts.enableLogging = false;
         server->add_flag(
             "--enable-logging", opts.enableLogging,
             "Enable or disable logging to a file."
@@ -530,7 +530,7 @@ namespace LCompilers::LLanguageServer::Interface {
 
     auto LanguageServerInterface::serve() -> void {
         try {
-            lsl::Logger logger(workspaceConfig->log.path, "LanguageServerInterface");
+            lsl::Logger logger(opts.enableLogging ? workspaceConfig->log.path : "", "LanguageServerInterface");
             logger.setLevel(workspaceConfig->log.level);
             logger.threadName("main");
 
