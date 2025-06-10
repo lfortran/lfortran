@@ -3894,11 +3894,58 @@ namespace Nearest {
         function nearest(x, s) result(result)
             real :: x, s
             real :: result
-            result = ?
+            integer :: ix, dir
+
+            if (s == 0.0) then
+                res = x
+                return 
+            ix = transfer(x, ix)
+            if ((x > 0.0 and s > 0.0) .or. (x < 0.0 and s < 0.0)) then
+                dir = 1
+            else
+                dir = -1
+            end if
+
+            if (x == 0.0) then
+                ix = 1
+                if (s < 0.0) ix = -1
+                res = transfer(ix, res)
+                return
+            end if
+
+            ix = ix + dir
+
+            res = transfer(ix, res)
         end function
         */
-        throw LCompilersException("`Nearest` intrinsic is not yet implemented for runtime values");
+        ASR::expr_t* ix = declare("ix", int32, Local);
+        ASR::expr_t* dir = declare("dir", int32, Local);
+        ASR::expr_t* zero_real = EXPR(ASR::make_RealConstant_t(al, loc, 0.0, arg_types[1]));
+        body.push_back(al, b.If(b.Eq(args[1], zero_real), {
+            b.Assignment(result, args[0]),
+            b.Return(),
+        }, {}));
+        body.push_back(al, b.Assignment(ix, EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr))));
 
+        body.push_back(al, b.If(b.Or(b.And(b.Gt(args[0], zero_real), b.Gt(args[1], zero_real)),
+            b.And(b.Lt(args[0], zero_real), b.Lt(args[1], zero_real))), {
+            b.Assignment(dir, b.i32(1))
+        }, {
+            b.Assignment(dir, b.i32(-1))
+        }));
+
+        body.push_back(al, b.If(b.Eq(args[0], zero_real), {
+            b.Assignment(ix, b.i32(1)),
+            b.If(b.Lt(args[1], zero_real), {
+                b.Assignment(ix, b.i32(-1))
+            }, {}),
+            b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))),
+            b.Return(),
+        }, {}));
+
+        body.push_back(al, b.Assignment(ix, b.Add(ix, dir)));
+
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
