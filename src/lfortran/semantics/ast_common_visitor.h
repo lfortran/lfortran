@@ -7359,6 +7359,57 @@ public:
         }
     }
 
+    ASR::asr_t* create_LFConcat(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_concat expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+
+        if (x.n_args < 2) {
+            diag.add(Diagnostic("_lfortran_concat expects atleast two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+         
+        ASR::expr_t* left = nullptr, *right = nullptr;
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        left = ASRUtils::EXPR(tmp);
+
+        if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(left))) {
+            ASR::ttype_t* list_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(left)), *right_type;
+            for (size_t i=1;i<x.n_args;i++){
+                source = x.m_args[i].m_end;
+                this->visit_expr(*source);
+                right = ASRUtils::EXPR(tmp);
+                right_type = ASRUtils::get_contained_type(ASRUtils::expr_type(right));
+
+                if (!ASRUtils::check_equal_type(list_el_type, right_type)) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(list_el_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(right_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch in _lfortran_concat, the list types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.m_args[1].loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                left = ASRUtils::EXPR(ASR::make_ListConcat_t(al, x.base.base.loc, 
+                            left, right, ASRUtils::expr_type(right), nullptr));
+            }   
+
+            return (ASR::asr_t*)left;
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
     ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_list_constant expects no keyword arguments",
@@ -8372,6 +8423,8 @@ public:
                     tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_get_item")
                     tmp = create_LFGetItem(x);
+                else if ( var_name == "_lfortran_concat")
+                    tmp = create_LFConcat(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
                 else if ( var_name == "_lfortran_list_count")
