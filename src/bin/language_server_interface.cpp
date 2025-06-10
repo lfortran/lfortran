@@ -274,6 +274,12 @@ namespace LCompilers::LLanguageServer::Interface {
             "Number of threads that will handle sub-tasks of requests."
         )->capture_default_str();
 
+        opts.enableLogging = true;
+        server->add_flag(
+            "--enable-logging", opts.enableLogging,
+            "Enable or disable logging to a file."
+        )->capture_default_str();
+
         opts.configSection = "LFortran";
         server->add_option(
             "--config-section", opts.configSection,
@@ -316,7 +322,11 @@ namespace LCompilers::LLanguageServer::Interface {
             "Additional flags to pass to the LFortran compiler."
         );
 
-        workspaceConfig->log.path = existsAndIsWritable("lfortran-language-server.log");
+        if (opts.enableLogging) {
+            workspaceConfig->log.path = existsAndIsWritable("lfortran-language-server.log");
+        } else {
+            workspaceConfig->log.path = "";
+        }
         server->add_option(
             "--log-path", workspaceConfig->log.path,
             "Path to where logs should be written."
