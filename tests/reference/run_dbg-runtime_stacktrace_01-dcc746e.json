@@ -5,9 +5,9 @@
     "infile_hash": "3e65758e10744eea8d101be6437af3724c0ec32c832e29da968fc22d",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": null,
-    "stdout_hash": null,
+    "stdout": "run_dbg-runtime_stacktrace_01-dcc746e.stdout",
+    "stdout_hash": "22a33b413c2a67997ddcab21f9da9c861e4c5786572ad4dcd3de3ed2",
     "stderr": "run_dbg-runtime_stacktrace_01-dcc746e.stderr",
-    "stderr_hash": "2664bd53c8e77b18b5ee0bf9a84cc818258a5a22f0de54dab5c23a8a",
-    "returncode": 1
+    "stderr_hash": "d7b2063ee2384904c7372e603b621a3e739faa954e5cc144f17d9b08",
+    "returncode": 5
 }
