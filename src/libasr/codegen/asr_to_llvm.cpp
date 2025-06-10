@@ -1356,6 +1356,8 @@ public:
                     ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
                 if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
 
                 std::string curr_struct = ASRUtils::symbol_name(struct_sym);

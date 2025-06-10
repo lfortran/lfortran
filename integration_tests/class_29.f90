@@ -1,6 +1,7 @@
 program class_29
     type :: toml_val
         integer :: x
+        character(len=:), allocatable :: y
     end type
     type :: toml_table
         integer :: x
@@ -35,6 +36,12 @@ program class_29
         deallocate(temp4%y)
     end if
     if (allocated(temp4%y)) error stop
+    allocate(temp4%val)
+    temp4%val%y = "Hello"
+    if (allocated(temp4%val%y))  then
+        deallocate(temp4%val%y)
+    end if
+    if (allocated(temp4%val%y)) error stop
 contains 
     subroutine destroy(shlex)
         class(toml_table), intent(inout) :: shlex
