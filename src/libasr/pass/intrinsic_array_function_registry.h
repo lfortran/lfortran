@@ -2225,13 +2225,13 @@ namespace Eoshift {
         if (dim) {
             is_dim_present = true;
         }
-        ASR::ttype_t *type_array = expr_type(array);
-        ASR::ttype_t *type_shift = expr_type(shift);
+        ASR::ttype_t *type_array = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
+        ASR::ttype_t *type_shift = ASRUtils::type_get_past_allocatable_pointer(expr_type(shift));
         ASR::ttype_t *type_boundary = nullptr;
         if(is_boundary_present){
             type_boundary = expr_type(boundary);
         }
-        ASR::ttype_t *ret_type = expr_type(array);
+        ASR::ttype_t *ret_type = type_array;
         if ( !is_array(type_array) ) {
             append_error(diag, "The argument `array` in `eoshift` must be of type Array", array->base.loc);
             return nullptr;
