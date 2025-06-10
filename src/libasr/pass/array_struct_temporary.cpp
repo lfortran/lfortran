@@ -641,7 +641,8 @@ bool set_allocation_size(
                     }
                     break;
                 }
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): 
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
                     for (size_t i = 0; i < n_dims; i++) {
