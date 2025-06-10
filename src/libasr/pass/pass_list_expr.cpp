@@ -443,7 +443,7 @@ public:
         // Declare `result_list`
         ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, list_concat_symtab,
-            s2c(al, "result_list"), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+            s2c(al, "result_list"), nullptr, 0, ASR::intentType::Out, nullptr, nullptr,
             ASR::storage_typeType::Default, list_type, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::presenceType::Required, false));
