@@ -1483,6 +1483,24 @@ public:
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
+                    if (return_type->m_attr->type == AST::decl_attributeType::AttrType) {
+                        AST::AttrType_t *return_attr_type = AST::down_cast<AST::AttrType_t>(return_type->m_attr);
+
+                        if (return_attr_type->m_type == AST::decl_typeType::TypeLF_List) {
+                            ASR::symbol_t *type_declaration;
+                            Vec<ASR::dimension_t> dims;
+                            dims.reserve(al, 0);
+                            std::string sym = "";
+                            ASR::ttype_t *contained_type = determine_type(x.base.base.loc, sym, 
+                                                                return_attr_type->m_attr, false, 
+                                                                false, dims, 
+                                                                type_declaration, current_procedure_abi_type);
+
+                            type = ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type));
+                            break;
+                        }
+                    }
+
                     LCOMPILERS_ASSERT(return_type->m_name);
                     std::string derived_type_name = to_lower(return_type->m_name);
                     ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
