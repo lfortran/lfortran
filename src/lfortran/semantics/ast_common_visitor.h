@@ -4805,7 +4805,7 @@ public:
                 current_scope = parent_scope;
             }
             // this is class variable declaration
-            type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, false));
+            type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, true));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
