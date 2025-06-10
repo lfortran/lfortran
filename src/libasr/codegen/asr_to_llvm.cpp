@@ -1339,30 +1339,23 @@ public:
                 abt = v->m_abi;
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
                 ASR::StructInstanceMember_t* sm = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
-                this->visit_expr_wrapper(sm->m_v);
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::expr_type(sm->m_v));
+                int64_t ptr_loads_copy = ptr_loads;
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
+                    ptr_loads = 0;
+                } else {
+                    ptr_loads = 1;
+                }
+                this->visit_expr_wrapper(sm->m_v);
+                ptr_loads = ptr_loads_copy;
                 llvm::Value* dt = tmp;
                 ASR::symbol_t *struct_sym = nullptr;
                 llvm::Type *dt_type = llvm_utils->getStructType(caller_type, module.get());
-                if (ASR::is_a<ASR::StructType_t>(*caller_type)) {
-                    struct_sym = ASRUtils::symbol_get_past_external(
-                        ASR::down_cast<ASR::StructType_t>(caller_type)->m_derived_type);
-                    if (ASRUtils::is_class_type(caller_type)) {
-                        dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
-                    }
-                }
-                if(caller_type->type == ASR::ttypeType::Pointer) {
-                    ASR::ttype_t* new_caller_type = ASRUtils::type_get_past_pointer(
-                        ASRUtils::type_get_past_allocatable(
-                        ASRUtils::expr_type(sm->m_v)));
-                    if (ASR::is_a<ASR::StructType_t>(*new_caller_type)) {
-                        struct_sym = ASRUtils::symbol_get_past_external(
-                            ASR::down_cast<ASR::StructType_t>(new_caller_type)->m_derived_type);
-                        if (ASRUtils::is_class_type(new_caller_type)) {
-                            dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
-                        }
-                    }
+                struct_sym = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
+                if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
                 }
 
                 std::string curr_struct = ASRUtils::symbol_name(struct_sym);
