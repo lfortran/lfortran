@@ -733,3 +733,15 @@ semantic error: The argument `mask` must be of rank 2, an array with rank 1 was 
     |
 316 |     print *, pack(arr2, mask1)
     |                         ^^^^^ 
+
+semantic error: Function 'compiler_options' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:317:14
+    |
+317 |     print *, compiler_options()
+    |              ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Function 'compiler_version' not found (not user defined nor intrinsic)
+   --> tests/errors/continue_compilation_1.f90:318:14
+    |
+318 |     print *, compiler_version()
+    |              ^^^^^^^^^^^^^^^^^^ 
