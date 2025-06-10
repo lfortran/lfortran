@@ -3706,7 +3706,7 @@ public:
                 ASR::ttype_t *type = nullptr;
                 type = determine_type(x.base.base.loc, sym, x.m_vartype, is_pointer,
                     is_allocatable, dims, type_declaration, s_abi,
-                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star);
+                    (s_intent != ASRUtils::intent_local) || is_argument, is_dimension_star, s_presence == ASR::presenceType::Optional);
                 if ( is_attr_external ) create_external_function(sym, x.m_syms[i].loc, type);
                 if ( current_scope->get_symbol( sym ) != nullptr && ( is_external && !is_attr_external ) ) {
                     /*
@@ -4458,7 +4458,7 @@ public:
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
-        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
+        ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false, bool is_optional = false) {
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
         type_declaration = nullptr;
@@ -4486,6 +4486,26 @@ public:
                         Label("",{sym_type->m_kind->loc})
                     }));
                 throw SemanticAbort();
+            }
+        }
+        if (sym_type->m_type == AST::decl_typeType::TypeCharacter && !is_allocatable
+            && !is_pointer && !is_optional && !is_argument) {
+            if (sym_type->m_kind != nullptr) {
+                if (!(sym_type->m_kind->m_type == AST::kind_item_typeType::Colon
+                      || sym_type->m_kind->m_type == AST::kind_item_typeType::Star)
+                    && sym_type->m_kind->m_value && sym_type->m_kind->m_value->type != AST::exprType::FuncCallOrArray) {
+                    this->visit_expr(*sym_type->m_kind->m_value);
+                    ASR::expr_t* kind_expr = ASRUtils::EXPR(tmp);
+                    if (kind_expr->type == ASR::exprType::Var) {
+                        ASR::Var_t* kind_var = ASR::down_cast<ASR::Var_t>(kind_expr);
+                        ASR::Variable_t* kind_variable = ASR::down_cast<ASR::Variable_t>(
+                            ASRUtils::symbol_get_past_external(kind_var->m_v));
+                        if (kind_variable->m_intent != ASR::intentType::In) {
+                            a_kind = ASRUtils::extract_kind<SemanticAbort>(
+                                kind_expr, sym_type->m_kind->loc, diag);
+                        }
+                    }
+                }
             }
         }
         if (sym_type->m_type == AST::decl_typeType::TypeReal) {
