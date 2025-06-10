@@ -2017,6 +2017,11 @@ class ParallelRegionVisitor :
                 visit_OMPParallelSections(x);
                 break;
 
+                case ASR::omp_region_typeType::Single:
+                case ASR::omp_region_typeType::Master:
+                visit_OMPSingleThread(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -2366,6 +2371,39 @@ class ParallelRegionVisitor :
 
         void visit_OMPParallelSections(const ASR::OMPRegion_t &x) {
             visit_OMPParallel(x);
+        }
+
+        void visit_OMPSingleThread(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Restrict execution to thread 0
+            ASR::expr_t* condition = b.Eq(b.i32(0),
+                            ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
+                            current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr)));
+            std::vector<ASR::stmt_t*> single_body={};
+
+            // Process body, handling nested OMPRegions recursively
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                    std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                    nested_lowered_body = {};
+                    this->visit_stmt(*x.m_body[i]);
+                    for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                        single_body.push_back(nested_lowered_body[j]);
+                    }
+                    nested_lowered_body = body_copy;
+                } else {
+                    stmt_visitor.visit_stmt(*x.m_body[i]);
+                    single_body.push_back(x.m_body[i]);
+                }
+            }
+
+            // Create if statement for single region
+            nested_lowered_body.push_back(b.If(condition, single_body, {}));
         }
 };
 
