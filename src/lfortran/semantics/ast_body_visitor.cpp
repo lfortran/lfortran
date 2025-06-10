@@ -3680,11 +3680,12 @@ public:
             } else if (var_name == "_lfortran_clear") {
                 if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     return ASR::make_ListClear_t(al, x.base.base.loc, args[0]);
-                } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+                } /*else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
                     return ASR::make_DictClear_t(al, x.base.base.loc, args[0]);
-                } else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) {
+                } else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) { TODO: Set, Dict Clear is not implemented
                     return ASR::make_SetClear_t(al, x.base.base.loc, args[0]);
-                } else {
+                } */ 
+                else {
                     std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
                     diag.add(Diagnostic(
                         "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
