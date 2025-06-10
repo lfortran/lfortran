@@ -581,11 +581,27 @@ bool set_allocation_size(
                                     al, loc, i + 1, ASRUtils::expr_type(int32_one))),
                                 ASRUtils::expr_type(int32_one), nullptr));
                         } else {
-                            Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
-                            count_i_args.push_back(al, intrinsic_array_function->m_args[1]);
-                            size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
-                                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
-                                count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            ASR::expr_t* mask = intrinsic_array_function->m_args[1];
+                            ASR::expr_t* array = intrinsic_array_function->m_args[0];
+                            int mask_n_dims = ASRUtils::extract_n_dims_from_ttype(
+                                ASRUtils::expr_type(mask));
+                            if (mask_n_dims == 0) {
+                                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                                ASR::expr_t* tsource = PassUtils::create_array_size_pack(al, loc, array, ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array)));
+                                ASR::expr_t* fsource = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32));
+                                merge_args.push_back(al, tsource);
+                                merge_args.push_back(al, fsource);
+                                merge_args.push_back(al, mask);
+                                size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
+                                    al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
+                                    merge_args.p, merge_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            } else {
+                                Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
+                                count_i_args.push_back(al, mask);
+                                size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
+                                    al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
+                                    count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            }
                         }
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);

@@ -5873,12 +5873,25 @@ public:
                             ASRUtils::get_FunctionType(func)->m_return_var_type,
                             &new_dims);
         } else {
-            ASRUtils::ExprStmtWithScopeDuplicator node_duplicator(al, current_scope);
             type = ASRUtils::EXPR2VAR(func->m_return_var)->m_type;
-            type = node_duplicator.duplicate_ttype(type);
+            if (!v_class_proc->m_is_nopass) {
+                ASR::call_arg_t self_arg;
+                self_arg.loc = func->m_args[0]->base.loc;
+                self_arg.m_value = func->m_args[0];
+                args = {};
+                args.reserve(al, func->n_args);
+                visit_expr_list(m_args, n_args, args);
+                args.push_front(al, self_arg);  // push self arg to fulfill correct number of args in definition
+            }
+            // Set the correct return type.
+            type = handle_return_type(type, func->m_return_var->base.loc, args, func);
         }
         if (ASRUtils::symbol_parent_symtab(v)->get_counter() != current_scope->get_counter()) {
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
+        }
+        if (!v_class_proc->m_is_nopass) {
+            args = {};
+            visit_expr_list(m_args, n_args, args);
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
@@ -7355,6 +7368,57 @@ public:
         }
     }
 
+    ASR::asr_t* create_LFConcat(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_concat expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+
+        if (x.n_args < 2) {
+            diag.add(Diagnostic("_lfortran_concat expects atleast two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+         
+        ASR::expr_t* left = nullptr, *right = nullptr;
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        left = ASRUtils::EXPR(tmp);
+
+        if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(left))) {
+            ASR::ttype_t* list_el_type = ASRUtils::get_contained_type(ASRUtils::expr_type(left)), *right_type;
+            for (size_t i=1;i<x.n_args;i++){
+                source = x.m_args[i].m_end;
+                this->visit_expr(*source);
+                right = ASRUtils::EXPR(tmp);
+                right_type = ASRUtils::get_contained_type(ASRUtils::expr_type(right));
+
+                if (!ASRUtils::check_equal_type(list_el_type, right_type)) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(list_el_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(right_type);
+                    diag.add(Diagnostic(
+                        "Type mismatch in _lfortran_concat, the list types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.m_args[1].loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                left = ASRUtils::EXPR(ASR::make_ListConcat_t(al, x.base.base.loc, 
+                            left, right, ASRUtils::expr_type(right), nullptr));
+            }   
+
+            return (ASR::asr_t*)left;
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
     ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_list_constant expects no keyword arguments",
@@ -8368,6 +8432,8 @@ public:
                     tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_get_item")
                     tmp = create_LFGetItem(x);
+                else if ( var_name == "_lfortran_concat")
+                    tmp = create_LFConcat(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
                 else if ( var_name == "_lfortran_list_count")

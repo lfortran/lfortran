@@ -1134,7 +1134,8 @@ RUN(NAME intrinsics_378 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_al
 RUN(NAME intrinsics_379 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # get_command_argument
 RUN(NAME intrinsics_380 LABELS gfortran llvm) # get_environment_variable
 RUN(NAME intrinsics_381 LABELS gfortran llvm) # get_environment_variable
-
+RUN(NAME intrinsics_382 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
+RUN(NAME intrinsics_383 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1741,6 +1742,7 @@ RUN(NAME class_42 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2349,3 +2351,6 @@ RUN(NAME lp_list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 RUN(NAME lp_list_of_lists_test LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME lp_set_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME lp_dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+
+# Completely ported tests
+RUN(NAME lp_list_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 

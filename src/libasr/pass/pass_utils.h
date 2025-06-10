@@ -120,6 +120,8 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
@@ -169,7 +171,8 @@ namespace LCompilers {
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_descriptorString(x);
+            return ASRUtils::is_descriptorString(x) || 
+                    (x && ASR::is_a<ASR::List_t>(*x));
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {

@@ -4896,7 +4896,7 @@ namespace Pack {
         fixed_size_array = ASRUtils::get_fixed_size_of_array(type_array);
         extract_value(array_dims[0].m_length, array_dim);
         if (mask_rank != 0) extract_value(mask_dims[0].m_length, mask_dim);
-        if (mask_rank == 0) {
+        if (mask_rank == 0 && fixed_size_array != -1) {
             Vec<ASR::expr_t*> mask_expr; mask_expr.reserve(al, fixed_size_array);
             for (int i = 0; i < fixed_size_array; i++) {
                 mask_expr.push_back(al, mask);
@@ -4919,9 +4919,9 @@ namespace Pack {
         if (is_vector_present) {
             vector_rank = extract_dimensions_from_ttype(type_vector, vector_dims);
         }
-        if (array_rank != mask_rank) {
+        if (array_rank != mask_rank && mask_rank != 0) {
             append_error(diag, "The argument `mask` must be of rank " + std::to_string(array_rank) +
-                ", provided an array with rank, " + std::to_string(mask_rank), mask->base.loc);
+                ", an array with rank " + std::to_string(mask_rank) + " was provided.", mask->base.loc);
             return nullptr;
         }
          if (array_dim != -1 && mask_dim != -1 && !dimension_expr_equal(array_dims[0].m_length,
@@ -4943,8 +4943,19 @@ namespace Pack {
             result_dims.push_back(al, b.set_dim(vector_dims[0].m_start, vector_dims[0].m_length));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
-            Vec<ASR::expr_t*> args_count; args_count.reserve(al, 1); args_count.push_back(al, mask);
-            ASR::expr_t* count = EXPR(Count::create_Count(al, loc, args_count, diag));
+            ASR::expr_t* count = nullptr;
+            if (mask_rank == 0) {
+                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                ASR::expr_t* tsource = PassUtils::create_array_size_pack(al, loc, args[0], extract_n_dims_from_ttype(expr_type(args[0])));
+                ASR::expr_t* fsource = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32));
+                merge_args.push_back(al, tsource);
+                merge_args.push_back(al, fsource);
+                merge_args.push_back(al, mask);
+                count = EXPR(Merge::create_Merge(al, loc, merge_args, diag));
+            } else {
+                Vec<ASR::expr_t*> args_count; args_count.reserve(al, 1); args_count.push_back(al, mask);
+                count = EXPR(Count::create_Count(al, loc, args_count, diag));
+            }
             result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
             is_type_allocatable = true;
