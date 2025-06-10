@@ -1135,7 +1135,7 @@ RUN(NAME intrinsics_379 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # get_com
 RUN(NAME intrinsics_380 LABELS gfortran llvm) # get_environment_variable
 RUN(NAME intrinsics_381 LABELS gfortran llvm) # get_environment_variable
 RUN(NAME intrinsics_382 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
-
+RUN(NAME intrinsics_383 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
