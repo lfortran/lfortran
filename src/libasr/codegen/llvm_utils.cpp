@@ -5154,7 +5154,7 @@ namespace LCompilers {
         // LLVMList should treat them as data members and create them
         // only if they are NULL
         llvm::AllocaInst *tmp_ptr = llvm_utils->CreateAlloca(el_type);
-        LLVM::CreateStore(*builder, read_item(list, pos, false, module, false), tmp_ptr);
+        LLVM::CreateStore(*builder, read_item2(type_code, list, pos, false, module, false), tmp_ptr);
         llvm::Value* tmp = nullptr;
 
         // TODO: Should be created outside the user loop and not here.
@@ -5183,8 +5183,8 @@ namespace LCompilers {
             llvm::Value* next_index = builder->CreateAdd(
                             llvm_utils->CreateLoad(pos_ptr),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            tmp = read_item(list, next_index, false, module, false);
-            write_item(list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
+            tmp = read_item2(type_code, list, next_index, false, module, false);
+            write_item2(type_code, list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
             LLVM::CreateStore(*builder, tmp, tmp_ptr);
 
             tmp = builder->CreateAdd(
