@@ -309,22 +309,30 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
     LCOMPILERS_ASSERT(symtab->parent == nullptr);
+    ASR::TranslationUnit_t* mod1 = nullptr;
     Result<ASR::TranslationUnit_t*, ErrorMessage> res
         = find_and_load_module(al, module_name, *symtab, intrinsic, pass_options, lm);
-    if (!res.ok && !intrinsic) {
-        // Module not found as a regular module. Try intrinsic module
-        if (module_name == "iso_c_binding"
-            ||module_name == "iso_fortran_env"
-            ||module_name == "ieee_arithmetic") {
-            res = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
-                *symtab, true, pass_options, lm);
+    if (res.ok) {
+        mod1 = res.result;
+    } else {
+        if (!intrinsic) {
+            // Module not found as a regular module. Try intrinsic module
+            if (module_name == "iso_c_binding"
+                ||module_name == "iso_fortran_env"
+                ||module_name == "ieee_arithmetic") {
+                Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                    = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
+                        *symtab, true, pass_options, lm);
+                if (res.ok) {
+                    mod1 = res.result;
+                }
+            }
         }
     }
-    if (!res.ok) {
+    if (mod1 == nullptr) {
         err("Module '" + module_name + "' not declared in the current source and the modfile was not found",
             loc);
     }
-    ASR::TranslationUnit_t* mod1 = res.result;
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
     mod2->m_symtab->parent = symtab;
@@ -356,21 +364,29 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 // in the ASR itself, or encode in the name in a robust way,
                 // such as using `module_name@intrinsic`:
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
+                ASR::TranslationUnit_t *mod1 = nullptr;
                 Result<ASR::TranslationUnit_t*, ErrorMessage> res
                     = find_and_load_module(al, item, *symtab, is_intrinsic, pass_options, lm);
-                if (!res.ok && !is_intrinsic) {
-                    // Module not found as a regular module. Try intrinsic module
-                    if (item == "iso_c_binding"
-                        ||item == "iso_fortran_env") {
-                        res = find_and_load_module(al, "lfortran_intrinsic_" + item,
-                            *symtab, true, pass_options, lm);
+                if (res.ok) {
+                    mod1 = res.result;
+                } else {
+                    if (!is_intrinsic) {
+                        // Module not found as a regular module. Try intrinsic module
+                        if (item == "iso_c_binding"
+                            ||item == "iso_fortran_env") {
+                            Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                                = find_and_load_module(al, "lfortran_intrinsic_" + item,
+                                *symtab, true, pass_options, lm);
+                            if (res.ok) {
+                                mod1 = res.result;
+                            }
+                        }
                     }
                 }
 
-                if (!res.ok) {
+                if (mod1 == nullptr) {
                     err("Module '" + item + "' modfile was not found", loc);
                 }
-                ASR::TranslationUnit_t *mod1 = res.result;
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
                 mod2->m_symtab->parent = symtab;
@@ -487,7 +503,7 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
                 }
                 return asr;
             } else {
-                return res;
+                return res.error;
             }
         }
     }
