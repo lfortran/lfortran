@@ -53,13 +53,10 @@ struct Error {
 
 struct ErrorMessage {
     std::string message;
-
-    ErrorMessage(const std::string& msg)
-        : message(msg)
-    {}
+    ErrorMessage(const std::string& msg) : message(msg) {}
 };
 
-template<typename T, typename E = Error>
+template<typename T, typename E=Error>
 struct Result {
     bool ok;
     union {
@@ -71,7 +68,7 @@ struct Result {
     // Success result constructor
     Result(const T &result) : ok{true}, result{result} {}
     // Error result constructor
-    Result(const Error &error) : ok{false}, error{error} {}
+    Result(const E &error) : ok{false}, error{error} {}
     // Destructor
     ~Result() {
         if (!ok) {
@@ -79,37 +76,27 @@ struct Result {
         }
     }
     // Copy constructor
-    Result(const Result& other)
-        : ok{ other.ok } {
+    Result(const Result<T> &other) : ok{other.ok} {
         if (ok) {
-            new (&result) T(other.result);
+            new(&result) T(other.result);
         } else {
-            new (&error) E(other.error);
+            new(&error) E(other.error);
         }
     }
     // Copy assignment
-    Result& operator=(const Result& other) {
-        if (this != &other) {
-            this->~Result();
-            new (this) Result(other);
+    Result<T>& operator=(const Result<T> &other) {
+        ok = other.ok;
+        if (ok) {
+            new(&result) T(other.result);
+        } else {
+            new(&error) E(other.error);
         }
         return *this;
     }
-    // Move constructor for success
-    Result(T&& res) : ok(true), result{std::move(res)} {}
-    // Move constructor for error (optional)
-    Result(E&& err) : ok(false), error{std::move(err)} {}
     // Move constructor
-    Result(Result&& other)
-        : ok(other.ok) {
-        if (ok) {
-            new (&result) T(std::move(other.result));
-        } else {
-            new (&error) E(std::move(other.error));
-        }
-    }
+    Result(T &&result) : ok{true}, result{std::move(result)} {}
     // Move assignment
-    Result<T>&& operator=(T&& other) = delete;
+    Result<T>&& operator=(T &&other) = delete;
 };
 
 
