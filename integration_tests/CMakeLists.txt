@@ -1984,6 +1984,7 @@ RUN(NAME procedure_16 LABELS gfortran llvm)
 RUN(NAME procedure_17 LABELS gfortran llvm)
 
 
+RUN(NAME procedure_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
