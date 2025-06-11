@@ -3621,7 +3621,7 @@ public:
                 }
 
                 return ASR::make_ListRemove_t(al, x.base.base.loc, args[0], args[1]);
-            } else if (var_name == "_lfortran_list_insert") {
+            } else if (var_name == "_lfortran_list_reverse") {
                 if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(
                         "First argument of " + var_name + " must be of list type",
