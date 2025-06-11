@@ -1291,6 +1291,7 @@ public:
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_list_reverse", IntrinsicSignature({"list"}, 1, 1)},
         {"_lfortran_list_insert", IntrinsicSignature({"list", "index", "element"}, 3, 3)},
+        {"_lfortran_list_remove", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
     };
 
