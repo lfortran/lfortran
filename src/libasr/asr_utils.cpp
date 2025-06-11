@@ -309,20 +309,32 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         }
     }
     LCOMPILERS_ASSERT(symtab->parent == nullptr);
-    ASR::TranslationUnit_t *mod1 = find_and_load_module(al, module_name,
-            *symtab, intrinsic, pass_options, lm);
-    if (mod1 == nullptr && !intrinsic) {
-        // Module not found as a regular module. Try intrinsic module
-        if (module_name == "iso_c_binding"
-            ||module_name == "iso_fortran_env"
-            ||module_name == "ieee_arithmetic") {
-            mod1 = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
-                *symtab, true, pass_options, lm);
+    ASR::TranslationUnit_t* mod1 = nullptr;
+    Result<ASR::TranslationUnit_t*, ErrorMessage> res
+        = find_and_load_module(al, module_name, *symtab, intrinsic, pass_options, lm);
+    std::string error_message = "Module '" + module_name + "' not declared in the current source and the modfile was not found";
+    if (res.ok) {
+        mod1 = res.result;
+    } else {
+        error_message = res.error.message;
+        if (!intrinsic) {
+            // Module not found as a regular module. Try intrinsic module
+            if (module_name == "iso_c_binding"
+                ||module_name == "iso_fortran_env"
+                ||module_name == "ieee_arithmetic") {
+                Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                    = find_and_load_module(al, "lfortran_intrinsic_" + module_name,
+                        *symtab, true, pass_options, lm);
+                if (res.ok) {
+                    mod1 = res.result;
+                } else {
+                    error_message = res.error.message;
+                }
+            }
         }
     }
     if (mod1 == nullptr) {
-        err("Module '" + module_name + "' not declared in the current source and the modfile was not found",
-            loc);
+        err(error_message, loc);
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
@@ -355,20 +367,32 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 // in the ASR itself, or encode in the name in a robust way,
                 // such as using `module_name@intrinsic`:
                 bool is_intrinsic = startswith(item, "lfortran_intrinsic");
-                ASR::TranslationUnit_t *mod1 = find_and_load_module(al,
-                        item,
-                        *symtab, is_intrinsic, pass_options, lm);
-                if (mod1 == nullptr && !is_intrinsic) {
-                    // Module not found as a regular module. Try intrinsic module
-                    if (item == "iso_c_binding"
-                        ||item == "iso_fortran_env") {
-                        mod1 = find_and_load_module(al, "lfortran_intrinsic_" + item,
-                            *symtab, true, pass_options, lm);
+                ASR::TranslationUnit_t *mod1 = nullptr;
+                Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                    = find_and_load_module(al, item, *symtab, is_intrinsic, pass_options, lm);
+                std::string error_message = "Module '" + item + "' modfile was not found";
+                if (res.ok) {
+                    mod1 = res.result;
+                } else {
+                    error_message =  res.error.message;
+                    if (!is_intrinsic) {
+                        // Module not found as a regular module. Try intrinsic module
+                        if (item == "iso_c_binding"
+                            ||item == "iso_fortran_env") {
+                            Result<ASR::TranslationUnit_t*, ErrorMessage> res
+                                = find_and_load_module(al, "lfortran_intrinsic_" + item,
+                                *symtab, true, pass_options, lm);
+                            if (res.ok) {
+                                mod1 = res.result;
+                            } else {
+                                error_message =  res.error.message;
+                            }
+                        }
                     }
                 }
 
                 if (mod1 == nullptr) {
-                    err("Module '" + item + "' modfile was not found", loc);
+                    err(error_message, loc);
                 }
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
@@ -460,7 +484,7 @@ void set_intrinsic(ASR::TranslationUnit_t* trans_unit) {
     }
 }
 
-ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &msym,
+Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm) {
@@ -478,14 +502,19 @@ ASR::TranslationUnit_t* find_and_load_module(Allocator &al, const std::string &m
         std::string modfile;
         std::filesystem::path full_path = path / filename;
         if (read_file(full_path.string(), modfile)) {
-            ASR::TranslationUnit_t *asr = load_modfile(al, modfile, false, symtab, lm);
-            if (intrinsic) {
-                set_intrinsic(asr);
+            Result<ASR::TranslationUnit_t*, ErrorMessage> res = load_modfile(al, modfile, false, symtab, lm);
+            if (res.ok) {
+                ASR::TranslationUnit_t* asr = res.result;
+                if (intrinsic) {
+                    set_intrinsic(asr);
+                }
+                return asr;
+            } else {
+                return res.error;
             }
-            return asr;
         }
     }
-    return nullptr;
+    return ErrorMessage("Module '" + msym + "' modfile was not found");
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,

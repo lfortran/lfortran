@@ -51,23 +51,28 @@ namespace LCompilers {
 struct Error {
 };
 
-template<typename T>
+struct ErrorMessage {
+    std::string message;
+    ErrorMessage(const std::string& msg) : message(msg) {}
+};
+
+template<typename T, typename E=Error>
 struct Result {
     bool ok;
     union {
         T result;
-        Error error;
+        E error;
     };
     // Default constructor
     Result() = delete;
     // Success result constructor
     Result(const T &result) : ok{true}, result{result} {}
     // Error result constructor
-    Result(const Error &error) : ok{false}, error{error} {}
+    Result(const E &error) : ok{false}, error{error} {}
     // Destructor
     ~Result() {
         if (!ok) {
-            error.~Error();
+            error.~E();
         }
     }
     // Copy constructor
@@ -75,7 +80,7 @@ struct Result {
         if (ok) {
             new(&result) T(other.result);
         } else {
-            new(&error) Error(other.error);
+            new(&error) E(other.error);
         }
     }
     // Copy assignment
@@ -84,7 +89,7 @@ struct Result {
         if (ok) {
             new(&result) T(other.result);
         } else {
-            new(&error) Error(other.error);
+            new(&error) E(other.error);
         }
         return *this;
     }
