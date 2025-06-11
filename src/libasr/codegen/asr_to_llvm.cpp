@@ -6017,7 +6017,8 @@ public:
                             break;
                         }
                         this->visit_expr_wrapper(target_dims[i].m_length, true);
-                        llvm_size = builder->CreateMul(llvm_size, tmp);
+                        llvm_size = builder->CreateMul(llvm_size, builder->CreateSExtOrTrunc(tmp,
+                                llvm::Type::getInt32Ty(context)));
                     }
                 } else {
                     target_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(target));
@@ -8364,7 +8365,9 @@ public:
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
         } else {
             llvm::Type* target_llvm_type = target_base_type->getPointerTo();
-            tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            if ( source_ptr->getType() != target_llvm_type ) {
+                tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            }
         }
     }
 
