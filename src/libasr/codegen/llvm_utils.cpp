@@ -2634,7 +2634,7 @@ namespace LCompilers {
         // can be figured out by goind through, integration_tests/test_list_06.py and
         // integration_tests/test_list_07.py.
         if( LLVM::is_llvm_struct(element_type) ) {
-            builder->CreateStore(copy_data, get_pointer_to_list_data(dest));
+            builder->CreateStore(copy_data, get_pointer_to_list_data2(list_type, dest));
             // TODO: Should be created outside the user loop and not here.
             // LLVMList should treat them as data members and create them
             // only if they are NULL
@@ -2660,8 +2660,8 @@ namespace LCompilers {
             llvm_utils->start_new_block(loopbody);
             {
                 llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
-                llvm::Value* srci = read_item(src, pos, false, module, true);
-                llvm::Value* desti = read_item(dest, pos, false, module, true);
+                llvm::Value* srci = read_item2(src_type_code, src, pos, false, module, true);
+                llvm::Value* desti = read_item2(src_type_code, dest, pos, false, module, true);
                 llvm_utils->deepcopy(srci, desti, element_type, module, name2memidx);
                 llvm::Value* tmp = builder->CreateAdd(
                             pos,
