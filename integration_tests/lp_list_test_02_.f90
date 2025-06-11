@@ -1,4 +1,4 @@
-module list_str_tests
+module list_test_02_mod
    implicit none
    character(len=:), allocatable :: tmp_str
 contains
@@ -93,7 +93,7 @@ contains
 end module
 
 program test_list_str
-   use list_str_tests
+   use list_test_02_mod
    implicit none
 
    call tests()

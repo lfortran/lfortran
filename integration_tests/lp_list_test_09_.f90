@@ -1,4 +1,4 @@
-module list_concat_test
+module list_test_09_mod
    implicit none
    real :: eps = 1e-6
 contains
@@ -63,7 +63,7 @@ contains
 end module
 
 program test_list_concat_
-   use list_concat_test
+   use list_test_09_mod
    implicit none
 
    call test_list_concat()
