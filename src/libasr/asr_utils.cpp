@@ -312,9 +312,11 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     ASR::TranslationUnit_t* mod1 = nullptr;
     Result<ASR::TranslationUnit_t*, ErrorMessage> res
         = find_and_load_module(al, module_name, *symtab, intrinsic, pass_options, lm);
+    std::string error_message = "Module '" + module_name + "' not declared in the current source and the modfile was not found";
     if (res.ok) {
         mod1 = res.result;
     } else {
+        error_message = res.error.message;
         if (!intrinsic) {
             // Module not found as a regular module. Try intrinsic module
             if (module_name == "iso_c_binding"
@@ -325,13 +327,14 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                         *symtab, true, pass_options, lm);
                 if (res.ok) {
                     mod1 = res.result;
+                } else {
+                    error_message = res.error.message;
                 }
             }
         }
     }
     if (mod1 == nullptr) {
-        err("Module '" + module_name + "' not declared in the current source and the modfile was not found",
-            loc);
+        err(error_message, loc);
     }
     ASR::Module_t *mod2 = extract_module(*mod1);
     symtab->add_symbol(module_name, (ASR::symbol_t*)mod2);
@@ -367,9 +370,11 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                 ASR::TranslationUnit_t *mod1 = nullptr;
                 Result<ASR::TranslationUnit_t*, ErrorMessage> res
                     = find_and_load_module(al, item, *symtab, is_intrinsic, pass_options, lm);
+                std::string error_message = "Module '" + item + "' modfile was not found";
                 if (res.ok) {
                     mod1 = res.result;
                 } else {
+                    error_message =  res.error.message;
                     if (!is_intrinsic) {
                         // Module not found as a regular module. Try intrinsic module
                         if (item == "iso_c_binding"
@@ -379,13 +384,15 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                                 *symtab, true, pass_options, lm);
                             if (res.ok) {
                                 mod1 = res.result;
+                            } else {
+                                error_message =  res.error.message;
                             }
                         }
                     }
                 }
 
                 if (mod1 == nullptr) {
-                    err("Module '" + item + "' modfile was not found", loc);
+                    err(error_message, loc);
                 }
                 ASR::Module_t *mod2 = extract_module(*mod1);
                 symtab->add_symbol(item, (ASR::symbol_t*)mod2);
