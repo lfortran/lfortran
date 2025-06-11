@@ -143,7 +143,8 @@ inline bool load_serialised_asr(const std::string &s, std::string& asr_binary,
 #endif
     std::string file_type = b.read_string();
     if (file_type != lfortran_modfile_type_string) {
-        throw LCompilersException("LCompilers Modfile format not recognized");
+        error_message = "LCompilers Modfile format not recognized";
+        return false;
     }
     std::string version = b.read_string();
     if (version != LFORTRAN_VERSION) {
