@@ -3605,7 +3605,7 @@ public:
                 ASRUtils::create_intrinsic_function create_function =
                     ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("set.add");
                 return create_function(al, x.base.base.loc, args, diag);
-            }  else if (var_name == "_lfortran_set_item") {
+            } else if (var_name == "_lfortran_set_item") {
                 if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
                     ASR::ttype_t *index_type = ASRUtils::expr_type(args[1]);
@@ -3668,6 +3668,24 @@ public:
 
                     return ASR::make_DictInsert_t(al, x.base.base.loc, args[0], args[1], args[2]);
                 } else {
+                    std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+                    diag.add(Diagnostic(
+                        "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                return nullptr;
+            } else if (var_name == "_lfortran_clear") {
+                if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    return ASR::make_ListClear_t(al, x.base.base.loc, args[0]);
+                } /*else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+                    return ASR::make_DictClear_t(al, x.base.base.loc, args[0]);
+                } else if (ASR::is_a<ASR::Set_t>(*ASRUtils::expr_type(args[0]))) { TODO: Set, Dict Clear is not implemented
+                    return ASR::make_SetClear_t(al, x.base.base.loc, args[0]);
+                } */ 
+                else {
                     std::string type_string = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
                     diag.add(Diagnostic(
                         "First argument of type '"  + type_string + "' has not been implemented for " + var_name + " yet",
@@ -5232,6 +5250,9 @@ public:
                 } else if (LCompilers::startswith(x.m_construct_name, "single")) {
                     // Collect the body of the previous section
                     collect_omp_body(ASR::omp_region_typeType::Single);
+                } else if (LCompilers::startswith(x.m_construct_name, "master")) {
+                    // Collect the body of the previous section
+                    collect_omp_body(ASR::omp_region_typeType::Master);
                 } else if (LCompilers::startswith(x.m_construct_name, "task")) {
                     collect_omp_body(ASR::omp_region_typeType::Task);
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())); 
@@ -5327,6 +5348,15 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Single, clauses.p, clauses.n, body.p, body.n)));
+            
+            } else if(to_lower(x.m_construct_name) == "master") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Master, clauses.p, clauses.n, body.p, body.n)));
             } else if (to_lower(x.m_construct_name) == "task") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
