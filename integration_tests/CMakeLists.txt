@@ -2179,8 +2179,8 @@ RUN(NAME do_concurrent_13 LABELS llvm_omp llvm) # to not include is that we do a
 
 RUN(NAME transfer_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME transfer_02 LABELS gfortran llvm)
-RUN(NAME transfer_03 LABELS gfortran llvm NO_FAST)
-RUN(NAME transfer_04 LABELS gfortran llvm NO_FAST)
+RUN(NAME transfer_03 LABELS gfortran llvm)
+RUN(NAME transfer_04 LABELS gfortran llvm)
 
 RUN(NAME present_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME present_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
