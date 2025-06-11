@@ -5300,6 +5300,7 @@ namespace LCompilers {
         llvm::Value* item, ASR::ttype_t* item_type, llvm::Module* module,
         llvm::Value* start, llvm::Value* end) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
+        std::string type_code = ASRUtils::get_type_code(item_type);
 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
@@ -5340,7 +5341,7 @@ namespace LCompilers {
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value* left_arg = read_item(list, llvm_utils->CreateLoad(i),
+            llvm::Value* left_arg = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* is_item_not_equal = builder->CreateNot(
                                                 llvm_utils->is_equal_by_value(
@@ -5461,6 +5462,7 @@ namespace LCompilers {
     void LLVMList::remove(llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* item_type, llvm::Module* module) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
+        std::string type_code = ASRUtils::get_type_code(item_type);
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
         // TODO: Should be created outside the user loop and not here.
@@ -5497,8 +5499,8 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(item_pos),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item(list, llvm_utils->CreateLoad(item_pos),
-                read_item(list, tmp, false, module, false), false, module);
+            write_item2(type_code, list, llvm_utils->CreateLoad(item_pos),
+                read_item2(type_code, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, item_pos);
         }
         builder->CreateBr(loophead);
