@@ -280,15 +280,17 @@ namespace LCompilers {
             dim_des_val = llvm_utils->CreateLoad2(dim_des->getPointerTo(), dim_des_val);
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             for( int r = 0; r < n_dims; r++ ) {
+                llvm::Type *i32 = llvm::Type::getInt32Ty(context);
                 llvm::Value* dim_val = llvm_utils->create_ptr_gep2(dim_des, dim_des_val, r);
                 llvm::Value* s_val = llvm_utils->create_gep2(dim_des, dim_val, 0);
                 llvm::Value* l_val = llvm_utils->create_gep2(dim_des, dim_val, 1);
                 llvm::Value* dim_size_ptr = llvm_utils->create_gep2(dim_des, dim_val, 2);
+                llvm::Value* first = builder->CreateSExtOrTrunc(llvm_dims[r].first, i32);
+                llvm::Value* dim_size = builder->CreateSExtOrTrunc(llvm_dims[r].second, i32);
                 builder->CreateStore(prod, s_val);
-                builder->CreateStore(llvm_dims[r].first, l_val);
-                llvm::Value* dim_size = llvm_dims[r].second;
-                prod = builder->CreateMul(prod, dim_size);
+                builder->CreateStore(first, l_val);
                 builder->CreateStore(dim_size, dim_size_ptr);
+                prod = builder->CreateMul(prod, dim_size);
             }
 
             if( !reserve_data_memory ) {
