@@ -11527,7 +11527,7 @@ public:
                             load_array_size_deep_copy(m_dims[i].m_length);
                             length = tmp;
                             builder->CreateStore(
-                                builder->CreateSub(builder->CreateAdd(length, lbound),
+                                builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
                                       llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                                 target);
                         }
