@@ -7,12 +7,12 @@
 #include <libasr/pass/intrinsic_function_registry.h>
 #include <libasr/pass/intrinsic_array_function_registry.h>
 #include <libasr/pass/pass_utils.h>
-#include <lfortran/semantics/semantic_exception.h>
 
 #include <vector>
 
 
 namespace LCompilers {
+diag::Diagnostics* global_diagnostics = nullptr;
 
 /*
 
@@ -72,9 +72,19 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         }
         ASR::ttype_t* type = nullptr;
         type = ASRUtils::extract_type(x->m_type);
-        ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
-        global_scope, arg_types, type, new_args, x->m_overload_id);
-        *current_expr = current_expr_;
+        ASR::expr_t* current_expr_ = nullptr;
+         try {
+            current_expr_ = instantiate_function(al, x->base.base.loc,
+            global_scope, arg_types, type, new_args, x->m_overload_id);
+            *current_expr = current_expr_;
+        } catch (const LCompilersException& e) {
+            global_diagnostics->add(diag::Diagnostic(
+                std::string(e.what()),
+                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Label("", {x->base.base.loc})
+            }));
+            return;
+        }
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
@@ -351,39 +361,13 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
                             const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics &diagnostics) {
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
+    global_diagnostics = &diagnostics;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid);
-    try {
-        v.visit_TranslationUnit(unit);
-    } catch (const LCompilersException& e) {
-        diagnostics.add(diag::Diagnostic(
-            std::string(e.what()),
-            diag::Level::Error, diag::Stage::Semantic, {
-            diag::Label("", {unit.base.base.loc})
-        }));
-        throw LCompilers::LFortran::SemanticAbort();
-    }
+    v.visit_TranslationUnit(unit);
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
-    try {
-        u.visit_TranslationUnit(unit);
-    } catch (const LCompilersException& e) {
-        diagnostics.add(diag::Diagnostic(
-            std::string(e.what()),
-            diag::Level::Error, diag::Stage::Semantic, {
-            diag::Label("", {unit.base.base.loc})
-        }));
-        throw LCompilers::LFortran::SemanticAbort();
-    }
+    u.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);
-    try {
-        w.visit_TranslationUnit(unit);
-    } catch (const LCompilersException& e) {
-        diagnostics.add(diag::Diagnostic(
-            std::string(e.what()),
-            diag::Level::Error, diag::Stage::Semantic, {
-            diag::Label("", {unit.base.base.loc})
-        }));
-        throw LCompilers::LFortran::SemanticAbort();
-    }
+    w.visit_TranslationUnit(unit);
 }
 
 

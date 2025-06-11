@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": "run_dbg-runtime_stacktrace_01-dcc746e.stdout",
     "stdout_hash": "22a33b413c2a67997ddcab21f9da9c861e4c5786572ad4dcd3de3ed2",
-    "stderr": null,
-    "stderr_hash": null,
+    "stderr": "run_dbg-runtime_stacktrace_01-dcc746e.stderr",
+    "stderr_hash": "d7b2063ee2384904c7372e603b621a3e739faa954e5cc144f17d9b08",
     "returncode": 5
 }

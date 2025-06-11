@@ -1180,19 +1180,18 @@ int compile_src_to_object_file(const std::string &infile,
         return 1;
 #endif
     }
-    try {
         LCompilers::Result<std::unique_ptr<LCompilers::LLVMModule>>
         res = fe.get_llvm3(*asr, lpm, diagnostics, infile, &time_opt);
-        if (res.ok) {
+    if (diagnostics.has_error()) {
+        std::cerr << diagnostics.render(lm, compiler_options);
+        return 5;
+    }
+    if (res.ok) {
         m = std::move(res.result);
     } else {
         LCOMPILERS_ASSERT(diagnostics.has_error())
         return 5;
     }
-    } catch (...) {
-        std::cerr << diagnostics.render(lm, compiler_options);
-        return 5;
-    }   
 
     // LLVM -> Machine code (saves to an object file)
     if (assembly) {
