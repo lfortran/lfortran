@@ -7881,6 +7881,16 @@ public:
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_value));
         ASR::expr_t* iachar_value = nullptr;
         ASR::expr_t* arg_value = ASRUtils::expr_value(arg);
+        ASR::ttype_t * arg_type = ASRUtils::expr_type(arg);
+        if (ASR::is_a<ASR::String_t>(*arg_type) ) {
+            ASR::expr_t* str_len = ASR::down_cast<ASR::String_t>(ASRUtils::expr_type(arg))->m_len;
+            int64_t len = ASR::down_cast<ASR::IntegerConstant_t>(str_len)->m_n;
+            if (len != 1) {
+                diag.add(Diagnostic("Argument of `iachar` intrinsic must be of length one",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                throw SemanticAbort();
+            }
+        }
         if( arg_value ) {
             std::string arg_str;
             bool is_const_value = ASRUtils::is_value_constant(arg_value, arg_str);
