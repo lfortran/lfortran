@@ -9304,7 +9304,7 @@ public:
                     bool is_nopass = false;
                     bool is_class_procedure = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
-                        ASR::symbol_t* f4 = gp->m_procs[i];
+                        ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
                         if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
                             diag.add(Diagnostic(std::string(ASRUtils::symbol_name(f4)) +
                             " is not a function.",
