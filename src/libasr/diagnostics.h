@@ -70,7 +70,7 @@ enum Level {
  */
 enum Stage {
     CPreprocessor, Prescanner, Tokenizer, Parser, Semantic, ASRPass,
-    ASRVerify, CodeGen
+    ASRVerify, CodeGen, Runtime
 };
 
 /*

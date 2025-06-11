@@ -80,10 +80,10 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         } catch (const LCompilersException& e) {
             global_diagnostics->add(diag::Diagnostic(
                 std::string(e.what()),
-                diag::Level::Error, diag::Stage::Semantic, {
+                diag::Level::Error, diag::Stage::Runtime, {
                 diag::Label("", {x->base.base.loc})
             }));
-            return;
+            throw RuntimeException();
         }
     }
 
