@@ -1290,6 +1290,7 @@ public:
         {"_lfortran_clear", IntrinsicSignature({"iterable"}, 1, 1)},
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_list_reverse", IntrinsicSignature({"list"}, 1, 1)},
+        {"_lfortran_list_insert", IntrinsicSignature({"list", "index", "element"}, 3, 3)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
     };
 
@@ -7287,6 +7288,8 @@ public:
             diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
         }
 
         AST::expr_t* source = x.m_args[0].m_end;
@@ -7315,6 +7318,8 @@ public:
             diag.add(Diagnostic("_lfortran_get_item expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
         }
         
         Vec<ASR::expr_t *> args;
@@ -7332,6 +7337,8 @@ public:
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
                 diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
             }
             return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
