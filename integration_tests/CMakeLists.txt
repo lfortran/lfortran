@@ -1744,6 +1744,7 @@ RUN(NAME class_43 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_44 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_45 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_46 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
+RUN(NAME class_47 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
@@ -2357,3 +2358,4 @@ RUN(NAME lp_dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # Completely ported tests
 RUN(NAME lp_list_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME lp_list_test_06_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
