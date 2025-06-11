@@ -1829,10 +1829,19 @@ public:
                     }
                 }
             }
-        } else {
-
+        } else if (ASR::is_a<ASR::ArraySize_t>(*dim_expr)){
+            ASR::ArraySize_t* dim_expr_arrsize = ASR::down_cast<ASR::ArraySize_t>(dim_expr);
+            if  (ASR::is_a<ASR::Var_t>(*dim_expr_arrsize->m_v)){
+                ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(dim_expr_arrsize->m_v);
+                ASR::symbol_t* arr_sym = arr_var->m_v;
+                ASR::Variable_t* arr_variable = ASR::down_cast<ASR::Variable_t>(arr_sym);
+                SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(arr_sym);
+                if ((arr_variable->m_type->type == ASR::ttypeType::Allocatable) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
+                    error = true;
+                }
+            }
+        }  else {
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
-
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
             }
