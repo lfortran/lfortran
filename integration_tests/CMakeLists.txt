@@ -2357,3 +2357,4 @@ RUN(NAME lp_dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # Completely ported tests
 RUN(NAME lp_list_test_01_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME lp_list_test_06_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
