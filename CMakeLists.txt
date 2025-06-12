@@ -376,7 +376,7 @@ if (WITH_LIBUNWIND_FORCE)
     set(WITH_LIBUNWIND yes)
 endif()
 if (WITH_LIBUNWIND)
-    find_package(libunwind REQUIRED)
+    find_package(LIBUNWIND REQUIRED)
 endif()
 
 set(WITH_KOKKOS no CACHE BOOL "Detect Kokkos location for cpp backend")
