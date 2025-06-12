@@ -714,7 +714,7 @@ Result<std::string> asr_to_cpp(Allocator &al, ASR::TranslationUnit_t &asr,
     int64_t default_lower_bound)
 {
     co.po.always_run = true;
-    pass_unused_functions(al, asr, co.po);
+    pass_unused_functions(al, asr, co.po, diagnostics);
     ASRToCPPVisitor v(diagnostics, co, default_lower_bound);
     try {
         v.visit_asr((ASR::asr_t &)asr);

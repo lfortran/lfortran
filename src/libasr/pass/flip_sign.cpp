@@ -206,7 +206,7 @@ public:
 };
 
 void pass_replace_flip_sign(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& pass_options) {
+                            const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     FlipSignVisitor v(al, unit, pass_options);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor u(al);

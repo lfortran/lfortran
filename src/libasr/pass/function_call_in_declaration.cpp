@@ -722,7 +722,7 @@ public:
 };
 
 void pass_replace_function_call_in_declaration(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     FunctionTypeVisitor v(al, unit);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);

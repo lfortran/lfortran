@@ -193,7 +193,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
 };
 
 void pass_create_subroutine_from_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                                          const LCompilers::PassOptions& /*pass_options*/) {
+                                          const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     CreateFunctionFromSubroutine v(al);
     v.visit_TranslationUnit(unit);
     ReplaceFunctionCallWithSubroutineCallVisitor u(al);

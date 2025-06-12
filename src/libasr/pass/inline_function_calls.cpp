@@ -473,7 +473,7 @@ class InlineFunctionCallsVisitor: public ASR::CallReplacerOnExpressionsVisitor<I
 };
 
 void pass_inline_function_calls(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const LCompilers::PassOptions& /*pass_options*/) {
+                                const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     InlineFunctionCallsVisitor inline_functions(al);
     inline_functions.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor update_dependencies(al);

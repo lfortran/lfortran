@@ -892,7 +892,7 @@ public:
 };
 
 void pass_replace_array_passed_in_function_call(Allocator &al, ASR::TranslationUnit_t &unit,
-                        const LCompilers::PassOptions& /*pass_options*/) {
+                        const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     CallVisitor v(al);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor x(al);

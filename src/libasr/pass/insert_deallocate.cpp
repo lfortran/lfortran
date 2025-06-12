@@ -174,7 +174,7 @@ class InsertDeallocate: public ASR::CallReplacerOnExpressionsVisitor<InsertDeall
 };
 
 void pass_insert_deallocate(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &/*pass_options*/) {
+                                const PassOptions &/*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     InsertDeallocate v(al);
     v.visit_TranslationUnit(unit);
 }

@@ -7,7 +7,7 @@
 namespace LCompilers {
 
     void pass_transform_optional_argument_functions(Allocator &al, ASR::TranslationUnit_t &unit,
-                                const PassOptions &pass_options);
+                                const PassOptions &pass_options, diag::Diagnostics &diagnostics);
 
 } // namespace LCompilers
 
