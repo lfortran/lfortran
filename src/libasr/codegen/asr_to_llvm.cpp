@@ -2888,7 +2888,7 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (ASRUtils::is_allocatable(x_m_v_type) && 
+        if ((ASRUtils::is_allocatable(x_m_v_type) || ASRUtils::is_pointer(x_m_v_type)) &&
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
             !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
             tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
