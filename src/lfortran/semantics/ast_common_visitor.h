@@ -4474,7 +4474,6 @@ public:
 
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
             // ONLY supposed to be used for LFortran specific types
-
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
 
             if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
