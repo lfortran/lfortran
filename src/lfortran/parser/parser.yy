@@ -8,7 +8,7 @@
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
-%define parse.error verbose
+// %define parse.error verbose
 
 /*
 // Uncomment this to enable parser tracing. Then in the main code, set
