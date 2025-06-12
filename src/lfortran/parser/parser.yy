@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    235 // shift/reduce conflicts
+%expect    238 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -365,6 +365,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_LF_LIST
 %token <string> KW_LF_SET
 %token <string> KW_LF_DICT
+%token <string> KW_LF_TUPLE
 %type <vec_ast> intrinsic_type_spec_list
 
 // Nonterminal tokens
@@ -1550,6 +1551,7 @@ intrinsic_type_spec
     | KW_LF_LIST "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_List, $3, @$); }
     | KW_LF_SET "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_Set, $3, @$); }
     | KW_LF_DICT "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Dict, $3, @$); }
+    | KW_LF_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Tuple, $3, @$); }
     ;
 
 intrinsic_type_spec_list
@@ -2713,4 +2715,5 @@ id
     | KW_LF_LIST { $$ = SYMBOL($1, @$); }
     | KW_LF_SET { $$ = SYMBOL($1, @$); }
     | KW_LF_DICT { $$ = SYMBOL($1, @$); }
+    | KW_LF_TUPLE { $$ = SYMBOL($1, @$); }
     ;

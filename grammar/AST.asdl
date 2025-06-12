@@ -340,6 +340,7 @@ decl_type
     | TypeLF_List
     | TypeLF_Set
     | TypeLF_Dict
+    | TypeLF_Tuple
 
 event_attribute
     = AttrStat(identifier variable)

@@ -4473,6 +4473,7 @@ public:
         ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
 
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
+            // ONLY supposed to be used for LFortran specific types
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
 
             if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
@@ -4491,8 +4492,32 @@ public:
                                                        is_allocatable, dims, type_declaration, abi);
 
                 return ASRUtils::TYPE(ASR::make_Dict_t(al, sym_type->base.base.loc, key_type, value_type));
+            } else if (sym_type->m_type == AST::decl_typeType::TypeLF_Tuple) {
+                if (sym_type->n_attr < 1) {
+                    diag.add(Diagnostic(
+                        "Tuple declaration needs atleast one type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                Vec<ASR::ttype_t *> type_vec;
+                type_vec.reserve(al, sym_type->n_attr);
+
+                for (size_t i=0;i<sym_type->n_attr;i++)
+                    type_vec.push_back(al, determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                                       is_allocatable, dims, type_declaration, abi));
+
+                return ASRUtils::TYPE(ASR::make_Tuple_t(al, sym_type->base.base.loc, type_vec.p, type_vec.n));
             }
-            return nullptr;
+
+            diag.add(Diagnostic(
+                "Only LFortran specific types (dict, tuple) uses this syntax",
+                Level::Error, Stage::Semantic, {
+                    Label("",{sym_type->base.base.loc})
+                }));
+            throw SemanticAbort();
         }
 
 
