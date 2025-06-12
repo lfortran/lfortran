@@ -50,6 +50,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             circle:
                                 (ExternalSymbol
@@ -160,6 +161,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -207,6 +209,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -217,7 +220,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 circle
                                                     )
                                                     ()
@@ -228,11 +234,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_area
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 circle
                                         )]
                                         (Real 4)
@@ -321,6 +331,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -331,7 +342,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 circle
                                                     )
                                                     ()
@@ -342,11 +356,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     circle_print
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 circle
                                         )]
                                         ()
@@ -381,7 +399,7 @@
                                             ()
                                             [(StringConstant
                                                 "Circle: r = "
-                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 5 this)
@@ -391,11 +409,11 @@
                                             )
                                             (StringConstant
                                                 " area = "
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (Var 5 area)]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]
@@ -437,6 +455,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     class_circle1

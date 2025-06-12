@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -63,6 +65,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     logical4
@@ -111,7 +114,7 @@
                             (Var 2 b)
                             (Var 2 c)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

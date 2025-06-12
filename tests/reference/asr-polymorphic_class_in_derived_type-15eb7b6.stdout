@@ -22,7 +22,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 ~abstract_type
                                                         )
                                                     )
@@ -34,6 +37,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             value2:
                                                 (Variable
@@ -45,7 +49,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 ~abstract_type
                                                         )
                                                     )
@@ -57,6 +64,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~abstract_type:
                                                 (Struct

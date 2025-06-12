@@ -26,7 +26,13 @@ struct IntrinsicProceduresAsASRNodes {
         IntrinsicProceduresAsASRNodes() {
             intrinsics_present_in_ASR = {"size", "lbound", "ubound",
                 "transpose", "transfer", "cmplx", "dcmplx", "reshape",
-                "iachar", "null", "associated", "len", "complex", "is_contiguous"};
+                "iachar", "null", "associated", "len", "complex", "is_contiguous",
+
+                // LF specific
+                "_lfortran_len", "_lfortran_get_item", "_lfortran_concat",
+                "_lfortran_list_constant", "_lfortran_list_count",
+                "_lfortran_set_constant",
+                "_lfortran_dict_constant"};
 
             kind_based_intrinsics = {};
         }

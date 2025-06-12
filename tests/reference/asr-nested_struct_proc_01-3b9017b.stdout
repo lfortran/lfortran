@@ -1,0 +1,1265 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            gftl2_integer32complex32orderedmap:
+                (Module
+                    (SymbolTable
+                        2
+                        {
+                            character_kinds:
+                                (ExternalSymbol
+                                    2
+                                    character_kinds
+                                    4 character_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_kinds
+                                    Public
+                                ),
+                            character_storage_size:
+                                (ExternalSymbol
+                                    2
+                                    character_storage_size
+                                    4 character_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_storage_size
+                                    Public
+                                ),
+                            compiler_version:
+                                (ExternalSymbol
+                                    2
+                                    compiler_version
+                                    4 compiler_version
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    compiler_version
+                                    Public
+                                ),
+                            error_unit:
+                                (ExternalSymbol
+                                    2
+                                    error_unit
+                                    4 error_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    error_unit
+                                    Public
+                                ),
+                            i32:
+                                (Variable
+                                    2
+                                    i32
+                                    [int32]
+                                    Local
+                                    (Var 2 int32)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            input_unit:
+                                (ExternalSymbol
+                                    2
+                                    input_unit
+                                    4 input_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    input_unit
+                                    Public
+                                ),
+                            int16:
+                                (ExternalSymbol
+                                    2
+                                    int16
+                                    4 int16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int16
+                                    Public
+                                ),
+                            int32:
+                                (ExternalSymbol
+                                    2
+                                    int32
+                                    4 int32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int32
+                                    Public
+                                ),
+                            int64:
+                                (ExternalSymbol
+                                    2
+                                    int64
+                                    4 int64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int64
+                                    Public
+                                ),
+                            int8:
+                                (ExternalSymbol
+                                    2
+                                    int8
+                                    4 int8
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int8
+                                    Public
+                                ),
+                            integer32complex32orderedmap:
+                                (Struct
+                                    (SymbolTable
+                                        8
+                                        {
+                                            insert:
+                                                (GenericProcedure
+                                                    8
+                                                    insert
+                                                    [8 insert_key_value]
+                                                    Public
+                                                ),
+                                            insert_key_value:
+                                                (ClassProcedure
+                                                    8
+                                                    insert_key_value
+                                                    ()
+                                                    omap_insert_key_value
+                                                    2 omap_insert_key_value
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            map:
+                                                (Variable
+                                                    8
+                                                    map
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 omap_map
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    integer32complex32orderedmap
+                                    [omap_map]
+                                    [map]
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            integer_kinds:
+                                (ExternalSymbol
+                                    2
+                                    integer_kinds
+                                    4 integer_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    integer_kinds
+                                    Public
+                                ),
+                            iostat_end:
+                                (ExternalSymbol
+                                    2
+                                    iostat_end
+                                    4 iostat_end
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_end
+                                    Public
+                                ),
+                            logical_kinds:
+                                (ExternalSymbol
+                                    2
+                                    logical_kinds
+                                    4 logical_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical_kinds
+                                    Public
+                                ),
+                            numeric_storage_size:
+                                (ExternalSymbol
+                                    2
+                                    numeric_storage_size
+                                    4 numeric_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    numeric_storage_size
+                                    Public
+                                ),
+                            omap_i_at_rc:
+                                (Function
+                                    (SymbolTable
+                                        9
+                                        {
+                                            1_omap_map_stored_value:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_omap_map_stored_value
+                                                    7 stored_value
+                                                    omap_map
+                                                    []
+                                                    stored_value
+                                                    Public
+                                                ),
+                                            key:
+                                                (Variable
+                                                    9
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            rc:
+                                                (Variable
+                                                    9
+                                                    rc
+                                                    []
+                                                    Out
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            res:
+                                                (Variable
+                                                    9
+                                                    res
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Complex 4)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            this:
+                                                (Variable
+                                                    9
+                                                    this
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        2 omap_map
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    omap_i_at_rc
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
+                                            2 omap_map
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        (Pointer
+                                            (Complex 4)
+                                        )
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 9 this)
+                                    (Var 9 key)
+                                    (Var 9 rc)]
+                                    [(Associate
+                                        (Var 9 res)
+                                        (StructInstanceMember
+                                            (Var 9 this)
+                                            9 1_omap_map_stored_value
+                                            (Complex 4)
+                                            ()
+                                        )
+                                    )
+                                    (Assignment
+                                        (Var 9 rc)
+                                        (IntegerConstant 0 (Integer 4) Decimal)
+                                        ()
+                                        .false.
+                                    )]
+                                    (Var 9 res)
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omap_i_set:
+                                (Struct
+                                    (SymbolTable
+                                        6
+                                        {
+                                            
+                                        })
+                                    omap_i_set
+                                    []
+                                    []
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            omap_insert_key_value:
+                                (Function
+                                    (SymbolTable
+                                        10
+                                        {
+                                            1_integer32complex32orderedmap_map:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_integer32complex32orderedmap_map
+                                                    8 map
+                                                    integer32complex32orderedmap
+                                                    []
+                                                    map
+                                                    Public
+                                                ),
+                                            1_omap_i_at_rc:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_omap_i_at_rc
+                                                    7 at_rc
+                                                    omap_map
+                                                    []
+                                                    at_rc
+                                                    Public
+                                                ),
+                                            1_omap_map_stored_value:
+                                                (ExternalSymbol
+                                                    10
+                                                    1_omap_map_stored_value
+                                                    7 stored_value
+                                                    omap_map
+                                                    []
+                                                    stored_value
+                                                    Public
+                                                ),
+                                            key:
+                                                (Variable
+                                                    10
+                                                    key
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            status:
+                                                (Variable
+                                                    10
+                                                    status
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            this:
+                                                (Variable
+                                                    10
+                                                    this
+                                                    []
+                                                    InOut
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        2 integer32complex32orderedmap
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            tmp:
+                                                (Variable
+                                                    10
+                                                    tmp
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Pointer
+                                                        (Complex 4)
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            tol:
+                                                (Variable
+                                                    10
+                                                    tol
+                                                    []
+                                                    Local
+                                                    (RealConstant
+                                                        0.000001
+                                                        (Real 4)
+                                                    )
+                                                    (RealConstant
+                                                        0.000001
+                                                        (Real 4)
+                                                    )
+                                                    Parameter
+                                                    (Real 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            value:
+                                                (Variable
+                                                    10
+                                                    value
+                                                    []
+                                                    In
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    omap_insert_key_value
+                                    (FunctionType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
+                                            2 integer32complex32orderedmap
+                                        )
+                                        (Integer 4)
+                                        (Complex 4)]
+                                        ()
+                                        Source
+                                        Implementation
+                                        ()
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 this)
+                                    (Var 10 key)
+                                    (Var 10 value)]
+                                    [(Assignment
+                                        (StructInstanceMember
+                                            (StructInstanceMember
+                                                (Var 10 this)
+                                                10 1_integer32complex32orderedmap_map
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    2 omap_map
+                                                )
+                                                ()
+                                            )
+                                            10 1_omap_map_stored_value
+                                            (Complex 4)
+                                            ()
+                                        )
+                                        (Var 10 value)
+                                        ()
+                                        .false.
+                                    )
+                                    (Associate
+                                        (Var 10 tmp)
+                                        (FunctionCall
+                                            10 1_omap_i_at_rc
+                                            7 at
+                                            [((StructInstanceMember
+                                                (Var 10 this)
+                                                10 1_integer32complex32orderedmap_map
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    2 omap_map
+                                                )
+                                                ()
+                                            ))
+                                            ((Var 10 key))
+                                            ((Var 10 status))]
+                                            (Pointer
+                                                (Complex 4)
+                                            )
+                                            ()
+                                            ()
+                                        )
+                                    )
+                                    (If
+                                        (LogicalBinOp
+                                            (RealCompare
+                                                (IntrinsicElementalFunction
+                                                    Abs
+                                                    [(RealBinOp
+                                                        (IntrinsicElementalFunction
+                                                            Real
+                                                            [(Var 10 tmp)]
+                                                            0
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (IntrinsicElementalFunction
+                                                            Real
+                                                            [(Var 10 value)]
+                                                            0
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Gt
+                                                (Var 10 tol)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            Or
+                                            (RealCompare
+                                                (IntrinsicElementalFunction
+                                                    Abs
+                                                    [(RealBinOp
+                                                        (IntrinsicElementalFunction
+                                                            Aimag
+                                                            [(Var 10 tmp)]
+                                                            0
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (IntrinsicElementalFunction
+                                                            Aimag
+                                                            [(Var 10 value)]
+                                                            0
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )]
+                                                    0
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Gt
+                                                (Var 10 tol)
+                                                (Logical 4)
+                                                ()
+                                            )
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(Print
+                                            (StringConstant
+                                                "Test failed: tmp does not match value"
+                                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            )
+                                        )
+                                        (ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
+                                    ()
+                                    Private
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omap_map:
+                                (Struct
+                                    (SymbolTable
+                                        7
+                                        {
+                                            at:
+                                                (GenericProcedure
+                                                    7
+                                                    at
+                                                    [7 at_rc]
+                                                    Public
+                                                ),
+                                            at_rc:
+                                                (ClassProcedure
+                                                    7
+                                                    at_rc
+                                                    ()
+                                                    omap_i_at_rc
+                                                    2 omap_i_at_rc
+                                                    Source
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            stored_value:
+                                                (Variable
+                                                    7
+                                                    stored_value
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Complex 4)
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            tree:
+                                                (Variable
+                                                    7
+                                                    tree
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        2 omap_i_set
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Private
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    omap_map
+                                    [omap_i_set]
+                                    [tree
+                                    stored_value]
+                                    []
+                                    Source
+                                    Private
+                                    .false.
+                                    .false.
+                                    []
+                                    ()
+                                    ()
+                                ),
+                            output_unit:
+                                (ExternalSymbol
+                                    2
+                                    output_unit
+                                    4 output_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    output_unit
+                                    Public
+                                ),
+                            r32:
+                                (Variable
+                                    2
+                                    r32
+                                    [real32]
+                                    Local
+                                    (Var 2 real32)
+                                    (IntegerConstant 4 (Integer 4) Decimal)
+                                    Parameter
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            real128:
+                                (ExternalSymbol
+                                    2
+                                    real128
+                                    4 real128
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real128
+                                    Public
+                                ),
+                            real32:
+                                (ExternalSymbol
+                                    2
+                                    real32
+                                    4 real32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real32
+                                    Public
+                                ),
+                            real64:
+                                (ExternalSymbol
+                                    2
+                                    real64
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            real_kinds:
+                                (ExternalSymbol
+                                    2
+                                    real_kinds
+                                    4 real_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real_kinds
+                                    Public
+                                )
+                        })
+                    gftl2_integer32complex32orderedmap
+                    [iso_fortran_env
+                    gftl2_integer32complex32orderedmap]
+                    .false.
+                    .false.
+                ),
+            iso_fortran_env:
+                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
+            nested_struct_proc_01:
+                (Program
+                    (SymbolTable
+                        11
+                        {
+                            1_insert:
+                                (ExternalSymbol
+                                    11
+                                    1_insert
+                                    8 insert
+                                    integer32complex32orderedmap
+                                    []
+                                    insert
+                                    Private
+                                ),
+                            1_omap_insert_key_value:
+                                (ExternalSymbol
+                                    11
+                                    1_omap_insert_key_value
+                                    8 insert_key_value
+                                    integer32complex32orderedmap
+                                    []
+                                    insert_key_value
+                                    Public
+                                ),
+                            character_kinds:
+                                (ExternalSymbol
+                                    11
+                                    character_kinds
+                                    4 character_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_kinds
+                                    Public
+                                ),
+                            character_storage_size:
+                                (ExternalSymbol
+                                    11
+                                    character_storage_size
+                                    4 character_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    character_storage_size
+                                    Public
+                                ),
+                            compiler_version:
+                                (ExternalSymbol
+                                    11
+                                    compiler_version
+                                    4 compiler_version
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    compiler_version
+                                    Public
+                                ),
+                            error_unit:
+                                (ExternalSymbol
+                                    11
+                                    error_unit
+                                    4 error_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    error_unit
+                                    Public
+                                ),
+                            i32:
+                                (ExternalSymbol
+                                    11
+                                    i32
+                                    2 i32
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    i32
+                                    Public
+                                ),
+                            input_unit:
+                                (ExternalSymbol
+                                    11
+                                    input_unit
+                                    4 input_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    input_unit
+                                    Public
+                                ),
+                            int16:
+                                (ExternalSymbol
+                                    11
+                                    int16
+                                    4 int16
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int16
+                                    Public
+                                ),
+                            int32:
+                                (ExternalSymbol
+                                    11
+                                    int32
+                                    4 int32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int32
+                                    Public
+                                ),
+                            int64:
+                                (ExternalSymbol
+                                    11
+                                    int64
+                                    4 int64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int64
+                                    Public
+                                ),
+                            int8:
+                                (ExternalSymbol
+                                    11
+                                    int8
+                                    4 int8
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    int8
+                                    Public
+                                ),
+                            integer32complex32orderedmap:
+                                (ExternalSymbol
+                                    11
+                                    integer32complex32orderedmap
+                                    2 integer32complex32orderedmap
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    integer32complex32orderedmap
+                                    Public
+                                ),
+                            integer_kinds:
+                                (ExternalSymbol
+                                    11
+                                    integer_kinds
+                                    4 integer_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    integer_kinds
+                                    Public
+                                ),
+                            iostat_end:
+                                (ExternalSymbol
+                                    11
+                                    iostat_end
+                                    4 iostat_end
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_end
+                                    Public
+                                ),
+                            key:
+                                (Variable
+                                    11
+                                    key
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            logical_kinds:
+                                (ExternalSymbol
+                                    11
+                                    logical_kinds
+                                    4 logical_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    logical_kinds
+                                    Public
+                                ),
+                            my_map:
+                                (Variable
+                                    11
+                                    my_map
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        11 integer32complex32orderedmap
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                ),
+                            numeric_storage_size:
+                                (ExternalSymbol
+                                    11
+                                    numeric_storage_size
+                                    4 numeric_storage_size
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    numeric_storage_size
+                                    Public
+                                ),
+                            omap_i_at_rc:
+                                (ExternalSymbol
+                                    11
+                                    omap_i_at_rc
+                                    2 omap_i_at_rc
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    omap_i_at_rc
+                                    Public
+                                ),
+                            omap_i_set:
+                                (ExternalSymbol
+                                    11
+                                    omap_i_set
+                                    2 omap_i_set
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    omap_i_set
+                                    Public
+                                ),
+                            omap_insert_key_value:
+                                (ExternalSymbol
+                                    11
+                                    omap_insert_key_value
+                                    2 omap_insert_key_value
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    omap_insert_key_value
+                                    Public
+                                ),
+                            omap_map:
+                                (ExternalSymbol
+                                    11
+                                    omap_map
+                                    2 omap_map
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    omap_map
+                                    Public
+                                ),
+                            output_unit:
+                                (ExternalSymbol
+                                    11
+                                    output_unit
+                                    4 output_unit
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    output_unit
+                                    Public
+                                ),
+                            r32:
+                                (ExternalSymbol
+                                    11
+                                    r32
+                                    2 r32
+                                    gftl2_integer32complex32orderedmap
+                                    []
+                                    r32
+                                    Public
+                                ),
+                            real128:
+                                (ExternalSymbol
+                                    11
+                                    real128
+                                    4 real128
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real128
+                                    Public
+                                ),
+                            real32:
+                                (ExternalSymbol
+                                    11
+                                    real32
+                                    4 real32
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real32
+                                    Public
+                                ),
+                            real64:
+                                (ExternalSymbol
+                                    11
+                                    real64
+                                    4 real64
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real64
+                                    Public
+                                ),
+                            real_kinds:
+                                (ExternalSymbol
+                                    11
+                                    real_kinds
+                                    4 real_kinds
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    real_kinds
+                                    Public
+                                ),
+                            value:
+                                (Variable
+                                    11
+                                    value
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Complex 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    nested_struct_proc_01
+                    [gftl2_integer32complex32orderedmap]
+                    [(Assignment
+                        (Var 11 key)
+                        (IntegerConstant 10 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 11 value)
+                        (ComplexConstructor
+                            (RealConstant
+                                2.000000
+                                (Real 4)
+                            )
+                            (RealConstant
+                                4.000000
+                                (Real 4)
+                            )
+                            (Complex 4)
+                            (ComplexConstant
+                                2.000000
+                                4.000000
+                                (Complex 4)
+                            )
+                        )
+                        ()
+                        .false.
+                    )
+                    (SubroutineCall
+                        11 1_omap_insert_key_value
+                        11 1_insert
+                        [((Var 11 key))
+                        ((Var 11 value))]
+                        (Var 11 my_map)
+                    )
+                    (Print
+                        (StringConstant
+                            "Test passed"
+                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                    )]
+                )
+        })
+    []
+)

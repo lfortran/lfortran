@@ -77,13 +77,13 @@ program continue_compilation_1
     character(len=100) :: filename
     type(MyClass), parameter :: myclass_array(2) = [1, MyClass(10)]
     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
-    
-
-
-
-
-
-
+    character(width=10) :: str_c_1
+    character(len=10, len=20) :: str_c_2
+    character(len=10, 1) :: str_c_3
+    character(1, len=20) :: str_c_4
+    character(:), allocatable :: x(2)
+    integer, dimension(:,:), allocatable :: arr_size
+    logical :: mask_size(size(arr_size))
 
 
 
@@ -309,4 +309,9 @@ program continue_compilation_1
 
     allocate(arr5, status=q1)
     allocate(arr5, mold = arr4)
+
+    print *, ["aa", "aaa"]
+    print *, ["aa", string(x+1:x+2), "aaa"]
+
+    print *, pack(arr2, mask1)
 end program

@@ -27,7 +27,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -37,6 +37,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str:
                                 (Variable
@@ -47,7 +48,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 40 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -56,6 +57,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str_alloc:
                                 (Variable
@@ -67,7 +69,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -77,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str_hash1:
                                 (Variable
@@ -96,6 +99,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str_hash2:
                                 (Variable
@@ -115,6 +119,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str_hash3:
                                 (Variable
@@ -134,6 +139,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             char_str_hash4:
                                 (Variable
@@ -153,6 +159,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fnv_1a:
                                 (ExternalSymbol
@@ -252,6 +259,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     modules_48
@@ -270,12 +278,12 @@
                         (StringPhysicalCast
                             (StringConstant
                                 "runningmodules_48_1"
-                                (String 1 (IntegerConstant 19 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 (IntegerConstant 19 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -300,7 +308,7 @@
                             )
                             8 1_string_t_s
                             (Allocatable
-                                (String 1 () .false. .true. DescriptorString)
+                                (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                         )
@@ -312,7 +320,7 @@
                         (Var 8 char_str)
                         (StringConstant
                             "runningmodules_48_2"
-                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -335,7 +343,7 @@
                             )
                             8 1_string_t_s
                             (Allocatable
-                                (String 1 () .false. .true. DescriptorString)
+                                (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                         )
@@ -344,7 +352,7 @@
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -385,7 +393,7 @@
                             [(Var 8 char_str_hash1)
                             (Var 8 char_str_hash2)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -468,7 +476,7 @@
                             [(Var 8 char_str_hash3)
                             (Var 8 char_str_hash4)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -509,10 +517,10 @@
                             ))
                             ((StringConstant
                                 ":"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             ))]
                             (Allocatable
-                                (String 1 () .false. .true. DescriptorString)
+                                (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                             ()
@@ -532,7 +540,7 @@
                                         (Var 8 cat_str_alloc)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
@@ -548,7 +556,7 @@
                                             (Var 8 cat_str_alloc)
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                     )
                                     ()
                                 ))]
@@ -557,7 +565,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -572,14 +580,14 @@
                                         (Var 8 cat_str_alloc)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1:runningmodules_48_2"
-                                (String 1 (IntegerConstant 39 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 39 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -602,7 +610,7 @@
                                         (Var 8 cat_str_alloc)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             ))]
@@ -639,7 +647,7 @@
                             ))
                             (())]
                             (Allocatable
-                                (String 1 () .false. .true. DescriptorString)
+                                (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                             ()
@@ -659,7 +667,7 @@
                                         (Var 8 cat_str_alloc)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
@@ -675,7 +683,7 @@
                                             (Var 8 cat_str_alloc)
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                     )
                                     ()
                                 ))]
@@ -684,7 +692,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -699,14 +707,14 @@
                                         (Var 8 cat_str_alloc)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "runningmodules_48_1runningmodules_48_2"
-                                (String 1 (IntegerConstant 38 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 38 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -730,7 +738,7 @@
                                             (Var 8 cat_str_alloc)
                                             (Integer 4)
                                             ()
-                                        ) .false. .false. PointerString)
+                                        ) ExpressionLength PointerString)
                                     )
                                     ()
                                 ))]
@@ -783,6 +791,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             fnv_prime_32:
                                                 (Variable
@@ -802,6 +811,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             hash:
                                                 (Variable
@@ -821,6 +831,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -840,6 +851,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             input:
                                                 (Variable
@@ -850,7 +862,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -859,6 +871,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             seed:
                                                 (Variable
@@ -878,11 +891,12 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fnv_1a_char
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Integer 8)]
                                         (Integer 8)
                                         Source
@@ -940,7 +954,7 @@
                                                         (StringItem
                                                             (Var 4 input)
                                                             (Var 4 i)
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             ()
                                                         )
                                                         (Integer 8)
@@ -999,6 +1013,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -1018,6 +1033,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             input:
                                                 (Variable
@@ -1047,6 +1063,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             seed:
                                                 (Variable
@@ -1066,6 +1083,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fnv_1a_string_t
@@ -1120,7 +1138,7 @@
                                                     )
                                                     5 1_string_t_s
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -1145,13 +1163,13 @@
                                                             )
                                                             5 1_string_t_s
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -1197,7 +1215,7 @@
                                                         )
                                                         5 1_string_t_s
                                                         (Allocatable
-                                                            (String 1 () .false. .true. DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
                                                     )
@@ -1222,13 +1240,13 @@
                                                                 )
                                                                 5 1_string_t_s
                                                                 (Allocatable
-                                                                    (String 1 () .false. .true. DescriptorString)
+                                                                    (String 1 () DeferredLength DescriptorString)
                                                                 )
                                                                 ()
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ) .false. .false. PointerString)
+                                                        ) ExpressionLength PointerString)
                                                     )
                                                     ()
                                                 ))
@@ -1266,35 +1284,35 @@
                                                             (StringConcat
                                                                 (Var 6 upper)
                                                                 (Var 6 lower)
-                                                                (String 1 (IntegerConstant 52 (Integer 8) Decimal) .false. .false. PointerString)
+                                                                (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength PointerString)
                                                                 (StringConstant
                                                                     "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz"
-                                                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                    (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                                                 )
                                                             )
                                                             (Var 6 int)
-                                                            (String 1 (IntegerConstant 62 (Integer 8) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 62 (Integer 8) Decimal) ExpressionLength PointerString)
                                                             (StringConstant
                                                                 "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789"
-                                                                (String 1 (IntegerConstant 62 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                (String 1 (IntegerConstant 62 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             )
                                                         )
                                                         (StringConstant
                                                             "_"
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         )
-                                                        (String 1 (IntegerConstant 63 (Integer 8) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 63 (Integer 8) Decimal) ExpressionLength PointerString)
                                                         (StringConstant
                                                             "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                            (String 1 (IntegerConstant 63 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 63 (Integer 4) Decimal) ExpressionLength PointerString)
                                                         )
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_"
-                                                        (String 1 (IntegerConstant 63 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 63 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Parameter
-                                                    (String 1 (IntegerConstant 63 (Integer 4) Decimal) .true. .false. PointerString)
+                                                    (String 1 (IntegerConstant 63 (Integer 4) Decimal) AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1303,6 +1321,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -1312,14 +1331,14 @@
                                                     Local
                                                     (StringConstant
                                                         "0123456789"
-                                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     (StringConstant
                                                         "0123456789"
-                                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Parameter
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .true. .false. PointerString)
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1328,6 +1347,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             line:
                                                 (Variable
@@ -1338,7 +1358,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1347,6 +1367,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             lout:
                                                 (Variable
@@ -1366,6 +1387,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             lower:
                                                 (Variable
@@ -1375,14 +1397,14 @@
                                                     Local
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     (StringConstant
                                                         "abcdefghijklmnopqrstuvwxyz"
-                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Parameter
-                                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) .true. .false. PointerString)
+                                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1391,6 +1413,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -1402,7 +1425,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1412,6 +1435,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             upper:
                                                 (Variable
@@ -1421,14 +1445,14 @@
                                                     Local
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     (StringConstant
                                                         "ABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
+                                                        (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     )
                                                     Parameter
-                                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) .true. .false. PointerString)
+                                                    (String 1 (IntegerConstant 26 (Integer 4) Decimal) AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1437,11 +1461,12 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     is_fortran_name
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -1463,13 +1488,13 @@
                                                 StringTrim
                                                 [(Var 6 line)]
                                                 0
-                                                (String 1 () .true. .false. PointerString)
+                                                (String 1 () AssumedLength PointerString)
                                                 ()
                                             )
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 () .true. .false. DescriptorString)
+                                                (String 1 () AssumedLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -1511,7 +1536,7 @@
                                                                                 (Var 6 name)
                                                                                 (Integer 4)
                                                                                 ()
-                                                                            ) .false. .false. PointerString)
+                                                                            ) ExpressionLength PointerString)
                                                                         )
                                                                         ()
                                                                     )
@@ -1536,16 +1561,16 @@
                                                                         )
                                                                         (Integer 4)
                                                                         ()
-                                                                    ) .false. .false. PointerString)
+                                                                    ) ExpressionLength PointerString)
                                                                     ()
                                                                 )
                                                                 (StringConcat
                                                                     (Var 6 lower)
                                                                     (Var 6 upper)
-                                                                    (String 1 (IntegerConstant 52 (Integer 8) Decimal) .false. .false. PointerString)
+                                                                    (String 1 (IntegerConstant 52 (Integer 8) Decimal) ExpressionLength PointerString)
                                                                     (StringConstant
                                                                         "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-                                                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                        (String 1 (IntegerConstant 52 (Integer 4) Decimal) ExpressionLength PointerString)
                                                                     )
                                                                 )
                                                                 (LogicalConstant
@@ -1578,7 +1603,7 @@
                                                                         (Var 6 name)
                                                                         (Integer 4)
                                                                         ()
-                                                                    ) .false. .false. PointerString)
+                                                                    ) ExpressionLength PointerString)
                                                                 )
                                                                 ()
                                                             )
@@ -1659,7 +1684,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1669,6 +1694,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             delim:
                                                 (Variable
@@ -1679,7 +1705,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1688,6 +1714,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             delim_str:
                                                 (Variable
@@ -1699,7 +1726,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1709,6 +1736,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -1728,6 +1756,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             strings:
                                                 (Variable
@@ -1757,6 +1786,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     string_cat
@@ -1772,9 +1802,9 @@
                                             ())]
                                             DescriptorArray
                                         )
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         Source
                                         Implementation
@@ -1808,12 +1838,12 @@
                                             (StringPhysicalCast
                                                 (StringConstant
                                                     ""
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1838,7 +1868,7 @@
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 () .true. .false. DescriptorString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1850,12 +1880,12 @@
                                             (StringPhysicalCast
                                                 (StringConstant
                                                     ""
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 )
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1882,7 +1912,7 @@
                                             )
                                             7 1_string_t_s
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -1914,7 +1944,7 @@
                                                                     (Var 7 cat)
                                                                     (Integer 4)
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                             )
                                                             ()
                                                         )
@@ -1927,11 +1957,11 @@
                                                                     (Var 7 delim_str)
                                                                     (Integer 4)
                                                                     ()
-                                                                ) .false. .false. PointerString)
+                                                                ) ExpressionLength PointerString)
                                                             )
                                                             ()
                                                         )
-                                                        (String 1 () .false. .false. PointerString)
+                                                        (String 1 () ExpressionLength PointerString)
                                                         ()
                                                     )
                                                     (StringPhysicalCast
@@ -1952,7 +1982,7 @@
                                                             )
                                                             7 1_string_t_s
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
@@ -1977,23 +2007,23 @@
                                                                     )
                                                                     7 1_string_t_s
                                                                     (Allocatable
-                                                                        (String 1 () .false. .true. DescriptorString)
+                                                                        (String 1 () DeferredLength DescriptorString)
                                                                     )
                                                                     ()
                                                                 )
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )
-                                                    (String 1 () .false. .false. PointerString)
+                                                    (String 1 () ExpressionLength PointerString)
                                                     ()
                                                 )
                                                 PointerString
                                                 DescriptorString
                                                 (Allocatable
-                                                    (String 1 () .false. .false. DescriptorString)
+                                                    (String 1 () ExpressionLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -2023,7 +2053,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -2033,6 +2063,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     string_t

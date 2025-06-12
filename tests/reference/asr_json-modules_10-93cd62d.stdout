@@ -253,7 +253,8 @@
                                         "value_attr": false,
                                         "target_attr": false,
                                         "contiguous_attr": false,
-                                        "bindc_name": []
+                                        "bindc_name": [],
+                                        "is_volatile": false
                                     },
                                     "loc": {
                                         "first": 38,
@@ -335,8 +336,7 @@
                                                                 "fields": {
                                                                     "kind": 1,
                                                                     "len": [],
-                                                                    "is_assumed_length": false,
-                                                                    "is_deferred_length": false,
+                                                                    "len_kind": "ExpressionLength",
                                                                     "physical_type": "CString"
                                                                 },
                                                                 "loc": {

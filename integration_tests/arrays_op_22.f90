@@ -6,7 +6,7 @@ array = 3.0
 
 output = prg(array)
 print *, output
-if( any(output /= 6.0) ) error stop
+if( any(abs(output - 6.0) > 1e-8) ) error stop
 
 contains
 

@@ -34,6 +34,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -62,6 +63,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -90,6 +92,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c2:
                                 (Variable
@@ -118,6 +121,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -146,6 +150,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             err:
                                 (Variable
@@ -165,6 +170,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fma_clock:
                                 (Variable
@@ -184,6 +190,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             freq:
                                 (Variable
@@ -203,6 +210,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ghz:
                                 (Variable
@@ -222,6 +230,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -241,6 +250,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             iter:
                                 (Variable
@@ -260,6 +270,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             matmul1:
                                 (ExternalSymbol
@@ -299,6 +310,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -318,6 +330,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             percent_peak:
                                 (Variable
@@ -337,6 +350,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             t:
                                 (Variable
@@ -356,6 +370,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -375,6 +390,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             t2:
                                 (Variable
@@ -394,6 +410,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     matmul_01
@@ -415,11 +432,11 @@
                             ()
                             [(StringConstant
                                 "Size (n x n): n ="
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 n)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -428,11 +445,11 @@
                             ()
                             [(StringConstant
                                 "Iter ="
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 iter)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -441,7 +458,7 @@
                             ()
                             [(StringConstant
                                 "Size MB:"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (RealBinOp
                                 (RealBinOp
@@ -490,7 +507,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -540,7 +557,7 @@
                     (Print
                         (StringConstant
                             "Fortran intrinsic matmul:"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -699,18 +716,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
@@ -718,15 +735,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -735,15 +752,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -752,15 +769,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -769,14 +786,14 @@
                             ()
                             []
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "matmul2:"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -848,11 +865,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -972,18 +989,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
@@ -991,15 +1008,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1008,15 +1025,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1025,15 +1042,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1058,14 +1075,14 @@
                             ()
                             []
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "matmul1:"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (IntrinsicImpureSubroutine
@@ -1137,11 +1154,11 @@
                             ()
                             [(StringConstant
                                 "Error:"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 err)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1261,18 +1278,18 @@
                             ()
                             [(StringConstant
                                 "Time: "
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 t)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Clock cycles per element:"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )
                     (Print
@@ -1280,15 +1297,15 @@
                             ()
                             [(StringConstant
                                 "Theoretical performance peak:"
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 fma_clock)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1297,15 +1314,15 @@
                             ()
                             [(StringConstant
                                 "Measured:                    "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 measured)
                             (StringConstant
                                 "cycles"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1314,15 +1331,15 @@
                             ()
                             [(StringConstant
                                 "Percent peak:                "
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 6 percent_peak)
                             (StringConstant
                                 "%"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -1378,6 +1395,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a0:
                                                 (Variable
@@ -1402,6 +1420,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a1:
                                                 (Variable
@@ -1426,6 +1445,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a2:
                                                 (Variable
@@ -1450,6 +1470,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a3:
                                                 (Variable
@@ -1474,6 +1495,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a4:
                                                 (Variable
@@ -1498,6 +1520,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             a5:
                                                 (Variable
@@ -1522,6 +1545,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -1548,6 +1572,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -1574,6 +1599,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i1:
                                                 (Variable
@@ -1593,6 +1619,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -1612,6 +1639,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             s1:
                                                 (Variable
@@ -1631,6 +1659,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u00:
                                                 (Variable
@@ -1655,6 +1684,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u01:
                                                 (Variable
@@ -1679,6 +1709,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u10:
                                                 (Variable
@@ -1703,6 +1734,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u11:
                                                 (Variable
@@ -1727,6 +1759,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u20:
                                                 (Variable
@@ -1751,6 +1784,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u21:
                                                 (Variable
@@ -1775,6 +1809,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u30:
                                                 (Variable
@@ -1799,6 +1834,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u31:
                                                 (Variable
@@ -1823,6 +1859,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u40:
                                                 (Variable
@@ -1847,6 +1884,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u41:
                                                 (Variable
@@ -1871,6 +1909,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u50:
                                                 (Variable
@@ -1895,6 +1934,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             u51:
                                                 (Variable
@@ -1919,6 +1959,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -1938,6 +1979,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -1957,6 +1999,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     kernel2
@@ -3877,6 +3920,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -3903,6 +3947,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -3929,6 +3974,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -3948,6 +3994,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -3967,6 +4014,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -3986,6 +4034,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -4005,6 +4054,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     matmul1
@@ -4219,6 +4269,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -4245,6 +4296,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -4271,6 +4323,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i1:
                                                 (Variable
@@ -4290,6 +4343,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i2:
                                                 (Variable
@@ -4309,6 +4363,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             i3:
                                                 (Variable
@@ -4328,6 +4383,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -4347,6 +4403,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             s1:
                                                 (Variable
@@ -4366,6 +4423,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             s2:
                                                 (Variable
@@ -4385,6 +4443,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             s3:
                                                 (Variable
@@ -4404,6 +4463,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -4423,6 +4483,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -4442,6 +4503,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     matmul2

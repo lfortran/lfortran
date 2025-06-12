@@ -21,7 +21,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         3 ~abstract_type
                                                     )
                                                     ()
@@ -32,6 +35,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~abstract_type:
                                                 (Struct
@@ -55,7 +59,10 @@
                                         })
                                     subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             3 ~abstract_type
                                         )]
                                         ()

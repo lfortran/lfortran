@@ -96,7 +96,7 @@ namespace LCompilers {
          #define fix_struct_type_scope() array_ref_type = ASRUtils::type_get_past_array( \
                 ASRUtils::type_get_past_pointer( \
                     ASRUtils::type_get_past_allocatable(array_ref_type))); \
-            if( current_scope && ASR::is_a<ASR::StructType_t>(*array_ref_type) ) { \
+            if( current_scope && ASR::is_a<ASR::StructType_t>(*array_ref_type) && !ASRUtils::is_class_type(array_ref_type)) { \
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(array_ref_type); \
                 if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab( \
                         struct_t->m_derived_type)->get_counter() ) { \
@@ -705,6 +705,14 @@ namespace LCompilers {
                 for (size_t i = 0; i < do_loop_variables.size(); i++) {
                     vars.push_back(do_loop_variables[i]);
                 }
+                if (ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(mask)) == 0) {
+                    return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
+                        b.If(mask, {
+                            b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
+                            b.Assignment(idx, b.Add(idx, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))))))
+                        }, {}),
+                    }, nullptr);
+                }
                 return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
                     b.If(b.ArrayItem_01(mask, vars), {
                         b.Assignment(b.ArrayItem_01(res, {idx}), b.ArrayItem_01(array, vars)),
@@ -715,6 +723,15 @@ namespace LCompilers {
             return b.DoLoop(do_loop_variables[curr_idx - 1], LBound(array, curr_idx), UBound(array, curr_idx), {
                 create_do_loop_helper_pack(al, loc, do_loop_variables, array, mask, res, idx, curr_idx - 1)
             }, nullptr);
+        }
+
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims) {
+            ASRUtils::ASRBuilder b(al, loc);
+            if (n_dims == 1) {
+                return b.ArraySize(array, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)));   
+            }
+            ASR::expr_t* dim = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, n_dims, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+            return b.Mul(b.ArraySize(array, dim, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))), create_array_size_pack(al, loc, array, n_dims-1));
         }
 
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc, std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask, ASR::expr_t* res, ASR::expr_t* idx, int curr_idx) {
@@ -1126,7 +1143,7 @@ namespace LCompilers {
             args.push_back(al, arg5_);
             return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc, v,
                                                              nullptr, args.p, args.size(),
-                                                             nullptr, nullptr, false, false));
+                                                             nullptr, nullptr, false));
         }
 
         ASR::expr_t* get_sign_from_value(ASR::expr_t* arg0, ASR::expr_t* arg1,

@@ -60,6 +60,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     modules_44
@@ -102,7 +103,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -116,6 +117,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -140,6 +142,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     cmd_new
@@ -170,7 +173,7 @@
                                             160
                                             ["# ", "My cool new project!"]
                                             (Array
-                                                (String 1 (IntegerConstant 80 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength PointerString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
                                                 FixedSizeArray
@@ -188,7 +191,7 @@
                                                 (Var 8 settings)
                                                 8 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -200,13 +203,13 @@
                                                         (Var 8 settings)
                                                         8 1_fpm_new_settings_name
                                                         (Allocatable
-                                                            (String 1 () .false. .true. DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
                                                     )
                                                     (Integer 4)
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))
@@ -216,19 +219,12 @@
                                             PointerToDataArray
                                             (Allocatable
                                                 (Array
-                                                    (String 1 () .false. .true. PointerString)
+                                                    (String 1 () DeferredLength PointerString)
                                                     [(()
                                                     ())]
                                                     PointerToDataArray
                                                 )
                                             )
-                                            ()
-                                        ))
-                                        ((ArrayBound
-                                            (Var 8 littlefile)
-                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                            (Integer 4)
-                                            LBound
                                             ()
                                         ))
                                         ((ArraySize
@@ -260,7 +256,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -270,6 +266,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -299,7 +296,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -309,6 +306,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
@@ -367,40 +365,21 @@
                                                     .false.
                                                     .false.
                                                     ()
-                                                ),
-                                            __2data:
-                                                (Variable
-                                                    10
-                                                    __2data
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
                                                     .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
                                                 ),
                                             data:
                                                 (Variable
                                                     10
                                                     data
-                                                    [__1data
-                                                    __2data]
+                                                    [__1data]
                                                     In
                                                     ()
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () .true. .false. PointerString)
-                                                        [((Var 10 __1data)
-                                                        (Var 10 __2data))]
+                                                        (String 1 () AssumedLength PointerString)
+                                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Var 10 __1data))]
                                                         PointerToDataArray
                                                     )
                                                     ()
@@ -411,6 +390,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -421,7 +401,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -430,26 +410,22 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     warnwrite_string____1
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
                                         (Array
-                                            (String 1 () .true. .false. PointerString)
-                                            [((FunctionParam
-                                                2
-                                                (Integer 4)
-                                                ()
-                                            )
+                                            (String 1 () AssumedLength PointerString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
-                                                3
+                                                2
                                                 (Integer 4)
                                                 ()
                                             ))]
                                             PointerToDataArray
                                         )
-                                        (Integer 4)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -466,8 +442,7 @@
                                     []
                                     [(Var 10 fname)
                                     (Var 10 data)
-                                    (Var 10 __1data)
-                                    (Var 10 __2data)]
+                                    (Var 10 __1data)]
                                     []
                                     ()
                                     Public

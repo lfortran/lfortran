@@ -16,7 +16,7 @@ syntax error: The LFortran pragma !LF$ must be followed by a space
 171 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Module 'continue_compilation_3_fake_module' not declared in the current source and the modfile was not found
+semantic error: Module 'continue_compilation_3_fake_module' modfile was not found
   --> tests/errors/continue_compilation_3.f90:48:5
    |
 48 |     use continue_compilation_3_fake_module

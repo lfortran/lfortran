@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () .false. .true. PointerString)
+                                                            (String 1 () DeferredLength PointerString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -37,6 +37,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -63,6 +64,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             toml_parse:
                                                 (ExternalSymbol
@@ -119,7 +121,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 () .false. .true. PointerString)
+                                                (String 1 () DeferredLength PointerString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -214,7 +216,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () .true. .false. PointerString)
+                                                        (String 1 () AssumedLength PointerString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -227,6 +229,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -253,6 +256,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -279,6 +283,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_string
@@ -292,7 +297,7 @@
                                             )
                                         )
                                         (Array
-                                            (String 1 () .true. .false. PointerString)
+                                            (String 1 () AssumedLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -358,6 +363,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -384,6 +390,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -403,6 +410,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_unit
@@ -484,7 +492,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -494,6 +502,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -513,6 +522,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_error
@@ -568,6 +578,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -593,6 +604,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table

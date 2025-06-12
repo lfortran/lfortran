@@ -32,6 +32,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             first:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -70,6 +72,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             last:
                                 (Variable
@@ -89,6 +92,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     loop_unroll_large
@@ -144,7 +148,7 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () .false. .false. CString)
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )
                         )]

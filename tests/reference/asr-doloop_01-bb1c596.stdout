@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     doloop_01
@@ -64,7 +65,7 @@
                                 ()
                                 [(Var 2 i)]
                                 FormatFortran
-                                (String 1 () .false. .false. CString)
+                                (String 1 () ExpressionLength CString)
                                 ()
                             )
                         )]

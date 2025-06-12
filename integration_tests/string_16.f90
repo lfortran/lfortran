@@ -13,6 +13,7 @@ program string_16
     character, parameter :: small_a_1 = achar(97)
     character, parameter :: small_z_1 = achar(122)
     character, parameter :: right_brace_1 = achar(125)
+    character, parameter :: str_i8 = achar(125_8)
 
     character, parameter :: ar1(5) = achar([33, 36, 40, 43, 48])
     character, parameter :: ar2(5) = achar([57, 59, 65, 90, 93], 1)
@@ -32,6 +33,7 @@ program string_16
     character :: right_brace
 
     integer :: a1 = 35
+    integer(8) :: a3 = 12872_8
     integer :: a2(3) = [39, 63, 66]
 
     exclamation = achar(33)
@@ -74,6 +76,8 @@ program string_16
     if (small_z_1 /= 'z') error stop
     print *, right_brace_1
     if (right_brace_1 /= '}') error stop
+    print *, str_i8
+    if (str_i8 /= '}') error stop
 
     print *, ar1
     if (any(ar1 /= ['!', '$', '(', '+', '0'])) error stop
@@ -90,7 +94,10 @@ program string_16
     if (achar(a2(1)) /= "'") error stop
     if (achar(a2(2)) /= '?') error stop
     if (achar(a2(3)) /= 'B') error stop
-    
+
+    print *, achar(a3)
+    if (achar(a3) /= 'H') error stop
+
     if(exclamation /= '!') error stop
     if(dollar /= '$') error stop
     if(left_parenthesis /= '(') error stop

@@ -36,6 +36,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             message:
                                 (Variable
@@ -47,7 +48,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -57,6 +58,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -67,7 +69,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -76,6 +78,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             string:
                                 (Variable
@@ -87,7 +90,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -97,6 +100,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     allocate_04
@@ -137,7 +141,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -149,13 +153,13 @@
                                 StringTrim
                                 [(Var 2 num)]
                                 0
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
                                 ()
                             )
                             PointerString
                             DescriptorString
                             (Allocatable
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -173,14 +177,14 @@
                                         (Var 2 string)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Logical 4)
                             ()
@@ -194,7 +198,7 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                         ()
                         .false.
@@ -249,7 +253,7 @@
                                     )
                                     (Integer 4)
                                     ()
-                                ) .false. .false. PointerString)
+                                ) ExpressionLength PointerString)
                                 ()
                             )
                             PointerString
@@ -279,7 +283,7 @@
                                     )
                                     (Integer 4)
                                     ()
-                                ) .false. .false. DescriptorString)
+                                ) ExpressionLength DescriptorString)
                             )
                             ()
                         )
@@ -298,12 +302,12 @@
                                         (Var 2 message)
                                         (Integer 4)
                                         ()
-                                    ) .false. .false. PointerString)
+                                    ) ExpressionLength PointerString)
                                 )
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

@@ -120,6 +120,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -139,6 +140,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -149,7 +151,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -160,11 +165,15 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -292,6 +301,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -311,6 +321,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -321,7 +332,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         7 intvector
                                                                     )
                                                                     ()
@@ -332,6 +346,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -358,11 +373,15 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             7 intvector
                                                         )
                                                         (Integer 4)]
@@ -601,6 +620,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -642,6 +662,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     intvector
@@ -680,6 +701,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     main
@@ -804,6 +826,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -823,6 +846,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -833,7 +857,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -844,11 +871,15 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     push_back
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (TypeParameter
@@ -982,6 +1013,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1001,6 +1033,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1011,7 +1044,10 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (ClassType
+                                                                    (StructType
+                                                                        []
+                                                                        []
+                                                                        .false.
                                                                         3 vector
                                                                     )
                                                                     ()
@@ -1022,6 +1058,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1050,11 +1087,15 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     resize
                                                     (FunctionType
-                                                        [(ClassType
+                                                        [(StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             3 vector
                                                         )
                                                         (Integer 4)]
@@ -1299,6 +1340,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             vector:
                                                 (Struct
@@ -1332,6 +1374,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 ),
                                                             push_back:
                                                                 (ClassProcedure
@@ -1373,6 +1416,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                 )
                                                         })
                                                     vector

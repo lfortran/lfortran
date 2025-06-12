@@ -67,7 +67,10 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             5 fpm_run_settings
                                         )
                                     )
@@ -79,6 +82,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     derived_types_16
@@ -205,6 +209,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             float:
                                                 (Variable
@@ -224,6 +229,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -243,6 +249,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_run_settings
@@ -274,7 +281,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 fpm_run_settings
                                                         )
                                                     )
@@ -286,12 +296,16 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 2 fpm_run_settings
                                             )
                                         )]

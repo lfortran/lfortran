@@ -18,8 +18,7 @@ symbol
     | Struct(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, identifier* member_functions, abi abi, access access, bool is_packed, bool is_abstract, call_arg* initializers, expr? alignment, symbol? parent)
     | Enum(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, enumtype enum_value_type, ttype type, symbol? parent)
     | Union(symbol_table symtab, identifier name, identifier* dependencies, identifier* members, abi abi, access access, call_arg* initializers, symbol? parent)
-    | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration, abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr, string? bindc_name)
-    | Class(symbol_table symtab, identifier name, abi abi, access access)
+    | Variable(symbol_table parent_symtab, identifier name, identifier* dependencies, intent intent, expr? symbolic_value, expr? value, storage_type storage, ttype type, symbol? type_declaration, abi abi, access access, presence presence, bool value_attr, bool target_attr, bool contiguous_attr, string? bindc_name, bool is_volatile)
     | ClassProcedure(symbol_table parent_symtab, identifier name, identifier? self_argument, identifier proc_name, symbol proc, abi abi, bool is_deferred, bool is_nopass)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
     | Block(symbol_table symtab, identifier name, stmt* body)
@@ -36,6 +35,7 @@ stmt
     | ExplicitDeallocate(expr* vars)
     | ImplicitDeallocate(expr* vars)
     | DoConcurrentLoop(do_loop_head* head, expr* shared, expr* local, reduction_expr* reduction, stmt* body)
+    | OMPRegion(omp_region_type region, omp_clause* clauses, stmt* body)
     | DoLoop(identifier? name, do_loop_head head, stmt* body, stmt* orelse)
     | ErrorStop(expr? code)
     | Exit(identifier? stmt_name)
@@ -197,7 +197,7 @@ ttype
     | UnsignedInteger(int kind)
     | Real(int kind)
     | Complex(int kind)
-    | String(int kind, expr? len, bool is_assumed_length, bool is_deferred_length, string_physical_type physical_type)
+    | String(int kind, expr? len, string_length_kind len_kind, string_physical_type physical_type)
     | Logical(int kind)
     | Set(ttype type)
     | List(ttype type)
@@ -205,7 +205,6 @@ ttype
     | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, symbol derived_type)
     | EnumType(symbol enum_type)
     | UnionType(symbol union_type)
-    | ClassType(symbol class_type)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)
@@ -221,7 +220,7 @@ access = Public | Private
 intent = Local | In | Out | InOut | ReturnVar | Unspecified
 deftype = Implementation | Interface
 presence = Required | Optional
-abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | Interactive | Intrinsic
+abi = Source | LFortranModule | GFortranModule | BindC | BindPython | BindJS | ExternalUndefined | Intrinsic
 dimension = (expr? start, expr? length)
 alloc_arg = (expr a, dimension* dims, expr? len_expr, ttype? type)
 attribute = Attribute(identifier name, attribute_arg *args)
@@ -237,7 +236,8 @@ enumtype = IntegerConsecutiveFromZero | IntegerUnique | IntegerNotUnique | NonIn
 require_instantiation = Require(identifier name, identifier* args)
 array_physical_type = DescriptorArray | PointerToDataArray | UnboundedPointerToDataArray | FixedSizeArray | StringArraySinglePointer | NumPyArray | ISODescriptorArray | SIMDArray
 string_physical_type = PointerString | DescriptorString | CString
-binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift
+string_length_kind = AssumedLength | DeferredLength | ExpressionLength
+binop = Add | Sub | Mul | Div | Pow | BitAnd | BitOr | BitXor | BitLShift | BitRShift | LBitRShift
 reduction_op = ReduceAdd | ReduceSub | ReduceMul | ReduceMIN | ReduceMAX
 logicalbinop = And | Or | Xor | NEqv | Eqv
 cmpop = Eq | NotEq | Lt | LtE | Gt | GtE
@@ -245,5 +245,20 @@ integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
+
+omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Single | Master | Task | Simd | Teams | Target | TargetData
+omp_clause
+  = OMPPrivate(expr* vars)
+  | OMPShared(expr* vars)
+  | OMPFirstPrivate(expr* vars)
+  | OMPLastPrivate(expr* vars)
+  | OMPReduction(reduction_op operator, expr* vars)
+  | OMPCollapse(expr count)
+  | OMPIf(expr condition)
+  | OMPNumThreads(expr num_threads)
+  | OMPSchedule(schedule_type kind, expr? chunk_size)
+  | OMPNowait()
+schedule_type
+  = Static | Dynamic | Guided | Auto | Runtime
 
 }

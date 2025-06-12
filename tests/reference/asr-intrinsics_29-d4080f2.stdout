@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             random_sp:
                                 (Variable
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     intrinsics_29
@@ -64,7 +66,7 @@
                             [(Var 2 random_sp)
                             (Var 2 random_dp)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

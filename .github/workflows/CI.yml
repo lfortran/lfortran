@@ -10,11 +10,23 @@ on:
     branches:
       - main
 
+# For a PR #7488 against main branch, the `group` will become: CI-{{ 7488 || github.sha }}
+# which eventually evaluates to: CI-7488 and 'sha' isn't used.
+# NOTE: `||` acts as a logical OR and a default operator both,
+# see: https://docs.github.com/en/actions/learn-github-actions/expressions#operators.
+# When it isn't a PR against main but instead a commit pushed (or merged) to main, then `group` will
+# evaluate to `${{ github.sha }}` but "cancel-in-progress" evaluates to false, so the CI on main
+# will run in a new group `${{ github.sha }}`, but no previous CI will be cancelled on main
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+
 env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Check_for_Added_Binary_Files:
+  Print_Github_Concurrent_Group_and_Check_for_Added_Binary_Files:
     name: Check for Added Binary Files
     runs-on: ubuntu-latest
     steps:
@@ -22,8 +34,14 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Print github concurrent group name
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
+          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
+
       - name: Check for Added Binary Files
-        run: python3 check_binary_file_in_git_history.py
+        run: |
+          python3 check_binary_file_in_git_history.py
 
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
@@ -31,7 +49,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2019", "macos-latest", "ubuntu-latest"]
+        os: ["windows-2025", "macos-latest", "ubuntu-latest"]
         python-version: ["3.10"]
     steps:
       - uses: actions/checkout@v4
@@ -73,7 +91,8 @@ jobs:
         run: |
             export CXXFLAGS="-Werror"
             export CFLAGS="-Werror"
-            xonsh ci/build_tmp.xsh
+            export WIN=0
+            shell ci/build.sh
 
       - name: Build (Windows)
         if: contains(matrix.os, 'windows')
@@ -86,8 +105,11 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-            xonsh ci\build_tmp.xsh
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
+            shell ci\build.sh
 
       - name: Test (Linux / macOS)
         shell: bash -e -l {0}
@@ -122,8 +144,63 @@ jobs:
             set WIN=1
             set MACOS=0
             set ENABLE_RUNTIME_STACKTRACE=no
-            call "C:/Program Files (x86)/Microsoft Visual Studio/2019/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
             shell ci\test.sh
+
+      - name: Install Timeout (macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'macos')
+        run: brew install coreutils
+
+      # ~/.bash_logout wanted to run `/usr/bin/clear_console -q` while exiting
+      # login shells which frequently erred on ubuntu-latest since the shell was
+      # not run interactively.
+      - name: Disable ~/.bash_logout (Linux)
+        shell: bash -e {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: mv -v ~/.bash_logout ~/.bash_logout.bak
+
+      - name: LSP Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        timeout-minutes: 5
+        env:
+            EXIT_SUCCESS: 0
+            EXIT_TIMEOUT: 124
+            EXIT_KILL: 137
+            MAX_ATTEMPTS: 3
+            SIGTERM_TIMEOUT: 60s
+            SIGKILL_TIMEOUT: 10s
+            PYTEST_TIMEOUT: 10
+        run: |
+            set -ex
+            pip install src/server/tests tests/server
+            timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                pytest -vv \
+                    --showlocals \
+                    --timeout=$PYTEST_TIMEOUT \
+                    --execution-strategy="concurrent" \
+                    tests/server
+            set +e
+            for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
+                echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
+                timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                    pytest -vv \
+                        --showlocals \
+                        --timeout=$PYTEST_TIMEOUT \
+                        --execution-strategy="parallel" \
+                        tests/server
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
+                    break
+                fi
+                echo "Command failed with exit code: $EXIT_CODE" 1>&2
+            done
+            set -e
+            exit $EXIT_CODE
 
   scipy:
     name: Check SciPy Build and Test Run
@@ -553,11 +630,11 @@ jobs:
         shell: bash -e -l {0}
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
-            git clone https://github.com/pranavchiku/lapack.git
+            git clone https://github.com/gxyd/lapack.git
             cd lapack
-            git fetch origin lf_06
-            git checkout lf_06
-            git checkout 2e2144d65348b83423d4ebaf4ce26a378f80ab0c
+            git fetch origin lf_07
+            git checkout lf_07
+            git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
             cd build
             micromamba create -f environment_unix.yml
             micromamba activate lapack
@@ -900,7 +977,7 @@ jobs:
       - name: Test CPP
         shell: bash -e -l {0}
         run: |
-            xonsh ci/test_cpp_version.xsh
+            shell ci/test_cpp_version.sh
 
       - name: Show Node Info
         shell: bash -e -l {0}
@@ -968,7 +1045,7 @@ jobs:
       - name: Test
         shell: bash -e -l {0}
         run: |
-          xonsh ci/test_without_llvm_backend.xsh
+          shell ci/test_without_llvm_backend.sh
 
   test_mlir:
     name: Test MLIR backend

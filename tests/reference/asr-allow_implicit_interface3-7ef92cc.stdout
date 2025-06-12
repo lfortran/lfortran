@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             lsame:
                                 (Function
@@ -40,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             lsame_arg_1:
                                                 (Variable
@@ -59,7 +61,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     BindC
                                                     Public
@@ -68,6 +70,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             lsame_return_var_name:
                                                 (Variable
@@ -87,12 +90,13 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     lsame
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         (Logical 4)
                                         BindC
                                         Interface
@@ -124,7 +128,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -133,11 +137,12 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     ssyr2
                     (FunctionType
-                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)]
+                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                         ()
                         Source
                         Implementation
@@ -167,7 +172,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "U"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ))]
                                     (Logical 4)
                                     ()
@@ -184,7 +189,7 @@
                                     [((Var 2 uplo))
                                     ((StringConstant
                                         "L"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ))]
                                     (Logical 4)
                                     ()

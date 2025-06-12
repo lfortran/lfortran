@@ -273,7 +273,8 @@ void handle_logical(char* format, bool val, char** result) {
     }
 }
 
-void handle_float(char* format, double val, char** result, bool use_sign_plus) {
+void handle_float(char* format, double val, int scale, char** result, bool use_sign_plus) {
+    val = val * pow(10, scale); // scale the value
     if (strcmp(format,"f-64") == 0) { //use c formatting.
         char* float_str = (char*)malloc(50 * sizeof(char));
         sprintf(float_str,"%23.17e",val);
@@ -363,70 +364,7 @@ void handle_float(char* format, double val, char** result, bool use_sign_plus) {
     }
 }
 
-/*
-`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
-
-NOTE: The function allocates memory for the formatted result, which is returned via
-the `result` parameter. It is the responsibility of the caller to free this memory
-using `free(*result)` after it is no longer needed.
-*/
-void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
-    int width, decimal_digits;
-    char *num_pos = format, *dot_pos = strchr(format, '.');
-    decimal_digits = atoi(++dot_pos);
-    while (!isdigit(*num_pos)) num_pos++;
-    width = atoi(num_pos);
-    bool sign_plus_exist = (is_signed_plus && val >= 0); // `SP` specifier
-    // Calculate exponent
-    int exponent = 0;
-    if (val != 0.0) {
-        exponent = (int)floor(log10(fabs(val)));
-        int remainder = exponent % 3;
-        if (remainder < 0) remainder += 3;
-        exponent -= remainder;
-    }
-
-    double scaled_val = val / pow(10, exponent);
-
-    // Prepare value string
-    char val_str[128];
-    sprintf(val_str, "%.*lf", decimal_digits, scaled_val);
-
-    // Truncate unnecessary zeros
-    char* ptr = strchr(val_str, '.');
-    if (ptr) {
-        char* end_ptr = ptr;
-        while (*end_ptr != '\0') end_ptr++;
-        end_ptr--;
-        while (*end_ptr == '0' && end_ptr > ptr) end_ptr--;
-        *(end_ptr + 1) = '\0';
-    }
-
-    // Allocate a larger buffer
-    char formatted_value[256];  // Increased size to accommodate larger exponent values
-    int n = snprintf(formatted_value, sizeof(formatted_value), "%s%s%+03d", val_str, c, exponent);
-    if (n >= sizeof(formatted_value)) {
-        fprintf(stderr, "Error: output was truncated. Needed %d characters.\n", n);
-    }
-
-    // Handle width and padding
-    char* final_result = malloc(width + 1);
-    int padding = width - strlen(formatted_value) - sign_plus_exist;
-    if (padding > 0) {
-        memset(final_result, ' ', padding);
-        if(sign_plus_exist){final_result[padding] = '+';}
-        strcpy(final_result + padding + sign_plus_exist, formatted_value);
-    } else {
-        if(sign_plus_exist){final_result[0] = '+';}
-        strncpy(final_result + is_signed_plus /*Move on char*/, formatted_value, width);
-        final_result[width] = '\0';
-    }
-
-    // Assign the result to the output parameter
-    *result = append_to_string(*result, final_result);
-}
-
-void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
+void parse_decimal_or_en_format(char* format, int* width_digits, int* decimal_digits, int* exp_digits) {
     *width_digits = -1;
     *decimal_digits = -1;
     *exp_digits = -1;
@@ -442,48 +380,141 @@ void parse_decimal_format(char* format, int* width_digits, int* decimal_digits, 
     *decimal_digits = atoi(++dot_pos);
 
     char *exp_pos = strchr(dot_pos, 'e');
+    if (exp_pos == NULL) {
+        exp_pos = strchr(dot_pos, 'E');
+    }
     if(exp_pos != NULL) {
         *exp_digits = atoi(++exp_pos);
     }
 }
 
+/*
+`handle_en` - Formats a floating-point number using a Fortran-style "EN" format.
+
+NOTE: The function allocates memory for the formatted result, which is returned via
+the `result` parameter. It is the responsibility of the caller to free this memory
+using `free(*result)` after it is no longer needed.
+*/
+void handle_en(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
+    int width, decimal_digits, exp_digits;
+    parse_decimal_or_en_format(format, &width, &decimal_digits, &exp_digits);
+
+    // Default fallback if 0
+    bool is_g0_like = (width == 0 && decimal_digits == 0 && exp_digits == 0);
+    if (decimal_digits <= 0) decimal_digits = 9;
+    if (exp_digits == 0) exp_digits = 2;
+    else if (exp_digits == -1) exp_digits = 3;
+
+    bool sign_plus_exist = (is_signed_plus && val >= 0); // SP specifier
+
+    char formatted_value[256];
+    double abs_val = fabs(val);
+    if (is_g0_like) {
+        if (abs_val == 0.0 || (abs_val >= 1.0 && abs_val < 1000.0)) {
+            snprintf(formatted_value, sizeof(formatted_value), "%.9f", val);
+        } else {
+            // Engineering notation: scale exponent to multiple of 3
+            int exponent = (int)floor(log10(abs_val));
+            int remainder = exponent % 3;
+            if (remainder < 0) remainder += 3;
+            exponent -= remainder;
+            double scaled_val = val / pow(10, exponent);
+
+            char val_str[128];
+            snprintf(val_str, sizeof(val_str), "%.9f", scaled_val);
+            snprintf(formatted_value, sizeof(formatted_value),
+                    "%s%s%+d", val_str, c, exponent);  // no padding, plain exponent
+        }
+    } else {
+        int exponent = 0;
+        double scaled_val = val;
+        if (abs_val != 0.0) {
+            exponent = (int)floor(log10(abs_val));
+            int remainder = exponent % 3;
+            if (remainder < 0) remainder += 3;
+            exponent -= remainder;
+            scaled_val = val / pow(10, exponent);
+        }
+        char val_str[128];
+        snprintf(val_str, sizeof(val_str), "%.*f", decimal_digits, scaled_val);
+        snprintf(formatted_value, sizeof(formatted_value),
+                "%s%s%+0*d", val_str, c, exp_digits, exponent);
+    }
+
+    // Width == 0, no padding
+    if (width == 0) {
+        if (sign_plus_exist) {
+            char* temp = malloc(strlen(formatted_value) + 2);
+            temp[0] = '+';
+            strcpy(temp + 1, formatted_value);
+            *result = append_to_string(*result, temp);
+            free(temp);
+        } else {
+            *result = append_to_string(*result, formatted_value);
+        }
+        return;
+    }
+
+    // Check for overflow
+    int total_len = strlen(formatted_value);
+    if (sign_plus_exist) total_len += 1;
+    
+    if (total_len > width) {
+        // Overflow: fill with '*'
+        char* final_result = malloc(width + 1);
+        memset(final_result, '*', width);
+        final_result[width] = '\0';
+        *result = append_to_string(*result, final_result);
+        free(final_result);
+        return;
+    }
+
+    // Allocate and pad properly
+    char* final_result = malloc(width + 1);
+    int padding = width - strlen(formatted_value) - sign_plus_exist;
+    if (padding > 0) {
+        memset(final_result, ' ', padding);
+        if (sign_plus_exist) final_result[padding] = '+';
+        strcpy(final_result + padding + sign_plus_exist, formatted_value);
+    } else {
+        if (sign_plus_exist) final_result[0] = '+';
+        strncpy(final_result + is_signed_plus, formatted_value, width);
+        final_result[width] = '\0';
+    }
+
+    *result = append_to_string(*result, final_result);
+    free(final_result);
+}
 
 void handle_decimal(char* format, double val, int scale, char** result, char* c, bool is_signed_plus) {
     // Consider an example: write(*, "(es10.2)") 1.123e+10
     // format = "es10.2", val = 11230000128.00, scale = 0, c = "E"
 
     int width_digits, decimal_digits, exp_digits;
-    parse_decimal_format(format, &width_digits, &decimal_digits, &exp_digits);
-
+    parse_decimal_or_en_format(format, &width_digits, &decimal_digits, &exp_digits);
     int width = width_digits;
+    int digits = decimal_digits;
     int sign_width = (val < 0) ? 1 : 0;
     bool sign_plus_exist = (is_signed_plus && val>=0); // Positive sign
     // sign_width = 0
     double integer_part = trunc(val);
     int integer_length = (integer_part == 0) ? 1 : (int)log10(fabs(integer_part)) + 1;
     // integer_part = 11230000128, integer_length = 11
-    // width = 10, decimal_digits = 2
+    // width = 10, digits = 2
 
-    #define MAX_SIZE 128
+    #define MAX_SIZE 512
     char val_str[MAX_SIZE] = "";
     int avail_len_decimal_digits = MAX_SIZE - integer_length - sign_width - 2 /* 0.*/;
-    // TODO: This will work for up to `E65.60` but will fail for:
-    // print "(E67.62)", 1.23456789101112e-62_8
     sprintf(val_str, "%.*lf", avail_len_decimal_digits, val);
     // val_str = "11230000128.00..."
-
     int i = strlen(val_str) - 1;
-    while (val_str[i] == '0') {
-        val_str[i] = '\0';
-        i--;
+    if (val != 0.0) {
+        while (val_str[i] == '0') {
+            val_str[i] = '\0';
+            i--;
+        }
     }
     // val_str = "11230000128."
-
-    int exp = 2;
-    if (exp_digits != -1) {
-        exp = exp_digits;
-    }
-    // exp = 2;
 
     char* ptr = strchr(val_str, '.');
     if (ptr != NULL) {
@@ -503,18 +534,44 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         decimal--;
         // loop end: decimal = -9
     }
+    bool is_s_format = false;
     if (tolower(format[1]) == 's') {
+        is_s_format = true;
         scale = 1;
+    }
+    int exponent_value = 0;
+    if (val == 0.0) {
+        exponent_value = 0;
+        strcpy(val_str, "0");
+        integer_length = 1;
+    } else {
+        exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
+    }
+
+    int exp = 2;
+    if (exp_digits > 0) {
+        exp = exp_digits;
+    } else if (is_s_format && abs(exponent_value) >= 10) {
+        int abs_exp = abs(exponent_value);
+        exp = (abs_exp == 0) ? 2 : (int)log10(abs_exp) + 1;
+    } else if (abs(exponent_value >= 100)) {
+        exp = 3;
+    }
+    // exp = 2;
+    if (exp != -1 && exponent_value >= (pow(10, exp))) {
+        goto overflow;
     }
 
     char exponent[12];
     if (width_digits == 0) {
-        sprintf(exponent, "%+02d", (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
+        sprintf(exponent, "%+02d", exponent_value);
     } else {
-        if (val != 0) {
-            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal - scale));
-        } else {
-            sprintf(exponent, "%+0*d", exp+1, (integer_length > 0 && integer_part != 0 ? integer_length - scale : decimal));
+        int exp_width = exp + 1;
+        if (exp_width > 10) exp_width = 10;
+
+        int len = snprintf(exponent, sizeof(exponent), "%+0*d", exp_width, exponent_value);
+        if (len < 0 || len >= sizeof(exponent)) {
+            goto overflow;
         }
         // exponent = "+10"
     }
@@ -523,28 +580,33 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exp_length = strlen(exponent);
 
     if (width == 0) {
-        if (decimal_digits == 0) {
-            decimal_digits = 9;
+        if (digits == 0) {
+            digits = 9;
         }
-        width = sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length;
+        width = sign_width + digits + FIXED_CHARS_LENGTH + exp_length;
     }
-    if (decimal_digits > width - FIXED_CHARS_LENGTH) {
-        perror("Specified width is not enough for the specified number of decimal digits.\n");
+    if (digits > width - FIXED_CHARS_LENGTH) {
+        goto overflow;
     }
-    int zeroes_needed = decimal_digits - (strlen(val_str) - integer_length);
-    for(int i=0; i < zeroes_needed; i++) {
-        strcat(val_str, "0");
-    }
+    int val_str_len = strlen(val_str);
+    int zeroes_needed = digits - (val_str_len - integer_length);
+    if (zeroes_needed < 0) zeroes_needed = 0;
+    if (zeroes_needed > MAX_SIZE - val_str_len - 1) zeroes_needed = MAX_SIZE - val_str_len - 1;
 
-    char formatted_value[64] = "";
-    int spaces = width - (sign_width + decimal_digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
+    for(int i = 0; i < zeroes_needed && val_str_len + i < MAX_SIZE - 1; i++) {
+        val_str[val_str_len + i] = '0';
+    }
+    val_str[val_str_len + zeroes_needed] = '\0';
+
+    char formatted_value[512] = "";
+    int spaces = width - (sign_width + digits + FIXED_CHARS_LENGTH + exp_length + sign_plus_exist);
     // spaces = 2
     for (int i = 0; i < spaces; i++) {
         strcat(formatted_value, " ");
     }
 
     if (scale > 1) {
-        decimal_digits -= scale - 1;
+        digits -= scale - 1;
     }
 
     if (sign_width == 1) {
@@ -562,14 +624,14 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         int zeros = 0;
         while(val_str[zeros] == '0') zeros++;
         // TODO: figure out a way to round decimals with value < 1e-15
-        if (decimal_digits + scale < strlen(val_str) && val != 0 && decimal_digits + scale - zeros<= 15) {
+        if (digits + scale < strlen(val_str) && val != 0 && digits + scale - zeros<= 15) {
             val_str[15] = '\0';
-            long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - decimal_digits - scale)));
+            long long t = (long long)round((long double)atoll(val_str) / (long long)pow(10, (strlen(val_str) - digits - scale)));
             sprintf(val_str, "%lld", t);
             int index = zeros;
             while(index--) strcat(formatted_value, "0");
         }
-        strncat(formatted_value, val_str, decimal_digits + scale - zeros);
+        strncat(formatted_value, val_str, digits + scale - zeros);
     } else {
         char* temp = substring(val_str, 0, scale);
         strcat(formatted_value, temp);
@@ -578,10 +640,10 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
         char* new_str = substring(val_str, scale, strlen(val_str));
         // new_str = "1230000128" case:  1.123e+10
         int zeros = 0;
-        if (decimal_digits < strlen(new_str) && decimal_digits + scale <= 15) {
+        if (digits < strlen(new_str) && digits + scale <= 15) {
             new_str[15] = '\0';
             zeros = strspn(new_str, "0");
-            long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - decimal_digits)));
+            long long t = (long long)round((long double)atoll(new_str) / (long long) pow(10, (strlen(new_str) - digits)));
             sprintf(new_str, "%lld", t);
             // new_str = 12
             int index = zeros;
@@ -590,37 +652,42 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
                 new_str[0] = '0';
             }
         }
-        new_str[decimal_digits] = '\0';
+        new_str[digits] = '\0';
         strcat(formatted_value, new_str);
         // formatted_value = "  1.12"
         free(new_str);
         free(temp);
     }
 
-    strcat(formatted_value, c);
-    // formatted_value = "  1.12E"
-
-
-
-    strcat(formatted_value, exponent);
-    // formatted_value = "  1.12E+10"
-
-    if (strlen(formatted_value) == width + 1 && scale <= 0) {
-        char* ptr = strchr(formatted_value, '0');
-        if (ptr != NULL) {
-            memmove(ptr, ptr + 1, strlen(ptr));
+    if (!(width_digits == 0 && decimal_digits == 0 && exponent_value == 0)) {
+        if (abs(exponent_value) < 100 || exp_length < 4 || width_digits == 0) {
+            strcat(formatted_value, c);
         }
+        // formatted_value = "  1.12E"
+        strcat(formatted_value, exponent);
+        // formatted_value = "  1.12E+10"
     }
-
     if (strlen(formatted_value) > width) {
-        for(int i=0; i<width; i++){
-            *result = append_to_string(*result,"*");
+        if (strlen(formatted_value) - width == 1 && formatted_value[0] == '0') {
+            memmove(formatted_value, formatted_value + 1, strlen(formatted_value));
+            *result = append_to_string(*result, formatted_value);
+            return;
+        } else {
+            goto overflow;
         }
     } else {
         *result = append_to_string(*result, formatted_value);
+        return;
         // result = "  1.12E+10"
     }
+
+    overflow:
+    for (int i = 0; i < width; i++) {
+        *result = append_to_string(*result, "*");
+    }
+    return;
 }
+
 void handle_SP_specifier(char** result, bool is_positive_value){
     char positive_sign_string[] = "+";
     if(is_positive_value) append_to_string(*result, positive_sign_string);
@@ -744,11 +811,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
             case 'e' :
                 start = index++;
                 bool edot = false;
-                bool is_en_formatting = false;
-                if (tolower(format[index]) == 'n') {
-                    index++;  // move past the 'N'
-                    is_en_formatting = true;
-                }
+                if (tolower(format[index]) == 'n') index++;
                 if (tolower(format[index]) == 's') index++;
                 while (isdigit(format[index])) index++;
                 if (format[index] == '.') {
@@ -849,10 +912,13 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                             format_values_2[format_values_count++] = substring(format, start, index);
                         }
                     } else {
-                        start = index++;
+                        start = index;
+                        while (isalpha(format[index])) index++; 
                         if (isdigit(format[index])) {
                             while (isdigit(format[index])) index++;
                             if (format[index] == '.') index++;
+                            while (isdigit(format[index])) index++;
+                            if (format[index] == 'e' || format[index] == 'E') index++;
                             while (isdigit(format[index])) index++;
                         }
                         for (int i = 0; i < repeat; i++) {
@@ -862,7 +928,7 @@ char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
                     }
                 } else if (format[index] != ' ') {
                     fprintf(stderr, "Unsupported or unrecognized `%c` in format string\n", format[index]);
-                    exit(1);
+                    break;
                 }
         }
         index++;
@@ -1258,6 +1324,34 @@ void print_into_string(Serialization_Info* s_info,  char* result){
 
 }
 
+void strip_outer_parenthesis(const char* str, int len, char* output) {
+    if (len >= 2 && str[0] == '(' && str[len - 1] == ')') {
+        int nest = 0;
+        int i;
+        // Check balance: if the outermost '(' is properly closed by the last character
+        for (i = 0; i < len; i++) {
+            if (str[i] == '(') {
+                nest++;
+            } else if (str[i] == ')') {
+                nest--;
+                // If the nesting level reaches 0 before the end, the outermost ')' isn't at len-1
+                if (nest == 0) {
+                    break;
+                }
+            }
+        }
+        
+        if (nest == 0) {
+            // Copy the string without outer parentheses
+            memmove(output, output + 1, len);
+            output[i - 1] = '\0';
+        } else {
+            memmove(output, output + 1, len);
+            output[len - 2] = '\0';
+        }
+    }
+}
+
 void default_formatting(char** result, struct serialization_info* s_info){
     int64_t result_capacity = 100;
     int64_t result_size = 0;
@@ -1358,10 +1452,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
-    if (cleaned_format[0] == '(' && cleaned_format[len-1] == ')') {
-        memmove(modified_input_string, modified_input_string + 1, strlen(modified_input_string));
-        modified_input_string[len-2] = '\0';
-    }
+    strip_outer_parenthesis(cleaned_format, len, modified_input_string);
     format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
@@ -1382,8 +1473,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             if (value[0] == '(' && value[strlen(value)-1] == ')') {
                 value[strlen(value)-1] = '\0';
                 int64_t new_fmt_val_count = 0;
-                char** new_fmt_val = parse_fortran_format(++value,&new_fmt_val_count,&item_start_idx);
-
+                char** new_fmt_val = parse_fortran_format(++value, &new_fmt_val_count, &item_start_idx);
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
@@ -1426,7 +1516,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             } else if (tolower(value[strlen(value) - 1]) == 'x') {
                 result = append_to_string(result, " ");
             } else if (tolower(value[0]) == 's') {
-                is_SP_specifier = ( strlen(value) == 2 /*case 'S' speicifer*/ &&
+                is_SP_specifier = ( strlen(value) == 2 /*case 'S' specifier*/ &&
                                     tolower(value[1]) == 'p'); 
             } else if (tolower(value[0]) == 't') {
                 if (tolower(value[1]) == 'l') {
@@ -1473,7 +1563,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
             } else {
                 if (!move_to_next_element(&s_info, false)) break;
                 if (!is_format_match(
-                        tolower(value[0]), s_info.current_element_type)){
+                        tolower(value[0]), s_info.current_element_type)) {
                     char* type; // For better error message.
                     switch (primitive_enum_to_format_specifier(s_info.current_element_type))
                     {
@@ -1561,10 +1651,14 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     handle_integer(value, integer_val, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'b') {
                     int width = 0;
+                    int min_digit_cnt = 0;
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'B'
                     }
-
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    if (dot != NULL) {
+                        min_digit_cnt = atoi(dot + 1); // get digits after '.'
+                    }
                     int bit_size = 0;
                     uint64_t uval = 0;
                     char fmt_type = primitive_enum_to_format_specifier(s_info.current_element_type);
@@ -1624,11 +1718,26 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             result = append_to_string(result, "*");
                         }
                     } else {
+                        int bin_len = strlen(binary_str);
+                        // Step 1: Pad with zeros to meet min_digit_cnt
+                        if (min_digit_cnt > bin_len) {
+                            int zero_padding = min_digit_cnt - bin_len;
+                            char* zeros = (char*)malloc((zero_padding + 1) * sizeof(char));
+                            memset(zeros, '0', zero_padding);
+                            zeros[zero_padding] = '\0';
+                            char* tmp = (char*)malloc((min_digit_cnt + 1) * sizeof(char));
+                            strcpy(tmp, zeros);
+                            strcat(tmp, binary_str);
+                            strcpy(binary_str, tmp);
+                            free(tmp);
+                            free(zeros);
+                            bin_len = strlen(binary_str);
+                        }
+                        // Step 2: Pad with spaces to meet width
                         int padding_needed = width - bin_len;
-                        char pad_char = ' ';
                         if (padding_needed > 0) {
                             char* pad = (char*)malloc((padding_needed + 1) * sizeof(char));
-                            memset(pad, pad_char, padding_needed);
+                            memset(pad, ' ', padding_needed);
                             pad[padding_needed] = '\0';
                             result = append_to_string(result, pad);
                             free(pad);
@@ -1641,15 +1750,17 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     if (strlen(value) > 1) {
                         width = atoi(value + 1); // Get width after 'g'
                     } 
-                    if (strlen(value) > 2 && value[2] == '.') {
-                        precision = atoi(value + 3); // Get precision after 'g.'
+                    const char *dot = strchr(value + 1, '.'); // Look for '.' after 'b'
+                    if (dot != NULL) {
+                        precision = atoi(dot + 1); // get digits after '.'
                     }
                     char buffer[100];
+                    char formatted[100];
                     if (s_info.current_element_type == FLOAT_32_TYPE || s_info.current_element_type == FLOAT_64_TYPE) {
-                        if (double_val == 0.0 || fabs(double_val) >= 0.1) {
+                        if (double_val == 0.0 || (fabs(double_val) >= 0.1 && fabs(double_val) < pow(10.0, precision))) {
                             char format_spec[20];
                             snprintf(format_spec, sizeof(format_spec), "%%#.%dG", precision);
-                            snprintf(buffer, sizeof(buffer), format_spec, double_val);
+                            snprintf(formatted, sizeof(formatted), format_spec, double_val);
                         } else {
                             int exp = 0;
                             double abs_val = fabs(double_val);
@@ -1660,8 +1771,19 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                             double final_val = double_val * scale;
                             char mantissa[64], exponent[16];
                             snprintf(mantissa, sizeof(mantissa), "%.*f", precision, final_val);
-                            snprintf(exponent, sizeof(exponent), "E%+d", exp);  // Force sign
-                            snprintf(buffer, sizeof(buffer), "%s%s", mantissa, exponent);
+                            if (width > 0) {
+                                snprintf(exponent, sizeof(exponent), "E%+03d", exp); 
+                            } else {
+                                snprintf(exponent, sizeof(exponent), "E%+d", exp);
+                            }
+                            snprintf(formatted, sizeof(formatted), "%s%s", mantissa, exponent);
+                        }
+                        int len = strlen(formatted);
+                        if (width > len) {
+                            int padding = width - len;
+                            snprintf(buffer, sizeof(buffer), "%*s", width, formatted);
+                        } else {
+                            strcpy(buffer, formatted);
                         }
                         result = append_to_string(result, buffer);
                     } else if (s_info.current_element_type == INTEGER_8_TYPE ||
@@ -1689,7 +1811,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                         handle_decimal(value, double_val, scale, &result, "E", is_SP_specifier);
                     }
                 } else if (tolower(value[0]) == 'f') {
-                    handle_float(value, double_val, &result, is_SP_specifier);
+                    handle_float(value, double_val, scale, &result, is_SP_specifier);
                 } else if (tolower(value[0]) == 'l') {
                     bool val = *(bool*)s_info.current_arg_info.current_arg;
                     handle_logical(value, val, &result);
@@ -2938,10 +3060,10 @@ LFORTRAN_API int _lfortran_str_ord_c(char* s)
     return s[0];
 }
 
-LFORTRAN_API char* _lfortran_str_chr(int val)
+LFORTRAN_API char* _lfortran_str_chr(uint8_t val)
 {
     char* dest_char = (char*)malloc(2);
-    uint8_t extended_ascii = (uint8_t)val;
+    uint8_t extended_ascii = val;
     dest_char[0] = extended_ascii;
     dest_char[1] = '\0';
     return dest_char;
@@ -3698,23 +3820,94 @@ LFORTRAN_API void _lfortran_backspace(int32_t unit_num)
 {
     bool unit_file_bin;
     FILE* fd = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
-    if( fd == NULL ) {
-        printf("Specified UNIT %d in BACKSPACE is not created or connected.\n",
-            unit_num);
+    if (fd == NULL) {
+        fprintf(stderr, "Specified UNIT %d in BACKSPACE is not created or connected.\n", unit_num);
         exit(1);
     }
-    int n = ftell(fd);
-    for(int i = n; i >= 0; i --) {
-        char c = fgetc(fd);
-        if (i == n) {
-            // Skip previous record newline
-            fseek(fd, -3, SEEK_CUR);
-            continue;
-        } else  if (c == '\n') {
-            break;
-        } else {
-            fseek(fd, -2, SEEK_CUR);
+
+    fflush(fd);
+    long pos = ftell(fd);
+    if (pos <= 0) {
+        rewind(fd);
+        return;
+    }
+
+    int ch;
+    pos--;  // Step back from EOF
+    while (pos > 0) {
+        fseek(fd, --pos, SEEK_SET);
+        ch = fgetc(fd);
+        if (ch == '\n') {
+            fseek(fd, pos + 1, SEEK_SET);  // Move to just after the previous newline
+            return;
         }
+    }
+
+    // If no newline found, rewind to beginning
+    rewind(fd);
+}
+
+LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        char buffer[100];   // Long enough buffer to fit any 16 bit integer
+        if (!fgets(buffer, sizeof(buffer), stdin)) {
+            fprintf(stderr, "Error: Failed to read input.\n");
+            exit(1);
+        }
+
+        // Use strtok() to extract only the first token before any whitespace
+        char *token = strtok(buffer, " \t\n");
+        if (token == NULL) {
+            fprintf(stderr, "Error: Invalid input for int16_t.\n");
+            exit(1);
+        }
+
+        char *endptr = NULL;
+        errno = 0;
+        long long_val = strtol(token, &endptr, 10);
+
+        if (endptr == token || *endptr != '\0') {
+            fprintf(stderr, "Error: Invalid input for int16_t.\n");
+            exit(1);
+        }
+
+        // check for overflow (when input value is more than the int16 limit)
+        if (errno == ERANGE || long_val < INT16_MIN || long_val > INT16_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(2) range.\n", long_val);
+            exit(1);
+        }
+
+        // once we checked its a proper integer, and that, it's within range, we convert it to int16
+        *p = (int16_t)long_val;
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (fread(p, sizeof(*p), 1, filep) != 1) {
+            fprintf(stderr, "Error: Failed to read int16_t from binary file.\n");
+            exit(1);
+        }
+    } else {
+        long temp;
+        if (fscanf(filep, "%ld", &temp) != 1) {
+            fprintf(stderr, "Error: Invalid input for int16_t from file.\n");
+            exit(1);
+        }
+
+        if (temp < INT16_MIN || temp > INT16_MAX) {
+            fprintf(stderr, "Error: Value %ld is out of integer(2) range (file).\n", temp);
+            exit(1);
+        }
+
+        *p = (int16_t)temp;
     }
 }
 
@@ -3956,6 +4149,38 @@ LFORTRAN_API void _lfortran_read_array_int8(int8_t *p, int array_size, int32_t u
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%hd", &p[i]);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    int access_id;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        if (access_id != 1) {
+            // Read record marker first
+            int32_t record_marker_start;
+            (void)!fread(&record_marker_start, sizeof(int32_t), 1, filep);
+        }
+        (void)!fread(p, sizeof(int16_t), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            (void)!fscanf(filep, "%hd", &p[i]);
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -4154,6 +4379,124 @@ LFORTRAN_API void _lfortran_read_float(float *p, int32_t unit_num)
     }
 }
 
+LFORTRAN_API void _lfortran_read_array_complex_float(struct _lfortran_complex_32 *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%f %f", &p[i].re, &p[i].im);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_32), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            // check if `(` is present, if yes, then we strip spaces for each line
+            // and then read (1.0, 2.0) (3.0, 4.0) etc.
+            char buffer[100];   // Long enough buffer to fit any complex float
+            if (fscanf(filep, "%s", buffer) != 1) {
+                fprintf(stderr, "Error: Invalid input for complex float from file.\n");
+                exit(1);
+            }
+            // Remove parentheses and split by comma
+            char *start = strchr(buffer, '(');
+            char *end = strchr(buffer, ')');
+            if (start && end && end > start) {
+                *end = '\0';  // Replace ')' with null terminator
+                start++;      // Move past '('
+                char *comma = strchr(start, ',');
+                if (comma) {
+                    *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
+                    p[i].re = strtof(start, NULL);
+                    p[i].im = strtof(comma + 1, NULL);
+                } else {
+                    fprintf(stderr, "Error: Invalid complex float format '%s'.\n", buffer);
+                    exit(1);
+                }
+            } else {
+                // If no parentheses, read as two separate floats
+                (void)!fscanf(filep, "%f %f", &p[i].re, &p[i].im);
+                // Check if the read was successful
+                if (ferror(filep)) {
+                    fprintf(stderr, "Error: Failed to read complex float from file.\n");
+                    exit(1);
+                }
+            }
+        }
+    }
+}
+
+LFORTRAN_API void _lfortran_read_array_complex_double(struct _lfortran_complex_64 *p, int array_size, int32_t unit_num)
+{
+    if (unit_num == -1) {
+        // Read from stdin
+        for (int i = 0; i < array_size; i++) {
+            (void)!scanf("%lf %lf", &p[i].re, &p[i].im);
+        }
+        return;
+    }
+
+    bool unit_file_bin;
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL);
+    if (!filep) {
+        printf("No file found with given unit\n");
+        exit(1);
+    }
+
+    if (unit_file_bin) {
+        (void)!fread(p, sizeof(struct _lfortran_complex_64), array_size, filep);
+    } else {
+        for (int i = 0; i < array_size; i++) {
+            // check if `(` is present, if yes, then we strip spaces for each line
+            // and then read (1.0, 2.0) (3.0, 4.0) etc.
+            char buffer[100];   // Long enough buffer to fit any complex double
+            if (fscanf(filep, "%s", buffer) != 1) {
+                fprintf(stderr, "Error: Invalid input for complex double from file.\n");
+                exit(1);
+            }
+            // Remove parentheses and split by comma
+            char *start = strchr(buffer, '(');
+            char *end = strchr(buffer, ')');
+            if (start && end && end > start) {
+                *end = '\0';  // Replace ')' with null terminator
+                start++;      // Move past '('
+                char *comma = strchr(start, ',');
+                if (comma) {
+                    *comma = '\0';  // Replace ',' with null terminator
+                    // strip spaces from start and end
+                    while (isspace((unsigned char)*start)) start++;
+                    while (isspace((unsigned char)*(end - 1))) end--;
+                    p[i].re = strtod(start, NULL);
+                    p[i].im = strtod(comma + 1, NULL);
+                } else {
+                    fprintf(stderr, "Error: Invalid complex double format '%s'.\n", buffer);
+                    exit(1);
+                }
+            } else {
+                // If no parentheses, read as two separate doubles
+                (void)!fscanf(filep, "%lf %lf", &p[i].re, &p[i].im);
+                // Check if the read was successful
+                if (ferror(filep)) {
+                    fprintf(stderr, "Error: Failed to read complex double from file.\n");
+                    exit(1);
+                }
+            }
+        }
+    }
+}
+
 LFORTRAN_API void _lfortran_read_array_float(float *p, int array_size, int32_t unit_num)
 {
     if (unit_num == -1) {
@@ -4280,8 +4623,33 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...)
 {
-    if (!streql(fmt, "(a)")) {
-        printf("Only (a) supported as fmt currently");
+    int width = -1; // default is -1, if length not mentioned
+
+    // Supported format are (a) and (aw)
+    if (streql(fmt, "(a)")) {
+        width = -1;
+    }
+    else if(fmt[0] == '(' && (fmt[1] == 'a' || fmt[1] == 'A')) {
+        int i = 2;
+        while (isdigit(fmt[i])) i++;
+
+        if (fmt[i] == ')' && i > 2) {
+            char width_str[16];
+            strncpy(width_str, fmt + 2, i - 2);
+            width_str[i - 2] = '\0';
+            width = atoi(width_str);
+
+            if (width <= 0) {
+                printf("Invalid format width in '%s'\n", fmt);
+                exit(1);
+            }
+        } else {
+            printf("Only (a) and (aw) are supported.\n");
+            exit(1);
+        }
+    }
+    else{
+        printf("Only (a) and (aw) are supported.\n");
         exit(1);
     }
 
@@ -4292,14 +4660,16 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
     va_start(args, no_of_args);
     char** arg = va_arg(args, char**);
 
-    int n = strlen(*arg);
-    *arg = (char*)malloc((n + 1) * sizeof(char));
+    int n = strlen(*arg); // length of string
+    if (width == -1) width = n;
+
+    // *arg = (char*)malloc((n + 1) * sizeof(char));
     const char SPACE = ' ';
 
     if (unit_num == -1) {
-        // Read from stdin
-        char *buffer = (char*)malloc((n + 1) * sizeof(char));
-        if (fgets(buffer, n + 1, stdin) == NULL) {
+        // Block for reading from standard input (stdin)
+        char *buffer = (char*)malloc((width + 1) * sizeof(char));
+        if (fgets(buffer, width + 1, stdin) == NULL) {
             *iostat = -1;
             va_end(args);
             free(buffer);
@@ -4312,13 +4682,43 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             }
 
             size_t input_length = strcspn(buffer, "\n");
-
             *chunk = input_length;
-            while (input_length < n) {
-                buffer[input_length] = SPACE;
-                input_length++;
+
+            char *output = (char*)malloc(n + 1);
+            memset(output, SPACE, n); // Initialize with spaces
+            output[n] = '\0';
+            
+            if (width > 0) {
+                char *padded_buffer = (char*)malloc(width + 1);
+                strncpy(padded_buffer, buffer, input_length);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
+                }
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
+                }
+                free(padded_buffer);
+            } else { // For (a) format (width == n)
+                strncpy(output, buffer, n);
             }
-            strcpy(*arg, buffer);
+
+            strncpy(*arg, output, n);         
+
+            free(output);
             va_end(args);
             free(buffer);
             return;
@@ -4331,8 +4731,9 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
         printf("No file found with given unit\n");
         exit(1);
     } else {
-        char *buffer = (char*)malloc((n + 1) * sizeof(char));
-        if (fgets(buffer, n + 1, filep) == NULL) {
+        // Block for reading from a file
+        char *buffer = (char*)malloc((width + 1) * sizeof(char));
+        if (fgets(buffer, width + 1, filep) == NULL) {
             *iostat = -1;
             va_end(args);
             free(buffer);
@@ -4350,11 +4751,41 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
 
             size_t input_length = strlen(buffer);
             *chunk = input_length;
-            while (input_length < n) {
-                strncat(buffer, &SPACE, 1);
-                input_length++;
+
+            char *output = (char*)malloc(n + 1);
+            memset(output, SPACE, n);
+            output[n] = '\0';
+
+            if (width > 0) { // For (aw) format
+                char *padded_buffer = (char*)malloc(width + 1);
+                strncpy(padded_buffer, buffer, width);
+                for (size_t i = input_length; i < width; ++i) {
+                    padded_buffer[i] = SPACE;
+                }
+                padded_buffer[width] = '\0';
+
+                if (width > n) {
+                    if (input_length >= width) {
+                        strncpy(output, padded_buffer + (width - n), n);
+                    } else if (input_length >= n) {
+                        strncpy(output, buffer + (input_length - n), n);
+                    } else {
+                        strncpy(output, buffer, input_length);
+                    }
+                } else { // width <= n
+                    strncpy(output, padded_buffer, width);
+                    for(size_t i = width; i < n; ++i) {
+                        output[i] = SPACE;
+                    }
+                    output[n] = '\0';
+                }
+            } else { // For (a) format
+                strncpy(output, buffer, n);
             }
-            strcpy(*arg, buffer);
+            
+            strncpy(*arg, output, n);
+
+            free(output);
             va_end(args);
             free(buffer);
         }
@@ -5031,6 +5462,20 @@ LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
         // if the name is not found, return empty string
         char* empty_string = "";
         return getenv(name) ? getenv(name) : empty_string;
+    }
+}
+
+LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char *name) {
+    // temporary solution, the below function _lfortran_get_env_variable should be used
+    if (name == NULL) {
+        return 0;
+    } else {
+        char *value = getenv(name);
+        if (value == NULL) {
+            return 0; // If the environment variable is not found, return 0
+        } else {
+            return strlen(value); // Return the length of the environment variable value
+        }
     }
 }
 

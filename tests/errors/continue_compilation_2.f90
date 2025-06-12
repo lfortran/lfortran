@@ -196,7 +196,7 @@ program continue_compilation_2
     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     !tokenizer error
     integer  :: ? tokenizer_error
-
+    integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
 
 
 
@@ -434,6 +434,8 @@ program continue_compilation_2
     print *, myCircle%mymember
 
     100 FORMAT(A10, @)
+
+    print*, merge("okay", "ok", .true.)
 
     contains
     logical function f(x)

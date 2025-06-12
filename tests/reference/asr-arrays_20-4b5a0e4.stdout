@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -32,6 +32,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             list_integer:
                                 (Variable
@@ -58,6 +59,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             list_logical:
                                 (Variable
@@ -84,6 +86,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     arrays_20
@@ -137,13 +140,13 @@
                                             ()
                                         )
                                         ())]
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ColMajor
                                         ()
                                     )
                                     (Integer 4)
                                     (IntegerConstant 5 (Integer 4) Decimal)
-                                ) .false. .false. PointerString)
+                                ) ExpressionLength PointerString)
                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                 (IntegerConstant 0 (Integer 4) Decimal))]
                                 FixedSizeArray

@@ -34,6 +34,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             success:
                                                 (Variable
@@ -53,6 +54,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     enum_stat
@@ -111,6 +113,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     class_default_select_type
@@ -147,7 +150,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_table
                                                     )
                                                     ()
@@ -158,11 +164,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     check_table
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_table
                                         )]
                                         ()
@@ -182,7 +192,7 @@
                                     [(Print
                                         (StringConstant
                                             "inside check_table"
-                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )]
                                     ()
@@ -231,6 +241,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -250,6 +261,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -260,7 +272,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_table
                                                     )
                                                     ()
@@ -271,6 +286,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             tmp:
                                                 (Variable
@@ -282,7 +298,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 toml_value
                                                         )
                                                     )
@@ -294,6 +313,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -341,7 +361,10 @@
                                         })
                                     get_table
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_table
                                         )
                                         (Pointer
@@ -462,6 +485,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -487,6 +511,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -525,6 +550,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -544,6 +570,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_value

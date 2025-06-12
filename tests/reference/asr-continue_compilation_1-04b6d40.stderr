@@ -20,12 +20,6 @@ semantic error: Cannot convert LOGICAL to REAL
 70 |     real :: adwf = .true.
    |                    ^^^^^^ 
 
-warning: The volatile attribute is not implemented yet (https://github.com/lfortran/lfortran/issues/6555), ignoring for now
-  --> tests/errors/continue_compilation_1.f90:71:14
-   |
-71 |     integer, volatile :: volatile_var
-   |              ^^^^^^^^ 
-
 semantic error: Symbol is already declared in the same scope
   --> tests/errors/continue_compilation_1.f90:74:31
    |
@@ -46,6 +40,42 @@ semantic error: Initialization of `myclass_array2` must reduce to a compile time
    |
 79 |     type(MyClass), parameter :: myclass_array2(2) = [MyClass(1), MyClass(q1)]
    |                                                                  ^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: only 'len' and 'kind' are allowed as type parameters
+  --> tests/errors/continue_compilation_1.f90:80:5
+   |
+80 |     character(width=10) :: str_c_1
+   |     ^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: can't use a keyword argument more than once
+  --> tests/errors/continue_compilation_1.f90:81:5
+   |
+81 |     character(len=10, len=20) :: str_c_2
+   |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: positional type parameters cannot follow a keyword argument
+  --> tests/errors/continue_compilation_1.f90:82:5
+   |
+82 |     character(len=10, 1) :: str_c_3
+   |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Syntax error in CHARACTER declaration: using only 'len' keyword argument after a positional type is invalid
+  --> tests/errors/continue_compilation_1.f90:83:5
+   |
+83 |     character(1, len=20) :: str_c_4
+   |     ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
+  --> tests/errors/continue_compilation_1.f90:84:34
+   |
+84 |     character(:), allocatable :: x(2)
+   |                                  ^^^^ 
+
+semantic error: Expecting a scalar integer or parameter annotated integer variable 
+  --> tests/errors/continue_compilation_1.f90:86:26
+   |
+86 |     logical :: mask_size(size(arr_size))
+   |                          ^^^^^^^^^^^^^^ 
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
@@ -692,8 +722,20 @@ semantic error: `allocate` statement only accepts four keyword arguments: `stat`
 310 |     allocate(arr5, status=q1)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Runtime dimensions are not supported yet for mold.
-   --> tests/errors/continue_compilation_1.f90:311:27
+semantic error: Different `character` lengths 2 and 3 in array constructor
+   --> tests/errors/continue_compilation_1.f90:313:21
     |
-311 |     allocate(arr5, mold = arr4)
-    |                           ^^^^ 
+313 |     print *, ["aa", "aaa"]
+    |                     ^^^^^ 
+
+semantic error: Different `character` lengths 2 and 3 in array constructor
+   --> tests/errors/continue_compilation_1.f90:314:38
+    |
+314 |     print *, ["aa", string(x+1:x+2), "aaa"]
+    |                                      ^^^^^ 
+
+semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
+   --> tests/errors/continue_compilation_1.f90:316:25
+    |
+316 |     print *, pack(arr2, mask1)
+    |                         ^^^^^ 

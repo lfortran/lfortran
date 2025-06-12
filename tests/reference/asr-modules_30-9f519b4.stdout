@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -60,6 +60,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -84,6 +85,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     default_executable
@@ -94,7 +96,7 @@
                                             .true.
                                             7 executable_config
                                         )
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -115,7 +117,7 @@
                                             (Var 9 self)
                                             9 1_executable_config_name
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -124,7 +126,7 @@
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 () .true. .false. DescriptorString)
+                                                (String 1 () AssumedLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -136,19 +138,19 @@
                                             (Var 9 self)
                                             9 1_executable_config_source_dir
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
                                         (StringPhysicalCast
                                             (StringConstant
                                                 "app"
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -160,19 +162,19 @@
                                             (Var 9 self)
                                             9 1_executable_config_main
                                             (Allocatable
-                                                (String 1 () .false. .true. DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
                                         (StringPhysicalCast
                                             (StringConstant
                                                 "main.f90"
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             PointerString
                                             DescriptorString
                                             (Allocatable
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. DescriptorString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -200,7 +202,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -210,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -221,7 +224,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -231,6 +234,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             source_dir:
                                                 (Variable
@@ -242,7 +246,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -252,6 +256,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     executable_config
@@ -357,6 +362,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             root:
                                                 (Variable
@@ -367,7 +373,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -376,6 +382,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     package_defaults
@@ -386,7 +393,7 @@
                                             .true.
                                             2 package_config_t
                                         )
-                                        (String 1 () .true. .false. PointerString)]
+                                        (String 1 () AssumedLength PointerString)]
                                         ()
                                         Source
                                         Implementation
@@ -468,7 +475,7 @@
                                                 (Var 10 package)
                                                 10 1_package_config_t_name
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -480,13 +487,13 @@
                                                         (Var 10 package)
                                                         10 1_package_config_t_name
                                                         (Allocatable
-                                                            (String 1 () .false. .true. DescriptorString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
                                                     )
                                                     (Integer 4)
                                                     ()
-                                                ) .false. .false. PointerString)
+                                                ) ExpressionLength PointerString)
                                             )
                                             ()
                                         ))]
@@ -555,6 +562,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -566,7 +574,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -576,6 +584,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     package_config_t
@@ -609,7 +618,7 @@
                     [(Print
                         (StringConstant
                             "running modules_30 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
                         )
                     )]
                 )

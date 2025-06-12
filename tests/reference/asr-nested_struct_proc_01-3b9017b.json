@@ -1,0 +1,13 @@
+{
+    "basename": "asr-nested_struct_proc_01-3b9017b",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/nested_struct_proc_01.f90",
+    "infile_hash": "8a662720d113b97e4852f55c5784ac8f1397c5d43e1a49097bb18c4f",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr-nested_struct_proc_01-3b9017b.stdout",
+    "stdout_hash": "486d8f81285dff2f5478ce702f2d905bb8202dcdf3d7804584995353",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

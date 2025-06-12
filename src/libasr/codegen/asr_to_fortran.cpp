@@ -184,13 +184,17 @@ public:
                 if(ASRUtils::extract_value(c->m_len, str_len)) {
                     r += std::to_string(str_len);
                 } else {
-                    if (c->m_is_deferred_length) {
-                        r += ":";
-                    } else if (c->m_is_assumed_length){
-                        r += "*";
-                    } else { // Not constant expression.
-                        visit_expr(*c->m_len);
-                        r += src;
+                    switch(c->m_len_kind){
+                        case ASR::string_length_kindType::ExpressionLength:
+                            visit_expr(*c->m_len);
+                            r += src;
+                            break;
+                        case ASR::string_length_kindType::AssumedLength:
+                            r += "*";
+                            break;
+                        case ASR::string_length_kindType::DeferredLength:
+                            r += ":";
+                            break;
                     }
                 }
                 r += ", kind=";
@@ -238,7 +242,11 @@ public:
             } case ASR::ttypeType::StructType: {
                 ASR::StructType_t* struct_type = down_cast<ASR::StructType_t>(t);
                 std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
-                r = "type(";
+                if (struct_type->m_is_cstruct) {
+                    r = "type(";
+                } else {
+                    r = "class(";
+                }
                 r += struct_name;
                 r += ")";
                 if (std::find(import_struct_type.begin(), import_struct_type.end(),
@@ -754,8 +762,6 @@ public:
         r += "\n";
         src = r;
     }
-
-    // void visit_Class(const ASR::Class_t &x) {}
 
     // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
 
@@ -1368,6 +1374,8 @@ public:
             SET_INTRINSIC_SUBROUTINE_NAME(Srand, "srand");
             SET_INTRINSIC_SUBROUTINE_NAME(SystemClock, "system_clock");
             SET_INTRINSIC_SUBROUTINE_NAME(DateAndTime, "date_and_time");
+            SET_INTRINSIC_SUBROUTINE_NAME(MoveAlloc, "move_alloc");
+            SET_INTRINSIC_SUBROUTINE_NAME(Mvbits, "mvbits")
             default : {
                 throw LCompilersException("IntrinsicImpureSubroutine: `"
                     + ASRUtils::get_intrinsic_name(x.m_sub_intrinsic_id)

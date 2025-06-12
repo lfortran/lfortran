@@ -118,6 +118,7 @@ namespace LCompilers::LLanguageServer::Interface {
         std::string configSection;
         std::string extensionId;
         int parentProcessId;
+        bool enableLogging;
     };
 
     class LanguageServerInterface {

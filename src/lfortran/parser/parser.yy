@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    226 // shift/reduce conflicts
+%expect    232 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -360,6 +360,10 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_WHERE
 %token <string> KW_WHILE
 %token <string> KW_WRITE
+
+// LFortran specific
+%token <string> KW_LF_LIST
+%token <string> KW_LF_SET
 
 // Nonterminal tokens
 
@@ -1541,6 +1545,8 @@ intrinsic_type_spec
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
+    | KW_LF_LIST "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_List, $3, @$); }
+    | KW_LF_SET "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_Set, $3, @$); }
     ;
 
 declaration_type_spec
@@ -2696,4 +2702,6 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
+    | KW_LF_LIST { $$ = SYMBOL($1, @$); }
+    | KW_LF_SET { $$ = SYMBOL($1, @$); }
     ;

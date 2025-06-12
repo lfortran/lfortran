@@ -36,6 +36,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             working_dir:
                                                 (Variable
@@ -47,7 +48,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -57,6 +58,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
@@ -101,6 +103,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -112,7 +115,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -122,6 +125,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_bare:
                                                 (Variable
@@ -147,6 +151,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_example:
                                                 (Variable
@@ -172,6 +177,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_executable:
                                                 (Variable
@@ -197,6 +203,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_full:
                                                 (Variable
@@ -222,6 +229,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_lib:
                                                 (Variable
@@ -247,6 +255,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             with_test:
                                                 (Variable
@@ -272,6 +281,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
@@ -398,7 +408,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 fpm_cmd_settings
                                                         )
                                                     )
@@ -410,12 +423,41 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
+                                                ),
+                                            temp_struct_var__:
+                                                (Variable
+                                                    7
+                                                    temp_struct_var__
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        4 fpm_new_settings
+                                                    )
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
                                                 )
                                         })
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 4 fpm_cmd_settings
                                             )
                                         )]
@@ -458,7 +500,7 @@
                                                         50
                                                         ["src", "lib", "app", "test", "example"]
                                                         (Array
-                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (IntegerConstant 5 (Integer 4) Decimal))]
                                                             FixedSizeArray
@@ -490,7 +532,7 @@
                                         )
                                         [(Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_cmd_settings_verbose
                                                 (Logical 4)
                                                 ()
@@ -504,23 +546,23 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_name
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
                                             (StringConstant
                                                 "xyz"
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             ()
                                             .false.
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_executable
                                                 (Logical 4)
                                                 ()
@@ -534,7 +576,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_test
                                                 (Logical 4)
                                                 ()
@@ -548,7 +590,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_lib
                                                 (Logical 4)
                                                 ()
@@ -562,7 +604,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_example
                                                 (Logical 4)
                                                 ()
@@ -576,7 +618,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_full
                                                 (Logical 4)
                                                 ()
@@ -590,7 +632,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_with_bare
                                                 (Logical 4)
                                                 ()
@@ -604,7 +646,7 @@
                                         )
                                         (Assignment
                                             (StructInstanceMember
-                                                (Var 7 cmd_settings)
+                                                (Var 7 temp_struct_var__)
                                                 7 1_fpm_new_settings_backfill
                                                 (Logical 4)
                                                 ()
@@ -613,6 +655,12 @@
                                                 .false.
                                                 (Logical 4)
                                             )
+                                            ()
+                                            .false.
+                                        )
+                                        (Assignment
+                                            (Var 7 cmd_settings)
+                                            (Var 7 temp_struct_var__)
                                             ()
                                             .false.
                                         )]
@@ -659,7 +707,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -668,6 +716,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             specified:
                                                 (Variable
@@ -687,11 +736,12 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     specified
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)]
+                                        [(String 1 () AssumedLength PointerString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -742,7 +792,10 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 fpm_cmd_settings
                                         )
                                     )
@@ -754,6 +807,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fpm_cmd_settings:
                                 (ExternalSymbol

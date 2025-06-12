@@ -581,11 +581,27 @@ bool set_allocation_size(
                                     al, loc, i + 1, ASRUtils::expr_type(int32_one))),
                                 ASRUtils::expr_type(int32_one), nullptr));
                         } else {
-                            Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
-                            count_i_args.push_back(al, intrinsic_array_function->m_args[1]);
-                            size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
-                                al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
-                                count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            ASR::expr_t* mask = intrinsic_array_function->m_args[1];
+                            ASR::expr_t* array = intrinsic_array_function->m_args[0];
+                            int mask_n_dims = ASRUtils::extract_n_dims_from_ttype(
+                                ASRUtils::expr_type(mask));
+                            if (mask_n_dims == 0) {
+                                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                                ASR::expr_t* tsource = PassUtils::create_array_size_pack(al, loc, array, ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array)));
+                                ASR::expr_t* fsource = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32));
+                                merge_args.push_back(al, tsource);
+                                merge_args.push_back(al, fsource);
+                                merge_args.push_back(al, mask);
+                                size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(
+                                    al, loc, static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Merge),
+                                    merge_args.p, merge_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            } else {
+                                Vec<ASR::expr_t*> count_i_args; count_i_args.reserve(al, 1);
+                                count_i_args.push_back(al, mask);
+                                size_i_1 = ASRUtils::EXPR(ASRUtils::make_IntrinsicArrayFunction_t_util(
+                                    al, loc, static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Count),
+                                    count_i_args.p, count_i_args.size(), 0, ASRUtils::expr_type(int32_one), nullptr));
+                            }
                         }
                         allocate_dim.m_length = size_i_1;
                         allocate_dims.push_back(al, allocate_dim);
@@ -625,7 +641,8 @@ bool set_allocation_size(
                     }
                     break;
                 }
-                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): {
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Cshift): 
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::Eoshift): {
                     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(intrinsic_array_function->m_type);
                     allocate_dims.reserve(al, n_dims);
                     for (size_t i = 0; i < n_dims; i++) {
@@ -676,6 +693,47 @@ bool set_allocation_size(
                         for (size_t i = 0; i < n_dims; i++) {
                             allocate_dims.push_back(al, dims[i]);
                         }
+                    }
+                    break;
+                }
+                case static_cast<int64_t>(ASRUtils::IntrinsicArrayFunctions::MatMul): {
+                    ASRUtils::ASRBuilder b(al, intrinsic_array_function->base.base.loc);
+
+                    size_t n_dims_a = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(intrinsic_array_function->m_args[0])
+                    );
+                    size_t n_dims_b = ASRUtils::extract_n_dims_from_ttype(
+                        ASRUtils::expr_type(intrinsic_array_function->m_args[1])
+                    );
+
+                    // matrix multiplication of a matrix and a vector is a vector
+                    if (n_dims_a == 2 && n_dims_b == 1) {
+                        allocate_dims.reserve(al, 1);
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(1), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim);
+                    } else if (n_dims_a == 1 && n_dims_b == 2) {
+                        // matrix multiplication of a vector and a matrix is a vector
+                        allocate_dims.reserve(al, 1);
+                        ASR::dimension_t allocate_dim;
+                        allocate_dim.loc = loc;
+                        allocate_dim.m_start = int32_one;
+                        allocate_dim.m_length = b.ArraySize(intrinsic_array_function->m_args[1], b.i32(2), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim);
+                    } else if (n_dims_a == 2 && n_dims_b == 2) {
+                        // matrix multiplication of a matrix and a matrix is a matrix
+                        allocate_dims.reserve(al, 2);
+                        ASR::dimension_t allocate_dim1, allocate_dim2;
+                        allocate_dim1.loc = loc;
+                        allocate_dim1.m_start = int32_one;
+                        allocate_dim1.m_length = b.ArraySize(intrinsic_array_function->m_args[0], b.i32(1), ASRUtils::expr_type(int32_one));
+                        allocate_dim2.loc = loc;
+                        allocate_dim2.m_start = int32_one;
+                        allocate_dim2.m_length = b.ArraySize(intrinsic_array_function->m_args[1], b.i32(2), ASRUtils::expr_type(int32_one));
+                        allocate_dims.push_back(al, allocate_dim1);
+                        allocate_dims.push_back(al, allocate_dim2);
                     }
                     break;
                 }
@@ -1503,6 +1561,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void visit_StructConstructor(const ASR::StructConstructor_t& x) {
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_StructConstructor(x);
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         traverse_call_args(x_m_args, x.m_args, x.n_args,
             std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
@@ -2193,7 +2252,8 @@ class ReplaceModuleVarWithValue:
             ASRUtils::symbol_get_past_external(x->m_v));
         if( !((check_if_ASR_owner_is_module(y->m_parent_symtab->asr_owner)) &&
               y->m_storage == ASR::storage_typeType::Parameter) ||
-            y->m_symbolic_value == nullptr ) {
+            y->m_symbolic_value == nullptr ||
+            ASR::is_a<ASR::StructConstant_t>(*y->m_value)) {
             return ;
         }
 
@@ -2234,6 +2294,21 @@ class TransformVariableInitialiser:
         ASR::expr_t* value = x.m_value ? x.m_value : x.m_symbolic_value;
         // TODO: StructType expressions aren't evaluated at compile time
         // currently, see: https://github.com/lfortran/lfortran/issues/4909
+        SymbolTable* parent_scope = x.m_parent_symtab;
+        if ( ASR::is_a<ASR::symbol_t>(*parent_scope->asr_owner) ) {
+            ASR::symbol_t* parent_scope_symbol = ASR::down_cast<ASR::symbol_t>(parent_scope->asr_owner);
+            if ( ASR::is_a<ASR::Function_t>(*parent_scope_symbol) ) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(parent_scope_symbol);
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                if (func_type->m_abi == ASR::abiType::ExternalUndefined) {
+                    // it is safe to do because we are not going to instantiate this function in LLVM
+                    ASR::Variable_t& xx = const_cast<ASR::Variable_t&>(x);
+                    xx.m_symbolic_value = nullptr;
+                    xx.m_value = nullptr;
+                    return;
+                }
+            }
+        }
         if ((check_if_ASR_owner_is_module(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_enum(x.m_parent_symtab->asr_owner)) ||
             (check_if_ASR_owner_is_struct(x.m_parent_symtab->asr_owner)) ||

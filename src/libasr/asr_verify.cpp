@@ -383,7 +383,9 @@ public:
                 const_assigned.insert(std::make_pair(current_symtab->counter, variable_name));
             }
         }
-        if ( x.m_realloc_lhs ) {
+        // it's possible that the target is an external symbol, and during
+        // initial deserialization pass, so we don't do the below verification
+        if ( check_external && x.m_realloc_lhs ) {
             ASR::expr_t* a_target = x.m_target;
             bool is_allocatable = ASRUtils::is_allocatable(a_target);
             if ( ASR::is_a<ASR::StructInstanceMember_t>(*a_target) ) {
@@ -435,10 +437,6 @@ public:
     }
 
     void visit_Function(const Function_t &x) {
-        if (ASRUtils::get_FunctionType(&x)->m_abi == abiType::Interactive) {
-            require(x.n_body == 0,
-            "The Function::n_body should be 0 if abi set to Interactive");
-        }
         std::vector<std::string> function_dependencies_copy = function_dependencies;
         function_dependencies.clear();
         function_dependencies.reserve(x.n_dependencies);
@@ -559,9 +557,6 @@ public:
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::ClassType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::ClassType_t>(var_type)->m_class_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
@@ -1031,13 +1026,9 @@ public:
                 type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
                 break;
             }
-            case (ASR::ttypeType::ClassType): {
-                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
-                break;
-            }
             default :
                 require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType or ClassType)",
+                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType)",
                     dt->base.loc);
         }
         return get_dt_symtab(type_sym);
@@ -1070,15 +1061,6 @@ public:
                 type_sym = ASRUtils::symbol_get_past_external(type_sym);
                 ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
                 parent = der_type->m_parent;
-                break;
-            }
-            case (ASR::ttypeType::ClassType): {
-                type_sym = ASR::down_cast<ASR::ClassType_t>(t2)->m_class_type;
-                type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                if( type_sym->type == ASR::symbolType::Struct ) {
-                    ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
-                    parent = der_type->m_parent;
-                }
                 break;
             }
             default :
@@ -1274,7 +1256,8 @@ public:
     }
 
     void visit_Allocatable(const Allocatable_t &x) {
-        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type),
+        require(!ASR::is_a<ASR::Pointer_t>(*x.m_type) &&
+                !ASR::is_a<ASR::Allocatable_t>(*x.m_type),
             "Allocatable type conflicts with Pointer type");
         ASR::dimension_t* m_dims = nullptr;
         size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x.m_type, m_dims);

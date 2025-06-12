@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -50,6 +51,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             z1:
                                 (Variable
@@ -69,6 +71,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             z2:
                                 (Variable
@@ -88,6 +91,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     complex_09
@@ -127,13 +131,23 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
                     (Assignment
                         (Var 2 z2)
-                        (Var 2 z2)
+                        (Cast
+                            (Cast
+                                (Var 2 z2)
+                                ComplexToComplex
+                                (Complex 8)
+                                ()
+                            )
+                            ComplexToComplex
+                            (Complex 4)
+                            ()
+                        )
                         ()
                         .false.
                     )]

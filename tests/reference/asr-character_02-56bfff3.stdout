@@ -1,0 +1,70 @@
+(TranslationUnit
+    (SymbolTable
+        1
+        {
+            character_02:
+                (Program
+                    (SymbolTable
+                        2
+                        {
+                            toml_base:
+                                (Variable
+                                    2
+                                    toml_base
+                                    []
+                                    Local
+                                    (ArrayConstant
+                                        8
+                                        ["1", "2", "3", "$"]
+                                        (Array
+                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    (ArrayConstant
+                                        8
+                                        ["1", "2", "3", "$"]
+                                        (Array
+                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 4 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        ColMajor
+                                    )
+                                    Parameter
+                                    (Array
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 4 (Integer 4) Decimal))]
+                                        FixedSizeArray
+                                    )
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                )
+                        })
+                    character_02
+                    []
+                    [(Print
+                        (StringFormat
+                            ()
+                            [(Var 2 toml_base)]
+                            FormatFortran
+                            (String 1 () ExpressionLength CString)
+                            ()
+                        )
+                    )]
+                )
+        })
+    []
+)

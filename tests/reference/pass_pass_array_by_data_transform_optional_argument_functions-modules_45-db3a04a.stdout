@@ -17,7 +17,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -27,6 +27,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -76,6 +77,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -95,6 +97,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             profile_config_t:
                                 (ExternalSymbol
@@ -116,7 +119,7 @@
                                     ()
                                     Default
                                     (Allocatable
-                                        (String 1 () .false. .true. DescriptorString)
+                                        (String 1 () DeferredLength DescriptorString)
                                     )
                                     ()
                                     Source
@@ -126,6 +129,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             profiles:
                                 (Variable
@@ -157,6 +161,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             profindex:
                                 (Variable
@@ -176,6 +181,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     modules_45
@@ -267,6 +273,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             c_flags:
                                                 (Variable
@@ -278,7 +285,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -288,6 +295,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             compiler_name:
                                                 (Variable
@@ -299,7 +307,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -309,6 +317,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -320,7 +329,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -330,6 +339,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             err_message:
                                                 (Variable
@@ -341,7 +351,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -351,6 +361,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             file_flags:
                                                 (Variable
@@ -362,7 +373,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -372,6 +383,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -383,7 +395,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -393,6 +405,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -424,6 +437,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -435,7 +449,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -445,6 +459,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ifile:
                                                 (Variable
@@ -464,6 +479,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ikey:
                                                 (Variable
@@ -483,6 +499,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -502,6 +519,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             key_name:
                                                 (Variable
@@ -513,7 +531,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -523,6 +541,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -534,7 +553,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -544,6 +563,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -563,6 +583,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -582,6 +603,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -593,7 +615,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -603,6 +625,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profiles:
                                                 (Variable
@@ -634,6 +657,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profindex:
                                                 (Variable
@@ -653,6 +677,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -672,15 +697,16 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     get_flags
                                     (FunctionType
                                         [(Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Allocatable
-                                            (String 1 () .false. .true. DescriptorString)
+                                            (String 1 () DeferredLength DescriptorString)
                                         )
                                         (Integer 4)
                                         (Allocatable
@@ -744,7 +770,7 @@
                                                         (Var 6 profile_name)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -757,7 +783,7 @@
                                                         (Var 6 compiler_name)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -771,7 +797,7 @@
                                                         (Var 6 flags)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -787,7 +813,7 @@
                                                                 (Var 6 flags)
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -812,7 +838,7 @@
                                                         (Var 6 c_flags)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -828,7 +854,7 @@
                                                                 (Var 6 c_flags)
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -853,7 +879,7 @@
                                                         (Var 6 cxx_flags)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -869,7 +895,7 @@
                                                                 (Var 6 cxx_flags)
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -894,7 +920,7 @@
                                                         (Var 6 link_time_flags)
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             ))
@@ -910,7 +936,7 @@
                                                                 (Var 6 link_time_flags)
                                                                 (Integer 4)
                                                                 ()
-                                                            ) .false. .false. PointerString)
+                                                            ) ExpressionLength PointerString)
                                                         )
                                                         ()
                                                     )]
@@ -992,7 +1018,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1001,6 +1027,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1011,7 +1038,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1020,6 +1047,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1030,7 +1058,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1039,6 +1067,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1068,6 +1097,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1078,7 +1108,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1087,6 +1117,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1106,6 +1137,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_c_flags_present_:
                                                 (Variable
@@ -1125,6 +1157,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_cxx_flags_present_:
                                                 (Variable
@@ -1144,6 +1177,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_file_scope_flags_present_:
                                                 (Variable
@@ -1163,6 +1197,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_flags_present_:
                                                 (Variable
@@ -1182,6 +1217,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_is_built_in_present_:
                                                 (Variable
@@ -1201,6 +1237,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_link_time_flags_present_:
                                                 (Variable
@@ -1220,6 +1257,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1230,7 +1268,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1239,6 +1277,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1258,6 +1297,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profile:
                                                 (Variable
@@ -1282,6 +1322,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1292,7 +1333,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () .true. .false. PointerString)
+                                                    (String 1 () AssumedLength PointerString)
                                                     ()
                                                     Source
                                                     Public
@@ -1301,20 +1342,21 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(String 1 () .true. .false. PointerString)
-                                        (String 1 () .true. .false. PointerString)
+                                        [(String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Integer 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
-                                        (String 1 () .true. .false. PointerString)
+                                        (String 1 () AssumedLength PointerString)
                                         (Logical 4)
                                         (Array
                                             (StructType
@@ -1385,7 +1427,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1395,6 +1437,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1406,7 +1449,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1416,6 +1459,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1427,7 +1471,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1437,6 +1481,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             file_scope_flags:
                                                 (Variable
@@ -1468,6 +1513,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1479,7 +1525,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1489,6 +1535,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1508,6 +1555,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1519,7 +1567,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1529,6 +1577,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1548,6 +1597,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1559,7 +1609,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -1569,6 +1619,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     profile_config_t

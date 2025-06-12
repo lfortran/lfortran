@@ -42,7 +42,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         10 toml_structure
                                                     )
                                                     ()
@@ -53,6 +56,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             toml_value:
                                                 (ExternalSymbol
@@ -67,7 +71,10 @@
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             10 toml_structure
                                         )]
                                         ()
@@ -204,7 +211,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_array
                                                     )
                                                     ()
@@ -215,11 +225,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_array
                                         )]
                                         ()
@@ -244,7 +258,7 @@
                                                     (Var 15 self)
                                                     15 1_toml_value_key
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -256,13 +270,13 @@
                                                             (Var 15 self)
                                                             15 1_toml_value_key
                                                             (Allocatable
-                                                                (String 1 () .false. .true. DescriptorString)
+                                                                (String 1 () DeferredLength DescriptorString)
                                                             )
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) .false. .false. PointerString)
+                                                    ) ExpressionLength PointerString)
                                                 )
                                                 ()
                                             )]
@@ -275,7 +289,7 @@
                                                 (Var 15 self)
                                                 15 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 () .false. .true. DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -289,7 +303,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -307,7 +324,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -319,7 +339,10 @@
                                                 (Var 15 self)
                                                 15 1_toml_array_list
                                                 (Allocatable
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_ordered
                                                     )
                                                 )
@@ -369,6 +392,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     new_array
@@ -426,7 +450,10 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 toml_ordered
                                                         )
                                                     )
@@ -438,6 +465,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_array
@@ -499,7 +527,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         4 toml_value
                                                     )
                                                     ()
@@ -510,11 +541,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             4 toml_value
                                         )]
                                         ()
@@ -564,7 +599,7 @@
                                                     ()
                                                     Default
                                                     (Allocatable
-                                                        (String 1 () .false. .true. DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -574,6 +609,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_value

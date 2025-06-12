@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_1:
                                 (Variable
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_0_2:
                                 (Variable
@@ -63,6 +65,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_1_:
                                 (Variable
@@ -82,6 +85,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_1_1:
                                 (Variable
@@ -101,6 +105,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             __libasr_index_1_2:
                                 (Variable
@@ -120,6 +125,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -146,6 +152,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -172,6 +179,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -191,6 +199,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             d:
                                 (Variable
@@ -219,6 +228,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     main
@@ -236,10 +246,10 @@
                         ()
                     )
                     (Assignment
-                        (Var 2 __libasr_index_0_1)
+                        (Var 2 __libasr_index_1_1)
                         (ArrayBound
                             (Var 2 a)
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
@@ -248,10 +258,10 @@
                         .false.
                     )
                     (Assignment
-                        (Var 2 __libasr_index_0_2)
+                        (Var 2 __libasr_index_1_2)
                         (ArrayBound
                             (Var 2 b)
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
@@ -261,27 +271,27 @@
                     )
                     (DoLoop
                         ()
-                        ((Var 2 __libasr_index_0_)
+                        ((Var 2 __libasr_index_1_)
                         (ArrayBound
                             (Var 2 d)
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             LBound
                             ()
                         )
                         (ArrayBound
                             (Var 2 d)
-                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerConstant 2 (Integer 4) Decimal)
                             (Integer 4)
                             UBound
                             ()
                         )
                         ())
                         [(Assignment
-                            (Var 2 __libasr_index_1_1)
+                            (Var 2 __libasr_index_0_1)
                             (ArrayBound
                                 (Var 2 a)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
@@ -290,10 +300,10 @@
                             .false.
                         )
                         (Assignment
-                            (Var 2 __libasr_index_1_2)
+                            (Var 2 __libasr_index_0_2)
                             (ArrayBound
                                 (Var 2 b)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
@@ -303,17 +313,17 @@
                         )
                         (DoLoop
                             ()
-                            ((Var 2 __libasr_index_1_)
+                            ((Var 2 __libasr_index_0_)
                             (ArrayBound
                                 (Var 2 d)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 LBound
                                 ()
                             )
                             (ArrayBound
                                 (Var 2 d)
-                                (IntegerConstant 2 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
                                 UBound
                                 ()
@@ -371,9 +381,9 @@
                                 .false.
                             )
                             (Assignment
-                                (Var 2 __libasr_index_1_1)
+                                (Var 2 __libasr_index_0_1)
                                 (IntegerBinOp
-                                    (Var 2 __libasr_index_1_1)
+                                    (Var 2 __libasr_index_0_1)
                                     Add
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
@@ -383,9 +393,9 @@
                                 .false.
                             )
                             (Assignment
-                                (Var 2 __libasr_index_1_2)
+                                (Var 2 __libasr_index_0_2)
                                 (IntegerBinOp
-                                    (Var 2 __libasr_index_1_2)
+                                    (Var 2 __libasr_index_0_2)
                                     Add
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
@@ -397,9 +407,9 @@
                             []
                         )
                         (Assignment
-                            (Var 2 __libasr_index_0_1)
+                            (Var 2 __libasr_index_1_1)
                             (IntegerBinOp
-                                (Var 2 __libasr_index_0_1)
+                                (Var 2 __libasr_index_1_1)
                                 Add
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)
@@ -409,9 +419,9 @@
                             .false.
                         )
                         (Assignment
-                            (Var 2 __libasr_index_0_2)
+                            (Var 2 __libasr_index_1_2)
                             (IntegerBinOp
-                                (Var 2 __libasr_index_0_2)
+                                (Var 2 __libasr_index_1_2)
                                 Add
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 (Integer 4)

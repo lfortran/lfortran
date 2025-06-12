@@ -46,6 +46,99 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
 
+time_section "🧪 Testing splpak" '
+  git clone https://github.com/Pranavchiku/splpak.git
+  cd splpak
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout lf-2
+  git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
+
+  git clean -dfx
+  fpm build --compiler=$FC --profile release --flag "--cpp -DREAL32" --verbose
+  fpm test --compiler=$FC --profile release --flag "--cpp -DREAL32"
+
+  cd ../
+  rm -rf splpak
+'
+
+time_section "🧪 Testing fortran-regex" '
+  git clone https://github.com/perazz/fortran-regex.git
+  cd fortran-regex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  git checkout 96ab33fe003862a28cec91ddd170ac0e86c26c87
+  fpm --compiler=$FC build
+
+  print_success "Done with fortran-regex"
+  cd ..
+'
+
+time_section "🧪 Testing fortran-shlex" '
+  git clone https://github.com/jinangshah21/fortran-shlex.git
+  cd fortran-shlex
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-1
+  micromamba install -c conda-forge fpm
+  git checkout a030f1b9754ac3e6c5aa17fed01e5c2d767b947b
+  fpm --compiler=$FC build
+  print_success "Done with fortran-shlex"
+  cd ..
+'
+
+time_section "🧪 Testing fortran_mpi" '
+  git clone https://github.com/lfortran/fortran_mpi.git
+  cd fortran_mpi
+  export PATH="$(pwd)/../src/bin:$PATH"
+
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+
+  git clean -fdx
+  cd tests/
+  FC="$FC --cpp" ./run_tests.sh
+  print_success "Done with fortran_mpi"
+
+  cd ../
+  git clean -fdx
+  print_subsection "Building fortran_mpi with separate compilation"
+  cd tests/
+  FC="$FC --cpp --generate-object-code" ./run_tests.sh
+  print_success "Done with fortran_mpi"
+  cd ../../
+  rm -rf fortran_mpi
+'
+
+time_section "🧪 Testing POT3D with fortran_mpi" '
+  git clone https://github.com/gxyd/pot3d.git
+  cd pot3d
+  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
+  git checkout 9bf5d4784581ce83e2df13b828de86950ba88902
+
+  git clone https://github.com/lfortran/fortran_mpi
+  cd fortran_mpi
+  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  cp src/mpi.f90 ../src/
+  cp src/mpi_c_bindings.f90 ../src/
+  cp src/mpi_constants.c ../src/
+  cd ..
+
+  print_subsection "Building with default flags"
+  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+
+  print_subsection "Building with optimization flags"
+  FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+
+  print_subsection "Building POT3D in separate compilation mode"
+  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+
+  print_success "Done with POT3D"
+  cd ..
+  rm -rf pot3d
+'
+
+
 ##########################
 # Section 1: stdlib (Less Workarounds)
 ##########################
@@ -54,12 +147,26 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-6
-  git checkout aec6ad66cc039e84c365a12409efec3aa43e698c
+  git checkout n-lf-10
+  git checkout b05cdf222cc1e015a8c838506095db9d2a2507f6
   micromamba install -c conda-forge fypp
 
   git clean -fdx
-  FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  FC=$FC cmake . \
+      -DTEST_DRIVE_BUILD_TESTING=OFF \
+      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+  make -j8
+  ctest
+
+  git clean -dfx
+  git restore .
+  git checkout sc-lf-4
+  git checkout 6d3370630fd0a9da8bd28d88602820848b5cc3f0
+  FC=$FC cmake . \
+      -DTEST_DRIVE_BUILD_TESTING=OFF \
+      -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
+      -DCMAKE_Fortran_FLAGS="--cpp --generate-object-code --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -80,6 +187,10 @@ time_section "🧪 Testing Fortran-Primes" '
   print_subsection "Building and running Fortran-Primes"
   FC=$FC ./build_and_run.sh
 
+  print_subsection "Building Fortran-Primes with separate compilation"
+  git clean -dfx
+  FC="$FC --generate-object-code" ./build_and_run.sh
+
   print_success "Done with Fortran-Primes"
   cd ..
   rm -rf fortran-primes
@@ -97,6 +208,27 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   print_subsection "Building project"
   FC=$FC make
 
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with f23 standard"
+
+  FC="$FC --std=f23" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -136,29 +268,32 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   run_test plot_pendulum.exe
   run_test plot_transes_iso.exe
 
+  git clean -dfx
+  print_subsection "Building Numerical Methods Fortran with separate compilation and f23 standard"
+
+  FC="$FC --generate-object-code --std=f23" make
+  run_test test_fix_point.exe
+  run_test test_integrate_one.exe
+  run_test test_linear.exe
+  run_test test_newton.exe
+  run_test test_ode.exe
+  run_test test_probability_distribution.exe
+  run_test test_sde.exe
+
+  run_test plot_bogdanov_takens.exe
+  run_test plot_bruinsma.exe
+  run_test plot_fun1.exe
+  run_test plot_lorenz.exe
+  run_test plot_lotka_volterra1.exe
+  run_test plot_lotka_volterra2.exe
+  run_test plot_pendulum.exe
+  run_test plot_transes_iso.exe
+
 
   print_success "Done with Numerical Methods Fortran"
 
   cd ..
-'
-
-######################
-# Section 4: POT3D    #
-######################
-time_section "🧪 Testing POT3D" '
-  git clone https://github.com/gxyd/pot3d.git
-  cd pot3d
-  git checkout -t origin/lf_hdf5_mpi_namelist_global_workarounds
-  git checkout 83e1e90db7e7517fcbe8c7bce5ba309addfb23f6
-
-  print_subsection "Building with default flags"
-  FC=$FC ./build_and_run.sh
-
-  print_subsection "Building with optimization flags"
-  FC="$FC --fast --skip-pass=dead_code_removal" ./build_and_run.sh
-
-  print_success "Done with POT3D"
-  cd ..
+  rm -rf numerical-methods-fortran
 '
 
 #######################
@@ -216,6 +351,44 @@ time_section "🧪 Testing PRIMA" '
     cd ..
   fi
 
+  print_subsection "Building PRIMA with f23 standard"
+  FC="$FC --cpp --std=f23" cmake -S . -B build \
+    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    -DCMAKE_Fortran_FLAGS="" \
+    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
+    -DCMAKE_MACOSX_RPATH=OFF \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    -DCMAKE_SKIP_RPATH=ON
+
+  cmake --build build --target install
+
+  run_test ./build/fortran/example_bobyqa_fortran_1_exe
+  run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  run_test ./build/fortran/example_cobyla_fortran_1_exe
+  run_test ./build/fortran/example_cobyla_fortran_2_exe
+  run_test ./build/fortran/example_lincoa_fortran_1_exe
+  run_test ./build/fortran/example_lincoa_fortran_2_exe
+  run_test ./build/fortran/example_newuoa_fortran_1_exe
+  run_test ./build/fortran/example_newuoa_fortran_2_exe
+  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  run_test ./build/fortran/example_uobyqa_fortran_2_exe
+
+  if [[ "$RUNNER_OS" == "macos-latest" ]]; then
+    cd fortran
+    test_name=test_bobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_newuoa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_cobyla.f90 FC="$FC --std=f23" ./script.sh
+    test_name=test_lincoa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
+  if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
+    cd fortran
+    test_name=test_uobyqa.f90 FC="$FC --std=f23" ./script.sh
+    cd ..
+  fi
+
   print_subsection "Rebuilding PRIMA with optimization"
   git clean -dfx
 
@@ -262,12 +435,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_lmder1
   run_test examples/example_lmdif1
   run_test examples/example_primes
-
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
 
   print_subsection "Testing with separate compilation"
-  cd ../
   git clean -dfx
   mkdir lf && cd lf
   FC="$FC --intrinsic-mangling --generate-object-code" cmake ..
@@ -279,6 +465,25 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   run_test examples/example_primes
   print_subsection "Running CTest"
   ctest
+  cd ../
+
+  print_subsection "Testing with separate compilation and f23 standard"
+  git clean -dfx
+  mkdir lf && cd lf
+  FC="$FC --intrinsic-mangling --generate-object-code --std=f23" cmake ..
+  make
+  run_test examples/example_hybrd
+  run_test examples/example_hybrd1
+  run_test examples/example_lmder1
+  run_test examples/example_lmdif1
+  run_test examples/example_primes
+  print_subsection "Running CTest"
+  ctest
+  cd ../
+
+  print_success "Done with Legacy Minpack (SciPy)"
+  cd ../
+  rm -rf minpack
 '
 
 ##########################
@@ -376,6 +581,17 @@ time_section "🧪 Testing fastGPT" '
         ./test_basic_input
         ./test_more_inputs
         cd ..
+
+        mkdir lf-goc
+        cd lf-goc
+        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        make VERBOSE=1
+        ln -s ../model.dat .
+        ./gpt2
+        ./test_basic_input
+        ./test_more_inputs
+        cd ..
+
     elif [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
         git clone https://github.com/certik/fastGPT.git
         cd fastGPT
@@ -411,6 +627,17 @@ time_section "🧪 Testing fastGPT" '
         ./test_chat
         ctest -V
 
+        cd ..
+
+        mkdir lf-goc
+        cd lf-goc
+        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        make VERBOSE=1
+        ln -s ../model.dat .
+        ./gpt2
+        ./test_more_inputs
+        ./test_chat
+        ctest -V
         cd ..
 
         mkdir lf-fast
@@ -496,6 +723,10 @@ time_section "🧪 Testing SNAP" '
     git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
     make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
+    ./gsnap ../qasnap/sample/inp out
+
+    make clean
+    make -j8 FORTRAN=$FC FFLAGS="--generate-object-code" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 
     make clean

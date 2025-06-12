@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             time:
                                 (Variable
@@ -35,7 +36,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             values:
                                 (Variable
@@ -68,6 +70,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             zone:
                                 (Variable
@@ -78,7 +81,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -87,6 +90,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     test_time_and_date
@@ -196,13 +200,13 @@
                         (StringFormat
                             (StringConstant
                                 "(a,2x,a,2x,a)"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             [(Var 2 date)
                             (Var 2 time)
                             (Var 2 zone)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -210,11 +214,11 @@
                         (StringFormat
                             (StringConstant
                                 "(8i5)"
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             [(Var 2 values)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

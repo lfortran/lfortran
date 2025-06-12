@@ -50,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     base
@@ -97,6 +98,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             bptr:
                                 (Variable
@@ -108,7 +110,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             2 base
                                         )
                                     )
@@ -120,6 +125,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             child:
                                 (Struct
@@ -144,6 +150,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     child
@@ -181,6 +188,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             perform_select_type:
                                 (Function
@@ -197,7 +205,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             2 base
                                                         )
                                                     )
@@ -209,6 +220,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             ~select_type_block_:
                                                 (Block
@@ -232,7 +244,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
-                                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -241,7 +253,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String 1 () .false. .false. CString)
+                                                            (String 1 () ExpressionLength CString)
                                                             ()
                                                         )
                                                     )
@@ -296,7 +308,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
-                                                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) .false. .false. PointerString)
+                                                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -311,7 +323,7 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String 1 () .false. .false. CString)
+                                                            (String 1 () ExpressionLength CString)
                                                             ()
                                                         )
                                                     )
@@ -356,7 +368,10 @@
                                     perform_select_type
                                     (FunctionType
                                         [(Pointer
-                                            (ClassType
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
                                                 2 base
                                             )
                                         )]
@@ -428,7 +443,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -448,7 +463,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )

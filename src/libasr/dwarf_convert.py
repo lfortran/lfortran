@@ -24,6 +24,7 @@ of lines.txt and lines.dat
 from collections import namedtuple
 from glob import glob
 import os
+from pathlib import Path
 import re
 from struct import pack
 import sys
@@ -34,6 +35,18 @@ IncludeDirectory = namedtuple("IncludeDirectory", ["id", "path"])
 FileName = namedtuple("FileName", ["id", "filename", "dir_idx"])
 
 ASRDebugLines = namedtuple("ASRDebugLines", ["filenames", "addresses"])
+
+def normalize_to_absolute_path(path_str):
+    if path_str[0] == "/":
+        # Absolute path
+        full_path = Path(path_str)
+    else:
+        # Path is relative to the root directory of the repository
+        # Path.cwd() is `src/bin`.
+        base_dir = (Path.cwd() / ".." / "..").resolve()
+        full_path = base_dir / path_str
+    full_path = full_path.resolve()
+    return str(full_path)
 
 class Parser:
     """
@@ -145,16 +158,6 @@ class Parser:
         return d
 
 def ast_to_asr(ast):
-    local_files = glob("../**/*.cpp", recursive=True) + \
-                  glob("../**/*.h", recursive=True)
-    for i in range(len(local_files)):
-        local_files[i] = os.path.abspath(local_files[i])
-    def make_abs(end_path):
-        if end_path[0] != "/":
-            for f in local_files:
-                if f.endswith(end_path):
-                    return f
-        return end_path
     lines = []
     last_address = -1
     global_filename_id = 0
@@ -170,7 +173,7 @@ def ast_to_asr(ast):
             if filename.dir_idx != 0:
                 prefix = include_dirs[filename.dir_idx] + "/"
             filenames[filename.id] = global_filename_id
-            global_filenames.append(make_abs(prefix+filename.filename))
+            global_filenames.append(normalize_to_absolute_path(prefix+filename.filename))
             global_filename_id += 1
         for address, line_num, column, file_id in line.addresses:
             filename = global_filenames[filenames[file_id]]

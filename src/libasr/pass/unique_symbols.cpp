@@ -120,13 +120,20 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         module_name = std::string(x.m_name) + "_";
         if (all_symbols_mangling || module_name_mangling || should_mangle) {
             sym_to_renamed[sym] = update_name(x.m_name);
-        } else if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
+        } else if ( intrinsic_module_name_mangling && x.m_intrinsic ) {
             sym_to_renamed[sym] = update_name(x.m_name);
         }
         if ((global_symbols_mangling && startswith(x.m_name, "_global_symbols"))) {
             should_mangle = true;
         }
         for (auto &a : x.m_symtab->get_scope()) {
+            if ( intrinsic_module_name_mangling && startswith(x.m_name, "lfortran_intrinsic") ) {
+                // mangle functions / variables declared inside intrinsic modules
+                ASR::symbol_t *sym = a.second;
+                if (sym_to_renamed.find(sym) == sym_to_renamed.end()) {
+                    sym_to_renamed[sym] = update_name(ASRUtils::symbol_name(sym));
+                }
+            }
             visit_symbol(*a.second);
         }
         should_mangle = should_mangle_copy;
@@ -173,7 +180,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
                 mangle_c(sym , std::string(x.m_name));
             }
         }
-        if (intrinsic_symbols_mangling && startswith(x.m_name, "_lcompilers_")) {
+        if (intrinsic_symbols_mangling && (startswith(x.m_name, "_lcompilers_") || startswith(x.m_name, "__lcompilers"))) {
             ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
             sym_to_renamed[sym] = update_name(x.m_name);
         }
@@ -253,10 +260,6 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
     }
 
     void visit_Union(const ASR::Union_t &x) {
-        visit_symbols_2(x);
-    }
-
-    void visit_Class(const ASR::Class_t &x) {
         visit_symbols_2(x);
     }
 
@@ -472,26 +475,6 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
                 }
             }
         }
-    }
-
-    void visit_Class(const ASR::Class_t &x) {
-        ASR::Class_t& xx = const_cast<ASR::Class_t&>(x);
-        ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
-        if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
-            xx.m_name = s2c(al, sym_to_new_name[sym]);
-        }
-        std::map<std::string, ASR::symbol_t*> current_scope_copy = current_scope;
-        current_scope = x.m_symtab->get_scope();
-        for (auto &a : x.m_symtab->get_scope()) {
-            visit_symbol(*a.second);
-        }
-        for (auto &a: current_scope) {
-            if (sym_to_new_name.find(a.second) != sym_to_new_name.end()) {
-                xx.m_symtab->erase_symbol(a.first);
-                xx.m_symtab->add_symbol(sym_to_new_name[a.second], a.second);
-            }
-        }
-        current_scope = current_scope_copy;
     }
 
     void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {

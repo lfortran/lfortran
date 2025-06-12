@@ -6,7 +6,11 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-arrays_reshape_14-913f34e.stdout",
+<<<<<<< HEAD
     "stdout_hash": "05e5ab60c045b5e79205bda915267a86d24d70e9987b569b9b60c0a0",
+=======
+    "stdout_hash": "88eb425ef08442d2e51d94754e2edd92beb6cd9ece8e120cb7a9f856",
+>>>>>>> 2f65927f59e554f0489f386acedc4b41ad831160
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

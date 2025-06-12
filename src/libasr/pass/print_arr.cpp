@@ -62,7 +62,7 @@ public:
             al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-            false, false,
+            ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len_2));
@@ -185,7 +185,7 @@ public:
             al, x.base.base.loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
-            false, false,
+            ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
             ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, x.base.base.loc, s2c(al, ""), str_type_len_2));
@@ -227,7 +227,7 @@ public:
             al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-            false, false,
+            ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString));
         ASR::expr_t *empty_space = ASRUtils::EXPR(ASR::make_StringConstant_t(
             al, loc, s2c(al, ""), str_type_len));

@@ -121,16 +121,19 @@ namespace LCompilers::LLanguageServer::Logging {
 
     Logger::Logger(const fs::path &logPath, const std::string &typeName)
         : _logPath(logPath)
-        , logFile(logPath, std::ios::out | std::ios::trunc)
+        , logFile()
         , parent(nullptr)
         , m_typeName(typeName)
     {
-        if (!logFile.is_open()) {
-            throw std::invalid_argument(
-                "Failed to open log file for writing: " + logPath.string()
-            );
+        if (!logPath.empty()) {
+            logFile.open(logPath, std::ios::out | std::ios::trunc);
+            if (!logFile.is_open()) {
+                throw std::invalid_argument(
+                    "Failed to open log file for writing: " + logPath.string()
+                );
+            }
+            info() << "Logging to: " << logPath << std::endl;
         }
-        info() << "Logging to: " << logPath << std::endl;
     }
 
     Logger::Logger(

@@ -102,8 +102,6 @@ namespace LCompilers::LanguageServerProtocol {
             return SymbolKind::Enum;
         case ASR::symbolType::Variable:
             return SymbolKind::Variable;
-        case ASR::symbolType::Class:
-            return SymbolKind::Class;
         case ASR::symbolType::ClassProcedure:
             return SymbolKind::Method;
         case ASR::symbolType::Template:
@@ -131,8 +129,6 @@ namespace LCompilers::LanguageServerProtocol {
             return CompletionItemKind::Enum;
         case ASR::symbolType::Variable:
             return CompletionItemKind::Variable;
-        case ASR::symbolType::Class:
-            return CompletionItemKind::Class;
         case ASR::symbolType::ClassProcedure:
             return CompletionItemKind::Method;
         case ASR::symbolType::Template:

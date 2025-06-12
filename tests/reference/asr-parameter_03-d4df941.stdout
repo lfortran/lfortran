@@ -34,6 +34,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     parameter_03
@@ -43,7 +44,7 @@
                             ()
                             [(Var 2 l_knd)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]

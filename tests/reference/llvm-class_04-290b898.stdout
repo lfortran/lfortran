@@ -31,58 +31,70 @@ define i32 @main(i32 %0, i8** %1) {
   %foo = alloca %foo_c, align 8
   %4 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
   %5 = getelementptr %bar_c, %bar_c* %4, i32 0, i32 1
-  %6 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %7 = getelementptr %foo_b, %foo_b* %6, i32 0, i32 0
-  %8 = getelementptr %foo_a, %foo_a* %7, i32 0, i32 0
+  %6 = getelementptr %bar_c, %bar_c* %4, i32 0, i32 0
+  %7 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 1
+  %8 = getelementptr %bar_b, %bar_b* %6, i32 0, i32 0
   %9 = getelementptr %bar_a, %bar_a* %8, i32 0, i32 0
-  store i32 -20, i32* %9, align 4
   %10 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
   %11 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 1
   %12 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 1
-  store i32 9, i32* %12, align 4
-  %13 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %14 = getelementptr %bar_c, %bar_c* %13, i32 0, i32 1
-  store i32 11, i32* %14, align 4
-  %15 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %16 = getelementptr %foo_b, %foo_b* %15, i32 0, i32 0
-  %17 = getelementptr %foo_a, %foo_a* %16, i32 0, i32 0
-  %18 = getelementptr %bar_a, %bar_a* %17, i32 0, i32 0
-  %19 = load i32, i32* %18, align 4
-  %20 = alloca i32, align 4
-  store i32 %19, i32* %20, align 4
-  %21 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %20)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %13 = getelementptr %bar_b, %bar_b* %11, i32 0, i32 0
+  %14 = getelementptr %bar_a, %bar_a* %13, i32 0, i32 0
+  %15 = getelementptr %foo_b, %foo_b* %10, i32 0, i32 0
+  %16 = getelementptr %foo_a, %foo_a* %15, i32 0, i32 0
+  %17 = getelementptr %bar_a, %bar_a* %16, i32 0, i32 0
+  %18 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %19 = getelementptr %foo_b, %foo_b* %18, i32 0, i32 0
+  %20 = getelementptr %foo_a, %foo_a* %19, i32 0, i32 0
+  %21 = getelementptr %bar_a, %bar_a* %20, i32 0, i32 0
+  store i32 -20, i32* %21, align 4
   %22 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
   %23 = getelementptr %foo_b, %foo_b* %22, i32 0, i32 1
   %24 = getelementptr %bar_b, %bar_b* %23, i32 0, i32 1
-  %25 = load i32, i32* %24, align 4
-  %26 = alloca i32, align 4
-  store i32 %25, i32* %26, align 4
-  %27 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %26)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
-  %28 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %29 = getelementptr %bar_c, %bar_c* %28, i32 0, i32 1
-  %30 = load i32, i32* %29, align 4
-  %31 = alloca i32, align 4
-  store i32 %30, i32* %31, align 4
-  %32 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i32 0, i32* %31)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %32, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
-  %33 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %34 = getelementptr %foo_b, %foo_b* %33, i32 0, i32 0
-  %35 = getelementptr %foo_a, %foo_a* %34, i32 0, i32 0
-  %36 = getelementptr %bar_a, %bar_a* %35, i32 0, i32 0
+  store i32 9, i32* %24, align 4
+  %25 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %26 = getelementptr %bar_c, %bar_c* %25, i32 0, i32 1
+  store i32 11, i32* %26, align 4
+  %27 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %28 = getelementptr %foo_b, %foo_b* %27, i32 0, i32 0
+  %29 = getelementptr %foo_a, %foo_a* %28, i32 0, i32 0
+  %30 = getelementptr %bar_a, %bar_a* %29, i32 0, i32 0
+  %31 = load i32, i32* %30, align 4
+  %32 = alloca i32, align 4
+  store i32 %31, i32* %32, align 4
+  %33 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %32)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %33, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %34 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %35 = getelementptr %foo_b, %foo_b* %34, i32 0, i32 1
+  %36 = getelementptr %bar_b, %bar_b* %35, i32 0, i32 1
   %37 = load i32, i32* %36, align 4
-  %38 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
-  %39 = getelementptr %foo_b, %foo_b* %38, i32 0, i32 1
-  %40 = getelementptr %bar_b, %bar_b* %39, i32 0, i32 1
-  %41 = load i32, i32* %40, align 4
-  %42 = add i32 %37, %41
-  %43 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
-  %44 = getelementptr %bar_c, %bar_c* %43, i32 0, i32 1
-  %45 = load i32, i32* %44, align 4
-  %46 = add i32 %42, %45
-  %47 = icmp ne i32 %46, 0
-  br i1 %47, label %then, label %else
+  %38 = alloca i32, align 4
+  store i32 %37, i32* %38, align 4
+  %39 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %38)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %39, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %40 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %41 = getelementptr %bar_c, %bar_c* %40, i32 0, i32 1
+  %42 = load i32, i32* %41, align 4
+  %43 = alloca i32, align 4
+  store i32 %42, i32* %43, align 4
+  %44 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.2, i32 0, i32 0), i32 0, i32 0, i32* %43)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %44, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  %45 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %46 = getelementptr %foo_b, %foo_b* %45, i32 0, i32 0
+  %47 = getelementptr %foo_a, %foo_a* %46, i32 0, i32 0
+  %48 = getelementptr %bar_a, %bar_a* %47, i32 0, i32 0
+  %49 = load i32, i32* %48, align 4
+  %50 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 0
+  %51 = getelementptr %foo_b, %foo_b* %50, i32 0, i32 1
+  %52 = getelementptr %bar_b, %bar_b* %51, i32 0, i32 1
+  %53 = load i32, i32* %52, align 4
+  %54 = add i32 %49, %53
+  %55 = getelementptr %foo_c, %foo_c* %foo, i32 0, i32 1
+  %56 = getelementptr %bar_c, %bar_c* %55, i32 0, i32 1
+  %57 = load i32, i32* %56, align 4
+  %58 = add i32 %54, %57
+  %59 = icmp ne i32 %58, 0
+  br i1 %59, label %then, label %else
 
 then:                                             ; preds = %.entry
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @7, i32 0, i32 0))

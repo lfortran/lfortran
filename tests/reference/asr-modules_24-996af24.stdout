@@ -40,6 +40,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             tokenizer_ptr:
                                 (Variable
@@ -51,7 +52,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             7 toml_tokenizer
                                         )
                                     )
@@ -63,6 +67,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             toml_table:
                                 (ExternalSymbol
@@ -137,7 +142,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 toml_tokenizer
                                                     )
                                                     ()
@@ -148,6 +156,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -174,11 +183,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     parse_select
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 toml_tokenizer
                                         )]
                                         ()
@@ -249,6 +262,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -311,6 +325,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     toml_tokenizer

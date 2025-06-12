@@ -1,5 +1,5 @@
 program intrinsics_108
-    integer(4) :: x, y
+    integer(4) :: x, y, i_4
     integer(8) :: i, j
     integer :: arr3(3)
 
@@ -17,7 +17,9 @@ program intrinsics_108
     integer(8) :: expected_res2(5) = [0, 0, 5, 95, 0]
 
     integer(4), parameter :: comp1 = shiftr(12, 1)
+    integer(4), parameter :: neg1 = shiftr(-122, 23)
     integer(8), parameter :: comp2 = shiftr(103, 11)
+    integer(8), parameter :: neg2 = shiftr(-19381002102129_8, 63)
 
     print *, comp1
     if (comp1 /= 6) error stop
@@ -87,4 +89,13 @@ program intrinsics_108
     if (arr3(1) /= 10) error stop
     if (arr3(2) /= 2) error stop
     if (arr3(3) /= 1) error stop
+
+    i_4 = -122
+    j = -19381002102129_8
+    x = 23
+    y = 63
+    print *, shiftr(i_4, x), shiftr(j, y)
+    if (shiftr(i_4, x) /= 511 .or. shiftr(j, y) /= 1) error stop
+    print *, neg1, neg2
+    if (neg1 /= 511 .or. neg2 /= 1) error stop
 end

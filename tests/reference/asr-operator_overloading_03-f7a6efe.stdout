@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -86,6 +87,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -115,7 +117,7 @@
                             ()
                             [(StringConstant
                                 "T>T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -137,7 +139,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -146,7 +148,7 @@
                             ()
                             [(StringConstant
                                 "T>F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -168,7 +170,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -177,7 +179,7 @@
                             ()
                             [(StringConstant
                                 "F>T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -199,7 +201,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -208,7 +210,7 @@
                             ()
                             [(StringConstant
                                 "F>F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -230,7 +232,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -239,7 +241,7 @@
                             ()
                             [(StringConstant
                                 "T<T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -261,7 +263,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -270,7 +272,7 @@
                             ()
                             [(StringConstant
                                 "T<F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -292,7 +294,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -301,7 +303,7 @@
                             ()
                             [(StringConstant
                                 "F<T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -323,7 +325,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -332,7 +334,7 @@
                             ()
                             [(StringConstant
                                 "F<F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -354,7 +356,7 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )]
@@ -387,6 +389,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -406,6 +409,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -425,6 +429,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     greater_than_inverse
@@ -520,6 +525,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -539,6 +545,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -558,6 +565,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     less_than_inverse
@@ -653,6 +661,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -672,6 +681,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -691,6 +701,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     less_than_overload_use

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 32 (Integer 4) Decimal) .false. .false. PointerString)
+                                    (String 1 (IntegerConstant 32 (Integer 4) Decimal) ExpressionLength PointerString)
                                     ()
                                     Source
                                     Public
@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             count:
                                 (Variable
@@ -44,6 +45,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -63,6 +65,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     test_get_command_argument
@@ -84,11 +87,11 @@
                             ()
                             [(StringConstant
                                 "count: "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                             )
                             (Var 2 count)]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -103,7 +106,7 @@
                             StringTrim
                             [(Var 2 arg)]
                             0
-                            (String 1 (IntegerConstant 32 (Integer 4) Decimal) .false. .false. PointerString)
+                            (String 1 (IntegerConstant 32 (Integer 4) Decimal) ExpressionLength PointerString)
                             ()
                         )
                     )]

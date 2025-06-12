@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -49,6 +50,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     point
@@ -138,6 +140,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     color_point
@@ -175,6 +178,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -199,6 +203,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p3d:
                                 (Variable
@@ -223,6 +228,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             p_or_cp:
                                 (Variable
@@ -234,7 +240,10 @@
                                     ()
                                     Default
                                     (Pointer
-                                        (ClassType
+                                        (StructType
+                                            []
+                                            []
+                                            .false.
                                             4 point
                                         )
                                     )
@@ -246,6 +255,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             point:
                                 (ExternalSymbol
@@ -280,6 +290,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     point_3d
@@ -329,7 +340,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 point
                                                         )
                                                     )
@@ -341,6 +355,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     ~select_type_block_
@@ -353,7 +368,7 @@
                                             ()
                                             [(StringConstant
                                                 "point: "
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 7 an)
@@ -368,7 +383,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]
@@ -418,7 +433,10 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (ClassType
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .false.
                                                             4 point
                                                         )
                                                     )
@@ -430,6 +448,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     ~select_type_block_1
@@ -442,7 +461,7 @@
                                             ()
                                             [(StringConstant
                                                 "color_point: "
-                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) .false. .false. PointerString)
+                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
                                             )
                                             (StructInstanceMember
                                                 (Var 8 an)
@@ -463,7 +482,7 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () .false. .false. CString)
+                                            (String 1 () ExpressionLength CString)
                                             ()
                                         )
                                     )]

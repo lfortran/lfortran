@@ -52,6 +52,8 @@ do i = 1, 10
     end if
     m = .not. m
 end do
+print*, merge("ab", "ok", .true.)
+if (merge("ab", "ok", .true.) /= "ab") error stop
 
 
 end program

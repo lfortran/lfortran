@@ -137,10 +137,19 @@ class PromoteAllocatableToNonAllocatable:
                         scope2var[current_scope].end() ) {
                     ASR::Variable_t* alloc_variable = ASR::down_cast<ASR::Variable_t>(
                         ASR::down_cast<ASR::Var_t>(alloc_arg.m_a)->m_v);
-                    alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                    ASR::ttype_t* array_type /*Array's type*/  = ASRUtils::duplicate_type(al,
                         ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable(alloc_variable->m_type)),
-                        alloc_arg.m_dims, alloc_arg.n_dims);
+                            ASRUtils::type_get_past_allocatable(alloc_variable->m_type)));
+                        // Set length of String type -> e.g. `character(:), allocatable :: arr(:)`
+                        if(ASRUtils::is_character(*array_type) && 
+                            ASR::down_cast<ASR::String_t>(array_type)->m_len_kind ==
+                            ASR::string_length_kindType::DeferredLength){
+                            ASR::String_t* str = ASR::down_cast<ASR::String_t>(array_type);
+                            str->m_len = alloc_arg.m_len_expr;
+                            str->m_len_kind = ASR::string_length_kindType::ExpressionLength;
+                        }
+                    alloc_variable->m_type = ASRUtils::make_Array_t_util(al, x.base.base.loc,
+                    array_type, alloc_arg.m_dims, alloc_arg.n_dims);
                 } else if( ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ||
                            ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(alloc_arg.m_a)) ) {
                     x_args.push_back(al, alloc_arg);
@@ -227,8 +236,7 @@ class FixArrayPhysicalCast: public ASR::BaseExprReplacer<FixArrayPhysicalCast> {
             ASR::BaseExprReplacer<FixArrayPhysicalCast>::replace_FunctionCall(x);
             ASR::expr_t* call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(
                 al, x->base.base.loc, x->m_name, x->m_original_name, x->m_args,
-                x->n_args, x->m_type, x->m_value, x->m_dt,
-                ASRUtils::get_class_proc_nopass_val((*x).m_name)));
+                x->n_args, x->m_type, x->m_value, x->m_dt));
             ASR::FunctionCall_t* function_call = ASR::down_cast<ASR::FunctionCall_t>(call);
             x->m_args = function_call->m_args;
             x->n_args = function_call->n_args;
@@ -275,7 +283,7 @@ class FixArrayPhysicalCastVisitor: public ASR::CallReplacerOnExpressionsVisitor<
             ASR::CallReplacerOnExpressionsVisitor<FixArrayPhysicalCastVisitor>::visit_SubroutineCall(x);
             ASR::stmt_t* call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
                 al, x.base.base.loc, x.m_name, x.m_original_name, x.m_args,
-                x.n_args, x.m_dt, nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name)));
+                x.n_args, x.m_dt, nullptr, false));
             ASR::SubroutineCall_t* subrout_call = ASR::down_cast<ASR::SubroutineCall_t>(call);
             ASR::SubroutineCall_t& xx = const_cast<ASR::SubroutineCall_t&>(x);
             xx.m_args = subrout_call->m_args;

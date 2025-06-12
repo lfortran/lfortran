@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_PASS_UTILS_H
 #define LFORTRAN_PASS_UTILS_H
 
+#include "libasr/asr_utils.h"
 #include <libasr/asr.h>
 #include <libasr/containers.h>
 #include <libasr/asr_pass_walk_visitor.h>
@@ -119,6 +120,8 @@ namespace LCompilers {
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
 
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
+
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
@@ -159,7 +162,8 @@ namespace LCompilers {
             ASR::ttype_t* return_type, ASR::expr_t* arr_item, ASR::stmt_t* stmt, int curr_idx);
 
         static inline bool is_aggregate_type(ASR::expr_t* var) {
-            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var));
+            return ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                   && !ASRUtils::is_class_type(ASRUtils::expr_type(var));
         }
 
         /*  Checks for any non-primitive-function-return type 
@@ -167,11 +171,13 @@ namespace LCompilers {
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_descriptorString(x);
+            return ASRUtils::is_descriptorString(x) || 
+                    (x && ASR::is_a<ASR::List_t>(*x));
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var)) ||
+            return ((ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
+                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var))) ||
                     ASRUtils::is_array(ASRUtils::expr_type(var)) ||
                     ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }

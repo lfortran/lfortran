@@ -72,8 +72,6 @@ enum class IntrinsicElementalFunctions : int64_t {
     BesselYN,
     SameTypeAs,
     Merge,
-    Mvbits,
-    MoveAlloc,
     Mergebits,
     Shiftr,
     Rshift,
@@ -1347,14 +1345,23 @@ namespace Shiftr {
             ", but bit size of integer is " + std::to_string(k_val), { args[1]->base.loc })}));
             return nullptr;
         }
-        int64_t val = val1 >> val2;
+        int64_t val;
+        if (kind == 1) {                       // For logical shift val1 is treated as unsigned
+            val = (uint8_t) val1 >> val2;
+        } else if(kind == 2) {
+            val = (uint16_t) val1 >> val2;
+        } else if(kind == 4) {
+            val = (uint32_t) val1 >> val2;
+        } else {
+            val = (uint64_t) val1 >> val2;
+        }
         return make_ConstantWithType(make_IntegerConstant_t, val, t1, loc);
     }
 
     static inline ASR::expr_t* instantiate_Shiftr(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_shiftr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1362,7 +1369,7 @@ namespace Shiftr {
         * r = shiftr(x, y)
         * r = x >> y
         */
-        body.push_back(al, b.Assignment(result, b.BitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
+        body.push_back(al, b.Assignment(result, b.LBitRshift(args[0], b.i2i_t(args[1], arg_types[0]), arg_types[0])));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -1402,7 +1409,7 @@ namespace Rshift {
     static inline ASR::expr_t* instantiate_Rshift(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_rshift_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -1631,10 +1638,19 @@ namespace Ishft {
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
         int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int kind = ASRUtils::extract_kind_from_ttype_t(t1);
         int64_t val;
-        if(val2<=0){
+        if (val2 <= 0) {        // For logical shift val1 is treated as unsigned
             val2 = val2 * -1;
-            val = val1 >> val2;
+            if (kind == 1) { 
+                val = (uint8_t) val1 >> val2;
+            } else if(kind == 2) {
+                val = (uint16_t) val1 >> val2;
+            } else if(kind == 4) {
+                val = (uint32_t) val1 >> val2;
+            } else {
+                val = (uint64_t) val1 >> val2;
+            }
         } else {
             val = val1 << val2;
         }
@@ -1663,10 +1679,10 @@ namespace Ishft {
             arg_2 = args[1];
         }
         if (ASRUtils::extract_kind_from_ttype_t(return_type) != ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
-            if_shift = b.i2i_t(b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]), return_type);
+            if_shift = b.i2i_t(b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]), return_type);
             else_shift = b.i2i_t(b.BitLshift(args[0], arg_2, arg_types[0]), return_type);
         } else {
-            if_shift = b.BitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
+            if_shift = b.LBitRshift(args[0], b.Mul(b.i_t(-1, arg_types[0]), arg_2), arg_types[0]);
             else_shift = b.BitLshift(args[0], arg_2, arg_types[0]);
         }
         body.push_back(al, b.If(b.LtE(arg_2, b.i_t(0, arg_types[0])), {
@@ -1935,8 +1951,8 @@ namespace Lgt {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_lgt_" + type_to_str_python(type_get_past_allocatable(arg_types[0])));
-        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.Gt(args[0], args[1])));
 
@@ -1965,8 +1981,8 @@ namespace Llt {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_llt_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.Lt(args[0], args[1])));
 
@@ -1995,8 +2011,8 @@ namespace Lge {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_lge_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.GtE(args[0], args[1])));
 
@@ -2025,8 +2041,8 @@ namespace Lle {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_lle_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("y", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.LtE(args[0], args[1])));
 
@@ -3648,10 +3664,22 @@ namespace Maskr {
 
 namespace Merge {
 
-    static inline ASR::expr_t* eval_Merge(Allocator &, const Location &,
-            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics &) {
+    static inline ASR::expr_t* eval_Merge(Allocator &, const Location& loc,
+            ASR::ttype_t *, Vec<ASR::expr_t*>& args, diag::Diagnostics& diag) {
         bool mask = ASR::down_cast<ASR::LogicalConstant_t>(args[2])->m_value;
         ASR::expr_t *tsource = args[0], *fsource = args[1];
+        bool is_char1 = is_character(*ASRUtils::expr_type(args[0]));
+        bool is_char2 = is_character(*ASRUtils::expr_type(args[1]));
+        if (is_char1 && is_char2) {
+            char* str1 = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+            size_t len1 = std::strlen(str1);
+            char* str2 = ASR::down_cast<ASR::StringConstant_t>(args[1])->m_s;
+            size_t len2 = std::strlen(str2);
+            if (len1 != len2) {
+                append_error(diag, "Unequal character lengths in MERGE intrinsic", loc);
+                return nullptr;
+            }
+        }
         if (mask) {
             return tsource;
         } else {
@@ -3676,17 +3704,15 @@ namespace Merge {
             ASR::String_t* return_char = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(return_type));
                 // tsource and fsource will both have type of string that has assumed length.
                 tsource_char->m_len = nullptr; 
-                tsource_char->m_is_deferred_length = false;
-                tsource_char->m_is_assumed_length = true;
+                tsource_char->m_len_kind = ASR::string_length_kindType::AssumedLength;
                 tsource_char->m_physical_type = ASR::string_physical_typeType::PointerString; // TODO-StringsRefactoring: Change to DescriptorString
 
                 fsource_char->m_len = nullptr;
-                fsource_char->m_is_deferred_length = false;
-                fsource_char->m_is_assumed_length = true;
+                fsource_char->m_len_kind = ASR::string_length_kindType::AssumedLength;
                 fsource_char->m_physical_type = ASR::string_physical_typeType::PointerString; // TODO-StringsRefactoring: Change to DescriptorString 
+                
                 return_char->m_len = nullptr;
-                return_char->m_is_deferred_length = true;
-                return_char->m_is_assumed_length = false;
+                return_char->m_len_kind = ASR::string_length_kindType::DeferredLength;
                 // TODO-StringsRefactoring : Change to DescriptorString
                 // Set return_type string to allocatable deferred string.
                 return_char->m_physical_type = ASR::string_physical_typeType::PointerString;
@@ -3868,11 +3894,58 @@ namespace Nearest {
         function nearest(x, s) result(result)
             real :: x, s
             real :: result
-            result = ?
+            integer :: ix, dir
+
+            if (s == 0.0) then
+                res = x
+                return 
+            ix = transfer(x, ix)
+            if ((x > 0.0 and s > 0.0) .or. (x < 0.0 and s < 0.0)) then
+                dir = 1
+            else
+                dir = -1
+            end if
+
+            if (x == 0.0) then
+                ix = 1
+                if (s < 0.0) ix = -1
+                res = transfer(ix, res)
+                return
+            end if
+
+            ix = ix + dir
+
+            res = transfer(ix, res)
         end function
         */
-        throw LCompilersException("`Nearest` intrinsic is not yet implemented for runtime values");
+        ASR::expr_t* ix = declare("ix", int32, Local);
+        ASR::expr_t* dir = declare("dir", int32, Local);
+        ASR::expr_t* zero_real = EXPR(ASR::make_RealConstant_t(al, loc, 0.0, arg_types[1]));
+        body.push_back(al, b.If(b.Eq(args[1], zero_real), {
+            b.Assignment(result, args[0]),
+            b.Return(),
+        }, {}));
+        body.push_back(al, b.Assignment(ix, EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr))));
 
+        body.push_back(al, b.If(b.Or(b.And(b.Gt(args[0], zero_real), b.Gt(args[1], zero_real)),
+            b.And(b.Lt(args[0], zero_real), b.Lt(args[1], zero_real))), {
+            b.Assignment(dir, b.i32(1))
+        }, {
+            b.Assignment(dir, b.i32(-1))
+        }));
+
+        body.push_back(al, b.If(b.Eq(args[0], zero_real), {
+            b.Assignment(ix, b.i32(1)),
+            b.If(b.Lt(args[1], zero_real), {
+                b.Assignment(ix, b.i32(-1))
+            }, {}),
+            b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))),
+            b.Return(),
+        }, {}));
+
+        body.push_back(al, b.Assignment(ix, b.Add(ix, dir)));
+
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -4096,104 +4169,6 @@ namespace Real {
 
 } // namespace Real
 
-namespace Mvbits {
-
-    static ASR::expr_t *eval_Mvbits(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
-    }
-
-    static inline ASR::expr_t* instantiate_Mvbits(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        std::string c_func_name;
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4) {
-            c_func_name = "_lfortran_mvbits32";
-        } else {
-            c_func_name = "_lfortran_mvbits64";
-        }
-        std::string new_name = "_lcompilers_mvbits_" + type_to_str_python(arg_types[0]);
-        declare_basic_variables(new_name);
-        fill_func_arg("from", arg_types[0]);
-        fill_func_arg("frompos", arg_types[1]);
-        fill_func_arg("len", arg_types[2]);
-        fill_func_arg("to", arg_types[3]);
-        fill_func_arg("topos", arg_types[4]);
-        auto result = declare(new_name, ASRUtils::extract_type(return_type), ReturnVar);
-        {
-            SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
-            Vec<ASR::expr_t*> args_1;
-            {
-                args_1.reserve(al, 5);
-                ASR::expr_t *arg = b.Variable(fn_symtab_1, "from", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-                arg = b.Variable(fn_symtab_1, "frompos", arg_types[1],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-                arg = b.Variable(fn_symtab_1, "len", arg_types[2],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-                arg = b.Variable(fn_symtab_1, "to", arg_types[3],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-                arg = b.Variable(fn_symtab_1, "topos", arg_types[4],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
-                args_1.push_back(al, arg);
-            }
-
-            ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-                return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
-
-            SetChar dep_1; dep_1.reserve(al, 1);
-            Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
-            ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
-                body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
-            fn_symtab->add_symbol(c_func_name, s);
-            dep.push_back(al, s2c(al, c_func_name));
-            body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
-        }
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-    static inline ASR::expr_t* MVBITS(ASRBuilder &b, ASR::expr_t* from, ASR::expr_t* frompos,
-            ASR::expr_t* len, ASR::expr_t* to, ASR::expr_t* topos, SymbolTable *scope) {
-        return b.CallIntrinsic( scope, {ASRUtils::expr_type(from), ASRUtils::expr_type(frompos),
-            ASRUtils::expr_type(len), ASRUtils::expr_type(to), ASRUtils::expr_type(topos)},
-            {from, frompos, len, to, topos}, ASRUtils::expr_type(to), 0, Mvbits::instantiate_Mvbits);
-    }
-
-} // namespace Mvbits
-
-namespace MoveAlloc {
-
-    static ASR::expr_t *eval_MoveAlloc(Allocator &/*al*/, const Location &/*loc*/,
-            ASR::ttype_t* /*t1*/, Vec<ASR::expr_t*> &/*args*/, diag::Diagnostics& /*diag*/) {
-        return nullptr;
-    }
-
-    static inline ASR::expr_t* instantiate_MoveAlloc(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-
-        std::string new_name = "_lcompilers_move_alloc_" + type_to_str_python(arg_types[0]);
-        declare_basic_variables(new_name);
-        fill_func_arg("from", arg_types[0]);
-        fill_func_arg("to", arg_types[1]);
-        auto result = declare(new_name, arg_types[0], ReturnVar);
-        body.push_back(al, b.Assignment(result, args[0]));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace MoveAlloc
-
 namespace Mergebits {
 
     static int compute_merge_bits(int a, int b, int mask, int total_bits) {
@@ -4381,25 +4356,35 @@ namespace Ishftc {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         std::string c_func_name;
-        if(ASRUtils::extract_kind_from_ttype_t(arg_types[1]) == 4){
+        Vec<ASR::ttype_t*> arg_types2; arg_types2.reserve(al, 1);   // keeping x and size always int64 to maintain uniformity
+        arg_types2.push_back(al, arg_types[0]);
+        arg_types2.push_back(al, int64);         
+        arg_types2.push_back(al, int64);
+        if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4){
             c_func_name = "_lfortran_sishftc";
         } else {
             c_func_name = "_lfortran_dishftc";
         }
-        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[1]);
+        std::string new_name = "_lcompilers_ishftc_"+ type_to_str_python(arg_types[0]);
 
         declare_basic_variables(new_name);
+        if (new_args.p[1].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 8) {
+            new_args.p[1].m_value = b.i2i_t(new_args.p[1].m_value, int64);
+        }
+        if (new_args.p[2].m_value && ASRUtils::extract_kind_from_ttype_t(arg_types[2]) != 8) {
+            new_args.p[2].m_value = b.i2i_t(new_args.p[2].m_value, int64);
+        }
         if (scope->get_symbol(new_name)) {
             ASR::symbol_t *s = scope->get_symbol(new_name);
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);
             return b.Call(s, new_args, expr_type(f->m_return_var));
         }
-        fill_func_arg("n", arg_types[0]);
-        fill_func_arg("x", arg_types[1]);
-        fill_func_arg("size", arg_types[2]);
+        fill_func_arg("n", arg_types2[0]);
+        fill_func_arg("x", arg_types2[1]);
+        fill_func_arg("size", arg_types2[2]);
         auto result = declare(new_name, return_type, ReturnVar);
         {
-            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 3, arg_types);
+            ASR::symbol_t *s = b.create_c_func(c_func_name, fn_symtab, return_type, 3, arg_types2);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));
             body.push_back(al, b.Assignment(result, b.Call(s, args, return_type)));
@@ -4469,13 +4454,13 @@ namespace ToLowerCase {
     static inline ASR::expr_t* instantiate_ToLowerCase(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_to_lower_case_" + type_to_str_python(arg_types[0]));
         fill_func_arg("s", arg_types[0]);
         ASR::ttype_t* char_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)))), 
-            false, false,
-        ASR::string_physical_typeType::PointerString));
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         auto result = declare(fn_name, char_type, ReturnVar);
         auto itr = declare("i", int32, Local);
 
@@ -4502,8 +4487,8 @@ namespace ToLowerCase {
             b.If(b.And(b.GtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("A", arg_types[0], int32)),
                 b.LtE(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("Z", arg_types[0], int32))), {
                 b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc,
-            b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
-            b.Ichar("A", arg_types[0], int32)), return_type, nullptr)), char_type))
+            b.i2i_t(b.Sub(b.Add(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), int32, nullptr)), b.Ichar("a", arg_types[0], int32)),
+            b.Ichar("A", arg_types[0], int32)), int8), return_type, nullptr)), char_type))
             }, {
                 b.Assignment(result, b.StringConcat(result, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr, char_type, nullptr)), char_type))
             }),
@@ -4539,7 +4524,7 @@ namespace SelectedIntKind {
     static inline ASR::expr_t* instantiate_SelectedIntKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_selected_int_kind_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, int32, ReturnVar);
         auto number = declare("num", arg_types[0], Local);
@@ -4591,7 +4576,7 @@ namespace SelectedRealKind {
     static inline ASR::expr_t* instantiate_SelectedRealKind(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("");
+        declare_basic_variables("_lcompilers_selected_real_kind_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
         fill_func_arg("z", arg_types[2]);
@@ -4709,7 +4694,7 @@ namespace NewLine {
         return make_ConstantWithType(make_StringConstant_t, new_line_str, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-            false, false,
+            ASR::string_length_kindType::ExpressionLength,
             ASR::string_physical_typeType::PointerString)), loc);
     }
 
@@ -4735,9 +4720,10 @@ namespace Adjustl {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_adjustl_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-            false, false, ASR::string_physical_typeType::PointerString));
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
         auto tmp = declare("tmp", int32, Local);
@@ -4766,11 +4752,13 @@ namespace Adjustl {
         body.push_back(al, b.While(b.LtE(itr, b.StringLen(args[0])), {
             b.If(b.Eq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
                 ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,  nullptr, true, false, ASR::string_physical_typeType::PointerString)), nullptr)), int32, nullptr)),
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,  nullptr, 
+                    ASR::string_length_kindType::AssumedLength,
+                    ASR::string_physical_typeType::PointerString)), nullptr)), int32, nullptr)),
                 b.Ichar(" ", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    false, false,
+                    ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::PointerString)), int32)), {
                 b.Assignment(itr, b.Add(itr, b.i32(1)))
             }, {
@@ -4787,7 +4775,8 @@ namespace Adjustl {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-            false, false, ASR::string_physical_typeType::PointerString));
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -4819,9 +4808,12 @@ namespace Adjustr {
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_adjustr_" + type_to_str_python(arg_types[0]));
         fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
-            nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+            nullptr, ASR::string_length_kindType::AssumedLength,
+             ASR::string_physical_typeType::PointerString)));
         return_type = TYPE(ASR::make_String_t(al, loc, 1, 
-            EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)), false, false, ASR::string_physical_typeType::PointerString));
+            EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
         auto tmp = declare("tmp", int32, Local);
@@ -4850,11 +4842,13 @@ namespace Adjustr {
         body.push_back(al, b.While(b.GtE(itr, b.i32(1)), {
             b.If(b.Eq(ASRUtils::EXPR(ASR::make_Ichar_t(al, loc,
                 ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
-                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)), nullptr)), int32, nullptr)),
+                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+                    ASR::string_length_kindType::AssumedLength,
+                    ASR::string_physical_typeType::PointerString)), nullptr)), int32, nullptr)),
                 b.Ichar(" ", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
-                    false, false,
+                    ASR::string_length_kindType::ExpressionLength,
                     ASR::string_physical_typeType::PointerString)), int32)), {
                 b.Assignment(itr, b.Sub(itr, b.i32(1)))
             }, {
@@ -4872,7 +4866,8 @@ namespace Adjustr {
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-            false, false, ASR::string_physical_typeType::PointerString));
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
@@ -4896,7 +4891,7 @@ namespace StringLenTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_len_trim_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare("result", return_type, ReturnVar);
 
         /*
@@ -4953,9 +4948,11 @@ namespace StringTrim {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_trim_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         ASR::expr_t* func_call_lentrim = StringLenTrim::StringLenTrim(b, args[0], int32, scope);
-        return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim, false, false, ASR::string_physical_typeType::PointerString));
+        return_type = TYPE(ASR::make_String_t(al, loc, 1, func_call_lentrim,
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         auto result = declare("result", return_type, ReturnVar);
 
         /*
@@ -4971,7 +4968,8 @@ namespace StringTrim {
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         return_type = TYPE(ASR::make_String_t(al, loc, 1, EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-        false, false, ASR::string_physical_typeType::PointerString));
+            ASR::string_length_kindType::ExpressionLength,
+            ASR::string_physical_typeType::PointerString));
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
@@ -4997,13 +4995,15 @@ namespace Ichar {
         SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_ichar_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         auto result = declare("result", return_type, ReturnVar);
         auto itr = declare("i", int32, Local);
         body.push_back(al, b.Assignment(itr, b.i32(1)));
         body.push_back(al, b.Assignment(result, b.i2i_t(
             ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)), nullptr)), int32, nullptr)), return_type)));
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, 
+                ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)),
+            nullptr)), int32, nullptr)), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -5034,7 +5034,7 @@ namespace Char {
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
 
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int32), return_type, nullptr))));
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -5058,7 +5058,8 @@ namespace Achar {
         declare_basic_variables("_lcompilers_achar_" + type_to_str_python(arg_types[0]));
         fill_func_arg("i", arg_types[0]);
         auto result = declare("result", return_type, ReturnVar);
-        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, args[0], return_type, nullptr))));
+
+        body.push_back(al, b.Assignment(result, ASRUtils::EXPR(ASR::make_StringChr_t(al, loc, b.i2i_t(args[0], int8), return_type, nullptr))));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
@@ -5223,13 +5224,15 @@ namespace Repeat {
             return b.Call(s, new_args, return_type, nullptr);
         }
         fill_func_arg("x", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, 
-            true, false, ASR::string_physical_typeType::PointerString)));
+            ASR::string_length_kindType::AssumedLength,
+            ASR::string_physical_typeType::PointerString)));
         fill_func_arg("y", arg_types[1]);
         auto result = declare(fn_name, ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
             ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, loc,
                 ASRUtils::EXPR(ASR::make_StringLen_t(al, loc, args[0], ASRUtils::expr_type(args[1]), nullptr)),
                 ASR::binopType::Mul, args[1], ASRUtils::expr_type(args[1]), nullptr)),
-                false, false, ASR::string_physical_typeType::PointerString)), ReturnVar);
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString)), ReturnVar);
         auto i = declare("i", int32, Local);
         auto j = declare("j", int32, Local);
         auto m = declare("m", int32, Local);
@@ -5304,8 +5307,8 @@ namespace StringContainsSet {
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_verify_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         fill_func_arg("kind", int32);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -5435,8 +5438,8 @@ namespace StringFindSet {
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_scan_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("set", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         fill_func_arg("kind", int32);
         auto result = declare(fn_name, return_type, ReturnVar);
@@ -5560,8 +5563,8 @@ namespace SubstrIndex {
             SymbolTable* scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_index_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("str", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false, ASR::string_physical_typeType::PointerString)));
-        fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, true, false,ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("str",   ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,  ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
+        fill_func_arg("substr", ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString)));
         fill_func_arg("back", ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)));
         fill_func_arg("kind", int32);
         auto idx = declare(fn_name, return_type, ReturnVar);
@@ -6234,10 +6237,14 @@ namespace Max {
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
-                    nullptr, true, false, ASR::string_physical_typeType::PointerString)));
+                    nullptr,
+                    ASR::string_length_kindType::AssumedLength,
+                    ASR::string_physical_typeType::PointerString)));
             }
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
-                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)), false, false, ASR::string_physical_typeType::PointerString));
+                EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)), 
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
@@ -6272,7 +6279,8 @@ namespace Max {
             }
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-                false, false, ASR::string_physical_typeType::PointerString));
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
         } else {
             throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
@@ -6396,11 +6404,14 @@ namespace Min {
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
-                    nullptr, false, false, ASR::string_physical_typeType::PointerString)));
+                    nullptr,
+                    ASR::string_length_kindType::ExpressionLength,
+                    ASR::string_physical_typeType::PointerString)));
             }
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
                 EXPR(ASR::make_StringLen_t(al, loc, args[0], int32, nullptr)),
-                false, false, ASR::string_physical_typeType::PointerString));
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
         } else if (ASR::is_a<ASR::Real_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Real_t(al, loc, kind)));
@@ -6435,7 +6446,8 @@ namespace Min {
             }
             return_type = TYPE(ASR::make_String_t(al, loc, 1,
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
-                false, false, ASR::string_physical_typeType::PointerString));
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
         } else {
             throw LCompilersException("Arguments to min0 must be of real, integer or character type");
         }

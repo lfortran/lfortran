@@ -38,6 +38,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             integer_add_subrout:
                                                 (ClassProcedure
@@ -68,6 +69,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             real_add_subrout:
                                                 (ClassProcedure
@@ -137,6 +139,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -156,6 +159,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             sum:
                                                 (Variable
@@ -180,6 +184,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -190,7 +195,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 complextype
                                                     )
                                                     ()
@@ -201,11 +209,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     integer_add_subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 complextype
                                         )
                                         (Integer 4)
@@ -236,7 +248,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling integer_add_subrout"
-                                            (String 1 (IntegerConstant 27 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (Assignment
@@ -342,6 +354,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -361,6 +374,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             sum:
                                                 (Variable
@@ -385,6 +399,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -395,7 +410,10 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (ClassType
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
                                                         2 complextype
                                                     )
                                                     ()
@@ -406,11 +424,15 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                 )
                                         })
                                     real_add_subrout
                                     (FunctionType
-                                        [(ClassType
+                                        [(StructType
+                                            []
+                                            []
+                                            .false.
                                             2 complextype
                                         )
                                         (Real 4)
@@ -441,7 +463,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling real_add_subrout"
-                                            (String 1 (IntegerConstant 24 (Integer 4) Decimal) .false. .false. PointerString)
+                                            (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
                                         )
                                     )
                                     (Assignment
@@ -578,6 +600,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -602,6 +625,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             complextype:
                                 (ExternalSymbol
@@ -631,6 +655,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fptwo:
                                 (Variable
@@ -650,6 +675,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             fpzero:
                                 (Variable
@@ -669,6 +695,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             ione:
                                 (Variable
@@ -688,6 +715,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             izero:
                                 (Variable
@@ -707,6 +735,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 ),
                             negfpone:
                                 (Variable
@@ -726,6 +755,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                 )
                         })
                     generic_name_01
@@ -826,7 +856,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )
@@ -896,7 +926,7 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () .false. .false. CString)
+                            (String 1 () ExpressionLength CString)
                             ()
                         )
                     )

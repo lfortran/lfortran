@@ -541,7 +541,7 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt, ASRUtils::get_class_proc_nopass_val((*x).m_name)));
+                            x->m_dt));
         new_func_calls.insert(*current_expr);
     }
 
@@ -590,7 +590,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
-                                    nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name))));
+                                    nullptr, false)));
         }
 };
 

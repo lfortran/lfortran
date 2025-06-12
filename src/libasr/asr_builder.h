@@ -107,7 +107,8 @@ class ASRBuilder {
     #define logical      ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))
     #define character(x) ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,\
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
-                            al, loc, x, int32)),false, false,\
+                            al, loc, x, int32)),\
+                            ASR::string_length_kindType::ExpressionLength,\
                             ASR::string_physical_typeType::PointerString))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
@@ -408,6 +409,10 @@ class ASRBuilder {
 
     inline ASR::expr_t* BitLshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
         return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::BitLShift, bits, t, nullptr));
+    }
+
+    inline ASR::expr_t* LBitRshift(ASR::expr_t* n, ASR::expr_t* bits, ASR::ttype_t* t) {
+        return EXPR(ASR::make_IntegerBinOp_t(al, loc, n, ASR::binopType::LBitRShift, bits, t, nullptr));
     }
 
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
@@ -844,8 +849,8 @@ class ASRBuilder {
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::expr_t *>& args,
@@ -853,20 +858,19 @@ class ASRBuilder {
         Vec<ASR::call_arg_t> args_; args_.reserve(al, 2);
         visit_expr_list(al, args, args_);
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args_.p, args_.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args_.p, args_.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type, ASR::expr_t* value) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, value, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, value, nullptr));
     }
 
     ASR::stmt_t* SubroutineCall(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args) {
         return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                s, s, args.p, args.size(), nullptr, nullptr, false, false));
+                s, s, args.p, args.size(), nullptr, nullptr, false));
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
@@ -1158,6 +1162,24 @@ class ASRBuilder {
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types)),
+           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        SetChar dep_1; dep_1.reserve(al, 1);
+        Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
+            body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+
+    ASR::symbol_t* create_c_func_subroutines_with_return_type(std::string c_func_name, SymbolTable* fn_symtab, int n_args, std::vector<ASR::ttype_t*> arg_types,
+            ASR::ttype_t* return_type) {
+        SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
+        Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
+        for (int i = 0; i < n_args; i++) {
+            args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
+                ASR::intentType::InOut, ASR::abiType::BindC, true));
+        }
+        ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
+           return_type,
            ASRUtils::intent_return_var, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
