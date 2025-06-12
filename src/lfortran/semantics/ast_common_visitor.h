@@ -7403,7 +7403,22 @@ public:
 
                 throw SemanticAbort();
             }
-            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
+
+            ASR::expr_t *index = ASRUtils::EXPR(tmp);
+            ASR::expr_t* val = ASRUtils::expr_value(index);
+            if (val && ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                if (ASR::down_cast<ASR::IntegerConstant_t>(val)->m_n < 0) {
+                    // Replace `x[-1]` to `x[len(x)+(-1)]`
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                                    al, x.base.base.loc, 4));
+                    ASR::expr_t *list_len = ASRUtils::EXPR(ASR::make_ListLen_t(
+                                al, x.base.base.loc, args[0], int_type, nullptr));
+                    ASR::expr_t *neg_idx = ASRUtils::expr_value(index);
+                    index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                        list_len, ASR::binopType::Add, neg_idx, int_type, nullptr));
+                }
+            }
+            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], index,
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
         } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
@@ -7422,6 +7437,46 @@ public:
             /*return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],*/
             /*                            ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);*/
             return ASR::make_DictItem_t(al, x.base.base.loc, args[0], args[1], nullptr, dict_type->m_value_type, nullptr);
+        } else if (ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(args[0]))) {
+
+            ASR::expr_t *value = ASRUtils::expr_value(args[1]), *index_expr = args[1];
+            ASR::Tuple_t *tuple_type = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(args[0]));
+            int index;
+
+            if (!value) {
+                std::string type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+                diag.add(Diagnostic("Runtime indexing with type '" + type_str + "' is not possible",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                diag.add(Diagnostic("Tuple indices must be of constant integers",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            index = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            int tuple_size =  tuple_type->n_type;
+            if (index < 0) {
+                index = tuple_size + index;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4));
+                index_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, value->base.loc, index, int_type));
+            }
+            if (index >= tuple_size || index < 0) {
+                diag.add(Diagnostic("Tuple index out of bounds",
+                                    Level::Error, Stage::Semantic, {Label("", {value->base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            return ASR::make_TupleItem_t(al, x.base.base.loc, args[0], index_expr, tuple_type->m_type[index], nullptr);
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
