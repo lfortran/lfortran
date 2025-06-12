@@ -1907,7 +1907,21 @@ public:
         src = r;
     }
 
-    // void visit_BitCast(const ASR::BitCast_t &x) {}
+    void visit_BitCast(const ASR::BitCast_t &x) {
+        std::string r = "transfer(";
+        visit_expr(*x.m_source);
+        r += src;
+        r += ", ";
+        visit_expr(*x.m_mold);
+        r += src;
+        if (x.m_size) {
+            r += ", ";
+            visit_expr(*x.m_size);
+            r += src;
+        }
+        r += ")";
+        src = r;
+    }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         std::string r;
