@@ -4686,3 +4686,7 @@ llvm = true
 [[test]]
 filename = "../integration_tests/volatile_03.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/constant_fold.f90"
+llvm = true

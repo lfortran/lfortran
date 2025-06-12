@@ -299,7 +299,17 @@ public:
         // head
         start_new_block(loophead); {
             llvm::Value* cond = condition();
-            builder->CreateCondBr(cond, loopbody, loopend);
+            if (llvm::ConstantInt* CI = llvm::dyn_cast<llvm::ConstantInt>(cond)) {
+                if (CI->isZero()) {
+                    // Constant false -> skip body
+                    builder->CreateBr(loopend);
+                } else {
+                    // Constant true -> always enter body
+                    builder->CreateBr(loopbody);
+                }
+            } else {
+                builder->CreateCondBr(cond, loopbody, loopend);
+            }
         }
 
         // body
