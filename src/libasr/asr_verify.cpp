@@ -54,12 +54,13 @@ private:
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
     bool symbol_visited;
+    bool dimension_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false} {}
+        diagnostics{diagnostics}, symbol_visited{false}, dimension_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -1078,8 +1079,9 @@ public:
     void visit_FunctionType(const FunctionType_t& x) {
 
         #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
+            dimension_visited = false; \
             visit_ttype(*ttype); \
-            require(symbol_visited == false, \
+            require(symbol_visited == false || dimension_visited == true, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 
@@ -1209,6 +1211,7 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
+        dimension_visited = true;
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
