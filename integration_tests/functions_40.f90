@@ -6,6 +6,7 @@ module mod2_functions_40_interfaces
   interface 
      subroutine some_routine(a)
        use mod1_functions_40_integers
+       ! symbol present in dimension, hence in FunctionType ASR node
        real(8), dimension(n:,:) ::  a
      end subroutine some_routine
   end interface
