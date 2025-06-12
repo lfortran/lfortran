@@ -4472,9 +4472,9 @@ public:
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
         ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
 
-
         if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
             // ONLY supposed to be used for LFortran specific types
+
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
 
             if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
@@ -4778,12 +4778,6 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            }  else if (derived_type_name == "_lfortran_test_dict") {
-                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                                                       ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-            } else if (derived_type_name == "_lfortran_test_dict_r") {
-                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                                                       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)))); 
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
