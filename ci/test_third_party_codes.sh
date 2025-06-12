@@ -147,8 +147,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   cd stdlib-fortran-lang
   export PATH="$(pwd)/../src/bin:$PATH"
 
-  git checkout n-lf-10
-  git checkout b05cdf222cc1e015a8c838506095db9d2a2507f6
+  git checkout n-lf-11
+  git checkout bb53a0c84985797def6f49bc68bf6737666e6c8a
   micromamba install -c conda-forge fypp
 
   git clean -fdx
