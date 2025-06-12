@@ -2700,28 +2700,47 @@ public:
                     switch (pad_physical_type) {
                         case ASR::array_physical_typeType::FixedSizeArray: {
                             if (pad_elements > 0) {
-                                int pad_array_size = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_default_value));
-                
+                                int pad_array_size_val = ASRUtils::get_fixed_size_of_array(ASRUtils::expr_type(x.m_default_value));
+                                llvm::Value* pad_array_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), pad_array_size_val);
                                 llvm::Value* pad_start_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), original_size);
-                                llvm::Value* pad_ptr = builder->CreateGEP(
-                                    llvm_data_type, target_, pad_start_idx);
+                                llvm::Value* pad_ptr = builder->CreateGEP(llvm_data_type, target_, pad_start_idx);
 
-                                std::vector<llvm::Value*> pad_values;
-                                for (int i = 0; i < pad_array_size; ++i) {
-                                    llvm::Value* pad_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), i);
-                                    llvm::Value* pad_elem_ptr = builder->CreateGEP(
-                                        llvm_data_type, pad, pad_idx);
-                                    llvm::Value* pad_val = builder->CreateLoad(llvm_data_type, pad_elem_ptr);
-                                    pad_values.push_back(pad_val);
-                                }
-                
-                                for (int64_t i = 0; i < pad_elements; ++i) {
-                                    llvm::Value* offset = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), i);
-                                    llvm::Value* dst_ptr = builder->CreateGEP(
-                                        llvm_data_type, pad_ptr, offset);
-                                    llvm::Value* pad_val = pad_values[i % pad_array_size];
-                                    builder->CreateStore(pad_val, dst_ptr);
-                                }
+                                llvm::Function* func = builder->GetInsertBlock()->getParent();
+                                llvm::BasicBlock* loop_cond = llvm::BasicBlock::Create(context, "loop.cond", func);
+                                llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "loop.body", func);
+                                llvm::BasicBlock* loop_end  = llvm::BasicBlock::Create(context, "loop.end", func);
+
+                                llvm::Value* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                                llvm::Value* pad_elements_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), pad_elements);
+
+                                llvm::AllocaInst* i_alloc = builder->CreateAlloca(llvm::Type::getInt32Ty(context), nullptr, "i");
+                                builder->CreateStore(zero, i_alloc);
+
+                                builder->CreateBr(loop_cond);
+
+                                builder->SetInsertPoint(loop_cond);
+                                llvm::Value* i_val = builder->CreateLoad(llvm::Type::getInt32Ty(context), i_alloc, "i_val");
+                                llvm::Value* cond = builder->CreateICmpSLT(i_val, pad_elements_val);
+                                builder->CreateCondBr(cond, loop_body, loop_end);
+
+                                builder->SetInsertPoint(loop_body);
+
+                                llvm::Value* dst_ptr = builder->CreateGEP(llvm_data_type, pad_ptr, i_val);
+                                llvm::Value* pad_idx = builder->CreateSRem(i_val, pad_array_size);
+                                llvm::Value* zero_idx = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                                llvm::Value* gep_indices[] = { zero_idx, pad_idx };
+
+                                llvm::Value* pad_elem_ptr = builder->CreateGEP(
+                                    pad->getType()->getPointerElementType(), pad, gep_indices, "pad_elem_ptr");
+
+                                llvm::Value* pad_val = builder->CreateLoad(llvm_data_type, pad_elem_ptr);
+                                builder->CreateStore(pad_val, dst_ptr);
+
+                                llvm::Value* i_next = builder->CreateAdd(i_val, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1));
+                                builder->CreateStore(i_next, i_alloc);
+                                builder->CreateBr(loop_cond);
+
+                                builder->SetInsertPoint(loop_end);
                             }
                             break;
                         }
