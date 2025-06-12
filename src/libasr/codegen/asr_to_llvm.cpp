@@ -8365,7 +8365,9 @@ public:
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
         } else {
             llvm::Type* target_llvm_type = target_base_type->getPointerTo();
-            if ( source_ptr->getType() != target_llvm_type ) {
+            if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type), false) &&
+                 !( ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) && ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
+                   ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1 ) ) {
                 tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
             }
         }
