@@ -7678,6 +7678,43 @@ public:
             ASR::make_Dict_t(al, x.base.base.loc, type.first, type.second)));
     }
 
+    ASR::asr_t* create_TupleConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_tuple_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_tuple_constant expects atleast one argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        AST::expr_t* source = nullptr;
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 1);
+        
+        Vec<ASR::ttype_t *> type_vec;
+        type_vec.reserve(al, 1);
+
+        for (size_t i=0;i<x.n_args;i++) {
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            args.push_back(al, arg);
+
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            type_vec.push_back(al, arg_type);
+        }
+
+
+        return ASR::make_TupleConstant_t(al, x.base.base.loc, args.p, args.n, 
+                                        ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, 
+                                                                         type_vec.p, type_vec.n)));
+    }
+
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"source", "mold", "size"};
@@ -8504,6 +8541,8 @@ public:
                     tmp = create_SetConstant(x);
                 else if ( var_name == "_lfortran_dict_constant")
                     tmp = create_DictConstant(x);
+                else if ( var_name == "_lfortran_tuple_constant")
+                    tmp = create_TupleConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }
