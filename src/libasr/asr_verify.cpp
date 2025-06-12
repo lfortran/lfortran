@@ -1078,6 +1078,9 @@ public:
 
     void visit_FunctionType(const FunctionType_t& x) {
 
+        // we use `dimension_visited` because we can have symbol present in
+        // dimension of ttype as well, which is a valid ASR, see:
+        // integration_tests/functions_40.f90
         #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
             dimension_visited = false; \
             visit_ttype(*ttype); \
