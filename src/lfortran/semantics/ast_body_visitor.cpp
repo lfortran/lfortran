@@ -1066,6 +1066,7 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
+            is_side_effect_free = is_side_effect_free && !ASRUtils::does_expression_contain_global_var(expr);
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
                 expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
             }
@@ -1185,6 +1186,7 @@ public:
     }
 
     void visit_Write(const AST::Write_t& x) {
+        is_side_effect_free = false;
         create_read_write_ASR_node(x.base, x.class_type);
     }
 
@@ -2721,6 +2723,8 @@ public:
     }
 
     void visit_Function(const AST::Function_t &x) {
+        bool is_side_effect_free_copy = is_side_effect_free;
+        is_side_effect_free = true;
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
@@ -2776,6 +2780,8 @@ public:
         v->n_body = body.size();
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
+        v->m_side_effect_free = is_side_effect_free;
+        is_side_effect_free = is_side_effect_free_copy;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope);
 
@@ -3141,6 +3147,7 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+        is_side_effect_free = is_side_effect_free && !ASRUtils::does_expression_contain_global_var(target);
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
@@ -4515,6 +4522,7 @@ public:
     }
 
     void visit_Print(const AST::Print_t &x) {
+        is_side_effect_free = false;
         Vec<ASR::expr_t*> body;
         body.reserve(al, x.n_values);
         ASR::expr_t *fmt=nullptr;

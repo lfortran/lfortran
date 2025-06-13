@@ -71,6 +71,8 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
+bool does_expression_contain_global_var(ASR::expr_t* expr);
+
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -360,6 +362,7 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
 {
     return ASR::expr_type0(f);
 }
+
 
 static inline ASR::ttype_t* subs_expr_type(std::map<std::string, ASR::ttype_t*> subs,
         const ASR::expr_t *expr) {

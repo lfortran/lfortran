@@ -282,6 +282,33 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     }
 }
 
+bool does_expression_contain_global_var(ASR::expr_t* expr) {
+
+    class ExpressionVisitor : public ASR::BaseWalkVisitor<ExpressionVisitor> {
+        public:
+        bool &contain_global_var;
+
+        ExpressionVisitor(bool &contain_global_var) : contain_global_var(contain_global_var) {}
+
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t* sym = x.m_v;
+            if (sym == nullptr) {
+                return;
+            }
+            if (ASRUtils::symbol_parent_symtab(sym)->counter == 1) {
+                contain_global_var = true;
+                return;
+            }
+        }
+    };
+
+    bool contain_global_var = false;
+    ExpressionVisitor visitor(contain_global_var);
+    if ( expr == nullptr ) return false;
+    visitor.visit_expr(*expr);
+    return contain_global_var;
+}
+
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
     LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
     for (auto &a : m.m_symtab->get_scope()) {
