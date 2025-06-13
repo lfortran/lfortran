@@ -1956,10 +1956,9 @@ public:
         llvm::Value *item = tmp;
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
-    void ASRToLLVMVisitor::visit_StructConstructor(const ASR::StructConstructor_t &x) {
-    ASR::symbol_t *dt_sym = ASRUtils::get_struct_type(x.m_type);
-
-    llvm::Type *llvm_type = LLVMUtils::get_llvm_type_from_ttype_t(x.m_type, module.get(), context);
+    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    ASR::symbol_t *dt_sym = ASR::down_cast<ASR::Struct_t>(x.m_type)->m_derived_type;
+    llvm::Type *llvm_type = this->getLLVMType(x.m_type);
     llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
 
     for (size_t i = 0; i < x.n_args; i++) {
