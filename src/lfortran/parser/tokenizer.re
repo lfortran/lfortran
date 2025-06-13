@@ -529,6 +529,8 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             'write' { KW(WRITE) }
             '_lfortran_list' { KW(LF_LIST) }
             '_lfortran_set' { KW(LF_SET) }
+            '_lfortran_dict' { KW(LF_DICT) }
+            '_lfortran_tuple' { KW(LF_TUPLE) }
 
             // Tokens
             newline {

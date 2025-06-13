@@ -306,6 +306,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
 #define ATTR_NAME(x, l) make_AttrNamelist_t \
             (p.m_a, l, name2char(x))
 
+#define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            VEC_CAST(attr_list, decl_attribute), \
+            attr_list.n)
+
 #define IMPORT0(x, trivia, l) make_Import_t( \
             p.m_a, l, \
             nullptr, 0, \

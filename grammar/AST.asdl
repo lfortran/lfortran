@@ -288,6 +288,7 @@ decl_attribute
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
         identifier? name, symbol sym)
+    | AttrTypeList(decl_type type, decl_attribute* attr)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
@@ -338,6 +339,8 @@ decl_type
     | TypeType
     | TypeLF_List
     | TypeLF_Set
+    | TypeLF_Dict
+    | TypeLF_Tuple
 
 event_attribute
     = AttrStat(identifier variable)

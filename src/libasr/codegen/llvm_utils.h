@@ -606,6 +606,12 @@ namespace LCompilers {
             llvm::Value* read_item(llvm::Value* llvm_tuple, size_t pos,
                                    bool get_pointer=false);
 
+            llvm::Value* read_item2(llvm::Type* el_type, llvm::Value* llvm_tuple, llvm::Value* pos,
+                                   bool get_pointer=false);
+
+            llvm::Value* read_item2(llvm::Type* el_type, llvm::Value* llvm_tuple, size_t pos,
+                                   bool get_pointer=false);
+
             void tuple_deepcopy(llvm::Value* src, llvm::Value* dest,
                                 ASR::Tuple_t* type_code, llvm::Module* module,
                                 std::map<std::string, std::map<std::string, int>>& name2memidx);
