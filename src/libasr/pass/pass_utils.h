@@ -176,10 +176,10 @@ namespace LCompilers {
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return ((ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
-                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var))) ||
-                    ASRUtils::is_array(ASRUtils::expr_type(var)) ||
-                    ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
+            return (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type((var))))
+                    || ASRUtils::is_array(ASRUtils::expr_type(var))
+                    || ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
         
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
