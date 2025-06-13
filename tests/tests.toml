@@ -4686,3 +4686,8 @@ llvm = true
 [[test]]
 filename = "../integration_tests/volatile_03.f90"
 llvm = true
+
+[[test]]
+filename = "codegen_function_polymorphic.f90"
+llvm = true
+options = "-c --generate-object-code"
