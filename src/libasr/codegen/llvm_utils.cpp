@@ -2246,7 +2246,7 @@ namespace LCompilers {
                         dest = create_gep2(name2dertype[struct_sym->m_name], dest, 0);
 
                         ASR::Struct_t* parent_struct_type_t =
-                            ASR::down_cast<ASR::Struct_t>(struct_sym->m_parent);
+                            ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
 
                         der_type_name = parent_struct_type_t->m_name;
                         struct_sym = parent_struct_type_t;
