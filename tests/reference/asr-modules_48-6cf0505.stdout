@@ -977,7 +977,7 @@
                                     (Var 4 hash)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             fnv_1a_string_t:
@@ -1263,7 +1263,7 @@
                                     (Var 5 hash)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             is_fortran_name:
@@ -1656,7 +1656,7 @@
                                     (Var 6 lout)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_cat:
@@ -2035,7 +2035,7 @@
                                     (Var 7 cat)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_t:

@@ -255,7 +255,7 @@
                                     (Var 5 character_string)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             len:
@@ -342,7 +342,7 @@
                                     (Var 4 length)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_type:
@@ -505,7 +505,7 @@
                                     (Var 7 lps_array)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             compute_lps_use:
@@ -875,7 +875,7 @@
                                     (Var 12 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             padl_char_pad_with:
@@ -1040,7 +1040,7 @@
                                     (Var 13 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             padl_string_default:
@@ -1271,7 +1271,7 @@
                                     (Var 10 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             padl_string_pad_with:
@@ -1521,7 +1521,7 @@
                                     (Var 11 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_type:

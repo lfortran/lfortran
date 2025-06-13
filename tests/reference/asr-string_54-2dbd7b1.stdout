@@ -184,7 +184,7 @@
                                     (Var 3 ret)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             foo_sub:

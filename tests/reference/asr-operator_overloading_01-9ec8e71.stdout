@@ -464,7 +464,7 @@
                                     (Var 4 bin_add)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             logical_and:
@@ -567,7 +567,7 @@
                                     (Var 3 logical_and)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             ~add:

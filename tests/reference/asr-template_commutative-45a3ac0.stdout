@@ -246,7 +246,7 @@
                                                     (Var 13 prop)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -648,7 +648,7 @@
                                                     (Var 9 prop)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:

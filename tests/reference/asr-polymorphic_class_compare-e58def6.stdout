@@ -147,7 +147,7 @@
                                     (Var 4 eq)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             map_s_iter_not_equal:
@@ -289,7 +289,7 @@
                                     (Var 5 ne)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             map_setiterator:

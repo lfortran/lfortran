@@ -287,7 +287,7 @@
                                                     (Var 14 r)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             mysum_t_n:
@@ -485,7 +485,7 @@
                                                     (Var 15 r)
                                                     Private
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             plus_t:
@@ -1640,7 +1640,7 @@
                                     (Var 3 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             add_real:
@@ -1743,7 +1743,7 @@
                                     (Var 5 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -1818,7 +1818,7 @@
                                     (Var 4 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             zero_real:
@@ -1901,7 +1901,7 @@
                                     (Var 6 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })

@@ -72,7 +72,7 @@
                                     (Var 5 a)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             b:
@@ -148,7 +148,7 @@
                                     (Var 3 b)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })

@@ -107,7 +107,7 @@
                                     (Var 3 result)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             max_integer:
@@ -211,7 +211,7 @@
                                     (Var 5 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             min_integer:
@@ -315,7 +315,7 @@
                                     (Var 6 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             minus_integer:
@@ -418,7 +418,7 @@
                                     (Var 4 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             one_integer:
@@ -473,7 +473,7 @@
                                     (Var 8 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -528,7 +528,7 @@
                                     (Var 7 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -642,7 +642,7 @@
                                     (Var 10 result)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             max_real:
@@ -746,7 +746,7 @@
                                     (Var 13 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             min_real:
@@ -850,7 +850,7 @@
                                     (Var 14 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             minus_real:
@@ -953,7 +953,7 @@
                                     (Var 11 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             one_real:
@@ -1011,7 +1011,7 @@
                                     (Var 16 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             slash_real:
@@ -1114,7 +1114,7 @@
                                     (Var 12 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             zero_real:
@@ -1172,7 +1172,7 @@
                                     (Var 15 result)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -1761,7 +1761,7 @@
                                                     (Var 22 result)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             triple_r:
@@ -1864,7 +1864,7 @@
                                                     (Var 23 result)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 )
                                         })

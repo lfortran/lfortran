@@ -54,7 +54,7 @@
                     (Var 2 f)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             g:
@@ -109,7 +109,7 @@
                     (Var 3 g)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             h:
@@ -164,7 +164,7 @@
                     (Var 4 h)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 )
         })

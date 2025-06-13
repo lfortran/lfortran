@@ -300,7 +300,7 @@
                                     (Var 5 trimmed_string)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             ~assign:
@@ -448,7 +448,7 @@
                                     (Var 7 chomped_string)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_type:

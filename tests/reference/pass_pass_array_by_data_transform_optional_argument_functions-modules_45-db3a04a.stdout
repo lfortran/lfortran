@@ -1409,7 +1409,7 @@
                                     (Var 5 profile)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             profile_config_t:

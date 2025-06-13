@@ -145,7 +145,7 @@
                                     (Var 4 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             eval_1d_prime:
@@ -329,7 +329,7 @@
                                     (Var 5 res)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             softmax:

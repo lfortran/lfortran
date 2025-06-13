@@ -515,7 +515,7 @@
                                     (Var 11 distance)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             point_dist_subrout:

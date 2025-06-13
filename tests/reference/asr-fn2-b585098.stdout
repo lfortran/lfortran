@@ -49,7 +49,7 @@
                     (Var 2 a)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             b:
@@ -99,7 +99,7 @@
                     (Var 3 b)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             c:
@@ -149,7 +149,7 @@
                     (Var 4 c)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             d:
@@ -199,7 +199,7 @@
                     (Var 5 r)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             e:
@@ -249,7 +249,7 @@
                     (Var 6 r)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 ),
             f:
@@ -299,7 +299,7 @@
                     (Var 7 r)
                     Public
                     .false.
-                    .false.
+                    .true.
                     ()
                 )
         })

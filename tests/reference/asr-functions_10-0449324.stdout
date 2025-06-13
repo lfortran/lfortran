@@ -157,7 +157,7 @@
                                     (Var 3 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             merger32:
@@ -301,7 +301,7 @@
                                     (Var 4 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             merger64:
@@ -445,7 +445,7 @@
                                     (Var 5 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })

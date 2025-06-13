@@ -154,7 +154,7 @@
                                     (Var 7 res)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             cast_r:
@@ -339,7 +339,7 @@
                                     (Var 8 res)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             generic_sum:
@@ -736,7 +736,7 @@
                                                     (Var 12 res)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

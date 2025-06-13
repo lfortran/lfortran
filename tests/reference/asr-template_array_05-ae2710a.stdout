@@ -1278,7 +1278,7 @@
                                                     (Var 12 r)
                                                     Public
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             matrix:
@@ -1812,7 +1812,7 @@
                                                     (Var 8 r)
                                                     Private
                                                     .false.
-                                                    .false.
+                                                    .true.
                                                     ()
                                                 ),
                                             n:

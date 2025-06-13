@@ -229,7 +229,7 @@
                                     (Var 13 s)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             f_string_cptr_n:
@@ -325,7 +325,7 @@
                                     (Var 15 s)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -409,7 +409,7 @@
                                     (Var 12 f_string)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             string_t:

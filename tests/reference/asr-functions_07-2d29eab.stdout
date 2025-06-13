@@ -200,7 +200,7 @@
                                     (Var 3 v)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -312,7 +312,7 @@
                                     (Var 5 y)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })
@@ -434,7 +434,7 @@
                                     (Var 7 z)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 )
                         })

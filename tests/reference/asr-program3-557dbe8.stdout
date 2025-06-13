@@ -121,7 +121,7 @@
                                     (Var 3 c)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             func2:
@@ -224,7 +224,7 @@
                                     (Var 4 c)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             x:

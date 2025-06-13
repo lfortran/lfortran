@@ -171,7 +171,7 @@
                                     (Var 3 b)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             f_real:
@@ -263,7 +263,7 @@
                                     (Var 4 b)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             p:
@@ -484,7 +484,7 @@
                                     (Var 5 r)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             x:

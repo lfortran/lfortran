@@ -205,7 +205,7 @@
                                     (Var 8 less)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             compare_less:

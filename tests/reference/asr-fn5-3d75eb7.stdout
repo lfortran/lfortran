@@ -213,7 +213,7 @@
                                     (Var 3 strout)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             print_dictionary:
