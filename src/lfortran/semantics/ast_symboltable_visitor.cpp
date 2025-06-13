@@ -1,7 +1,6 @@
 #include <iostream>
 #include <map>
 #include <string>
-#include <cmath>
 #include <queue>
 
 #include <lfortran/ast.h>
@@ -35,6 +34,7 @@ public:
     std::vector<std::string> assgn_proc_names;
     std::vector<std::pair<std::string,Location>> simd_variables;
     std::map<std::string, std::vector<AST::arg_t>> entry_function_args;
+    std::map<SymbolTable*, std::vector<const AST::unit_decl2_t*>> var_decl_dependent_on_proc_calls;
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
@@ -348,6 +348,29 @@ public:
         add_class_procedures();
         add_generic_class_procedures();
         add_assignment_procedures();
+
+        SymbolTable* current_scope_copy = current_scope;
+        for (auto &pair : var_decl_dependent_on_proc_calls) {
+            current_scope = pair.first;
+            for (size_t i = 0; i < pair.second.size(); i++) {
+                try {
+                    visit_unit_decl2(*pair.second[i]);
+                    if (current_function_dependencies.p
+                        && current_scope->asr_owner 
+                        && ASR::is_a<ASR::Function_t>(
+                            *ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner))) {
+                        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(
+                            ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                        fn->m_dependencies = current_function_dependencies.p;
+                        fn->n_dependencies = current_function_dependencies.size();
+                    }
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+        }
+        current_scope = current_scope_copy;
+
         tmp = tmp0;
         // Add module dependencies
         R *m = ASR::down_cast2<R>(tmp);
@@ -831,6 +854,39 @@ public:
         return master_args;
     }
 
+    template <typename T>
+    bool check_and_defer_var_decls(const T x, const AST::Declaration_t& decl,
+                                   std::vector<const AST::unit_decl2_t*> &var_decls,
+                                   size_t decl_idx)
+    {
+        bool continue_loop = false;
+        for (size_t m = 0; m < decl.n_attributes; m++) {
+            if (continue_loop) {
+                break;
+            }
+            if (decl.m_attributes[0]->type == AST::decl_attributeType::AttrDimension) {
+                AST::AttrDimension_t* dim = AST::down_cast<AST::AttrDimension_t>(decl.m_attributes[0]);
+                for (size_t n = 0; n < dim->n_dim; n++) {
+                    if (dim->m_dim[n].m_end && AST::is_a<AST::FuncCallOrArray_t>(*dim->m_dim[n].m_end)) {
+                        // deferr variable declarations dependent on a procedure call
+                        AST::FuncCallOrArray_t* func_call_or_array = AST::down_cast<AST::FuncCallOrArray_t>(dim->m_dim[n].m_end);
+                        if (!is_intrinsic_registry_function(func_call_or_array->m_func)
+                            && !is_intrinsic_registry_subroutine(func_call_or_array->m_func)) {
+                                var_decls.push_back(x.m_decl[decl_idx]);
+                                continue_loop = true;
+                                break;
+                        }
+                    }
+                }
+            }
+        }
+        if (continue_loop) {
+            continue_loop = false;
+            return true;
+        }
+        return false;
+    };
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -929,6 +985,7 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        std::vector<const AST::unit_decl2_t*> var_decls;
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
@@ -941,6 +998,13 @@ public:
                         continue;
                     }
                 }
+                
+                if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                    if(check_and_defer_var_decls(x, decl, var_decls, i)) {
+                        continue;
+                    }
+                }
+
             }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
@@ -951,6 +1015,8 @@ public:
             }
             is_Function = false;
         }
+        var_decl_dependent_on_proc_calls[current_scope] = var_decls;
+
         process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
@@ -1340,6 +1406,7 @@ public:
             }
         }
         Vec<size_t> procedure_decl_indices; procedure_decl_indices.reserve(al, 0);
+        std::vector<const AST::unit_decl2_t*> var_decls;
         for (size_t i=0; i<x.n_decl; i++) {
             is_Function = true;
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
@@ -1352,12 +1419,21 @@ public:
                         continue;
                     }
                 }
+
+                if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
+                    if(check_and_defer_var_decls(x, decl, var_decls, i)) {
+                        continue;
+                    }
+                }
             }
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 visit_unit_decl2(*x.m_decl[i]);
             }
             is_Function = false;
         }
+
+        var_decl_dependent_on_proc_calls[current_scope] = var_decls;
+
         process_simd_variables();
         for (size_t i=0; i<x.n_contains; i++) {
             bool current_storage_save = default_storage_save;
