@@ -243,7 +243,7 @@ ifcont22:                                         ; preds = %else21, %then20
   br label %c.head
 
 c.head:                                           ; preds = %ifcont26, %ifcont22
-  br i1 true, label %c.body, label %c.end
+  br label %c.body
 
 c.body:                                           ; preds = %c.head
   %84 = load i32, i32* %j2, align 4
@@ -269,7 +269,7 @@ ifcont26:                                         ; preds = %else25, %unreachabl
   store i32 %90, i32* %i1, align 4
   br label %c.head
 
-c.end:                                            ; preds = %then23, %c.head
+c.end:                                            ; preds = %then23
   %91 = load i32, i32* %j2, align 4
   %92 = icmp ne i32 %91, 3
   br i1 %92, label %then27, label %else28
