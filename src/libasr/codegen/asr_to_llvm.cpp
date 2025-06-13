@@ -1956,20 +1956,37 @@ public:
         llvm::Value *item = tmp;
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
-    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
-    ASR::symbol_t *dt_sym = ASRUtils::symbol_get_past_external(x.m_dt);
+void visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    // Extract struct symbol
+    ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(x.m_type);
+    ASR::symbol_t* dt_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
 
+    // Prepare args for type generation
+    bool is_array_type_local = false;
+    bool is_malloc_array_type_local = false;
+    bool is_list_local = false;
+    ASR::dimension_t* m_dims_local = nullptr;
+    int n_dims_local = 0;
+    int a_kind_local = 0;
+
+    // Get LLVM type
     llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t(
         x.m_type,
         nullptr,
         ASR::storage_typeType::Default,
-        false, false, false,
-        nullptr, 0, 0,
+        is_array_type_local,
+        is_malloc_array_type_local,
+        is_list_local,
+        m_dims_local,
+        n_dims_local,
+        a_kind_local,
         module.get()
     );
 
+    // Allocate space
     llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
 
+    // Populate fields
     for (size_t i = 0; i < x.n_args; i++) {
         this->visit_expr(*x.m_args[i].m_value);
         llvm::Value *val = tmp;
