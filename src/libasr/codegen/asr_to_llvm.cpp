@@ -1957,8 +1957,9 @@ public:
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
     void visit_StructConstructor(const ASR::StructConstructor_t &x) {
-    ASR::symbol_t *dt_sym = ASR::down_cast<ASR::Struct_t>(x.m_type)->m_derived_type;
-    llvm::Type *llvm_type = this->getLLVMType(x.m_type);
+    ASR::Derived_t* d_type = ASR::down_cast<ASR::Derived_t>(x.m_type);
+    ASR::symbol_t* dt_sym = d_type->m_derived_type;
+    llvm::Type *llvm_type = llvm_utils->get_llvm_type_from_ttype_t(x.m_type, module.get(), context);
     llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
 
     for (size_t i = 0; i < x.n_args; i++) {
@@ -2083,7 +2084,7 @@ public:
     void generate_DictElems(ASR::expr_t* m_arg, bool key_or_value) {
         ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(
                                     ASRUtils::expr_type(m_arg));
-        ASR::ttype_t* el_type = key_or_value == 0 ?
+        ASR::ttype_t* el_type = key_or_value == 0 
                                     dict_type->m_key_type : dict_type->m_value_type;
 
         int64_t ptr_loads_copy = ptr_loads;
