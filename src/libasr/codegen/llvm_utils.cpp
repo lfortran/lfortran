@@ -2246,7 +2246,7 @@ namespace LCompilers {
                         dest = create_gep2(name2dertype[struct_sym->m_name], dest, 0);
 
                         ASR::Struct_t* parent_struct_type_t =
-                            ASR::down_cast<ASR::Struct_t>(struct_sym->m_parent);
+                            ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(struct_sym->m_parent));
 
                         der_type_name = parent_struct_type_t->m_name;
                         struct_sym = parent_struct_type_t;
@@ -5154,7 +5154,7 @@ namespace LCompilers {
         // LLVMList should treat them as data members and create them
         // only if they are NULL
         llvm::AllocaInst *tmp_ptr = llvm_utils->CreateAlloca(el_type);
-        LLVM::CreateStore(*builder, read_item(list, pos, false, module, false), tmp_ptr);
+        LLVM::CreateStore(*builder, read_item2(type_code, list, pos, false, module, false), tmp_ptr);
         llvm::Value* tmp = nullptr;
 
         // TODO: Should be created outside the user loop and not here.
@@ -5183,8 +5183,8 @@ namespace LCompilers {
             llvm::Value* next_index = builder->CreateAdd(
                             llvm_utils->CreateLoad(pos_ptr),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            tmp = read_item(list, next_index, false, module, false);
-            write_item(list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
+            tmp = read_item2(type_code, list, next_index, false, module, false);
+            write_item2(type_code, list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
             LLVM::CreateStore(*builder, tmp, tmp_ptr);
 
             tmp = builder->CreateAdd(
@@ -5300,6 +5300,7 @@ namespace LCompilers {
         llvm::Value* item, ASR::ttype_t* item_type, llvm::Module* module,
         llvm::Value* start, llvm::Value* end) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
+        std::string type_code = ASRUtils::get_type_code(item_type);
 
         // TODO: Should be created outside the user loop and not here.
         // LLVMList should treat them as data members and create them
@@ -5340,7 +5341,7 @@ namespace LCompilers {
         // head
         llvm_utils->start_new_block(loophead);
         {
-            llvm::Value* left_arg = read_item(list, llvm_utils->CreateLoad(i),
+            llvm::Value* left_arg = read_item2(type_code, list, llvm_utils->CreateLoad(i),
                 false, module, LLVM::is_llvm_struct(item_type));
             llvm::Value* is_item_not_equal = builder->CreateNot(
                                                 llvm_utils->is_equal_by_value(
@@ -5461,6 +5462,7 @@ namespace LCompilers {
     void LLVMList::remove(llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* item_type, llvm::Module* module) {
         llvm::Type* pos_type = llvm::Type::getInt32Ty(context);
+        std::string type_code = ASRUtils::get_type_code(item_type);
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_current_end_point(list));
         // TODO: Should be created outside the user loop and not here.
@@ -5497,8 +5499,8 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(item_pos),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item(list, llvm_utils->CreateLoad(item_pos),
-                read_item(list, tmp, false, module, false), false, module);
+            write_item2(type_code, list, llvm_utils->CreateLoad(item_pos),
+                read_item2(type_code, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, item_pos);
         }
         builder->CreateBr(loophead);

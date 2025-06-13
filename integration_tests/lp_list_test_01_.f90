@@ -1,4 +1,4 @@
-module list_tests_1
+module list_test_01_mod
    implicit none
    real::eps = 1e-6
 
@@ -81,7 +81,7 @@ contains
 end module
 
 program test_list_01_
-   use list_tests_1
+   use list_test_01_mod
    implicit none
 
    call tests

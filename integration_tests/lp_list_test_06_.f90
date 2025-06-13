@@ -1,4 +1,4 @@
-module list_tests
+module list_test_06_mod
    implicit none
    real::eps = 1e-6
 
@@ -101,8 +101,8 @@ contains
    end subroutine
 end module
 
-program test_list_01_
-   use list_tests
+program test_list_06_
+   use list_test_06_mod
    implicit none
 
    call test_list_of_lists

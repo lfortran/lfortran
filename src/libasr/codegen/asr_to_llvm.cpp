@@ -1356,6 +1356,8 @@ public:
                     ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
                 if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
 
                 std::string curr_struct = ASRUtils::symbol_name(struct_sym);
@@ -2907,7 +2909,7 @@ public:
         int member_idx = name2memidx[current_der_type_name][member_name];
 
         llvm::Type *xtype = name2dertype[current_der_type_name];
-        if (ASRUtils::is_allocatable(x_m_v_type) && 
+        if ((ASRUtils::is_allocatable(x_m_v_type) || ASRUtils::is_pointer(x_m_v_type)) &&
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
             !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
             tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
@@ -6036,7 +6038,8 @@ public:
                             break;
                         }
                         this->visit_expr_wrapper(target_dims[i].m_length, true);
-                        llvm_size = builder->CreateMul(llvm_size, tmp);
+                        llvm_size = builder->CreateMul(llvm_size, builder->CreateSExtOrTrunc(tmp,
+                                llvm::Type::getInt32Ty(context)));
                     }
                 } else {
                     target_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(target));
@@ -8383,7 +8386,11 @@ public:
             tmp = builder->CreateBitCast(source_ptr, target_base_type);
         } else {
             llvm::Type* target_llvm_type = target_base_type->getPointerTo();
-            tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type), false) &&
+                 !( ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_source))) && ASRUtils::is_integer(*ASRUtils::extract_type(x.m_type)) &&
+                   ASR::down_cast<ASR::Integer_t>(ASRUtils::extract_type(x.m_type))->m_kind == 1 ) ) {
+                tmp = llvm_utils->CreateLoad2(target_base_type, builder->CreateBitCast(source_ptr, target_llvm_type));
+            }
         }
     }
 
@@ -10288,7 +10295,12 @@ public:
                                          || !ASRUtils::is_allocatable(arg_type))
                                      && (ASRUtils::is_array(arg_type)
                                          || ASR::is_a<ASR::CPtr_t>(
-                                             *ASRUtils::expr_type(x.m_args[i].m_value)))))
+                                             *ASRUtils::expr_type(x.m_args[i].m_value))))
+                                 || (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value)
+                                     && ASRUtils::is_allocatable(arg_type)
+                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
+                                     && (orig_arg->m_intent == ASR::intentType::Out
+                                         || orig_arg->m_intent == ASR::intentType::InOut)))
                                 && value->getType()->isPointerTy()) {
                                 value = llvm_utils->CreateLoad(value);
                             }
@@ -11546,7 +11558,7 @@ public:
                             load_array_size_deep_copy(m_dims[i].m_length);
                             length = tmp;
                             builder->CreateStore(
-                                builder->CreateSub(builder->CreateAdd(length, lbound),
+                                builder->CreateSub(builder->CreateSExtOrTrunc(builder->CreateAdd(length, lbound), target_type),
                                       llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                                 target);
                         }

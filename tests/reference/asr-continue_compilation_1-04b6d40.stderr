@@ -71,6 +71,12 @@ semantic error: Allocatable array 'x' must have a deferred shape or assumed rank
 84 |     character(:), allocatable :: x(2)
    |                                  ^^^^ 
 
+semantic error: Expecting a scalar integer or parameter annotated integer variable 
+  --> tests/errors/continue_compilation_1.f90:86:26
+   |
+86 |     logical :: mask_size(size(arr_size))
+   |                          ^^^^^^^^^^^^^^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:114:8
     |

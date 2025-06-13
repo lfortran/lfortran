@@ -2388,8 +2388,14 @@ public:
             Location loc;
             loc.first = 1;
             loc.last = 1;
-            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(
-                                            current_scope->get_symbol(proc.first));
+            ASR::symbol_t* proc_sym = current_scope->get_symbol(proc.first);
+            
+            // if it's an ExternalSymbol, we don't need do anything in the
+            // current translation unit, as it needs to be handled in
+            // from where it's imported from
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*proc_sym)) continue;
+
+            ASR::Struct_t *clss = ASR::down_cast<ASR::Struct_t>(proc_sym);
             for (auto &pname : proc.second) {
                 Vec<ASR::symbol_t*> cand_procs;
                 cand_procs.reserve(al, pname.second.size());

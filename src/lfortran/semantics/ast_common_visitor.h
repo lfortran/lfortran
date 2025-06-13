@@ -1290,6 +1290,8 @@ public:
         {"_lfortran_clear", IntrinsicSignature({"iterable"}, 1, 1)},
         {"_lfortran_list_append", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_list_reverse", IntrinsicSignature({"list"}, 1, 1)},
+        {"_lfortran_list_insert", IntrinsicSignature({"list", "index", "element"}, 3, 3)},
+        {"_lfortran_list_remove", IntrinsicSignature({"list", "element"}, 2, 2)},
         {"_lfortran_set_add", IntrinsicSignature({"set", "element"}, 2, 2)},
     };
 
@@ -1827,10 +1829,19 @@ public:
                     }
                 }
             }
-        } else {
-
+        } else if (ASR::is_a<ASR::ArraySize_t>(*dim_expr)){
+            ASR::ArraySize_t* dim_expr_arrsize = ASR::down_cast<ASR::ArraySize_t>(dim_expr);
+            if  (ASR::is_a<ASR::Var_t>(*dim_expr_arrsize->m_v)){
+                ASR::Var_t* arr_var = ASR::down_cast<ASR::Var_t>(dim_expr_arrsize->m_v);
+                ASR::symbol_t* arr_sym = arr_var->m_v;
+                ASR::Variable_t* arr_variable = ASR::down_cast<ASR::Variable_t>(arr_sym);
+                SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(arr_sym);
+                if ((arr_variable->m_type->type == ASR::ttypeType::Allocatable) && !(in_Subroutine) && (symbol_scope->counter == current_scope->counter)) {
+                    error = true;
+                }
+            }
+        }  else {
             ASR::ttype_t* dim_expr_type = ASRUtils::expr_type(dim_expr);
-
             if (dim_expr_type->type != ASR::ttypeType::Integer) {
                 error = true;
             }
@@ -7287,6 +7298,8 @@ public:
             diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
         }
 
         AST::expr_t* source = x.m_args[0].m_end;
@@ -7315,6 +7328,8 @@ public:
             diag.add(Diagnostic("_lfortran_get_item expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
         }
         
         Vec<ASR::expr_t *> args;
@@ -7332,6 +7347,8 @@ public:
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
                 diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
                                     Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
             }
             return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
@@ -9296,7 +9313,7 @@ public:
                     bool is_nopass = false;
                     bool is_class_procedure = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
-                        ASR::symbol_t* f4 = gp->m_procs[i];
+                        ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
                         if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
                             diag.add(Diagnostic(std::string(ASRUtils::symbol_name(f4)) +
                             " is not a function.",

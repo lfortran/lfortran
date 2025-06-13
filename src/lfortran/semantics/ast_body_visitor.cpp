@@ -1589,7 +1589,7 @@ public:
                     ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
                     if ( ASRUtils::check_equal_type(mold_type, a_type) ) {
                         if (ASRUtils::is_array(mold_type)) {
-                            if (ASR::is_a<ASR::Array_t>(*mold_type)) {
+                            if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                 ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
                                 ASR::alloc_arg_t new_arg;
                                 new_arg.loc = alloc_args_vec[i].loc;
@@ -3393,6 +3393,51 @@ public:
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
+
+        // insert `Allocate` node for `class` / `type` variables when `value` is `FunctionCall`
+        // returning a `class` / `type` var
+        if (ASRUtils::is_allocatable(target) && !ASRUtils::is_array(target_type)
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
+            && ASR::is_a<ASR::FunctionCall_t>(*value) && !ASRUtils::is_array(target_type)
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))
+            && compiler_options.po.realloc_lhs) {
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.reserve(al, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = target->base.loc;
+            alloc_arg.m_a = target;
+            alloc_arg.m_dims = nullptr;
+            alloc_arg.n_dims = 0;
+
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type))
+                && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                alloc_arg.m_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                    al,
+                    target->base.loc,
+                    ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(target_type))
+                        ->m_derived_type));
+            } else {
+                alloc_arg.m_type = ASRUtils::extract_type(value_type);
+            }
+
+            alloc_arg.m_len_expr = nullptr;
+            alloc_args.push_back(al, alloc_arg);
+
+            Vec<ASR::expr_t*> dealloc_args; 
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, target);
+
+            current_body->push_back(al,
+                                    ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                        al, target->base.loc, dealloc_args.p, 1)));
+
+            current_body->push_back(al,
+                                    ASRUtils::STMT(ASR::make_Allocate_t(
+                                        al, target->base.loc, alloc_args.p, 1,
+                                        nullptr, nullptr, nullptr)));
+        }
+
+
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs);
     }
@@ -3564,6 +3609,63 @@ public:
 
                 return ASR::make_ListAppend_t(al, x.base.base.loc, args[0], args[1]);
 
+            } else if (var_name == "_lfortran_list_insert") {
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                
+                ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
+
+                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[2]))) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]));
+                    diag.add(Diagnostic(
+                        "Type mismatch in " + var_name + ", the types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                
+                if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                    diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                    throw SemanticAbort();
+                } 
+
+                return ASR::make_ListInsert_t(al, x.base.base.loc, args[0], args[1], args[2]);
+            } else if (var_name == "_lfortran_list_remove") {
+                if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+                    diag.add(Diagnostic(
+                        "First argument of " + var_name + " must be of list type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                
+                ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
+
+                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[1]))) {
+                    std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
+                    std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]));
+                    diag.add(Diagnostic(
+                        "Type mismatch in " + var_name + ", the types must be compatible",
+                        Level::Error, Stage::Semantic, {
+                            Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                return ASR::make_ListRemove_t(al, x.base.base.loc, args[0], args[1]);
             } else if (var_name == "_lfortran_list_reverse") {
                 if (!ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
                     diag.add(Diagnostic(

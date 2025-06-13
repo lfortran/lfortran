@@ -658,12 +658,6 @@ namespace LCompilers {
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr,
             bool realloc_lhs=false) {
-            if( x->n_args == 0 ) {
-                if( !inside_symtab ) {
-                    remove_original_statement = true;
-                }
-                return ;
-            }
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
@@ -675,6 +669,9 @@ namespace LCompilers {
                 } else {
                     remove_original_statement = true;
                 }
+            }
+            if( x->n_args == 0 ) {
+                return;
             }
 
             std::deque<ASR::symbol_t*> constructor_arg_syms;

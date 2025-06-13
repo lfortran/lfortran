@@ -82,8 +82,8 @@ program continue_compilation_1
     character(len=10, 1) :: str_c_3
     character(1, len=20) :: str_c_4
     character(:), allocatable :: x(2)
-
-
+    integer, dimension(:,:), allocatable :: arr_size
+    logical :: mask_size(size(arr_size))
 
 
 
