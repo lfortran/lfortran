@@ -1957,9 +1957,17 @@ public:
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
     void visit_StructConstructor(const ASR::StructConstructor_t &x) {
-    ASR::Derived_t* d_type = ASR::down_cast<ASR::Derived_t>(x.m_type);
-    ASR::symbol_t* dt_sym = d_type->m_derived_type;
-    llvm::Type *llvm_type = llvm_utils->get_llvm_type_from_ttype_t(x.m_type, module.get(), context);
+    ASR::symbol_t *dt_sym = ASRUtils::symbol_get_past_external(x.m_dt);
+
+    llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t(
+        x.m_type,
+        nullptr,
+        ASR::storage_typeType::Default,
+        false, false, false,
+        nullptr, 0, 0,
+        module.get()
+    );
+
     llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
 
     for (size_t i = 0; i < x.n_args; i++) {
@@ -1968,13 +1976,17 @@ public:
 
         llvm::Value *field_ptr = builder->CreateGEP(
             llvm_type, struct_val,
-            {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-             llvm::ConstantInt::get(context, llvm::APInt(32, i))});
+            {
+                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+                llvm::ConstantInt::get(context, llvm::APInt(32, i))
+            });
 
         builder->CreateStore(val, field_ptr);
     }
+
     tmp = builder->CreateLoad(llvm_type, struct_val);
 }
+
 
 
     void generate_ListIndex(ASR::expr_t* m_arg, ASR::expr_t* m_ele,
