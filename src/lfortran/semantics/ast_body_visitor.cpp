@@ -3398,7 +3398,8 @@ public:
         // returning a `class` / `type` var
         if (ASRUtils::is_allocatable(target) && !ASRUtils::is_array(target_type)
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
-            && ASR::is_a<ASR::FunctionCall_t>(*value) && !ASRUtils::is_array(target_type)
+            && !ASRUtils::is_allocatable(value) && ASR::is_a<ASR::FunctionCall_t>(*value)
+            && !ASRUtils::is_array(target_type)
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))
             && compiler_options.po.realloc_lhs) {
             Vec<ASR::alloc_arg_t> alloc_args;

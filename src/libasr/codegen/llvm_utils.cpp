@@ -962,8 +962,7 @@ namespace LCompilers {
                     break;
                 }
                 case (ASR::ttypeType::Allocatable) : {
-                    // TODO: Do getPointerTo as well.
-                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module);
+                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
                     break;
                 }
                 case (ASR::ttypeType::StructType) :
