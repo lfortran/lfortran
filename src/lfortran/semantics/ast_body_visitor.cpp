@@ -3393,6 +3393,51 @@ public:
         }
 
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, target, value);
+
+        // insert `Allocate` node for `class` / `type` variables when `value` is `FunctionCall`
+        // returning a `class` / `type` var
+        if (ASRUtils::is_allocatable(target) && !ASRUtils::is_array(target_type)
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
+            && ASR::is_a<ASR::FunctionCall_t>(*value) && !ASRUtils::is_array(target_type)
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))
+            && compiler_options.po.realloc_lhs) {
+            Vec<ASR::alloc_arg_t> alloc_args;
+            alloc_args.reserve(al, 1);
+            ASR::alloc_arg_t alloc_arg;
+            alloc_arg.loc = target->base.loc;
+            alloc_arg.m_a = target;
+            alloc_arg.m_dims = nullptr;
+            alloc_arg.n_dims = 0;
+
+            if (ASRUtils::is_class_type(ASRUtils::extract_type(target_type))
+                && !ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+                alloc_arg.m_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                    al,
+                    target->base.loc,
+                    ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(target_type))
+                        ->m_derived_type));
+            } else {
+                alloc_arg.m_type = ASRUtils::extract_type(value_type);
+            }
+
+            alloc_arg.m_len_expr = nullptr;
+            alloc_args.push_back(al, alloc_arg);
+
+            Vec<ASR::expr_t*> dealloc_args; 
+            dealloc_args.reserve(al, 1);
+            dealloc_args.push_back(al, target);
+
+            current_body->push_back(al,
+                                    ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
+                                        al, target->base.loc, dealloc_args.p, 1)));
+
+            current_body->push_back(al,
+                                    ASRUtils::STMT(ASR::make_Allocate_t(
+                                        al, target->base.loc, alloc_args.p, 1,
+                                        nullptr, nullptr, nullptr)));
+        }
+
+
         tmp = ASRUtils::make_Assignment_t_util(al, x.base.base.loc, target, value,
                             overloaded_stmt, compiler_options.po.realloc_lhs);
     }
