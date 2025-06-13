@@ -5845,6 +5845,15 @@ public:
                     },
                     false);
         if( idx == -1 ) {
+            // if no GenericProcedure is matches, we try matching it with
+            // StructConstructor first, we do this before trying an intrinsic
+            // procedure
+            ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
+            if (tmp_v && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(tmp_v))) {
+                return create_DerivedTypeConstructor(x.base.base.loc, x.m_args, x.n_args,
+                    x.m_keywords, x.n_keywords, tmp_v);
+            }
+
             bool is_function = true;
             v = intrinsic_as_node(x, is_function);
             if( !is_function ) {
@@ -9078,7 +9087,14 @@ public:
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
             v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
         } else {
-            v = current_scope->resolve_symbol(var_name);
+            // for a GenericProcedure and a derived type with the same name,
+            // we prefer GenericProcedure matching first, if it doesn't workout
+            // we eventually try matching it with derived type *constructor* as well
+            // e.g.; see: integration_tests/derived_types_62.f90
+            v = current_scope->resolve_symbol("~" + var_name);
+            if (!v) {
+                v = current_scope->resolve_symbol(var_name);
+            }
         }
         if (!v || (v && (is_external_procedure || is_explicit_intrinsic))) {
             ASR::symbol_t* external_sym = is_external_procedure ? v : nullptr;
@@ -9237,13 +9253,6 @@ public:
                     }
                     return;
                 }
-            }
-        } else if (ASR::is_a<ASR::Struct_t>(*f2)) {
-            // Check for any interface overriding a constructor for the struct
-            ASR::symbol_t* interface_override_s = current_scope->resolve_symbol("~" + var_name);
-            if (interface_override_s) {
-                v = interface_override_s;
-                f2 = ASRUtils::symbol_get_past_external(interface_override_s);
             }
         }
         if (ASR::is_a<ASR::Function_t>(*f2) ||
