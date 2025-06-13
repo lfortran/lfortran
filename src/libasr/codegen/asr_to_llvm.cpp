@@ -1956,27 +1956,26 @@ public:
         llvm::Value *item = tmp;
         tmp = list_api->count(plist, item, asr_el_type, module.get());
     }
-    void visit_StructConstructor(const ASR::StructConstructor_t &x) {
-    ASR::symbol_t *dt_sym = ASRUtils::symbol_get_past_external(x.m_type->m_derived_type);
-    ASR::StructType_t *dt = ASR::down_cast<ASR::StructType_t>(dt_sym);
+    void ASRToLLVMVisitor::visit_StructConstructor(const ASR::StructConstructor_t &x) {
+    ASR::symbol_t *dt_sym = ASRUtils::get_struct_type(x.m_type);
 
-    llvm::Type *llvm_type = LLVMUtils::get_derived_type_from_ttype_t_util(x.m_type, context, module);
+    llvm::Type *llvm_type = LLVMUtils::get_llvm_type_from_ttype_t(x.m_type, module.get(), context);
     llvm::Value *struct_val = builder->CreateAlloca(llvm_type, nullptr);
 
     for (size_t i = 0; i < x.n_args; i++) {
-        std::string member_name = x.m_args[i].m_name;
-        ASR::expr_t *value_expr = x.m_args[i].m_value;
-
-        this->visit_expr(*value_expr);
+        this->visit_expr(*x.m_args[i].m_value);
         llvm::Value *val = tmp;
 
-        llvm::Value *field_ptr = LLVMUtils::create_struct_gep(struct_val, i, builder);
+        llvm::Value *field_ptr = builder->CreateGEP(
+            llvm_type, struct_val,
+            {llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
+             llvm::ConstantInt::get(context, llvm::APInt(32, i))});
 
         builder->CreateStore(val, field_ptr);
     }
-
     tmp = builder->CreateLoad(llvm_type, struct_val);
-    }
+}
+
 
     void generate_ListIndex(ASR::expr_t* m_arg, ASR::expr_t* m_ele,
             ASR::expr_t* m_start=nullptr, ASR::expr_t* m_end=nullptr) {
