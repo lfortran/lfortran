@@ -13,6 +13,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -29,6 +30,7 @@
             (AttrType
                 TypeReal
                 []
+                ()
                 ()
                 ()
                 None
@@ -50,6 +52,7 @@
             iam
             (FuncCallOrArray
                 this_image
+                []
                 []
                 []
                 []
@@ -142,6 +145,7 @@
             ()
             (== (FuncCallOrArray
                 this_image
+                []
                 []
                 []
                 []

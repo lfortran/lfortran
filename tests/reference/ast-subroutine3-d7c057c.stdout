@@ -2,9 +2,11 @@
     [(Function
         f
         []
+        []
         [(AttrType
             TypeInteger
             []
+            ()
             ()
             ()
             None

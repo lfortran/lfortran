@@ -20,10 +20,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -44,6 +46,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 X
                 None
@@ -81,10 +84,12 @@
                 []
                 ()
                 []
+                []
                 [(Declaration
                     (AttrType
                         TypeInteger
                         []
+                        ()
                         ()
                         ()
                         None
@@ -105,6 +110,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     A
                     None
@@ -126,9 +132,11 @@
         (Function
             Z
             []
+            []
             [(AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -148,10 +156,12 @@
                 []
                 ()
                 []
+                []
                 [(Declaration
                     (AttrType
                         TypeInteger
                         []
+                        ()
                         ()
                         ()
                         None
@@ -172,6 +182,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     A
                     None

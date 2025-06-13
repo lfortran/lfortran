@@ -24,10 +24,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -46,6 +48,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -71,10 +74,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeComplex
                     []
+                    ()
                     ()
                     ()
                     None
@@ -93,6 +98,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     X
                     None
@@ -127,6 +133,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     X
                     None
@@ -195,10 +202,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeComplex
                     []
+                    ()
                     ()
                     ()
                     None
@@ -217,6 +226,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     Y
                     None
@@ -272,6 +282,7 @@
                 TypeType
                 []
                 ()
+                ()
                 X
                 None
             )
@@ -289,6 +300,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 Z
                 None

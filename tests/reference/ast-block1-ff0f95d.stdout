@@ -25,6 +25,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 [(LetterSpec
@@ -38,6 +39,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None

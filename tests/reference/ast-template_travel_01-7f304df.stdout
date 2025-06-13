@@ -48,6 +48,7 @@
         []
         [(Function
             add_real
+            []
             [(x)
             (y)]
             [(SimpleAttribute
@@ -67,6 +68,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -94,6 +96,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -119,6 +122,7 @@
         )
         (Function
             slash_real
+            []
             [(x)
             (y)]
             [(SimpleAttribute
@@ -138,6 +142,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -165,6 +170,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -252,6 +258,7 @@
                 )]
                 []
                 []
+                []
             )
             (DerivedType
                 T
@@ -260,6 +267,7 @@
                 [(SimpleAttribute
                     AttrDeferred
                 )]
+                []
                 []
                 []
             )
@@ -276,9 +284,11 @@
                 )]
                 []
                 []
+                []
             )]
             [(Function
                 plus_D
+                []
                 [(l)
                 (r)]
                 [(SimpleAttribute
@@ -298,6 +308,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         D
                         None
@@ -325,6 +336,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         D
                         None
@@ -345,6 +357,7 @@
             )
             (Function
                 plus_T
+                []
                 [(l)
                 (r)]
                 [(SimpleAttribute
@@ -364,6 +377,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         T
                         None
@@ -392,6 +406,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         T
                         None
                     )
@@ -411,6 +426,7 @@
             )
             (Function
                 D_divided_by_T
+                []
                 [(n)
                 (d)]
                 [(SimpleAttribute
@@ -431,6 +447,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         D
                         None
                     )
@@ -450,6 +467,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         T
                         None
@@ -471,6 +489,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         S
                         None
                     )
@@ -490,6 +509,7 @@
             )
             (Function
                 D_divided_by_S
+                []
                 [(n)
                 (d)]
                 [(SimpleAttribute
@@ -505,6 +525,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         D
                         None
@@ -526,6 +547,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         S
                         None
                     )
@@ -545,6 +567,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         T
                         None
@@ -623,6 +646,7 @@
             )]
             [(Function
                 avg_S_from_T
+                []
                 [(d1)
                 (t1)
                 (d2)
@@ -644,6 +668,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         D
                         None
@@ -672,6 +697,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         T
                         None
                     )
@@ -698,6 +724,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         S
                         None
@@ -733,6 +760,7 @@
                             []
                             []
                             []
+                            []
                         )
                         ()
                         0)
@@ -751,9 +779,11 @@
                             []
                             []
                             []
+                            []
                         )
                         ()
                         0)]
+                        []
                         []
                         []
                         []
@@ -765,6 +795,7 @@
             )
             (Function
                 avg_S_from_S
+                []
                 [(d1)
                 (s1)
                 (d2)
@@ -782,6 +813,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         D
                         None
@@ -810,6 +842,7 @@
                         TypeType
                         []
                         ()
+                        ()
                         S
                         None
                     )
@@ -836,6 +869,7 @@
                     (AttrType
                         TypeType
                         []
+                        ()
                         ()
                         S
                         None
@@ -875,6 +909,7 @@
                             []
                             []
                             []
+                            []
                         )
                         ()
                         0)
@@ -897,9 +932,11 @@
                             []
                             []
                             []
+                            []
                         )
                         ()
                         0)]
+                        []
                         []
                         []
                         []
@@ -965,6 +1002,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 (AttrType
@@ -972,11 +1010,13 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -1005,6 +1045,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 (AttrType
@@ -1012,11 +1053,13 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -1042,6 +1085,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -1088,6 +1132,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
             )
@@ -1113,6 +1158,7 @@
                     (Real "0.75")
                     ()
                     0)]
+                    []
                     []
                     []
                     []
