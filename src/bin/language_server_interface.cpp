@@ -277,7 +277,7 @@ namespace LCompilers::LLanguageServer::Interface {
         opts.enableLogging = false;
         server->add_flag(
             "--enable-logging", opts.enableLogging,
-            "Enable or disable logging to a file."
+            "Enable logging to a file."
         )->capture_default_str();
 
         opts.configSection = "LFortran";
