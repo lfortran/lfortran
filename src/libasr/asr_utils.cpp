@@ -282,20 +282,22 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     }
 }
 
-bool does_expression_contain_global_var(ASR::expr_t* expr) {
+bool does_node_contain_global_var(ASR::asr_t* asr, SymbolTable* current_scope ) {
 
-    class ExpressionVisitor : public ASR::BaseWalkVisitor<ExpressionVisitor> {
+    class NodeVisitor : public ASR::BaseWalkVisitor<NodeVisitor> {
         public:
         bool &contain_global_var;
+        SymbolTable* current_scope;
 
-        ExpressionVisitor(bool &contain_global_var) : contain_global_var(contain_global_var) {}
+        NodeVisitor(bool &contain_global_var, SymbolTable* current_scope) : contain_global_var(contain_global_var),
+        current_scope(current_scope) {}
 
         void visit_Var(const ASR::Var_t &x) {
             ASR::symbol_t* sym = x.m_v;
             if (sym == nullptr) {
                 return;
             }
-            if (ASRUtils::symbol_parent_symtab(sym)->counter == 1) {
+            if (ASRUtils::symbol_parent_symtab(ASRUtils::symbol_get_past_external(sym))->counter != current_scope->counter) {
                 contain_global_var = true;
                 return;
             }
@@ -303,9 +305,9 @@ bool does_expression_contain_global_var(ASR::expr_t* expr) {
     };
 
     bool contain_global_var = false;
-    ExpressionVisitor visitor(contain_global_var);
-    if ( expr == nullptr ) return false;
-    visitor.visit_expr(*expr);
+    NodeVisitor visitor(contain_global_var, current_scope);
+    if ( asr == nullptr ) return false;
+    visitor.visit_asr(*asr);
     return contain_global_var;
 }
 

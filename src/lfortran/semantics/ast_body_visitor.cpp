@@ -141,6 +141,7 @@ public:
                     tmp_vec.clear();
                 }
             }
+            is_deterministic = is_deterministic && !ASRUtils::does_node_contain_global_var(tmp, current_scope);
             if((all_blocks_nesting ==0 || pragma_in_do_loop) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                 omp_region_body.push_back(tmp_stmt);
@@ -1066,7 +1067,7 @@ public:
         for( std::uint32_t i = 0; i < n_values; i++ ) {
             this->visit_expr(*m_values[i]);
             ASR::expr_t* expr = ASRUtils::EXPR(tmp);
-            is_side_effect_free = is_side_effect_free && !ASRUtils::does_expression_contain_global_var(expr);
+            is_side_effect_free = is_side_effect_free && !ASRUtils::does_node_contain_global_var((ASR::asr_t*) expr, current_scope);
             if(ASRUtils::is_descriptorString(ASRUtils::expr_type(expr))){
                 expr = ASRUtils::cast_string_descriptor_to_pointer(al, expr);
             }
@@ -2724,7 +2725,9 @@ public:
 
     void visit_Function(const AST::Function_t &x) {
         bool is_side_effect_free_copy = is_side_effect_free;
+        bool is_deterministic_copy = is_deterministic;
         is_side_effect_free = true;
+        is_deterministic = true;
         starting_m_body = x.m_body;
         starting_n_body = x.n_body;
         SymbolTable *old_scope = current_scope;
@@ -2781,7 +2784,9 @@ public:
         v->m_dependencies = func_deps.p;
         v->n_dependencies = func_deps.size();
         v->m_side_effect_free = is_side_effect_free;
+        v->m_deterministic = is_deterministic;
         is_side_effect_free = is_side_effect_free_copy;
+        is_deterministic = is_deterministic_copy;
 
         replace_ArrayItem_in_SubroutineCall(al, compiler_options.legacy_array_sections, current_scope);
 
@@ -3147,7 +3152,7 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
-        is_side_effect_free = is_side_effect_free && !ASRUtils::does_expression_contain_global_var(target);
+        is_side_effect_free = is_side_effect_free && !ASRUtils::does_node_contain_global_var((ASR::asr_t*) target, current_scope);
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {

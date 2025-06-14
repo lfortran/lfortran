@@ -71,7 +71,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
-bool does_expression_contain_global_var(ASR::expr_t* expr);
+bool does_node_contain_global_var(ASR::asr_t* asr, SymbolTable* current_scope );
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
