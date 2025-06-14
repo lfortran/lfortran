@@ -2190,14 +2190,9 @@ namespace LCompilers {
                     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
                 std::string der_type_name = std::string(struct_sym->m_name);
                 while( struct_sym != nullptr ) {
-                    for( auto item: struct_sym->m_symtab->get_scope() ) {
-                        if( ASR::is_a<ASR::ClassProcedure_t>(*item.second) ||
-                            ASR::is_a<ASR::GenericProcedure_t>(*item.second) ||
-                            ASR::is_a<ASR::CustomOperator_t>(*item.second) ||
-                            (ASR::is_a<ASR::Struct_t>(*item.second) && std::string(ASR::down_cast<ASR::Struct_t>(item.second)->m_name) == "~abstract_type") ) {
-                            continue ;
-                        }
-                        std::string mem_name = item.first;
+                    for (size_t i = 0; i < struct_sym->n_members; i++) {
+                        std::string mem_name = struct_sym->m_members[i];
+                        ASR::symbol_t *mem_sym = struct_sym->m_symtab->get_symbol(mem_name);
                         int mem_idx = name2memidx[der_type_name][mem_name];
                         llvm::Value* src_member = nullptr;
                         if (llvm::isa<llvm::ConstantStruct>(src) ||
@@ -2207,8 +2202,8 @@ namespace LCompilers {
                             src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
                         }
                         llvm::Type *mem_type = get_type_from_ttype_t_util(
-                            ASRUtils::symbol_type(item.second), module);
-                        ASR::ttype_t* member_type = ASRUtils::symbol_type(item.second);
+                            ASRUtils::symbol_type(mem_sym), module);
+                        ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
                         if( !LLVM::is_llvm_struct(member_type) &&
                             !ASRUtils::is_array(member_type) &&
                             !ASRUtils::is_pointer(member_type) &&
@@ -2221,8 +2216,8 @@ namespace LCompilers {
                         llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
                         // If member is allocatable string, we need to check if it is allocated before copying
-                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(item.second)) &&
-                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(item.second)))) {
+                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) &&
+                            ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
@@ -2235,7 +2230,7 @@ namespace LCompilers {
                         }
                         create_if_else(is_allocated, [&]() {
                             deepcopy(src_member, dest_member,
-                            ASRUtils::symbol_type(item.second),
+                            ASRUtils::symbol_type(mem_sym),
                             module, name2memidx);
                         }, [=]() {});
                     }
