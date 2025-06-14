@@ -542,7 +542,8 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
     int exponent_value = 0;
     if (val == 0.0) {
         exponent_value = 0;
-        strcpy(val_str, "0");
+        memset(val_str, '0', digits + scale + 1); // +1 in case scale=0
+        val_str[digits + scale] = '\0';
         integer_length = 1;
     } else {
         exponent_value = (int)floor(log10(fabs(val))) - scale + 1;
@@ -631,7 +632,7 @@ void handle_decimal(char* format, double val, int scale, char** result, char* c,
             int index = zeros;
             while(index--) strcat(formatted_value, "0");
         }
-        strncat(formatted_value, val_str, digits + scale - zeros);
+        strncat(formatted_value, val_str, digits);
     } else {
         char* temp = substring(val_str, 0, scale);
         strcat(formatted_value, temp);
