@@ -633,7 +633,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(index_var_name, index);
                 ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index));
-                if ((i == offset_for_array_indices - 1) && is_value_array &&
+                if ((i == offset_for_array_indices - 1) && is_value_array && j < rhs_array_indices_args.size() &&
                         rhs_array_indices_args[j].m_left != nullptr) {
                     index2var[index_expr] = std::make_pair(rhs_array_indices_args[j].m_left, IndexType::ScalarIndex);
                 } else {
