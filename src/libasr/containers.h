@@ -161,6 +161,8 @@ struct Vec {
     }
 
     const T& operator[](size_t pos) const {
+        LCOMPILERS_ASSERT(pos >= 0);
+        LCOMPILERS_ASSERT(pos < n);
         return p[pos];
     }
 
