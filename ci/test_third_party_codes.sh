@@ -413,6 +413,29 @@ time_section "🧪 Testing PRIMA" '
   run_test ./build/fortran/example_uobyqa_fortran_1_exe
   run_test ./build/fortran/example_uobyqa_fortran_2_exe
 
+  git clean -dfx
+  print_subsection "Rebuilding PRIMA in separate compilation mode"
+  FC="$FC --generate-object-code --cpp" cmake -S . -B build \
+    -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
+    -DCMAKE_Fortran_FLAGS="" \
+    -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
+    -DCMAKE_MACOSX_RPATH=OFF \
+    -DCMAKE_SKIP_INSTALL_RPATH=ON \
+    -DCMAKE_SKIP_RPATH=ON
+
+  cmake --build build --target install
+
+  run_test ./build/fortran/example_bobyqa_fortran_1_exe
+  run_test ./build/fortran/example_bobyqa_fortran_2_exe
+  run_test ./build/fortran/example_cobyla_fortran_1_exe
+  run_test ./build/fortran/example_cobyla_fortran_2_exe
+  run_test ./build/fortran/example_lincoa_fortran_1_exe
+  run_test ./build/fortran/example_lincoa_fortran_2_exe
+  run_test ./build/fortran/example_newuoa_fortran_1_exe
+  run_test ./build/fortran/example_newuoa_fortran_2_exe
+  run_test ./build/fortran/example_uobyqa_fortran_1_exe
+  run_test ./build/fortran/example_uobyqa_fortran_2_exe
+
   print_success "Done with PRIMA"
   cd ..
 '
