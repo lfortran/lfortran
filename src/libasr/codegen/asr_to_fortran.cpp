@@ -240,17 +240,15 @@ public:
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
-                // TODO: StructType
-                // ASR::StructType_t* struct_type = down_cast<ASR::StructType_t>(t);
-                // std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
-                // r = "type(";
-                // r += struct_name;
-                // r += ")";
-                // if (std::find(import_struct_type.begin(), import_struct_type.end(),
-                //         struct_name) == import_struct_type.end() && is_interface) {
-                //     // Push unique struct names;
-                //     import_struct_type.push_back(struct_name);
-                // }
+                std::string struct_name = ASRUtils::symbol_name(type_decl);
+                r = "type(";
+                r += struct_name;
+                r += ")";
+                if (std::find(import_struct_type.begin(), import_struct_type.end(),
+                        struct_name) == import_struct_type.end() && is_interface) {
+                    // Push unique struct names;
+                    import_struct_type.push_back(struct_name);
+                }
                 break;
             } case ASR::ttypeType::CPtr: {
                 r = "type(c_ptr)";

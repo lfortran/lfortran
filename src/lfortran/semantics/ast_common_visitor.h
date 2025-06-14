@@ -4837,7 +4837,7 @@ public:
                 }
                 // set the variable's type declaration to the derived type
                 type_declaration = v;
-                type = ASRUtils::make_StructType_t_util(al, loc, nullptr, 0, nullptr, 0, true, v);
+                type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
                 if (is_pointer) {
@@ -4856,13 +4856,13 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
-                derived_type_name = "~abstract_type";
+                derived_type_name = "~unlimited_polymorphic_type";
             } else {
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if( !v ) {
-                if( derived_type_name != "~abstract_type" ) {
+                if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     diag.add(Diagnostic(
                         "Derived type '" + derived_type_name
                         + "' not declared",
@@ -4959,8 +4959,7 @@ public:
             }
         }
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
-        ASR::ttype_t* der = ASRUtils::TYPE(
-                            ASRUtils::make_StructType_t_util(al, loc, v));
+        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v);
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
@@ -10983,9 +10982,10 @@ public:
                     m_dims_vec.from_pointer_n(m_dims, n_dims);
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
-                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_mem_type, nullptr);
-                make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
-                    ASRUtils::EXPR(tmp), tmp, loc);
+                tmp = ASR::make_StructInstanceMember_t(
+                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                make_ArrayItem_from_struct_m_args(
+                    x_m_member[i].m_args, x_m_member[i].n_args, ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
                     if( is_tmp_array ) {
                         diag.add(Diagnostic(
