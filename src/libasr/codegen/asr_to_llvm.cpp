@@ -5758,7 +5758,9 @@ public:
             ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
             !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            check_and_allocate(sim->m_v, asr_value_type);
+            if (ASRUtils::is_allocatable(sim->m_v)) {
+                check_and_allocate(sim->m_v, asr_value_type);
+            }
         }
 
         llvm::Value *target, *value;
