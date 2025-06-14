@@ -1,8 +1,10 @@
+#include "libasr/asr.h"
 #include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
 #include <llvm/IR/Type.h>
+#include "llvm_utils.h"
 
 namespace LCompilers {
 
@@ -146,7 +148,7 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::StructType: {
-                llvm_mem_type = getStructType(mem_type, module);
+                llvm_mem_type = getStructType(ASR::down_cast<ASR::Struct_t>(member->m_type_declaration), module);
                 break;
             }
             case ASR::ttypeType::EnumType: {
@@ -304,30 +306,6 @@ namespace LCompilers {
         return (llvm::Type*) der_type_llvm;
     }
 
-    // llvm::Type* LLVMUtils::getClassType(ASR::ttype_t* _type, bool is_pointer) {
-    //     ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(_type));
-    //     ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(der->m_derived_type);
-    //     std::string der_sym_name = ASRUtils::symbol_name(der_sym);
-    //     std::string der_type_name = der_sym_name + std::string("_polymorphic");
-    //     llvm::StructType* der_type_llvm;
-    //     if( name2dertype.find(der_type_name) != name2dertype.end() ) {
-    //         der_type_llvm = name2dertype[der_type_name];
-    //     } else {
-    //         std::vector<llvm::Type*> member_types;
-    //         member_types.push_back(getIntType(8));
-    //         if( der_sym_name == "~abstract_type" ) {
-    //             member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
-    //         } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
-    //             ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
-    //             member_types.push_back(getStructType(struct_type_t, module, is_pointer));
-    //         }
-    //         der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
-    //         name2dertype[der_type_name] = der_type_llvm;
-    //     }
-
-    //     return (llvm::Type*) der_type_llvm;
-    // }
-
     llvm::Type* LLVMUtils::getFPType(int a_kind, bool get_pointer) {
         llvm::Type* type_ptr = nullptr;
         if( get_pointer ) {
@@ -381,7 +359,7 @@ namespace LCompilers {
         return nullptr;
     }
 
-    llvm::Type* LLVMUtils::get_el_type(ASR::ttype_t* m_type_, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module) {
         int a_kind = ASRUtils::extract_kind_from_ttype_t(m_type_);
         llvm::Type* el_type = nullptr;
         bool is_pointer = LLVM::is_llvm_pointer(*m_type_);
@@ -413,9 +391,12 @@ namespace LCompilers {
             }
             case ASR::ttypeType::StructType: {
                 if (ASR::down_cast<ASR::StructType_t>(m_type)->m_is_cstruct) {
-                    el_type = getStructType(m_type_, module);
+                    el_type = getStructType(ASR::down_cast<ASR::Struct_t>(
+                                                ASRUtils::get_struct_sym_from_struct_expr(expr)),
+                                            module);
                 } else {
-                    el_type = getClassType(m_type_);
+                    el_type = getClassType(ASR::down_cast<ASR::Struct_t>(
+                                                ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 }
                 break;
             }
@@ -489,7 +470,7 @@ namespace LCompilers {
                                                  el_llvm_type);
     }
 
-    llvm::Type* LLVMUtils::get_arg_type_from_ttype_t(ASR::ttype_t* asr_type,
+    llvm::Type* LLVMUtils::get_arg_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
         ASR::symbol_t *type_declaration, ASR::abiType m_abi, ASR::abiType arg_m_abi,
         ASR::storage_typeType m_storage, bool arg_m_value_attr, int& n_dims,
         int& a_kind, bool& is_array_type, ASR::intentType arg_intent, llvm::Module* module,
@@ -498,7 +479,7 @@ namespace LCompilers {
 
         #define handle_llvm_pointers2() bool is_pointer_ = ASRUtils::is_class_type(t2) || \
             (ASR::is_a<ASR::String_t>(*t2) && arg_m_abi != ASR::abiType::BindC); \
-            type = get_arg_type_from_ttype_t(t2, nullptr, m_abi, arg_m_abi, \
+            type = get_arg_type_from_ttype_t(arg_expr, t2, type_declaration, m_abi, arg_m_abi, \
                         m_storage, arg_m_value_attr, n_dims, a_kind, \
                         is_array_type, arg_intent, module, get_pointer); \
             if( !is_pointer_ ) { \
@@ -511,7 +492,7 @@ namespace LCompilers {
                 switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
-                        llvm::Type* el_type = get_el_type(v_type->m_type, module);
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
                         type = arr_api->get_array_type(asr_type, el_type, get_pointer);
                         break;
                     }
@@ -542,7 +523,7 @@ namespace LCompilers {
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
-                        type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
+                        type = llvm::ArrayType::get(get_el_type(arg_expr, v_type->m_type, module),
                                         ASRUtils::get_fixed_size_of_array(
                                             v_type->m_dims, v_type->n_dims))->getPointerTo();
                         break;
@@ -687,9 +668,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::StructType) : {
                 if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                    type = getStructType(asr_type, module, true);
+                    type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);
                 } else {
-                    type = getClassType(asr_type, true)->getPointerTo();
+                    type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true)->getPointerTo();
                 }
                 break;
             }
@@ -815,7 +796,7 @@ namespace LCompilers {
                 llvm::Type *type = nullptr, *type_original = nullptr;
                 int n_dims = 0, a_kind = 4;
                 bool is_array_type = false;
-                type_original = get_arg_type_from_ttype_t(arg->m_type,
+                type_original = get_arg_type_from_ttype_t(x.m_args[i], arg->m_type,
                     arg->m_type_declaration,
                     ASRUtils::get_FunctionType(x)->m_abi,
                     arg->m_abi, arg->m_storage, arg->m_value_attr,
@@ -1046,13 +1027,13 @@ namespace LCompilers {
         return function_type;
     }
 
-    std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::FunctionType_t* x, llvm::Module* module) {
+    std::vector<llvm::Type*> LLVMUtils::convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x) {
         std::vector<llvm::Type*> args;
         for (size_t i=0; i < x->n_arg_types; i++) {
             llvm::Type *type = nullptr, *type_original = nullptr;
             int n_dims = 0, a_kind = 4;
             bool is_array_type = false;
-            type_original = get_arg_type_from_ttype_t(x->m_arg_types[i],
+            type_original = get_arg_type_from_ttype_t(fn->m_args[i], x->m_arg_types[i],
                 nullptr, x->m_abi, x->m_abi, ASR::storage_typeType::Default,
                 false, n_dims, a_kind, is_array_type, ASR::intentType::Unspecified,
                 module, false);
@@ -1110,7 +1091,7 @@ namespace LCompilers {
                             if (compiler_options.platform == Platform::Windows) {
                                 // pass as subroutine
                                 return_type = getComplexType(a_kind, true);
-                                std::vector<llvm::Type*> args = convert_args(x, module);
+                                std::vector<llvm::Type*> args = convert_args(x);
                                 args.insert(args.begin(), return_type);
                                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                                         llvm::Type::getVoidTy(context), args, false);
@@ -1244,7 +1225,7 @@ namespace LCompilers {
         return function_type;
     }
 
-    llvm::Type* LLVMUtils::get_type_from_ttype_t(ASR::ttype_t* asr_type,
+    llvm::Type* LLVMUtils::get_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
         ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
         ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
@@ -1276,24 +1257,24 @@ namespace LCompilers {
                                 switch( v_type->m_physical_type ) {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
-                        llvm::Type* el_type = get_el_type(v_type->m_type, module);
+                        llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
                         llvm_type = arr_api->get_array_type(asr_type, el_type);
                         break;
                     }
                     case ASR::array_physical_typeType::PointerToDataArray:
                     case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
-                        llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
+                        llvm_type = get_el_type(arg_expr, v_type->m_type, module)->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
                         LCOMPILERS_ASSERT(ASRUtils::is_fixed_size_array(v_type->m_dims, v_type->n_dims));
-                        llvm_type = llvm::ArrayType::get(get_el_type(v_type->m_type, module),
+                        llvm_type = llvm::ArrayType::get(get_el_type(arg_expr, v_type->m_type, module),
                                         ASRUtils::get_fixed_size_of_array(
                                             v_type->m_dims, v_type->n_dims));
                         break;
                     }
                     case ASR::array_physical_typeType::SIMDArray: {
-                        llvm_type = llvm::VectorType::get(get_el_type(v_type->m_type, module),
+                        llvm_type = llvm::VectorType::get(get_el_type(arg_expr, v_type->m_type, module),
                             ASRUtils::get_fixed_size_of_array(v_type->m_dims, v_type->n_dims), false);
                         break;
                     }
@@ -1363,9 +1344,9 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::StructType) : {
                 if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                    llvm_type = getStructType(asr_type, module, false);
+                    llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, false);
                 } else {
-                    llvm_type = getClassType(asr_type, true);
+                    llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
                 }
                 break;
             }
@@ -1452,8 +1433,7 @@ namespace LCompilers {
                         ASRUtils::symbol_get_past_external(type_declaration));
                     llvm_type = get_function_type(*fn, module)->getPointerTo();
                 } else {
-                    ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(asr_type);
-                    llvm_type = get_function_type(func_type, module)->getPointerTo();
+                    llvm_type = get_function_type(ASRUtils::get_function_from_expr(arg_expr), module)->getPointerTo();
                 }
                 break;
             }
@@ -1464,14 +1444,14 @@ namespace LCompilers {
         return llvm_type;
     }
 
-    llvm::Type* LLVMUtils::get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
+    llvm::Type* LLVMUtils::get_type_from_ttype_t_util(ASR::expr_t* expr, ASR::ttype_t* asr_type,
         llvm::Module* module, ASR::abiType asr_abi) {
         ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
         bool is_array_type_local, is_malloc_array_type_local;
         bool is_list_local;
         ASR::dimension_t* m_dims_local;
         int n_dims_local = 0, a_kind_local = 0;
-        return get_type_from_ttype_t(asr_type, nullptr, m_storage_local, is_array_type_local,
+        return get_type_from_ttype_t(expr, asr_type, nullptr, m_storage_local, is_array_type_local,
                                      is_malloc_array_type_local, is_list_local,
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }

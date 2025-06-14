@@ -342,8 +342,6 @@ namespace LCompilers {
 
             llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false);
-
             llvm::Type* getUnion(ASR::Union_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
 
@@ -352,17 +350,15 @@ namespace LCompilers {
 
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 
-            llvm::Type* getClassType(ASR::ttype_t* _type, bool is_pointer=false);
-
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);
 
             llvm::Type* getComplexType(int a_kind, bool get_pointer=false);
 
-            llvm::Type* get_el_type(ASR::ttype_t* m_type_, llvm::Module* module);
+            llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module);
 
-            llvm::Type* get_dict_type(ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module);
 
-            llvm::Type* get_set_type(ASR::ttype_t* asr_type, llvm::Module* module);
+            llvm::Type* get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module);
 
             llvm::FunctionType* get_function_type(const ASR::Function_t &x, llvm::Module* module);
 
@@ -370,18 +366,19 @@ namespace LCompilers {
 
             llvm::FunctionType* get_function_type(ASR::FunctionType_t* x, llvm::Module* module);
 
-            std::vector<llvm::Type*> convert_args(ASR::FunctionType_t* x, llvm::Module* module);
+            std::vector<llvm::Type*> convert_args(ASR::Function_t* fn, ASR::FunctionType_t* x);
 
-            llvm::Type* get_type_from_ttype_t(ASR::ttype_t* asr_type,
+            llvm::Type* get_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
                 bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
                 ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
                 ASR::abiType m_abi=ASR::abiType::Source);
 
-            llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
-                llvm::Module* module, ASR::abiType asr_abi=ASR::abiType::Source);
+            llvm::Type* get_type_from_ttype_t_util(ASR::expr_t* expr, ASR::ttype_t* asr_type,
+                                                   llvm::Module* module,
+                                                   ASR::abiType asr_abi = ASR::abiType::Source);
 
-            llvm::Type* get_arg_type_from_ttype_t(ASR::ttype_t* asr_type,
+            llvm::Type* get_arg_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::abiType m_abi, ASR::abiType arg_m_abi,
                 ASR::storage_typeType m_storage, bool arg_m_value_attr, int& n_dims,
                 int& a_kind, bool& is_array_type, ASR::intentType arg_intent, llvm::Module* module,

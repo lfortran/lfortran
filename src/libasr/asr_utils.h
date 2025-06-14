@@ -72,6 +72,8 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
+ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
+
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 
 static inline std::string extract_real(const char *s) {
@@ -411,6 +413,26 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
         }
     }
     return nullptr;
+}
+
+// Recursively creates a Var node expression from a symbol.
+// For Variable: returns Var node for the variable.
+// For Function: resolves m_return_var, gets the variable, and returns Var node for it.
+static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    switch (sym->type) {
+        case ASR::symbolType::Variable: {
+            return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
+        }
+        case ASR::symbolType::Function: {
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::Var_t* ret_var = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
+            return get_expr_from_sym(al, ret_var->m_v);
+        }
+        default: {
+            throw LCompilersException("get_expr_from_sym: Only Variable and Function symbols are supported.");
+        }
+    }
 }
 
 static inline bool is_class_type(ASR::ttype_t* type) {
@@ -860,7 +882,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType name
+            // TODO: StructType
             // return ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(t)->m_derived_type);
         }
         case ASR::ttypeType::EnumType: {
@@ -2962,7 +2984,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  Location loc,
                                                  ASR::symbol_t* derived_type_sym,
-                                                 bool is_cstruct = false)
+                                                 bool is_cstruct = true)
 {
     ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
         ASRUtils::symbol_get_past_external(derived_type_sym));
@@ -5316,7 +5338,9 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
     }
 
     return (st->n_data_member_types == 0 && st->n_member_function_types == 0
-            && ASRUtils::get_struct_sym_from_struct_expr(expr) == nullptr);
+            && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                   ASRUtils::get_struct_sym_from_struct_expr(expr)))
+                   == std::string("~unlimited_polymorphic_type"));
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,

@@ -4895,7 +4895,7 @@ public:
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
                 } else {
-                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
+                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, true));
                 }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -5018,8 +5018,7 @@ public:
             }
         }
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
-        ASR::ttype_t* der = ASRUtils::TYPE(
-                            ASRUtils::make_StructType_t_util(al, loc, v));
+        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v);
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
@@ -11254,9 +11253,10 @@ public:
                     m_dims_vec.from_pointer_n(m_dims, n_dims);
                     tmp2_mem_type = ASRUtils::duplicate_type(al, tmp2_mem_type, &m_dims_vec);
                 }
-                tmp = ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(tmp), tmp2_mem_type, nullptr);
-                make_ArrayItem_from_struct_m_args(x_m_member[i].m_args, x_m_member[i].n_args,
-                    ASRUtils::EXPR(tmp), tmp, loc);
+                tmp = ASR::make_StructInstanceMember_t(
+                    al, loc, ASRUtils::EXPR(tmp), tmp2_m_m_ext, tmp2_mem_type, nullptr);
+                make_ArrayItem_from_struct_m_args(
+                    x_m_member[i].m_args, x_m_member[i].n_args, ASRUtils::EXPR(tmp), tmp, loc);
                 if( ASR::is_a<ASR::ArraySection_t>(*ASRUtils::EXPR(tmp)) ) {
                     if( is_tmp_array ) {
                         diag.add(Diagnostic(

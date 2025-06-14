@@ -337,7 +337,6 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_type_info(m);
         dflt_access = ASR::Public;
     }
 
@@ -2548,10 +2547,9 @@ public:
         }
     }
 
-    bool arg_type_equal_to_class(ASR::ttype_t* var_type, ASR::symbol_t* clss_sym) {
-        if (ASRUtils::is_class_type(var_type)) {
-            ASR::StructType_t* var_type_clss = ASR::down_cast<ASR::StructType_t>(var_type);
-            ASR::symbol_t* var_type_clss_sym = var_type_clss->m_derived_type;
+    bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
+        if (ASRUtils::is_class_type(ASRUtils::expr_type(var_expr))) {
+            ASR::symbol_t* var_type_clss_sym = ASRUtils::get_struct_sym_from_struct_expr(var_expr);
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
                     return true;
@@ -2566,7 +2564,7 @@ public:
         if (pass_arg_name == nullptr) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
             if (func_type->n_arg_types == 0 ||
-                !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
+                !arg_type_equal_to_class(func->m_args[0], clss_sym)) {
                 diag.add(diag::Diagnostic(
                     "Passed object dummy argument does not match function argument",
                     diag::Level::Error, diag::Stage::Semantic, {
@@ -2578,7 +2576,8 @@ public:
             for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
                 ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
                 if (strcmp(v->m_name, pass_arg_name) == 0) {
-                    if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
+                    if (!arg_type_equal_to_class(ASRUtils::EXPR(
+                            ASR::make_Var_t(al, v->base.base.loc, &v->base)), clss_sym)) {
                         diag.add(diag::Diagnostic(
                             "Passed object dummy argument " + std::string(pass_arg_name)
                             + " type does not match function argument",

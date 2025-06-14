@@ -1,4 +1,5 @@
 #include "libasr/asr.h"
+#include "libasr/exception.h"
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -152,9 +153,54 @@ ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
             LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
             return get_struct_sym_from_struct_expr(func_call->m_dt);
         }
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
+            return struct_constant->m_dt_sym;
+        }
         default: {
             return nullptr;
         }
+    }
+}
+
+// Recursively fetch `ASR::Function_t` from an `ASR::expr_t` if it has `FunctionType`.
+ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
+    if (!expr) {
+        throw LCompilersException("Passed `ASR::expr_t expr` is nullptr.");
+    }
+    if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(expr))) {
+        throw LCompilersException("`ttype_t` of passed `ASR::expr_t expr` is not `ASR::exprType::FunctionType`.");
+    }
+
+    switch (expr->type) {
+        case ASR::exprType::Var: {
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
+            ASR::symbol_t* sym = var->m_v;
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                return ASR::down_cast<ASR::Function_t>(sym);
+            } else {
+                throw LCompilersException("`ASR::Var_t` symbol is not `ASR::Function_t`.");
+            }
+        }
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            return get_function_from_expr(sim->m_v);
+        }
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* ai = ASR::down_cast<ASR::ArrayItem_t>(expr);
+            return get_function_from_expr(ai->m_v);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* as = ASR::down_cast<ASR::ArraySection_t>(expr);
+            return get_function_from_expr(as->m_v);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
+            return ASR::down_cast<ASR::Function_t>(fc->m_name);
+        }
+        default:
+            throw LCompilersException("get_function_from_expr() not implemented for "
+                                + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(expr)));
     }
 }
 

@@ -202,7 +202,7 @@ namespace LCompilers {
                 * Uses ASR type to get the corresponding LLVM type
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
+                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
 
                 /*
                 * Returns offset in the input
@@ -425,7 +425,7 @@ namespace LCompilers {
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
+                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
 
                 virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
