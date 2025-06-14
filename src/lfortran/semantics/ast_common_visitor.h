@@ -4897,9 +4897,10 @@ public:
         ASR::ttype_t* der = ASRUtils::TYPE(
                             ASRUtils::make_StructType_t_util(al, loc, v));
 
-        // Ensure all values are present and are constant before creating StructConstant
+        // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
-            if (!val.m_value ||
+            // If val.m_value is nullptr, default value is not needed and it is still const (Variable with Allocatable type)
+            if (val.m_value &&
                     !(ASRUtils::is_value_constant(val.m_value) ||
                       ASRUtils::is_value_constant(ASRUtils::expr_value(val.m_value)))) {
                     is_const = false;
