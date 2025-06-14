@@ -2307,6 +2307,17 @@ class ReplaceModuleVarWithValue:
         } else {
             value = y->m_symbolic_value;
         }
+
+        // we replace ttype of ArrayConstant value with, it's declared
+        // ttype, currently this looks like a special case, and this
+        // might actually be needed for other constant value as well
+        // eventually
+        if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+            ASR::ArrayConstant_t* arr_const_value =
+                ASR::down_cast<ASR::ArrayConstant_t>(value);
+            arr_const_value->m_type = y->m_type;
+        }
+
         *current_expr = expr_duplicator.duplicate_expr(value);
         replace_expr(*current_expr);
     }
