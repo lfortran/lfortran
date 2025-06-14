@@ -4701,7 +4701,8 @@ public:
             uint32_t h = get_hash((ASR::asr_t*)asr_retval);
             llvm::Value *ret_val = llvm_symtab[h];
             llvm::Value *ret_val2 = ret_val;
-            if (!ASRUtils::is_class_type(ASRUtils::extract_type(asr_retval->m_type))) {
+            if (!ASRUtils::is_class_type(ASRUtils::extract_type(asr_retval->m_type)) &&
+                !(ASR::is_a<ASR::Pointer_t>(*asr_retval->m_type) && ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(asr_retval->m_type))) ) {
                 ret_val2 = llvm_utils->CreateLoad2(asr_retval->m_type, ret_val);
             }
             // Handle Complex type return value for BindC:
