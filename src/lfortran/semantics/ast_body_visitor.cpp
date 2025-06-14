@@ -5306,35 +5306,27 @@ public:
                     // Now collect stmts of all Sections inside the parallel sections and add it in body of ParallelSections OMPRegion_t
                     collect_omp_body(ASR::omp_region_typeType::Sections);
                 } else if (LCompilers::startswith(x.m_construct_name, "single")) {
-                    // Collect the body of the previous section
                     collect_omp_body(ASR::omp_region_typeType::Single);
                 } else if (LCompilers::startswith(x.m_construct_name, "master")) {
-                    // Collect the body of the previous section
                     collect_omp_body(ASR::omp_region_typeType::Master);
                 } else if (LCompilers::startswith(x.m_construct_name, "task")) {
                     collect_omp_body(ASR::omp_region_typeType::Task);
-                    tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())); 
-                    omp_region_body.pop_back();
                 } else if (LCompilers::startswith(x.m_construct_name, "parallel do")) {
                     collect_omp_body(ASR::omp_region_typeType::ParallelDo);
-                    if(pragma_in_do_loop) {
-                        tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
-                        omp_region_body.pop_back();
-                    }
                 } else if (LCompilers::startswith(x.m_construct_name, "parallel")) {
                     collect_omp_body(ASR::omp_region_typeType::Parallel);
                 } else if(LCompilers::startswith(x.m_construct_name, "do")) {
                     collect_omp_body(ASR::omp_region_typeType::Do);
                 }
                 pragma_in_do_loop=false;
-                if(pragma_nesting_level_2 == 0 && omp_region_body.size()==1) {
-                    tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back())); 
+                if((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0) {
+                    tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
                     omp_region_body.pop_back();
                 }
                 return;
             }
 
-            if(loop_nesting>0) pragma_in_do_loop=true;
+            if(all_blocks_nesting>0) pragma_in_do_loop=true;
             if (to_lower(x.m_construct_name) == "parallel") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
