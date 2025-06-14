@@ -666,7 +666,7 @@
                                     )]
                                     (Var 3 total)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -769,7 +769,7 @@
                                     )]
                                     (Var 4 total)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 )
@@ -1497,7 +1497,7 @@
                                                     )]
                                                     (Var 17 avg)
                                                     Private
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),
@@ -1690,7 +1690,7 @@
                                                     )]
                                                     (Var 16 avg)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),

@@ -463,7 +463,7 @@
                                     )]
                                     (Var 4 bin_add)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -566,7 +566,7 @@
                                     )]
                                     (Var 3 logical_and)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

@@ -380,7 +380,7 @@
                     []
                     (Var 6 save_func)
                     Public
-                    .false.
+                    .true.
                     .true.
                     ()
                 ),
@@ -676,7 +676,7 @@
                                     []
                                     (Var 12 save_func_mod)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1089,7 +1089,7 @@
                                     []
                                     (Var 8 save_func)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1285,7 +1285,7 @@
                     []
                     (Var 7 save_nested_func)
                     Public
-                    .false.
+                    .true.
                     .true.
                     ()
                 ),
@@ -1501,7 +1501,7 @@
                                     []
                                     (Var 5 save_func)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

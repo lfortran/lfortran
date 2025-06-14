@@ -157,7 +157,7 @@
                                     )]
                                     (Var 4 length)
                                     Private
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -346,7 +346,7 @@
                                     )]
                                     (Var 5 maybe_string)
                                     Private
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

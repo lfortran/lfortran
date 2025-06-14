@@ -462,7 +462,7 @@
                                     )]
                                     (Var 5 foo)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 )

@@ -826,7 +826,7 @@
                                     )]
                                     (Var 13 self)
                                     Private
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1877,7 +1877,7 @@
                                     )]
                                     (Var 5 stat)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

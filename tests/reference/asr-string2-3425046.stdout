@@ -168,7 +168,7 @@
                                     )]
                                     (Var 19 tempfile)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -554,7 +554,7 @@
                                     )]
                                     (Var 6 s)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -650,7 +650,7 @@
                                     []
                                     (Var 8 s)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -734,7 +734,7 @@
                                     []
                                     (Var 9 f_string)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

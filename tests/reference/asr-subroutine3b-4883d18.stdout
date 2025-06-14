@@ -53,7 +53,7 @@
                     )]
                     (Var 2 f)
                     Public
-                    .false.
+                    .true.
                     .true.
                     ()
                 ),
@@ -108,7 +108,7 @@
                     )]
                     (Var 3 g)
                     Public
-                    .false.
+                    .true.
                     .true.
                     ()
                 ),
@@ -163,7 +163,7 @@
                     )]
                     (Var 4 h)
                     Public
-                    .false.
+                    .true.
                     .true.
                     ()
                 )

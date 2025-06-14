@@ -1769,7 +1769,7 @@
                                                     )]
                                                     (Var 11 avg)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),
@@ -1962,7 +1962,7 @@
                                                     )]
                                                     (Var 10 avg)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),

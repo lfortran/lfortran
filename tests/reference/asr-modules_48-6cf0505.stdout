@@ -976,7 +976,7 @@
                                     )]
                                     (Var 4 hash)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1262,7 +1262,7 @@
                                     )]
                                     (Var 5 hash)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1655,7 +1655,7 @@
                                     )]
                                     (Var 6 lout)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -2034,7 +2034,7 @@
                                     )]
                                     (Var 7 cat)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

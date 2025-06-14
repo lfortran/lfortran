@@ -217,7 +217,7 @@
                                     )]
                                     (Var 3 str_scalar)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 )

@@ -198,7 +198,7 @@
                                                     )]
                                                     (Var 5 r)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),
@@ -369,7 +369,7 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),

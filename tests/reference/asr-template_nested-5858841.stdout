@@ -182,7 +182,7 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),
@@ -301,7 +301,7 @@
                                                     )]
                                                     (Var 8 z)
                                                     Private
-                                                    .false.
+                                                    .true.
                                                     .true.
                                                     ()
                                                 ),
@@ -540,7 +540,7 @@
                                     )]
                                     (Var 9 z)
                                     Private
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),

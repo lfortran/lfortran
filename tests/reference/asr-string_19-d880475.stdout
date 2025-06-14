@@ -254,7 +254,7 @@
                                     []
                                     (Var 5 character_string)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -341,7 +341,7 @@
                                     []
                                     (Var 4 length)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -504,7 +504,7 @@
                                     []
                                     (Var 7 lps_array)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -598,7 +598,7 @@
                                     )]
                                     (Var 8 l)
                                     Public
-                                    .false.
+                                    .true.
                                     .false.
                                     ()
                                 ),
@@ -714,7 +714,7 @@
                                     )]
                                     (Var 9 l)
                                     Public
-                                    .false.
+                                    .true.
                                     .false.
                                     ()
                                 ),
@@ -874,7 +874,7 @@
                                     )]
                                     (Var 12 res)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1039,7 +1039,7 @@
                                     []
                                     (Var 13 res)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1270,7 +1270,7 @@
                                     )]
                                     (Var 10 res)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
@@ -1520,7 +1520,7 @@
                                     )]
                                     (Var 11 res)
                                     Public
-                                    .false.
+                                    .true.
                                     .true.
                                     ()
                                 ),
