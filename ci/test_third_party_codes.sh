@@ -88,6 +88,30 @@ time_section "🧪 Testing fortran-shlex" '
   cd ..
 '
 
+time_section "🧪 Testing toml-f" '
+  git clone https://github.com/jinangshah21/toml-f.git
+  cd toml-f
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-2
+  micromamba install -c conda-forge fpm
+  git checkout 38c294fc5d9cb5fa6a9d3569514da28b8705f3fb
+  fpm --compiler=$FC build
+  print_success "Done with toml-f"
+  cd ..
+'
+
+time_section "🧪 Testing jonquil" '
+  git clone https://github.com/jinangshah21/jonquil.git
+  cd jonquil
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-1
+  micromamba install -c conda-forge fpm
+  git checkout c5a272475772526343cf1d6864411b233c7d7c05
+  fpm --compiler=$FC build
+  print_success "Done with jonquil"
+  cd ..
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
