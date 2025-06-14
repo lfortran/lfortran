@@ -791,6 +791,11 @@ public:
             }
             if (i < x.n_args-1) r += ", ";
         }
+        if (x.m_stat) {
+            r += ", stat=";
+            visit_expr(*x.m_stat);
+            r += src;
+        }
         r += ")";
         handle_line_truncation(r, 2);
         r += "\n";
