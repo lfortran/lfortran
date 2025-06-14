@@ -240,13 +240,8 @@ public:
                 r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
-                ASR::StructType_t* struct_type = down_cast<ASR::StructType_t>(t);
-                std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
-                if (struct_type->m_is_cstruct) {
-                    r = "type(";
-                } else {
-                    r = "class(";
-                }
+                std::string struct_name = ASRUtils::symbol_name(type_decl);
+                r = "type(";
                 r += struct_name;
                 r += ")";
                 if (std::find(import_struct_type.begin(), import_struct_type.end(),

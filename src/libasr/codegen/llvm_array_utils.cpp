@@ -1,6 +1,8 @@
+#include "libasr/asr.h"
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/asr_utils.h>
+#include "llvm_array_utils.h"
 
 namespace LCompilers {
 
@@ -605,10 +607,10 @@ namespace LCompilers {
             return llvm_utils->create_gep(arr, 0);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* const array_desc_type = llvm_utils->arr_api->
                 get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type),
-                    llvm_utils->get_el_type(ASRUtils::extract_type(arr_type), module), false);
+                    llvm_utils->get_el_type(arr_expr, ASRUtils::extract_type(arr_type), module), false);
             return llvm_utils->create_gep2(array_desc_type, arr, 0);
         }
 
