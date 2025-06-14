@@ -285,7 +285,7 @@
                                     (Var 4 area)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             circle_print:

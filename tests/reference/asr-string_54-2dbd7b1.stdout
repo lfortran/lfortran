@@ -183,8 +183,8 @@
                                     )]
                                     (Var 3 ret)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             foo_sub:

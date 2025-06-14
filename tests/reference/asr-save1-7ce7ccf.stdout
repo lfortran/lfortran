@@ -222,8 +222,8 @@
                     []
                     (Var 3 save_fun)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             save_module:
@@ -359,8 +359,8 @@
                                     []
                                     (Var 6 fun_save)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             sub_save:

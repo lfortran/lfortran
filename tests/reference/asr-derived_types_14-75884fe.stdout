@@ -288,8 +288,8 @@
                                     )]
                                     (Var 7 res)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             enum_type:
@@ -554,7 +554,7 @@
                                     (Var 6 vtype)
                                     Public
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             toml_type:

@@ -1326,8 +1326,8 @@
                                     )]
                                     (Var 10 op)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             my_axpy:
@@ -1677,8 +1677,8 @@
                                     )]
                                     (Var 9 op)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             op:

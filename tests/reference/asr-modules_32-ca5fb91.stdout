@@ -205,8 +205,8 @@
                                     )]
                                     (Var 5 target_ptr)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

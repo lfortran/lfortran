@@ -245,8 +245,8 @@
                                                     )]
                                                     (Var 13 prop)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:
@@ -647,8 +647,8 @@
                                                     )]
                                                     (Var 9 prop)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             equal:

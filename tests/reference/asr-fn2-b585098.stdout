@@ -48,8 +48,8 @@
                     []
                     (Var 2 a)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             b:
@@ -98,8 +98,8 @@
                     []
                     (Var 3 b)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             c:
@@ -148,8 +148,8 @@
                     []
                     (Var 4 c)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             d:
@@ -198,8 +198,8 @@
                     []
                     (Var 5 r)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             e:
@@ -248,8 +248,8 @@
                     []
                     (Var 6 r)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             f:
@@ -298,8 +298,8 @@
                     []
                     (Var 7 r)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 )
         })

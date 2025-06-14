@@ -826,8 +826,8 @@
                                     )]
                                     (Var 13 self)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             time_to_string:
@@ -1877,8 +1877,8 @@
                                     )]
                                     (Var 5 stat)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             toml_time:

@@ -126,7 +126,7 @@
                                     )]
                                     (Var 3 print_vars)
                                     Private
-                                    .false.
+                                    .true.
                                     .false.
                                     ()
                                 ),
