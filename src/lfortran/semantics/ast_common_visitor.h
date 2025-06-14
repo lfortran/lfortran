@@ -9090,7 +9090,7 @@ public:
             // for a GenericProcedure and a derived type with the same name,
             // we prefer GenericProcedure matching first, if it doesn't workout
             // we eventually try matching it with derived type *constructor* as well
-            // e.g.; see: integration_tests/derived_types_62.f90
+            // e.g.; see: integration_tests/derived_types_64.f90
             v = current_scope->resolve_symbol("~" + var_name);
             if (!v) {
                 v = current_scope->resolve_symbol(var_name);
