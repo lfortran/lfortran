@@ -3172,6 +3172,10 @@ public:
                 }
             } else {
                 llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+                ASR::symbol_t* struct_sym = ASR::down_cast<ASR::StructType_t>(x.m_type)->m_derived_type;
+                if (struct_sym != nullptr) {
+                    void_ptr = llvm_utils->getClassType(x.m_type, true);
+                }
                 llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                     void_ptr);
                 if (!external) {
@@ -3180,9 +3184,8 @@ public:
                                 init_value);
                     } else {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantPointerNull::get(
-                                    static_cast<llvm::PointerType*>(void_ptr))
-                                );
+                                llvm::Constant::getNullValue(void_ptr));
+;
                     }
                 }
                 llvm_symtab[h] = ptr;
@@ -9909,6 +9912,8 @@ public:
                         } else {
                             tmp = llvm_symtab[h];
                         }
+                        // std::cout<<arg->m_name<<std::endl;
+                        tmp->getType()->print(llvm::outs());std::cout<<std::endl;
                         if( !ASRUtils::is_array(arg->m_type) ) {
 
                             if (x_abi == ASR::abiType::Source && ASR::is_a<ASR::CPtr_t>(*arg->m_type)) {
