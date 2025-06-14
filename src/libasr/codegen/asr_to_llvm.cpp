@@ -1182,7 +1182,9 @@ public:
                 llvm::Value *target, *value;
                 target = llvm_symtab[h];
                 // Store 0 (success) in the stat variable
-                value = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
+                ASR::ttype_t* stat_type = ASRUtils::expr_type(m_stat);
+                int kind = ASRUtils::extract_kind_from_ttype_t(stat_type);
+                value = llvm::ConstantInt::get(context, llvm::APInt(8*kind, 0));
                 builder->CreateStore(value, target);
             } else {
                 throw CodeGenError("Stat variable in allocate not found in LLVM symtab");
