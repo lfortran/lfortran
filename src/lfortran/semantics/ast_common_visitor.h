@@ -5845,7 +5845,7 @@ public:
                     },
                     false);
         if( idx == -1 ) {
-            // if no GenericProcedure is matches, we try matching it with
+            // if no GenericProcedure matches, we try matching it with
             // StructConstructor first, we do this before trying an intrinsic
             // procedure
             ASR::symbol_t* tmp_v = current_scope->resolve_symbol(std::string(x.m_func));
