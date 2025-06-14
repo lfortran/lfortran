@@ -515,6 +515,22 @@ bool set_allocation_size(
             }
             break;
         }
+        case ASR::exprType::Var: {
+            ASR::dimension_t* m_dims;
+            size_t n_dims = ASRUtils::extract_dimensions_from_ttype(ASRUtils::expr_type(value), m_dims);
+            m_dims = ASRUtils::duplicate_dimensions(al, m_dims, n_dims);
+            allocate_dims.reserve(al, n_dims);
+            for (size_t i = 0; i < n_dims; i++) {
+                if ( !m_dims[i].m_length || !m_dims[i].m_start ) {
+                    m_dims[i].loc = loc;
+                    m_dims[i].m_start = int32_one;
+                    m_dims[i].m_length = ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(
+                        al, loc, value, nullptr, ASRUtils::expr_type(int32_one), nullptr, false));
+                }
+                allocate_dims.push_back(al, m_dims[i]);
+            }
+            break;
+        }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
@@ -2222,10 +2238,11 @@ class ReplaceExprWithTemporaryVisitor:
         current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
         call_replacer();
         replacer.lhs_var = nullptr;
-        if( ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
-            ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) &&
-            !is_elemental_expr(x.m_value) ) {
-            bool is_assignment_target_array_section_item = true;
+        bool is_assignment_target_array_section_item = ASRUtils::is_array_indexed_with_array_indices(m_args, n_args) &&
+                    ASRUtils::is_array(ASRUtils::expr_type(x.m_value)) && !is_elemental_expr(x.m_value);
+        if(  is_assignment_target_array_section_item || 
+            ((ASR::is_a<ASR::ArraySection_t>(*x.m_target) || ASR::is_a<ASR::ArrayItem_t>(*x.m_target)) && 
+            is_common_symbol_present_in_lhs_and_rhs(al, lhs_array_var, x.m_value)) ) {
             replacer.force_replace_current_expr_for_array(current_expr, "_assignment_value_", al, current_body, current_scope,
                                                 exprs_with_target, is_assignment_target_array_section_item);
         }
