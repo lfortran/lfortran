@@ -304,6 +304,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -337,6 +338,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -377,6 +379,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -402,6 +405,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -431,6 +435,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -447,6 +452,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -487,6 +493,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -512,6 +519,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -541,6 +549,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -557,6 +566,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -595,6 +605,7 @@
                 Value)]
                 ()
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -626,6 +637,7 @@
                 Value)]
                 ()
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -648,6 +660,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(AttrIntent
@@ -666,6 +679,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -700,6 +714,7 @@
                     []
                     []
                     []
+                    []
                 )
                 (+ (* a (FuncCallOrArray
                     x
@@ -711,6 +726,7 @@
                     []
                     []
                     []
+                    []
                 )) (FuncCallOrArray
                     y
                     []
@@ -718,6 +734,7 @@
                     i
                     ()
                     0)]
+                    []
                     []
                     []
                     []

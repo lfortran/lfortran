@@ -17,6 +17,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -35,6 +36,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -51,6 +53,7 @@
             (AttrType
                 TypeLogical
                 []
+                ()
                 ()
                 ()
                 None
@@ -78,10 +81,12 @@
                 (EndOfLine)]
             )
             []
+            []
             [(Declaration
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     type
                     None
@@ -124,6 +129,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -142,6 +148,7 @@
                         (AttrType
                             TypeInteger
                             []
+                            ()
                             ()
                             ()
                             None
@@ -247,6 +254,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -270,6 +278,7 @@
             (AttrType
                 TypeType
                 []
+                ()
                 ()
                 type
                 None
@@ -327,17 +336,20 @@
                                 []
                                 []
                                 []
-                            )
-                            (FuncCallOrArray
-                                type
-                                []
-                                []
-                                []
-                                []
                                 []
                             )
                             (FuncCallOrArray
                                 type
+                                []
+                                []
+                                []
+                                []
+                                []
+                                []
+                            )
+                            (FuncCallOrArray
+                                type
+                                []
                                 []
                                 []
                                 []
@@ -345,6 +357,7 @@
                                 []
                             )]
                         ))]
+                        []
                         []
                         []
                     )
@@ -355,8 +368,10 @@
                         []
                         []
                         []
+                        []
                     )]
                 ))]
+                []
                 []
                 []
             )
@@ -375,6 +390,7 @@
                 (AttrType
                     TypeLogical
                     []
+                    ()
                     ()
                     ()
                     None

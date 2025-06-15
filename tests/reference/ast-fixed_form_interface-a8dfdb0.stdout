@@ -13,6 +13,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -40,6 +41,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -57,12 +59,14 @@
             []
             ()
             []
+            []
             [(Declaration
                 (AttrType
                     TypeCharacter
                     [(len
                     2
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -83,6 +87,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -101,6 +106,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -117,6 +123,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -138,12 +145,14 @@
             []
             ()
             []
+            []
             [(Declaration
                 (AttrType
                     TypeCharacter
                     [(len
                     30
                     Value)]
+                    ()
                     ()
                     ()
                     None
@@ -166,6 +175,7 @@
                     Value)]
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -184,6 +194,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -200,6 +211,7 @@
                 (AttrType
                     TypeType
                     []
+                    ()
                     ()
                     element
                     None
@@ -242,6 +254,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -264,6 +277,7 @@
             (InterfaceProc
                 (Function
                     my_function
+                    []
                     [(b)]
                     []
                     res
@@ -276,6 +290,7 @@
                         (AttrType
                             TypeInteger
                             []
+                            ()
                             ()
                             ()
                             None
@@ -296,6 +311,7 @@
                         (AttrType
                             TypeInteger
                             []
+                            ()
                             ()
                             ()
                             None
@@ -322,6 +338,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -338,6 +355,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -369,6 +387,7 @@
                 num
                 ()
                 0)]
+                []
                 []
                 []
                 []
@@ -429,6 +448,7 @@
                     i
                     ()
                     0)]
+                    []
                     []
                     []
                     []

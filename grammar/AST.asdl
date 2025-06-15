@@ -50,7 +50,7 @@ program_unit
     | Procedure(identifier name, arg* args, decl_attribute* attributes, trivia? trivia,
         unit_decl1* use, import_statement* import, implicit_statement* implicit,
         unit_decl2* decl, stmt* body, program_unit* contains)
-    | Function(identifier name, arg* args, decl_attribute* attributes,
+    | Function(identifier name, generic_type_param* generic_type_params, arg* args, decl_attribute* attributes,
         expr? return_var, bind? bind, trivia? trivia, unit_decl1* use, import_statement* import,
         implicit_statement* implicit, unit_decl2* decl, stmt* body,
         program_unit* contains, identifier* temp_args, location start_name, location end_name)
@@ -65,7 +65,7 @@ unit_decl2
     | DeclarationPragma(pragma_type type, string text, trivia? trivia)
     | Interface(interface_header header, trivia? trivia, interface_item* items)
     | DerivedType(identifier name, identifier* namelist, trivia? trivia, decl_attribute* attrtype,
-        unit_decl2* items, procedure_decl* contains)
+        generic_type_param* generic_type_params, unit_decl2* items, procedure_decl* contains)
     | Template(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* contains)
     | Enum(decl_attribute* attr, trivia? trivia, unit_decl2* items)
@@ -73,6 +73,7 @@ unit_decl2
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
     | Require(unit_require* reqs)
+    | Implements(implements_header header, implements_item* item)
 
 interface_header
     = InterfaceHeader()
@@ -81,12 +82,22 @@ interface_header
     | InterfaceHeaderOperator(intrinsicop op)
     | InterfaceHeaderDefinedOperator(string operator_name)
     | AbstractInterfaceHeader()
+    | AbstractInterfaceHeaderName(identifier name)
     | InterfaceHeaderWrite(identifier id)
     | InterfaceHeaderRead(identifier id)
 
 interface_item
     = InterfaceProc(program_unit proc)
     | InterfaceModuleProcedure(identifier* names, decl_attribute* attributes, trivia? trivia)
+    | InterfaceTypeList(decl_attribute* types)
+    | InterfaceTypeDef(identifier name, decl_attribute attribute)
+
+implements_header
+    = ImplementsHeaderType(identifier interface_name, decl_attribute type_name)
+    | ImplementsHeaderInterface(identifier interface_name, identifier type_name)
+
+implements_item
+    = ImplementsProc(identifier name, decl_attribute* attrs)
 
 import_statement
     = Import(identifier* symbols, import_modifier mod, trivia? trivia)
@@ -206,7 +217,8 @@ expr
     | DefUnaryOp(string op, expr operand)
     | Compare(expr left, cmpop op, expr right)
     | FuncCallOrArray(identifier func, struct_member* member,
-        fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args)
+        fnarg* args, keyword* keywords, fnarg* subargs, decl_attribute* temp_args,
+        decl_attribute* generic_type_args)
     | CoarrayRef(identifier name, struct_member* member,
         fnarg* args, keyword* fnkw, coarrayarg* coargs, keyword* cokw)
     | ArrayInitializer(decl_attribute? vartype, identifier? classtype, expr* args)
@@ -283,11 +295,12 @@ decl_attribute
     | AttrEquivalence(equi* args)
     | AttrExtends(identifier name)
     | AttrIntent(attr_intent intent)
+    | AttrImplements(identifier* name)
     | AttrNamelist(identifier name)
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
-        identifier? name, symbol sym)
+        generic_type_param? parametrized_type, identifier? name, symbol sym)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
@@ -318,6 +331,7 @@ simple_attribute
     | AttrPure
     | AttrRecursive
     | AttrSave
+    | AttrSealed
     | AttrSequence
     | AttrTarget
     | AttrValue
@@ -336,6 +350,7 @@ decl_type
     | TypeProcedure
     | TypeReal
     | TypeType
+    | TypeInterface
     | TypeLF_List
     | TypeLF_Set
 
@@ -344,6 +359,8 @@ event_attribute
     | AttrErrmsg(identifier variable)
     | AttrNewIndex(expr value)
     | AttrEventWaitKwArg(identifier id, expr value)
+
+generic_type_param = GenericTypeParameter(identifier name, identifier type_name)
 
 team_attribute = CoarrayAssociation(expr coarray, expr selector)
 

@@ -33,6 +33,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -54,6 +55,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None
@@ -108,6 +110,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 [(SimpleAttribute
@@ -129,6 +132,7 @@
                 (AttrType
                     TypeInteger
                     []
+                    ()
                     ()
                     ()
                     None

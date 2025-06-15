@@ -199,6 +199,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -217,6 +218,7 @@
                         (AttrType
                             TypeLogical
                             []
+                            ()
                             ()
                             ()
                             None
@@ -497,6 +499,7 @@
         []
         [(Function
             f
+            []
             [(operator)]
             []
             ()
@@ -517,6 +520,7 @@
                 (AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None

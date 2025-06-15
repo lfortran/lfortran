@@ -2,11 +2,13 @@
     [(Function
         f
         []
+        []
         [(AttrType
             TypeReal
             [(()
             8
             Value)]
+            ()
             ()
             ()
             None

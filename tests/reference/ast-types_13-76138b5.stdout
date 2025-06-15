@@ -55,6 +55,7 @@
                             []
                             ()
                             ()
+                            ()
                             DoubleAsterisk
                         )
                         []
@@ -92,6 +93,7 @@
                             [(len
                             ()
                             Star)]
+                            ()
                             ()
                             ()
                             None
@@ -140,6 +142,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -184,6 +187,7 @@
                             (kind
                             c_char
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -232,6 +236,7 @@
                             Star)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -272,6 +277,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -292,6 +298,7 @@
             (InterfaceProc
                 (Function
                     f1
+                    []
                     [(a)
                     (b)
                     (c)
@@ -301,6 +308,7 @@
                         [(()
                         c_int
                         Value)]
+                        ()
                         ()
                         ()
                         None
@@ -331,6 +339,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -356,6 +365,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -379,6 +389,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -401,6 +412,7 @@
             (InterfaceProc
                 (Function
                     f2
+                    []
                     [(a)
                     (b)
                     (c)
@@ -410,6 +422,7 @@
                         [(()
                         c_int
                         Value)]
+                        ()
                         ()
                         ()
                         None
@@ -440,6 +453,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -465,6 +479,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -488,6 +503,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -510,6 +526,7 @@
             (InterfaceProc
                 (Function
                     f3
+                    []
                     [(a)
                     (b)
                     (c)
@@ -541,6 +558,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -559,6 +577,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -586,6 +605,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -609,6 +629,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -631,6 +652,7 @@
             (InterfaceProc
                 (Function
                     f4
+                    []
                     [(a)
                     (b)
                     (c)
@@ -662,6 +684,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -680,6 +703,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -707,6 +731,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -730,6 +755,7 @@
                             [(()
                             4
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -782,6 +808,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         []
@@ -800,6 +827,7 @@
                             [(()
                             c_int
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -827,6 +855,7 @@
                             Value)]
                             ()
                             ()
+                            ()
                             None
                         )
                         [(SimpleAttribute
@@ -848,6 +877,7 @@
                         (AttrType
                             TypeLogical
                             []
+                            ()
                             ()
                             ()
                             None

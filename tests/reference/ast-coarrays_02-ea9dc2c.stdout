@@ -24,6 +24,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             [(SimpleAttribute
@@ -49,6 +50,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -77,6 +79,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -115,6 +118,7 @@
                 TypeType
                 []
                 ()
+                ()
                 event_type
                 None
             )
@@ -138,6 +142,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
@@ -188,6 +193,7 @@
                 []
                 []
                 []
+                []
             )
             ()
             [(If
@@ -200,6 +206,7 @@
                     i
                     ()
                     0)]
+                    []
                     []
                     []
                     []
@@ -216,6 +223,7 @@
                         []
                         []
                         []
+                        []
                     )
                     [(AttrEventWaitKwArg
                         until_count
@@ -226,6 +234,7 @@
                             i
                             ()
                             0)]
+                            []
                             []
                             []
                             []
@@ -275,6 +284,7 @@
                     []
                     []
                     []
+                    []
                 ) 0)
                 [(EventPost
                     0
@@ -292,6 +302,7 @@
                             []
                             []
                             []
+                            []
                         )
                         ()
                         0)]
@@ -304,6 +315,7 @@
                             i
                             ()
                             0)]
+                            []
                             []
                             []
                             []

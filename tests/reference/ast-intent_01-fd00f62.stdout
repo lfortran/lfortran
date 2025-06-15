@@ -31,6 +31,7 @@
                     []
                     ()
                     ()
+                    ()
                     None
                 )
                 []
@@ -77,6 +78,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
             )
@@ -93,6 +95,7 @@
                     []
                     []
                     []
+                    []
                 )
                 (TriviaNode
                     []
@@ -102,10 +105,12 @@
             )]
             [(Function
                 f
+                []
                 [(x)]
                 [(AttrType
                     TypeReal
                     []
+                    ()
                     ()
                     ()
                     None
@@ -124,6 +129,7 @@
                     (AttrType
                         TypeReal
                         []
+                        ()
                         ()
                         ()
                         None

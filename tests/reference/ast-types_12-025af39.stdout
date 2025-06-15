@@ -34,6 +34,7 @@
             [(InterfaceProc
                 (Function
                     f
+                    []
                     [(a)
                     (b)]
                     [(AttrType
@@ -41,6 +42,7 @@
                         [(()
                         c_int
                         Value)]
+                        ()
                         ()
                         ()
                         None
@@ -62,6 +64,7 @@
                             [(()
                             c_int
                             Value)]
+                            ()
                             ()
                             ()
                             None
@@ -87,6 +90,7 @@
                             [(()
                             c_double
                             Value)]
+                            ()
                             ()
                             ()
                             None

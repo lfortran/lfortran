@@ -17,6 +17,7 @@
                 []
                 ()
                 ()
+                ()
                 None
             )
             []
@@ -51,6 +52,7 @@
                             []
                             ()
                             ()
+                            ()
                             None
                         )
                         [(AttrIntent
@@ -69,6 +71,7 @@
                         (AttrType
                             TypeInteger
                             []
+                            ()
                             ()
                             ()
                             None
@@ -160,6 +163,7 @@
             (AttrType
                 TypeInteger
                 []
+                ()
                 ()
                 ()
                 None
