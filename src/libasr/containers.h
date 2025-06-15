@@ -161,7 +161,13 @@ struct Vec {
     }
 
     const T& operator[](size_t pos) const {
-        LCOMPILERS_ASSERT(pos < n);
+        if ( pos >= n ) {
+            // create a dummy object to avoid undefined behavior
+            for (size_t j = n; j <= pos; j++) {
+                // set some junk to `p[j]` to avoid undefined behavior
+                std::memcpy(&p[j], &p[n-1], sizeof(T));
+            }
+        }
         return p[pos];
     }
 
