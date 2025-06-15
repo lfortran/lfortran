@@ -1,9 +1,11 @@
 module derived_types_63_m
-    implicit none
-    type :: enum_policy
+   implicit none
+   type :: enum_policy
       integer :: append = 3
    end type enum_policy
+
    type(enum_policy), parameter :: merge_policy = enum_policy()
+
    type :: toml_merge_config
       integer :: table = merge_policy%append
    end type toml_merge_config
@@ -11,7 +13,6 @@ module derived_types_63_m
    interface toml_merge_config
       module procedure :: new_merge_config
    end interface toml_merge_config
-
 
 contains
 
@@ -39,5 +40,6 @@ program derived_types_63
     type(toml_merge_config) :: config2, config3
     config2 = config3
 
+    if (config2%table /= 3 .or. config3%table /= 3) error stop
     if (config2%table /= config3%table) error stop
 end program
