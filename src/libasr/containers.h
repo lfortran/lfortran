@@ -162,9 +162,9 @@ struct Vec {
 
     const T& operator[](size_t pos) const {
         if ( pos >= n ) {
+            // TODO: remove this once everything is fixed.
             // create a dummy object to avoid undefined behavior
             for (size_t j = n; j <= pos; j++) {
-                // set some junk to `p[j]` to avoid undefined behavior
                 std::memcpy(&p[j], &p[n-1], sizeof(T));
             }
         }
