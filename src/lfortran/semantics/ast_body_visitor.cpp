@@ -1059,7 +1059,7 @@ public:
                         nullptr, 0, nullptr, newline, nullptr, formatted)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
-                    newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
+                    newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
@@ -2610,7 +2610,7 @@ public:
             ASR::stmt_t* go_to_label = ASRUtils::STMT(ASR::make_GoTo_t(al, loc, i+1, s2c(al, std::to_string(i+1))));
             if_body.push_back(al, go_to_label);
 
-            if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, cmp, if_body.p, if_body.size(), nullptr, 0));
+            if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, cmp, if_body.p, if_body.size(), nullptr, 0));
             stmt_vector.push_back(if_stmt);
         }
 
@@ -4579,7 +4579,7 @@ public:
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
-        tmp = ASR::make_If_t(al, x.base.base.loc, test, body.p,
+        tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
         all_blocks_nesting--;
     }
@@ -4644,9 +4644,9 @@ public:
                 s2c(al, std::to_string(x.m_eq_label)))));
 
         orelse.push_back(al, ASRUtils::STMT(
-            ASR::make_If_t(al, x.base.base.loc, test_gt, body_gt.p,
+            ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test_gt, body_gt.p,
                 body_gt.size(), orelse_gt.p, orelse_gt.size())));
-        tmp = ASR::make_If_t(al, x.base.base.loc, test_lt, body.p,
+        tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test_lt, body.p,
                 body.size(), orelse.p, orelse.size());
     }
 
