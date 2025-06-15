@@ -1807,6 +1807,40 @@ class ParallelRegionVisitor :
             current_scope = current_scope_copy;
         }
 
+        void visit_OMPBody(const ASR::OMPRegion_t* omp_region, Vec<ASR::stmt_t*>& dest_body) {
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+
+            for (size_t j = 0; j < omp_region->n_body; j++) {
+                if (!ASR::is_a<ASR::OMPRegion_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::DoLoop_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
+                    stmt_visitor.visit_stmt(*omp_region->m_body[j]);
+                } else if( ASR::is_a<ASR::DoLoop_t>(*omp_region->m_body[j])) {
+                    ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(omp_region->m_body[j]);
+                    stmt_visitor.visit_do_loop_head(do_loop->m_head);
+                    for(size_t k = 0; k < do_loop->n_body; k++) {
+                        if(!ASR::is_a<ASR::OMPRegion_t>(*do_loop->m_body[k])) {
+                            stmt_visitor.visit_stmt(*do_loop->m_body[k]);
+                        }
+                    }
+                } else if (ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
+                    ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(omp_region->m_body[j]);
+                    stmt_visitor.visit_expr(*if_stmt->m_test);
+                }
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                nested_lowered_body = {};
+                this->visit_stmt(*omp_region->m_body[j]);
+                if(nested_lowered_body.size()>0) {
+                    for (size_t k = 0; k < nested_lowered_body.size(); k++) {
+                        dest_body.push_back(al, nested_lowered_body[k]);
+                    }
+                } else {
+                    dest_body.push_back(al, omp_region->m_body[j]);
+                }
+                nested_lowered_body = body_copy;
+            }
+        }
+
+        
         void visit_DoLoop(const ASR::DoLoop_t &x) {
             if(nesting_lvl == 0) {
                 ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
@@ -2015,22 +2049,7 @@ class ParallelRegionVisitor :
                 }
                 nested_lowered_body = body_copy;
             } else {
-                for (size_t i = 0; i < x.n_body; i++) {
-                    if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
-                        // Recursively handle nested OpenMP constructs
-                        std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-                        // visit_OMPRegion(*nested_region);
-                        this->visit_stmt(*x.m_body[i]);
-                        for (size_t i=0; i<nested_lowered_body.size(); i++) {
-                            fn_body.push_back(al,nested_lowered_body[i]);
-                        }
-                        nested_lowered_body = body_copy;
-                    } else {
-                        // this->visit_stmt(*x.m_body[i]);
-                        stmt_visitor.visit_stmt(*x.m_body[i]);
-                        fn_body.push_back(al, x.m_body[i]);
-                    }
-                }
+                visit_OMPBody(&x, fn_body);
             }
             
             handle_reduction_vars(reduction_clauses, x.base.base.loc);
@@ -2396,13 +2415,14 @@ class ParallelRegionVisitor :
                         ASR::expr_t* case_condition = b.Eq(section_id, b.i32(section_counter));
                         
                         // Create body for this section
-                        std::vector<ASR::stmt_t*> section_body; section_body.reserve(nested_region->n_body);
-                        for (size_t j = 0; j < nested_region->n_body; j++) {
-                            section_body.push_back(nested_region->m_body[j]);
+                        Vec<ASR::stmt_t*> section_body; section_body.reserve(al, nested_region->n_body);
+                        std::vector<ASR::stmt_t*> section_body_s; section_body_s.reserve(nested_region->n_body);
+                        visit_OMPBody(nested_region, section_body);
+                        for(size_t k=0;k<section_body.size();k++) {
+                            section_body_s.push_back(section_body[k]);
                         }
-                        
                         // Create if statement for this section
-                        ASR::stmt_t* section_if = b.If(case_condition, section_body, {});
+                        ASR::stmt_t* section_if = b.If(case_condition, section_body_s, {});
                         while_body.push_back(al, section_if);
                         
                         section_counter++;
@@ -2450,28 +2470,19 @@ class ParallelRegionVisitor :
             ASR::expr_t* condition = b.Eq(b.i32(0),
                             ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_thread_num"),
                             current_scope->get_symbol("omp_get_thread_num"), nullptr, 0, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr)));
-            std::vector<ASR::stmt_t*> single_body={};
-
+            Vec<ASR::stmt_t*> single_body;
+            single_body.reserve(al, x.n_body);
             // Process body, handling nested OMPRegions recursively
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
             stmt_visitor.current_expr = nullptr;
-            for (size_t i = 0; i < x.n_body; i++) {
-                if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
-                    std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-                    nested_lowered_body = {};
-                    this->visit_stmt(*x.m_body[i]);
-                    for (size_t j = 0; j < nested_lowered_body.size(); j++) {
-                        single_body.push_back(nested_lowered_body[j]);
-                    }
-                    nested_lowered_body = body_copy;
-                } else {
-                    stmt_visitor.visit_stmt(*x.m_body[i]);
-                    single_body.push_back(x.m_body[i]);
-                }
+            visit_OMPBody(&x, single_body);
+            std::vector<ASR::stmt_t*> single_body_s={};
+            for(size_t i=0;i<single_body.size();i++){
+                single_body_s.push_back(single_body[i]);
             }
 
             // Create if statement for single region
-            nested_lowered_body.push_back(b.If(condition, single_body, {}));
+            nested_lowered_body.push_back(b.If(condition, single_body_s, {}));
         }
 };
 
