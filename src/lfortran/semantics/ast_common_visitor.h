@@ -4471,6 +4471,56 @@ public:
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
         ASR::symbol_t *&type_declaration, ASR::abiType abi, bool is_argument=false, bool is_dimension_star=false) {
+
+        if (AST::is_a<AST::AttrTypeList_t>(*decl_attribute)) {
+            // ONLY supposed to be used for LFortran specific types
+            AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
+
+            if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
+                if (sym_type->n_attr != 2) {
+                    diag.add(Diagnostic(
+                        "Dict declaration needs exactly two types",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                ASR::ttype_t *key_type = determine_type(loc, sym, sym_type->m_attr[0], is_pointer, 
+                                                       is_allocatable, dims, type_declaration, abi);
+                ASR::ttype_t *value_type = determine_type(loc, sym, sym_type->m_attr[1], is_pointer, 
+                                                       is_allocatable, dims, type_declaration, abi);
+
+                return ASRUtils::TYPE(ASR::make_Dict_t(al, sym_type->base.base.loc, key_type, value_type));
+            } else if (sym_type->m_type == AST::decl_typeType::TypeLF_Tuple) {
+                if (sym_type->n_attr < 1) {
+                    diag.add(Diagnostic(
+                        "Tuple declaration needs atleast one type",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{sym_type->base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+
+                Vec<ASR::ttype_t *> type_vec;
+                type_vec.reserve(al, sym_type->n_attr);
+
+                for (size_t i=0;i<sym_type->n_attr;i++)
+                    type_vec.push_back(al, determine_type(loc, sym, sym_type->m_attr[i], is_pointer, 
+                                                       is_allocatable, dims, type_declaration, abi));
+
+                return ASRUtils::TYPE(ASR::make_Tuple_t(al, sym_type->base.base.loc, type_vec.p, type_vec.n));
+            }
+
+            diag.add(Diagnostic(
+                "Only LFortran specific types (dict, tuple) uses this syntax",
+                Level::Error, Stage::Semantic, {
+                    Label("",{sym_type->base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
+
+
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
         ASR::ttype_t *type;
         type_declaration = nullptr;
@@ -4728,12 +4778,6 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, type_declaration, abi, is_argument);
-            }  else if (derived_type_name == "_lfortran_test_dict") {
-                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                                                       ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))); 
-            } else if (derived_type_name == "_lfortran_test_dict_r") {
-                return ASRUtils::TYPE(ASR::make_Dict_t(al, loc, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)),
-                                                       ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4)))); 
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
@@ -7360,7 +7404,22 @@ public:
 
                 throw SemanticAbort();
             }
-            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
+
+            ASR::expr_t *index = ASRUtils::EXPR(tmp);
+            ASR::expr_t* val = ASRUtils::expr_value(index);
+            if (val && ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                if (ASR::down_cast<ASR::IntegerConstant_t>(val)->m_n < 0) {
+                    // Replace `x[-1]` to `x[len(x)+(-1)]`
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                                    al, x.base.base.loc, 4));
+                    ASR::expr_t *list_len = ASRUtils::EXPR(ASR::make_ListLen_t(
+                                al, x.base.base.loc, args[0], int_type, nullptr));
+                    ASR::expr_t *neg_idx = ASRUtils::expr_value(index);
+                    index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                        list_len, ASR::binopType::Add, neg_idx, int_type, nullptr));
+                }
+            }
+            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], index,
                                         ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
         } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
@@ -7379,6 +7438,46 @@ public:
             /*return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],*/
             /*                            ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);*/
             return ASR::make_DictItem_t(al, x.base.base.loc, args[0], args[1], nullptr, dict_type->m_value_type, nullptr);
+        } else if (ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(args[0]))) {
+
+            ASR::expr_t *value = ASRUtils::expr_value(args[1]), *index_expr = args[1];
+            ASR::Tuple_t *tuple_type = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(args[0]));
+            int index;
+
+            if (!value) {
+                std::string type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+                diag.add(Diagnostic("Runtime indexing with type '" + type_str + "' is not possible",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            if (!ASR::is_a<ASR::IntegerConstant_t>(*value)) {
+                diag.add(Diagnostic("Tuple indices must be of constant integers",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            index = ASR::down_cast<ASR::IntegerConstant_t>(value)->m_n;
+            int tuple_size =  tuple_type->n_type;
+            if (index < 0) {
+                index = tuple_size + index;
+                ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4));
+                index_expr = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
+                    al, value->base.loc, index, int_type));
+            }
+            if (index >= tuple_size || index < 0) {
+                diag.add(Diagnostic("Tuple index out of bounds",
+                                    Level::Error, Stage::Semantic, {Label("", {value->base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+
+            return ASR::make_TupleItem_t(al, x.base.base.loc, args[0], index_expr, tuple_type->m_type[index], nullptr);
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
@@ -7633,6 +7732,43 @@ public:
 
         return ASR::make_DictConstant_t(al, x.base.base.loc, keys.p, keys.n, values.p, values.n, ASRUtils::TYPE(
             ASR::make_Dict_t(al, x.base.base.loc, type.first, type.second)));
+    }
+
+    ASR::asr_t* create_TupleConstant(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_tuple_constant expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+        if (x.n_args == 0) {
+            diag.add(Diagnostic("As of now _lfortran_tuple_constant expects atleast one argument",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+            
+        AST::expr_t* source = nullptr;
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 1);
+        
+        Vec<ASR::ttype_t *> type_vec;
+        type_vec.reserve(al, 1);
+
+        for (size_t i=0;i<x.n_args;i++) {
+            source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+            args.push_back(al, arg);
+
+            ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
+            type_vec.push_back(al, arg_type);
+        }
+
+
+        return ASR::make_TupleConstant_t(al, x.base.base.loc, args.p, args.n, 
+                                        ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc, 
+                                                                         type_vec.p, type_vec.n)));
     }
 
     ASR::asr_t* create_BitCast(const AST::FuncCallOrArray_t& x) {
@@ -8461,6 +8597,8 @@ public:
                     tmp = create_SetConstant(x);
                 else if ( var_name == "_lfortran_dict_constant")
                     tmp = create_DictConstant(x);
+                else if ( var_name == "_lfortran_tuple_constant")
+                    tmp = create_TupleConstant(x);
             } else {
                 throw LCompilersException("create_" + var_name + " not implemented yet.");
             }

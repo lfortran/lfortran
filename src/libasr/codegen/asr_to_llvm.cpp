@@ -2416,7 +2416,8 @@ public:
         this->visit_expr_wrapper(x.m_pos, true);
         llvm::Value *pos = tmp;
 
-        tmp = tuple_api->read_item(ptuple, pos, LLVM::is_llvm_struct(x.m_type));
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, llvm_utils->module); 
+        tmp = tuple_api->read_item2(el_type, ptuple, pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_TupleConcat(const ASR::TupleConcat_t& x) {
