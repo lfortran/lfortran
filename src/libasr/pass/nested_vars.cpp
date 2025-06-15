@@ -415,6 +415,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                         ASRUtils::type_get_past_allocatable(var_type)));
                 }
+                if (is_allocatable && ASRUtils::is_descriptorString(var_type)) {
+                    var_type = var->m_type;
+                }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
                     ASR::intentType::Unspecified);
