@@ -1390,6 +1390,8 @@ public:
 
     ASR::accessType dflt_access = ASR::Public;
     bool in_module = false;
+    int if_label_go_to_id = 0; // Used to generate unique labels for GoTo statements
+    std::unordered_map<std::string, ASR::stmt_t*> if_label_mapping; // maps if label to corresponding exit GoToTarget
     std::map<SymbolTable*, std::map<AST::decl_attribute_t*, AST::simple_attributeType>> overloaded_ops;
     std::map<SymbolTable*, ASR::accessType> assgn;
     std::map<std::string, ASR::accessType> assgnd_access;

@@ -4602,12 +4602,26 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if ( x.m_stmt_name != nullptr && std::string(x.m_stmt_name) != "" ) {
+            std::string stmt_name = to_lower(x.m_stmt_name);
+            if_label_mapping[stmt_name] = nullptr;
+
+        }
         transform_stmts(body, x.n_body, x.m_body);
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
         tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
+        if ( x.m_stmt_name != nullptr && std::string(x.m_stmt_name) != "" ) {
+            std::string stmt_name = to_lower(x.m_stmt_name);
+            ASR::stmt_t* go_to_target = if_label_mapping[stmt_name];
+            if ( go_to_target != nullptr ) {
+                tmp_vec.push_back(tmp);
+                tmp_vec.push_back((ASR::asr_t*) go_to_target);
+                tmp = nullptr;
+            }
+        }
         all_blocks_nesting--;
     }
 
@@ -5032,7 +5046,15 @@ public:
                                 { Label("", { x.base.base.loc }) }));
             throw SemanticAbort();
         }
-        tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
+        if ( x.m_stmt_name != nullptr && if_label_mapping.find(to_lower(x.m_stmt_name)) != if_label_mapping.end() ) {
+            // If the exit statement has a label, we need to add it to the mapping
+            tmp = ASR::make_GoTo_t(al, x.base.base.loc, if_label_go_to_id - 1,
+                s2c(al, to_lower(x.m_stmt_name)));
+            if_label_mapping[to_lower(x.m_stmt_name)] = ASRUtils::STMT(ASR::make_GoToTarget_t(al, x.base.base.loc, if_label_go_to_id - 1, s2c(al, to_lower(x.m_stmt_name))));
+            if_label_go_to_id--;
+        } else {
+            tmp = ASR::make_Exit_t(al, x.base.base.loc, x.m_stmt_name);
+        }
     }
 
     void visit_Cycle(const AST::Cycle_t &x) {
