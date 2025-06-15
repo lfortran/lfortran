@@ -1756,6 +1756,47 @@ class ParallelRegionVisitor :
             current_scope = current_scope_copy;
         }
 
+        void visit_If(const ASR::If_t &x) {
+            if(nesting_lvl) {
+                ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                    std::vector<ASR::stmt_t*> if_body={}, else_body={};
+                    DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                    stmt_visitor.current_expr = nullptr;
+                    nested_lowered_body={};
+    
+                    for (size_t i = 0; i < x.n_body; i++) {
+                        if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                            this->visit_stmt(*x.m_body[i]);
+                            for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                                if_body.push_back(nested_lowered_body[j]);
+                            }
+                            nested_lowered_body = body_copy;
+                        } else {
+                            stmt_visitor.visit_stmt(*x.m_body[i]);
+                            if_body.push_back(x.m_body[i]);
+                        }
+                    }
+                    for (size_t i = 0; i < x.n_orelse; i++) {
+                        if (ASR::is_a<ASR::OMPRegion_t>(*x.m_orelse[i])) {
+                            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                            this->visit_stmt(*x.m_orelse[i]);
+                            for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                                else_body.push_back(nested_lowered_body[j]);
+                            }
+                            nested_lowered_body = body_copy;
+                        } else {
+                            stmt_visitor.visit_stmt(*x.m_orelse[i]);
+                            else_body.push_back(x.m_orelse[i]);
+                        }
+                    }
+    
+                    // Create the If statement with the processed body
+                    ASR::stmt_t* if_stmt = b.If(x.m_test, if_body, else_body);
+                    nested_lowered_body.push_back(if_stmt);
+            }
+        }
+
         void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
             SymbolTable* current_scope_copy = current_scope;
             current_scope = ASRUtils::symbol_parent_symtab(x.m_name);
@@ -1767,12 +1808,39 @@ class ParallelRegionVisitor :
         }
 
         void visit_DoLoop(const ASR::DoLoop_t &x) {
-            ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
+            if(nesting_lvl == 0) {
+                ASR::DoLoop_t& xx = const_cast<ASR::DoLoop_t&>(x);
 
-            visit_do_loop_head(xx.m_head);
+                visit_do_loop_head(xx.m_head);
 
-            transform_stmts_do_loop(xx.m_body, xx.n_body);
-            transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
+                transform_stmts_do_loop(xx.m_body, xx.n_body);
+                transform_stmts_do_loop(xx.m_orelse, xx.n_orelse);
+            } else {
+                ASRUtils::ASRBuilder b(al, x.base.base.loc);
+                std::vector<ASR::stmt_t*> loop_body={};
+                DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+                stmt_visitor.current_expr = nullptr;
+                nested_lowered_body={};
+
+                for (size_t i = 0; i < x.n_body; i++) {
+                    if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
+                        std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                        this->visit_stmt(*x.m_body[i]);
+                        for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                            loop_body.push_back(nested_lowered_body[j]);
+                        }
+                        nested_lowered_body = body_copy;
+                    } else {
+                        stmt_visitor.visit_stmt(*x.m_body[i]);
+                        loop_body.push_back(x.m_body[i]);
+                    }
+                }
+
+                // Create the DoLoop with the processed body
+                ASR::stmt_t* do_loop_stmt = b.DoLoop(x.m_head.m_v, x.m_head.m_start, x.m_head.m_end,
+                    loop_body, x.m_head.m_increment);
+                nested_lowered_body.push_back(do_loop_stmt);
+            }
         }
 
         void init_reduction_vars(Vec<ASR::OMPReduction_t*> reduction_clauses, const LCompilers::Location &loc) {
