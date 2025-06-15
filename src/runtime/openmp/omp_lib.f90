@@ -1,5 +1,5 @@
 module omp_lib
-use iso_c_binding, only: c_funptr, c_ptr, c_int
+use iso_c_binding, only: c_funptr, c_ptr, c_int, c_long, c_bool
 implicit none
 
 interface
@@ -9,6 +9,15 @@ type(c_funptr), value :: fn
 type(c_ptr), value :: data
 integer(c_int), value :: num_threads
 integer(c_int), value :: flags
+end subroutine
+
+subroutine GOMP_task(fn, data, cpyfn, arg_size, arg_align, if_clause, flags, depend) &
+                         bind(C, name="GOMP_task")
+      import :: c_funptr, c_ptr, c_long, c_bool, c_int
+      type(c_ptr), value :: fn, data, cpyfn, depend
+      integer(c_long), value :: arg_size, arg_align
+      logical(c_bool), value :: if_clause
+      integer(c_int), value :: flags
 end subroutine
 
 integer(c_int) function GOMP_sections_start(count) bind(C, name="GOMP_sections_start")
