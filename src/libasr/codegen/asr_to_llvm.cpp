@@ -6145,6 +6145,9 @@ public:
             ASR::ttype_t* wrapped_struct_type = ASRUtils::TYPE(
                         ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
                         ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_ttype))->m_derived_type));
+            if (value_struct_type == nullptr) {
+                value_struct_type = wrapped_struct_type;
+            }
             llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_struct_type, module.get());
             llvm::Value* target_struct_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(),
                                             llvm_utils->create_gep2(asr_ttype, tmp, 1));
@@ -10027,12 +10030,14 @@ public:
 
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(arg->m_type))
-                                    && ASR::is_a<ASR::StructType_t>(
-                                        *ASRUtils::type_get_past_allocatable(orig_arg->m_type))
                                     && !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
                                     // if the required argument is of struct type, we need to pass
                                     // in the struct pointer to it
+                                    llvm::Value* class_value = tmp;
+                                    if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg->m_type)) {
+                                        check_and_allocate(x.m_args[i].m_value, orig_arg->m_type);
+                                    }
                                     ASR::ttype_t* struct_type = ASRUtils::TYPE(
                                                                     ASRUtils::make_StructType_t_util(
                                                                     al, arg->m_type->base.loc,
@@ -10045,12 +10050,13 @@ public:
                                                             llvm_utils->get_type_from_ttype_t_util(
                                                                 ASRUtils::type_get_past_allocatable(arg->m_type),
                                                                 module.get()),
-                                                            tmp, 1);
+                                                            class_value, 1);
 
                                     if (ASRUtils::is_class_type(
                                             ASRUtils::type_get_past_allocatable(arg->m_type))
                                         && !ASR::is_a<ASR::Allocatable_t>(*orig_arg->m_type)) {
                                         tmp = llvm_utils->CreateLoad2(llvm_struct_type, struct_ptr);
+                                        tmp = builder->CreateBitCast(tmp, llvm_utils->get_type_from_ttype_t_util(orig_arg->m_type, module.get())->getPointerTo());
                                     } else {
                                         tmp = struct_ptr;
                                     }
@@ -10286,6 +10292,9 @@ public:
                                      && (orig_arg->m_intent == ASR::intentType::Out
                                          || orig_arg->m_intent == ASR::intentType::InOut)))
                                 && value->getType()->isPointerTy()) {
+                                if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
+                                    check_and_allocate(x.m_args[i].m_value);
+                                }
                                 value = llvm_utils->CreateLoad(value);
                             }
                             if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&

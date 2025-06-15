@@ -1758,6 +1758,7 @@ RUN(NAME class_48 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --rea
 RUN(NAME class_49 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_50 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 RUN(NAME class_51 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME class_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
