@@ -32,6 +32,7 @@
                                     []
                                     []
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringFindSet
@@ -66,6 +67,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringFindSet
@@ -100,6 +102,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringFindSet
@@ -204,6 +207,7 @@
                                     []
                                     []
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringContainsSet
@@ -238,6 +242,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringContainsSet
@@ -272,6 +277,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringContainsSet
@@ -306,6 +312,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringContainsSet
@@ -340,6 +347,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (IntrinsicElementalFunction
                                                 StringContainsSet

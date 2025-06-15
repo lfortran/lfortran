@@ -158,6 +158,7 @@
                                     (Var 3 length)
                                     (Var 3 pattern)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 3 pattern)]

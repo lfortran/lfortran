@@ -312,6 +312,7 @@
                                     []
                                     [(Var 6 self)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StringPhysicalCast
@@ -358,6 +359,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -648,6 +650,7 @@
                                     []
                                     [(Var 23 self)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StringPhysicalCast
@@ -694,6 +697,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StringPhysicalCast

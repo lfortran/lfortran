@@ -181,6 +181,7 @@
                                                             (Logical 4)
                                                         )
                                                         [(If
+                                                            ()
                                                             (IntegerCompare
                                                                 (Var 6 top)
                                                                 GtE

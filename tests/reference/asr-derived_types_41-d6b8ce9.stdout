@@ -61,6 +61,7 @@
                     derived_types_41
                     [derived_types_41_mod]
                     [(If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast
@@ -116,6 +117,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 4 mytype_instance)
@@ -134,6 +136,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast

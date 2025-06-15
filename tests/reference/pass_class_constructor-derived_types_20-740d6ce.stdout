@@ -490,6 +490,7 @@
                                         ()
                                     )
                                     (If
+                                        ()
                                         (IntrinsicArrayFunction
                                             Any
                                             [(ArrayPhysicalCast

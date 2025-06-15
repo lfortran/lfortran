@@ -3745,7 +3745,7 @@ namespace Merge {
             if_body.push_back(al, b.Assignment(result, tsource_arg));
             Vec<ASR::stmt_t *> else_body; else_body.reserve(al, 1);
             else_body.push_back(al, b.Assignment(result, fsource_arg));
-            body.push_back(al, STMT(ASR::make_If_t(al, loc, mask_arg,
+            body.push_back(al, STMT(ASR::make_If_t(al, loc, nullptr, mask_arg,
                 if_body.p, if_body.n, else_body.p, else_body.n)));
         }
 

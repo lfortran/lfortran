@@ -349,6 +349,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -395,6 +396,7 @@
                             .false.
                         )]
                         [(If
+                            ()
                             (IntegerCompare
                                 (ArrayItem
                                     (StructInstanceMember
@@ -679,6 +681,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -697,6 +700,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -726,6 +730,7 @@
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ())
                         [(If
+                            ()
                             (IntegerCompare
                                 (ArrayItem
                                     (StructInstanceMember
@@ -764,6 +769,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 d)
                             NotEq

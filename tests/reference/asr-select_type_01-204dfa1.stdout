@@ -258,6 +258,7 @@
                                                         )
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -328,6 +329,7 @@
                                                         )
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -346,6 +348,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)

@@ -227,6 +227,7 @@
                         2 associate_block
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 b)
                             NotEq
@@ -240,6 +241,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 d)
                             NotEq

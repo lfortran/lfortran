@@ -152,6 +152,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 5 type_2)
@@ -170,6 +171,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (StructInstanceMember
                                 (Var 5 type_2)

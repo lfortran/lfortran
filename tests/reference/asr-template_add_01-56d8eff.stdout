@@ -1028,6 +1028,7 @@
                                         )
                                     )
                                     (If
+                                        ()
                                         (RealCompare
                                             (IntrinsicElementalFunction
                                                 Abs
@@ -1100,6 +1101,7 @@
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (FunctionCall
                                                 10 add_integer

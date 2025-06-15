@@ -418,6 +418,7 @@
                                     [(Var 4 log1)
                                     (Var 4 log2)]
                                     [(If
+                                        ()
                                         (LogicalBinOp
                                             (Var 4 log1)
                                             And
@@ -432,6 +433,7 @@
                                             .false.
                                         )]
                                         [(If
+                                            ()
                                             (LogicalBinOp
                                                 (LogicalNot
                                                     (Var 4 log1)

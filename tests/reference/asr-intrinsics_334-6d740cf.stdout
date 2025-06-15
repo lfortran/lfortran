@@ -116,6 +116,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(IntegerCompare
@@ -165,6 +166,7 @@
                         )
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntrinsicImpureFunction
                                 Allocated
