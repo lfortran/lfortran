@@ -9,11 +9,21 @@
                     (SymbolTable
                         8
                         {
+                            c_bool:
+                                (ExternalSymbol
+                                    8
+                                    c_bool
+                                    25 c_bool
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_bool
+                                    Public
+                                ),
                             c_funptr:
                                 (ExternalSymbol
                                     8
                                     c_funptr
-                                    24 c_funptr
+                                    25 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -23,17 +33,27 @@
                                 (ExternalSymbol
                                     8
                                     c_int
-                                    24 c_int
+                                    25 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
+                                    Public
+                                ),
+                            c_long:
+                                (ExternalSymbol
+                                    8
+                                    c_long
+                                    25 c_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long
                                     Public
                                 ),
                             c_ptr:
                                 (ExternalSymbol
                                     8
                                     c_ptr
-                                    24 c_ptr
+                                    25 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -461,14 +481,218 @@
                                     .false.
                                     ()
                                 ),
-                            omp_get_max_threads:
+                            gomp_task:
                                 (Function
                                     (SymbolTable
                                         18
                                         {
-                                            omp_get_max_threads:
+                                            arg_align:
                                                 (Variable
                                                     18
+                                                    arg_align
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            arg_size:
+                                                (Variable
+                                                    18
+                                                    arg_size
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            cpyfn:
+                                                (Variable
+                                                    18
+                                                    cpyfn
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            data:
+                                                (Variable
+                                                    18
+                                                    data
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            depend:
+                                                (Variable
+                                                    18
+                                                    depend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            flags:
+                                                (Variable
+                                                    18
+                                                    flags
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            fn:
+                                                (Variable
+                                                    18
+                                                    fn
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                ),
+                                            if_clause:
+                                                (Variable
+                                                    18
+                                                    if_clause
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_task
+                                    (FunctionType
+                                        [(CPtr)
+                                        (CPtr)
+                                        (CPtr)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (CPtr)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        "GOMP_task"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 18 fn)
+                                    (Var 18 data)
+                                    (Var 18 cpyfn)
+                                    (Var 18 arg_size)
+                                    (Var 18 arg_align)
+                                    (Var 18 if_clause)
+                                    (Var 18 flags)
+                                    (Var 18 depend)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_max_threads:
+                                (Function
+                                    (SymbolTable
+                                        19
+                                        {
+                                            omp_get_max_threads:
+                                                (Variable
+                                                    19
                                                     omp_get_max_threads
                                                     []
                                                     ReturnVar
@@ -505,7 +729,7 @@
                                     []
                                     []
                                     []
-                                    (Var 18 omp_get_max_threads)
+                                    (Var 19 omp_get_max_threads)
                                     Public
                                     .false.
                                     .false.
@@ -514,11 +738,11 @@
                             omp_get_num_procs:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        20
                                         {
                                             omp_get_num_procs:
                                                 (Variable
-                                                    19
+                                                    20
                                                     omp_get_num_procs
                                                     []
                                                     ReturnVar
@@ -555,7 +779,7 @@
                                     []
                                     []
                                     []
-                                    (Var 19 omp_get_num_procs)
+                                    (Var 20 omp_get_num_procs)
                                     Public
                                     .false.
                                     .false.
@@ -564,11 +788,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        21
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    20
+                                                    21
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -605,7 +829,7 @@
                                     []
                                     []
                                     []
-                                    (Var 20 omp_get_thread_num)
+                                    (Var 21 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -614,11 +838,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        22
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    21
+                                                    22
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -655,7 +879,7 @@
                                     []
                                     []
                                     []
-                                    (Var 21 omp_get_wtime)
+                                    (Var 22 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -664,11 +888,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        22
+                                        23
                                         {
                                             n:
                                                 (Variable
-                                                    22
+                                                    23
                                                     n
                                                     []
                                                     Unspecified
@@ -703,7 +927,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 22 n)]
+                                    [(Var 23 n)]
                                     []
                                     ()
                                     Public
@@ -722,11 +946,21 @@
                     (SymbolTable
                         6
                         {
+                            c_bool:
+                                (ExternalSymbol
+                                    6
+                                    c_bool
+                                    25 c_bool
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_bool
+                                    Public
+                                ),
                             c_funptr:
                                 (ExternalSymbol
                                     6
                                     c_funptr
-                                    24 c_funptr
+                                    25 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -736,17 +970,27 @@
                                 (ExternalSymbol
                                     6
                                     c_int
-                                    24 c_int
+                                    25 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
+                                    Public
+                                ),
+                            c_long:
+                                (ExternalSymbol
+                                    6
+                                    c_long
+                                    25 c_long
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_long
                                     Public
                                 ),
                             c_ptr:
                                 (ExternalSymbol
                                     6
                                     c_ptr
-                                    24 c_ptr
+                                    25 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -870,6 +1114,16 @@
                                     omp_lib
                                     []
                                     gomp_sections_start
+                                    Public
+                                ),
+                            gomp_task:
+                                (ExternalSymbol
+                                    6
+                                    gomp_task
+                                    8 gomp_task
+                                    omp_lib
+                                    []
+                                    gomp_task
                                     Public
                                 ),
                             omp_get_max_threads:
