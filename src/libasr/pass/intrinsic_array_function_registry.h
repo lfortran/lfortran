@@ -822,6 +822,7 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
             ASR::stmt_t* if_mask_ = ASRUtils::STMT(ASR::make_If_t(al, loc,
+                                        nullptr,
                                         mask_ref, if_mask.p, if_mask.size(),
                                         nullptr, 0));
             doloop_body.push_back(al, if_mask_);
@@ -882,6 +883,7 @@ static inline void generate_body_for_array_dim_mask_input(
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
             ASR::stmt_t* if_mask_ = ASRUtils::STMT(ASR::make_If_t(al, loc,
+                                        nullptr,
                                         mask_ref, if_mask.p, if_mask.size(),
                                         nullptr, 0));
             doloop_body.push_back(al, if_mask_);
