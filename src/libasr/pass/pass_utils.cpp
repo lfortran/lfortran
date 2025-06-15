@@ -1575,6 +1575,9 @@ namespace LCompilers {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                                 al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                         }
+                        if (ASRUtils::is_descriptorString(ASRUtils::expr_type(curr_init))) {
+                            curr_init = ASRUtils::cast_string_descriptor_to_pointer(al, curr_init);
+                        }
                         ASR::stmt_t* assign = builder.Assignment(res, curr_init);
                         result_vec->push_back(al, assign);
                         increment_by_one(idx_var, result_vec)
