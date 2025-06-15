@@ -249,7 +249,7 @@ public:
                                     al, x.base.base.loc, a_len,
                                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
                                     ASR::string_length_kindType::ExpressionLength,
-                                ASR::string_physical_typeType::PointerString));
+                                ASR::string_physical_typeType::DescriptorString));
                             break;
                         }
                         default :
@@ -1479,7 +1479,7 @@ public:
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind)))),
                         ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::PointerString));
+                        ASR::string_physical_typeType::DescriptorString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
