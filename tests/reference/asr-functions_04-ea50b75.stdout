@@ -61,6 +61,7 @@
                     functions_04
                     [stdlib_int]
                     [(If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 4 to_negative@to_negative~genericprocedure
@@ -95,6 +96,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 4 to_negative@to_negative~genericprocedure
@@ -195,6 +197,7 @@
                                     []
                                     [(Var 3 int)]
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (Var 3 int)
                                             GtE

@@ -311,6 +311,7 @@
                                     [(Var 8 lhs)
                                     (Var 8 rhs)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -349,6 +350,7 @@
                                             )
                                         )
                                         (If
+                                            ()
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
@@ -432,6 +434,7 @@
                                             []
                                         )]
                                         [(If
+                                            ()
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
@@ -708,6 +711,7 @@
                                     (Var 9 millisec)
                                     (Var 9 zone)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 hour)]
@@ -729,6 +733,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 minute)]
@@ -750,6 +755,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 second)]
@@ -771,6 +777,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 millisec)]
@@ -794,6 +801,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 zone)]
@@ -960,6 +968,7 @@
                                     [(Var 7 lhs)
                                     (Var 7 rhs)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -1078,6 +1087,7 @@
                                         )]
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StringPhysicalCast

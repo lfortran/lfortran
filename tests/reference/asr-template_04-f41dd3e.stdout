@@ -21923,6 +21923,7 @@
                                                     empty]
                                                     [(Var 27 list)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (ArraySize
                                                                 (Var 27 list)
@@ -22126,6 +22127,7 @@
                                                     [(Var 26 n)
                                                     (Var 26 a)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 26 n)
                                                             Lt
@@ -23143,6 +23145,7 @@
                                                     [combine]
                                                     [(Var 11 list)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (ArraySize
                                                                 (Var 11 list)
@@ -23337,6 +23340,7 @@
                                                     [(Var 12 n)
                                                     (Var 12 a)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 12 n)
                                                             Lt

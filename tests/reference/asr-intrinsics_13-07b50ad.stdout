@@ -234,6 +234,7 @@
                     intrinsics_13
                     []
                     [(If
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
@@ -286,6 +287,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
@@ -338,6 +340,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntegerCompare
                                 (Var 2 p6)

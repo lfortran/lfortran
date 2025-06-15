@@ -438,6 +438,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (IntegerCompare
                                     (ArrayItem
                                         (Var 2 a)
@@ -606,6 +607,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (RealCompare
                                     (IntrinsicElementalFunction
                                         Abs
@@ -789,6 +791,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (RealCompare
                                     (IntrinsicElementalFunction
                                         Abs
@@ -1017,6 +1020,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (RealCompare
                                     (IntrinsicElementalFunction
                                         Abs
@@ -1079,6 +1083,7 @@
                                 []
                             )
                             (If
+                                ()
                                 (RealCompare
                                     (IntrinsicElementalFunction
                                         Abs
@@ -1244,6 +1249,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (LogicalBinOp
                                     (ArrayItem
                                         (Var 2 l)

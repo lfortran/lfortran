@@ -401,6 +401,7 @@
                                                     [(Var 10 this)
                                                     (Var 10 n)]
                                                     [(If
+                                                        ()
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
@@ -450,6 +451,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 10 this)
@@ -728,6 +730,7 @@
                                         (Var 7 v)
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (ArrayItem
                                                 (StructInstanceMember
@@ -1115,6 +1118,7 @@
                                                     [(Var 6 this)
                                                     (Var 6 n)]
                                                     [(If
+                                                        ()
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
@@ -1168,6 +1172,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 6 this)

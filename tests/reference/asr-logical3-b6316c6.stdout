@@ -69,6 +69,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             And
@@ -93,6 +94,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             Or
@@ -117,6 +119,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             Xor
@@ -159,6 +162,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (LogicalNot
                             (LogicalBinOp
                                 (Var 2 a)
@@ -187,6 +191,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 b)
                             NEqv
@@ -211,6 +216,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 b)
                             Eqv
@@ -253,6 +259,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             And
@@ -277,6 +284,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             Or
@@ -301,6 +309,7 @@
                         )]
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             Xor

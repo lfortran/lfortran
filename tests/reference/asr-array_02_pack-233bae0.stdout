@@ -159,6 +159,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast

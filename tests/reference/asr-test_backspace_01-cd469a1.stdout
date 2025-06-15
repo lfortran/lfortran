@@ -171,6 +171,7 @@
                         .true.
                     )
                     (If
+                        ()
                         (StringCompare
                             (Var 2 line)
                             NotEq

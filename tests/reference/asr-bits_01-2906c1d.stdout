@@ -31,6 +31,7 @@
                     bits_01
                     [iso_fortran_env]
                     [(If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ibclr
@@ -54,6 +55,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ibclr
@@ -77,6 +79,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ibset
@@ -100,6 +103,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ibset
@@ -123,6 +127,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ieor
@@ -146,6 +151,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Ieor
