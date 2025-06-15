@@ -491,6 +491,7 @@
                                                 )
                                                 ())
                                                 [(If
+                                                    ()
                                                     (RealCompare
                                                         (ArrayItem
                                                             (Var 4 c)

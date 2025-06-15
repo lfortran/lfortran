@@ -238,6 +238,7 @@
                         )
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 p1)
@@ -254,6 +255,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 p2)
@@ -270,6 +272,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 p1)
@@ -286,6 +289,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 p2)
@@ -302,6 +306,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 p3)
                             ()
@@ -314,6 +319,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 p3)
                             (Var 2 t3)

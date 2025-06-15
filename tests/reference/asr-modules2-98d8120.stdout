@@ -251,6 +251,7 @@
                                     []
                                     [(Var 15 self)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StringPhysicalCast
@@ -297,6 +298,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember

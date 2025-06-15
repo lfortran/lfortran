@@ -285,6 +285,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
@@ -298,6 +299,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i8)
                             NotEq
@@ -369,6 +371,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
@@ -382,6 +385,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i8)
                             NotEq

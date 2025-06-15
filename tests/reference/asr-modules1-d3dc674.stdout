@@ -221,6 +221,7 @@
                                     []
                                     [(Var 6 self)]
                                     [(If
+                                        ()
                                         (FunctionCall
                                             6 1_f
                                             ()

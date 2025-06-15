@@ -459,6 +459,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (FunctionCall
                                 6 1_multiply
@@ -491,6 +492,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (FunctionCall
                                 6 1_sqrt_subtract

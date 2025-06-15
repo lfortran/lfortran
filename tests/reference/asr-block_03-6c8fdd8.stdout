@@ -67,6 +67,7 @@
                                         .false.
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 2 a)
                                             Eq
@@ -193,6 +194,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 3 result)
                             NotEq

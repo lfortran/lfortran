@@ -207,6 +207,7 @@
                     main
                     [derived_types_11]
                     [(If
+                        ()
                         (StringCompare
                             (StructInstanceMember
                                 (Var 4 type_y)
@@ -234,6 +235,7 @@
                         []
                     )
                     (If
+                        ()
                         (StringCompare
                             (Var 4 x)
                             NotEq

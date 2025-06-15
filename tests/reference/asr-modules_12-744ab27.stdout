@@ -71,6 +71,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (Var 3 a)

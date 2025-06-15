@@ -259,6 +259,7 @@
                                         ()
                                     )
                                     (If
+                                        ()
                                         (LogicalNot
                                             (IntrinsicImpureFunction
                                                 Allocated
