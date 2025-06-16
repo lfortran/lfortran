@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
@@ -2323,6 +2324,20 @@ namespace LCompilers {
                                                   el_type->getPointerTo()};
         llvm::StructType* list_desc = llvm::StructType::create(context, list_type_vec, "list");
         typecode2listtype[type_code] = std::make_tuple(list_desc, type_size, el_type);
+        return list_desc;
+    }
+
+    llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* type) {
+        if( type2listtype.find(type) != type2listtype.end() ) {
+            return std::get<0>(type2listtype[type]);
+        }
+
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(type, llvm_utils->module);
+        std::vector<llvm::Type*> list_type_vec = {llvm::Type::getInt32Ty(context),
+                                                  llvm::Type::getInt32Ty(context),
+                                                  el_type->getPointerTo()};
+        llvm::StructType* list_desc = llvm::StructType::create(context, list_type_vec, "list");
+        type2listtype[type] = std::make_tuple(list_desc, el_type->getScalarSizeInBits()/8, el_type);
         return list_desc;
     }
 
@@ -5046,10 +5061,10 @@ namespace LCompilers {
         llvm_utils->start_new_block(mergeBB);
     }
 
-    void LLVMList::resize_if_needed2(std::string& type_code, llvm::Value* list, llvm::Value* n,
+    void LLVMList::resize_if_needed2(ASR::ttype_t* type, llvm::Value* list, llvm::Value* n,
                                     llvm::Value* capacity, int32_t type_size,
                                     llvm::Type* el_type, llvm::Module* module) {
-        llvm::Type* list_type = get_list_type(el_type, type_code, type_size);
+        llvm::Type* list_type = get_list_type_from_ttype(type);
         llvm::Value *cond = builder->CreateICmpEQ(n, capacity);
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
@@ -5085,8 +5100,8 @@ namespace LCompilers {
     }
 
 
-    void LLVMList::shift_end_point_by_one2(std::string& type_code, llvm::Value* list) {
-        llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
+    void LLVMList::shift_end_point_by_one2(ASR::ttype_t* el_type, llvm::Value* list) {
+        llvm::Type* list_type = get_list_type_from_ttype(el_type);
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point2(list_type, list);
         llvm::Value* end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                             end_point_ptr);
@@ -5097,20 +5112,19 @@ namespace LCompilers {
     void LLVMList::append(llvm::Value* list, llvm::Value* item,
                           ASR::ttype_t* asr_type, llvm::Module* module,
                           std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        std::string type_code = ASRUtils::get_type_code(asr_type);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
         int type_size = el_type->getScalarSizeInBits()/8;
-        llvm::Type* list_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
+        llvm::Type* list_type = get_list_type_from_ttype(asr_type);
 
 
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                                  get_pointer_to_current_end_point2(list_type, list));
         llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                                 get_pointer_to_current_capacity2(list_type, list));
-        resize_if_needed2(type_code, list, current_end_point, current_capacity,
+        resize_if_needed2(asr_type, list, current_end_point, current_capacity,
                          type_size, el_type, module);
         write_item(list, current_end_point, item, asr_type, false, module, name2memidx);
-        shift_end_point_by_one2(type_code, list);
+        shift_end_point_by_one2(asr_type, list);
     }
 
     void LLVMList::insert_item(llvm::Value* list, llvm::Value* pos,
