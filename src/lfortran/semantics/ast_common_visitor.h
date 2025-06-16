@@ -3463,6 +3463,8 @@ public:
                                     nullptr, 0, x.m_vartype, 
                                     nullptr, AST::symbolType::None)));
 
+                LCOMPILERS_ASSERT(sym_type);
+
 
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                

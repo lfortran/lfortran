@@ -1,3 +1,4 @@
+#include "libasr/assert.h"
 #include <iostream>
 #include <map>
 #include <string>
@@ -463,7 +464,9 @@ public:
                                     nullptr, 0, decl->m_vartype, 
                                     nullptr, AST::symbolType::None)));
                         
-                    }
+                    } 
+
+                    LCOMPILERS_ASSERT(type);
 
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure) {
                         procedure_decl_indices.push_back(al, i);
