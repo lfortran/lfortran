@@ -14,5 +14,9 @@ program lp_set_test_01
    call _lfortran_set_add(test_set, -50)
    if (_lfortran_len(test_set) /= 5) error stop
 
+   type(_lfortran_set(integer)) :: test_set_
+   test_set_ = _lfortran_set_constant(3, 4, 8, 5, 4, 10)
+   call _lfortran_set_add(test_set_, 1)
+   if (_lfortran_len(test_set_) /= 6) error stop
    ! Add other intrinsics later
 end program
