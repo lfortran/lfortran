@@ -1927,14 +1927,9 @@ public:
             }
         }
 
-        if (ASR::is_a<ASR::Var_t>(*a_test)) {
-            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(a_test);
-            if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
-                ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(variable->m_type)) && ASRUtils::is_allocatable(variable->m_type)) {
-                    a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
-                }
-            }
+        if ((ASR::is_a<ASR::FunctionCall_t>(*a_test) || ASR::is_a<ASR::Var_t>(*a_test)) &&
+                    ASRUtils::is_descriptorString(ASRUtils::expr_type(a_test))) {
+            a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
         }
 
         tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
