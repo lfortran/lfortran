@@ -3579,6 +3579,26 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
+    len = strlen(status);
+    if (*(status + len - 1) == ' ') {
+        // trim trailing spaces
+        char* end = status + len - 1;
+        while (end > status && isspace((unsigned char) *end)) {
+            end--;
+        }
+        *(end + 1) = '\0';
+    }
+
+    len = strlen(form);
+    if (*(form + len - 1) == ' ') {
+        // trim trailing spaces
+        char* end = form + len - 1;
+        while (end > form && isspace((unsigned char) *end)) {
+            end--;
+        }
+        *(end + 1) = '\0';
+    }
+
     _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
