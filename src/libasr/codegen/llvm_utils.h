@@ -423,22 +423,22 @@ namespace LCompilers {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
                 std::string if_name;
+                llvm::BasicBlock *thenBB = nullptr;
+                llvm::BasicBlock *elseBB = nullptr;
+                llvm::BasicBlock *mergeBB = nullptr;
                 if (name) {
                     if_name = std::string(name);
+                    std::string if_cont_name = if_name + ".ifcont";
+                    thenBB = llvm::BasicBlock::Create(context, if_name + ".then", fn);
+                    elseBB = llvm::BasicBlock::Create(context, if_name + ".else");
+                    mergeBB = llvm::BasicBlock::Create(context, if_cont_name);
+                    loop_or_block_end.push_back(mergeBB);
+                    loop_or_block_end_names.push_back(if_cont_name);
                 } else {
-                    if_name = "";
+                    thenBB = llvm::BasicBlock::Create(context, "then", fn);
+                    elseBB = llvm::BasicBlock::Create(context, "else");
+                    mergeBB = llvm::BasicBlock::Create(context, "ifcont");
                 }
-
-                std::string if_then_name = if_name + ".then";
-                std::string if_else_name = if_name + ".end";
-                std::string if_cont_name = if_name + ".ifcont";
-
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, if_then_name, fn);
-                llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, if_else_name);
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, if_cont_name);
-
-                loop_or_block_end.push_back(mergeBB);
-                loop_or_block_end_names.push_back(if_cont_name);
 
                 builder->CreateCondBr(cond, thenBB, elseBB);
                 builder->SetInsertPoint(thenBB); {
