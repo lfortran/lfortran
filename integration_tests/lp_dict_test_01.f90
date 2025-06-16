@@ -2,7 +2,7 @@ program dict_test_01
    implicit none
    real :: eps = 1e-6
 
-   type(_lfortran_dict(integer, integer(4))):: dict_i
+   _lfortran_dict(integer, integer(4)):: dict_i
    dict_i = _lfortran_dict_constant(1, 2, 2, 5, 3, 7)
    if (_lfortran_len(dict_i) /= 3) error stop
 
