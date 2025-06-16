@@ -398,6 +398,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 8 char_str_hash1)
                             NotEq
@@ -481,6 +482,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 8 char_str_hash3)
                             NotEq
@@ -570,6 +572,7 @@
                         )
                     )
                     (If
+                        ()
                         (StringCompare
                             (StringPhysicalCast
                                 (Var 8 cat_str_alloc)
@@ -598,6 +601,7 @@
                         []
                     )
                     (If
+                        ()
                         (FunctionCall
                             8 is_fortran_name
                             ()
@@ -697,6 +701,7 @@
                         )
                     )
                     (If
+                        ()
                         (StringCompare
                             (StringPhysicalCast
                                 (Var 8 cat_str_alloc)
@@ -725,6 +730,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (FunctionCall
                                 8 is_fortran_name
@@ -914,6 +920,7 @@
                                     [(Var 4 input)
                                     (Var 4 seed)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 4 seed)]
@@ -1502,6 +1509,7 @@
                                         .false.
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (StringLen
                                                 (Var 6 name)
@@ -1821,6 +1829,7 @@
                                     [(Var 7 strings)
                                     (Var 7 delim)]
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (ArraySize
                                                 (Var 7 strings)
@@ -1854,6 +1863,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 7 delim)]

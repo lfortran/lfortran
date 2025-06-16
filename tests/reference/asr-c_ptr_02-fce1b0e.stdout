@@ -517,6 +517,7 @@
                         )
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (PointerAssociated
                                 (Var 2 temp_ptr)

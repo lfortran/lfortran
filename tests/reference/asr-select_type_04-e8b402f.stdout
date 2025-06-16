@@ -337,6 +337,7 @@
                                                         (Var 8 tmp)
                                                     )
                                                     (If
+                                                        ()
                                                         (IntrinsicElementalFunction
                                                             Present
                                                             [(Var 8 stat)]
@@ -396,6 +397,7 @@
                                         [(Var 8 ptr)]
                                     )
                                     (If
+                                        ()
                                         (PointerAssociated
                                             (Var 8 tmp)
                                             ()
@@ -412,6 +414,7 @@
                                                 )]
                                             )]
                                             [(If
+                                                ()
                                                 (IntrinsicElementalFunction
                                                     Present
                                                     [(Var 8 stat)]

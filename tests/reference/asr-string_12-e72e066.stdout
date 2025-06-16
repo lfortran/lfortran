@@ -366,6 +366,7 @@
                         )
                     )
                     (If
+                        ()
                         (StringCompare
                             (Var 2 string)
                             NotEq

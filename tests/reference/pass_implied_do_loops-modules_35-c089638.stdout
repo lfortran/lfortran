@@ -252,6 +252,7 @@
                                         ()
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 3 place)
                                             Gt
@@ -260,6 +261,7 @@
                                             ()
                                         )
                                         [(If
+                                            ()
                                             (IntegerCompare
                                                 (StringLen
                                                     (ArrayItem
@@ -344,6 +346,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 3 place)
                                             Gt

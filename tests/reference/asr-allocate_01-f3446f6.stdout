@@ -1233,6 +1233,7 @@
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArraySize
                                 (Var 2 e)
@@ -1266,6 +1267,7 @@
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArraySize
                                 (Var 2 a)
@@ -1321,6 +1323,7 @@
                         ()
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntegerCompare
                                 (ArraySize
@@ -1402,6 +1405,7 @@
                         ()
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (LogicalBinOp
                                 (IntegerCompare
@@ -1521,6 +1525,7 @@
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArraySize
                                 (Var 2 a)
@@ -1545,6 +1550,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArraySize
                                 (Var 2 b)
@@ -1700,6 +1706,7 @@
                         ()
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntegerCompare
                                 (ArrayBound
@@ -1743,6 +1750,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntegerCompare
                                 (ArrayBound
@@ -1786,6 +1794,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (IntegerCompare
                                 (ArrayBound
@@ -1847,6 +1856,7 @@
                         )
                         ())
                         [(If
+                            ()
                             (IntegerCompare
                                 (ArrayItem
                                     (Var 2 a)
@@ -1906,6 +1916,7 @@
                             )
                             ())
                             [(If
+                                ()
                                 (RealCompare
                                     (ArrayItem
                                         (Var 2 b)
@@ -1999,6 +2010,7 @@
                                 )
                                 ())
                                 [(If
+                                    ()
                                     (ComplexCompare
                                         (ArrayItem
                                             (Var 2 c)
@@ -2062,6 +2074,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (ComplexCompare
                             (Var 2 r)
                             NotEq

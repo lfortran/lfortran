@@ -139,6 +139,7 @@
                     debug
                     []
                     [(If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Min
@@ -170,6 +171,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Max
@@ -197,6 +199,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Max
@@ -220,6 +223,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Min
@@ -247,6 +251,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Max

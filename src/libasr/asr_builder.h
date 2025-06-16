@@ -828,7 +828,7 @@ class ASRBuilder {
         Vec<ASR::stmt_t*> m_else_body; m_else_body.reserve(al, 1);
         for (auto &x: else_body) m_else_body.push_back(al, x);
 
-        return STMT(ASR::make_If_t(al, loc, a_test, m_if_body.p, m_if_body.n,
+        return STMT(ASR::make_If_t(al, loc, nullptr, a_test, m_if_body.p, m_if_body.n,
             m_else_body.p, m_else_body.n));
     }
 
@@ -1118,7 +1118,7 @@ class ASRBuilder {
             Vec<ASR::stmt_t*> if_body;
             if_body.reserve(al, 1);
             if_body.push_back(al, doloop);
-            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, test_expr,
+            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test_expr,
                                 if_body.p, if_body.size(), else_, else_n));
             Vec<ASR::stmt_t*> if_else_if;
             if_else_if.reserve(al, 1);

@@ -51,6 +51,7 @@
                     common_13
                     []
                     [(If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 1 struct_instance_myblock)
@@ -69,6 +70,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 1 struct_instance_myblock)
@@ -87,6 +89,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast

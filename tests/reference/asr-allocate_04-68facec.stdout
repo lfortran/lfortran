@@ -167,6 +167,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (StringCompare
                             (StringPhysicalCast
                                 (Var 2 string)

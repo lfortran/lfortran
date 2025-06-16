@@ -385,7 +385,7 @@ public:
             // Return
             if_body.push_back(al, ASRUtils::STMT(ASR::make_Return_t(al, loc)));
 
-            _tmp = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test,
+            _tmp = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test,
                 if_body.p, if_body.n, nullptr, 0));
             body.push_back(al, _tmp);
         }

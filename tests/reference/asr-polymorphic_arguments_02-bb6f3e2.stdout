@@ -241,6 +241,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -277,6 +278,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -313,6 +315,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -349,6 +352,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -385,6 +389,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -421,6 +426,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -457,6 +463,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -493,6 +500,7 @@
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
