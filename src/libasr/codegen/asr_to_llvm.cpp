@@ -6934,7 +6934,7 @@ public:
                 this->visit_stmt(*x.m_orelse[i]);
             }
             call_lcompilers_free_strings();
-        });
+        }, x.m_name, loop_or_block_end, loop_or_block_end_names);
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
         strings_to_be_deallocated.p = strings_to_be_deallocated_copy;
@@ -6994,10 +6994,12 @@ public:
     void visit_Exit(const ASR::Exit_t &x) {
         if (x.m_stmt_name) {
             std::string stmt_name = std::string(x.m_stmt_name) + ".end";
+            std::string if_cont_name = std::string(x.m_stmt_name) + ".ifcont";
             int nested_block_depth = loop_or_block_end_names.size();
             int i = nested_block_depth - 1;
             for (; i >= 0; i--) {
-                if (case_insensitive_string_compare(loop_or_block_end_names[i], stmt_name)) {
+                if (case_insensitive_string_compare(loop_or_block_end_names[i], stmt_name) ||
+                    case_insensitive_string_compare(loop_or_block_end_names[i], if_cont_name)) {
                     break;
                 }
             }

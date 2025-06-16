@@ -417,12 +417,28 @@ namespace LCompilers {
             // addition, the `if_block` must not be terminated, we terminate it
             // ourselves. The `else_block` can be either terminated or not.
             template <typename IF, typename ELSE>
-            void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block) {
+            void create_if_else(llvm::Value * cond, IF if_block, ELSE else_block, char *name,
+                                std::vector<llvm::BasicBlock*> &loop_or_block_end,
+                                std::vector<std::string> &loop_or_block_end_names) {
                 llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
-                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-                llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
-                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+                std::string if_name;
+                if (name) {
+                    if_name = std::string(name);
+                } else {
+                    if_name = "";
+                }
+
+                std::string if_then_name = if_name + ".then";
+                std::string if_else_name = if_name + ".end";
+                std::string if_cont_name = if_name + ".ifcont";
+
+                llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, if_then_name, fn);
+                llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, if_else_name);
+                llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, if_cont_name);
+
+                loop_or_block_end.push_back(mergeBB);
+                loop_or_block_end_names.push_back(if_cont_name);
 
                 builder->CreateCondBr(cond, thenBB, elseBB);
                 builder->SetInsertPoint(thenBB); {
@@ -434,6 +450,14 @@ namespace LCompilers {
                     else_block();
                 }
                 start_new_block(mergeBB);
+            }
+
+            // Overload with defaults
+            template <typename IF, typename ELSE>
+            void create_if_else(llvm::Value *cond, IF if_block, ELSE else_block, char *name = nullptr) {
+                static std::vector<llvm::BasicBlock*> dummy_blocks;
+                static std::vector<std::string> dummy_names;
+                create_if_else(cond, if_block, else_block, name, dummy_blocks, dummy_names);
             }
 
     }; // LLVMUtils
