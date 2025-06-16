@@ -5098,9 +5098,9 @@ namespace LCompilers {
                           ASR::ttype_t* asr_type, llvm::Module* module,
                           std::map<std::string, std::map<std::string, int>>& name2memidx) {
         std::string type_code = ASRUtils::get_type_code(asr_type);
-        int type_size = std::get<1>(typecode2listtype[type_code]);
-        llvm::Type* el_type = std::get<2>(typecode2listtype[type_code]);
-        llvm::Type* list_type = std::get<0>(typecode2listtype[type_code]);
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
+        int type_size = el_type->getScalarSizeInBits()/8;
+        llvm::Type* list_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
 
 
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
