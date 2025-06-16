@@ -164,7 +164,7 @@ ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
 }
 
 // Recursively fetch `ASR::Function_t` from an `ASR::expr_t` if it has `FunctionType`.
-ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
+const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
     if (!expr) {
         throw LCompilersException("Passed `ASR::expr_t expr` is nullptr.");
     }

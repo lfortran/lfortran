@@ -72,7 +72,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
-ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
+const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 

@@ -238,10 +238,12 @@ namespace LCompilers {
                 dertype2parent[der_type_name] = std::string(par_der_type->m_name);
                 member_idx += 1;
             }
+            Allocator al(1024);
             for( size_t i = 0; i < der_type->n_members; i++ ) {
                 std::string member_name = der_type->m_members[i];
                 ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(der_type->m_symtab->get_symbol(member_name));
-                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(member->m_type, module, member->m_abi);
+                llvm::Type* llvm_mem_type = get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                    al, member->base.base.loc, &member->base)), member->m_type, module, member->m_abi);
                 member_types.push_back(llvm_mem_type);
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
@@ -425,7 +427,7 @@ namespace LCompilers {
         return a_kind;
     }
 
-    llvm::Type* LLVMUtils::get_dict_type(ASR::ttype_t* asr_type, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_dict_type(ASR::expr_t* dict_expr, ASR::ttype_t* asr_type, llvm::Module* module) {
         ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(asr_type);
         bool is_local_array_type = false, is_local_malloc_array_type = false;
         bool is_local_list = false;
@@ -433,12 +435,12 @@ namespace LCompilers {
         int local_n_dims = 0;
         int local_a_kind = -1;
         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-        llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type, nullptr, local_m_storage,
+        llvm::Type* key_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_key_type, nullptr, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
         int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind, module);
-        llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type, nullptr, local_m_storage,
+        llvm::Type* value_llvm_type = get_type_from_ttype_t(dict_expr, asr_dict->m_value_type, nullptr, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
@@ -450,7 +452,7 @@ namespace LCompilers {
                                         value_type_size, key_llvm_type, value_llvm_type);
     }
 
-    llvm::Type* LLVMUtils::get_set_type(ASR::ttype_t* asr_type, llvm::Module* module) {
+    llvm::Type* LLVMUtils::get_set_type(ASR::expr_t* set_expr, ASR::ttype_t* asr_type, llvm::Module* module) {
         ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(asr_type);
         bool is_local_array_type = false, is_local_malloc_array_type = false;
         bool is_local_list = false;
@@ -458,7 +460,7 @@ namespace LCompilers {
         int local_n_dims = 0;
         int local_a_kind = -1;
         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-        llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_set->m_type, nullptr, local_m_storage,
+        llvm::Type* el_llvm_type = get_type_from_ttype_t(set_expr, asr_set->m_type, nullptr, local_m_storage,
                                                             is_local_array_type, is_local_malloc_array_type,
                                                             is_local_list, local_m_dims, local_n_dims,
                                                             local_a_kind, module);
@@ -504,7 +506,7 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
                         }
                         break;
                     }
@@ -517,7 +519,7 @@ namespace LCompilers {
 
 
                         if( type == nullptr ) {
-                            type = get_type_from_ttype_t_util(v_type->m_type, module, arg_m_abi)->getPointerTo();
+                            type = get_type_from_ttype_t_util(arg_expr, v_type->m_type, module, arg_m_abi)->getPointerTo();
                         }
                         break;
                     }
@@ -678,7 +680,7 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::Tuple) : {
-                type = get_type_from_ttype_t_util(asr_type, module)->getPointerTo();
+                type = get_type_from_ttype_t_util(arg_expr, asr_type, module)->getPointerTo();
                 break;
             }
             case (ASR::ttypeType::List) : {
@@ -686,7 +688,7 @@ namespace LCompilers {
                 bool is_list = true;
                 ASR::dimension_t *m_dims = nullptr;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(arg_expr, asr_list->m_type, nullptr, m_storage,
                                                                  is_array_type,
                                                                  is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
@@ -721,12 +723,12 @@ namespace LCompilers {
                 bool is_array_type = false, is_malloc_array_type = false;
                 bool is_list = false;
                 ASR::dimension_t* m_dims = nullptr;
-                llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type, type_declaration, m_storage,
+                llvm::Type* key_llvm_type = get_type_from_ttype_t(arg_expr, asr_dict->m_key_type, type_declaration, m_storage,
                                                                   is_array_type,
                                                                   is_malloc_array_type,
                                                                   is_list, m_dims, n_dims,
                                                                   a_kind, module, m_abi);
-                llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type, type_declaration, m_storage,
+                llvm::Type* value_llvm_type = get_type_from_ttype_t(arg_expr, asr_dict->m_value_type, type_declaration, m_storage,
                                                                     is_array_type,
                                                                     is_malloc_array_type,
                                                                     is_list, m_dims, n_dims,
@@ -746,7 +748,7 @@ namespace LCompilers {
                 bool is_array_type = false, is_malloc_array_type = false;
                 bool is_list = false;
                 ASR::dimension_t* m_dims = nullptr;
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_set->m_type, type_declaration, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(arg_expr, asr_set->m_type, type_declaration, m_storage,
                                                                   is_array_type,
                                                                   is_malloc_array_type,
                                                                   is_list, m_dims, n_dims,
@@ -917,11 +919,11 @@ namespace LCompilers {
                     return_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     break;
                 case (ASR::ttypeType::Pointer) : {
-                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
+                    return_type = get_type_from_ttype_t_util(x.m_return_var, ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
                     break;
                 }
                 case (ASR::ttypeType::Allocatable) : {
-                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
+                    return_type = get_type_from_ttype_t_util(x.m_return_var, ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
                     break;
                 }
                 case (ASR::ttypeType::StructType) :
@@ -939,7 +941,7 @@ namespace LCompilers {
                         int local_n_dims = 0;
                         int local_a_kind = -1;
                         ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                        llvm_el_types.push_back(get_type_from_ttype_t(
+                        llvm_el_types.push_back(get_type_from_ttype_t(x.m_return_var,
                                 asr_tuple->m_type[i], nullptr, local_m_storage,
                                 is_local_array_type, is_local_malloc_array_type,
                                 is_local_list, local_m_dims, local_n_dims, local_a_kind, module));
@@ -954,7 +956,7 @@ namespace LCompilers {
                     ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
                     int n_dims = 0, a_kind = -1;
                     ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(return_var_type0);
-                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(x.m_return_var, asr_list->m_type, nullptr, m_storage,
                         is_array_type, is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module);
                     int32_t type_size = -1;
                     if( LLVM::is_llvm_struct(asr_list->m_type) ||
@@ -980,10 +982,10 @@ namespace LCompilers {
                     ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
                     int local_n_dims = 0, local_a_kind = -1;
 
-                    llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type,
+                    llvm::Type* key_llvm_type = get_type_from_ttype_t(x.m_return_var, asr_dict->m_key_type,
                         nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
                         is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
-                    llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type,
+                    llvm::Type* value_llvm_type = get_type_from_ttype_t(x.m_return_var, asr_dict->m_value_type,
                         nullptr, local_m_storage,is_local_array_type, is_local_malloc_array_type,
                         is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
                     int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind, module);
@@ -1004,7 +1006,7 @@ namespace LCompilers {
                     ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
                     int local_n_dims = 0, local_a_kind = -1;
 
-                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_set->m_type,
+                    llvm::Type* el_llvm_type = get_type_from_ttype_t(x.m_return_var, asr_set->m_type,
                         nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
                         is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
                     int32_t el_type_size = get_type_size(asr_set->m_type, el_llvm_type, local_a_kind, module);
@@ -1046,184 +1048,6 @@ namespace LCompilers {
         return args;
     }
 
-    llvm::FunctionType* LLVMUtils::get_function_type(ASR::FunctionType_t* x, llvm::Module* module) {
-        llvm::Type *return_type;
-        if (x->m_return_var_type) {
-            ASR::ttype_t* return_var_type0 = x->m_return_var_type;
-            ASR::ttypeType return_var_type = return_var_type0->type;
-            switch (return_var_type) {
-                case (ASR::ttypeType::Integer) : {
-                    int a_kind = ASR::down_cast<ASR::Integer_t>(return_var_type0)->m_kind;
-                    return_type = getIntType(a_kind);
-                    break;
-                }
-                case (ASR::ttypeType::UnsignedInteger) : {
-                    int a_kind = ASR::down_cast<ASR::UnsignedInteger_t>(return_var_type0)->m_kind;
-                    return_type = getIntType(a_kind);
-                    break;
-                }
-                case (ASR::ttypeType::Real) : {
-                    int a_kind = ASR::down_cast<ASR::Real_t>(return_var_type0)->m_kind;
-                    return_type = getFPType(a_kind);
-                    break;
-                }
-                case (ASR::ttypeType::Complex) : {
-                    int a_kind = ASR::down_cast<ASR::Complex_t>(return_var_type0)->m_kind;
-                    if (a_kind == 4) {
-                        if (x->m_abi == ASR::abiType::BindC) {
-                            if (compiler_options.platform == Platform::Windows) {
-                                // i64
-                                return_type = llvm::Type::getInt64Ty(context);
-                            } else if (compiler_options.platform == Platform::macOS_ARM) {
-                                // {float, float}
-                                return_type = getComplexType(a_kind);
-                            } else {
-                                // <2 x float>
-                                return_type = FIXED_VECTOR_TYPE::get(llvm::Type::getFloatTy(context), 2);
-                            }
-                        } else {
-                            return_type = getComplexType(a_kind);
-                        }
-                    } else {
-                        LCOMPILERS_ASSERT(a_kind == 8)
-                        if (x->m_abi == ASR::abiType::BindC) {
-                            if (compiler_options.platform == Platform::Windows) {
-                                // pass as subroutine
-                                return_type = getComplexType(a_kind, true);
-                                std::vector<llvm::Type*> args = convert_args(x);
-                                args.insert(args.begin(), return_type);
-                                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                                        llvm::Type::getVoidTy(context), args, false);
-                                return function_type;
-                            } else {
-                                return_type = getComplexType(a_kind);
-                            }
-                        } else {
-                            return_type = getComplexType(a_kind);
-                        }
-                    }
-                    break;
-                }
-                case (ASR::ttypeType::String) :
-                    return_type = character_type;
-                    break;
-                case (ASR::ttypeType::Logical) :
-                    return_type = llvm::Type::getInt1Ty(context);
-                    break;
-                case (ASR::ttypeType::CPtr) :
-                    return_type = llvm::Type::getVoidTy(context)->getPointerTo();
-                    break;
-                case (ASR::ttypeType::Pointer) : {
-                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module)->getPointerTo();
-                    break;
-                }
-                case (ASR::ttypeType::Allocatable) : {
-                    // TODO: Do getPointerTo as well.
-                    return_type = get_type_from_ttype_t_util(ASRUtils::get_contained_type(return_var_type0), module);
-                    break;
-                }
-                case (ASR::ttypeType::StructType) :
-                    throw CodeGenError("StructType return type not implemented yet");
-                    break;
-                case (ASR::ttypeType::Tuple) : {
-                    ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(return_var_type0);
-                    std::string type_code = ASRUtils::get_type_code(asr_tuple->m_type,
-                                                                    asr_tuple->n_type);
-                    std::vector<llvm::Type*> llvm_el_types;
-                    for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
-                        bool is_local_array_type = false, is_local_malloc_array_type = false;
-                        bool is_local_list = false;
-                        ASR::dimension_t* local_m_dims = nullptr;
-                        int local_n_dims = 0;
-                        int local_a_kind = -1;
-                        ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                        llvm_el_types.push_back(get_type_from_ttype_t(
-                                asr_tuple->m_type[i], nullptr, local_m_storage,
-                                is_local_array_type, is_local_malloc_array_type,
-                                is_local_list, local_m_dims, local_n_dims, local_a_kind, module));
-                    }
-                    return_type = tuple_api->get_tuple_type(type_code, llvm_el_types);
-                    break;
-                }
-                case (ASR::ttypeType::List) : {
-                    bool is_array_type = false, is_malloc_array_type = false;
-                    bool is_list = true;
-                    ASR::dimension_t *m_dims = nullptr;
-                    ASR::storage_typeType m_storage = ASR::storage_typeType::Default;
-                    int n_dims = 0, a_kind = -1;
-                    ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(return_var_type0);
-                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
-                        is_array_type, is_malloc_array_type, is_list, m_dims, n_dims, a_kind, module);
-                    int32_t type_size = -1;
-                    if( LLVM::is_llvm_struct(asr_list->m_type) ||
-                        ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
-                        ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
-                        llvm::DataLayout data_layout(module->getDataLayout());
-                        type_size = data_layout.getTypeAllocSize(el_llvm_type);
-                    } else {
-                        type_size = a_kind;
-                    }
-                    std::string el_type_code = ASRUtils::get_type_code(asr_list->m_type);
-                    return_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
-                    break;
-                }
-                case (ASR::ttypeType::Dict) : {
-                    ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(return_var_type0);
-                    std::string key_type_code = ASRUtils::get_type_code(asr_dict->m_key_type);
-                    std::string value_type_code = ASRUtils::get_type_code(asr_dict->m_value_type);
-
-                    bool is_local_array_type = false, is_local_malloc_array_type = false;
-                    bool is_local_list = false;
-                    ASR::dimension_t* local_m_dims = nullptr;
-                    ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                    int local_n_dims = 0, local_a_kind = -1;
-
-                    llvm::Type* key_llvm_type = get_type_from_ttype_t(asr_dict->m_key_type,
-                        nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
-                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
-                    llvm::Type* value_llvm_type = get_type_from_ttype_t(asr_dict->m_value_type,
-                        nullptr, local_m_storage,is_local_array_type, is_local_malloc_array_type,
-                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
-                    int32_t key_type_size = get_type_size(asr_dict->m_key_type, key_llvm_type, local_a_kind, module);
-                    int32_t value_type_size = get_type_size(asr_dict->m_value_type, value_llvm_type, local_a_kind, module);
-
-                    set_dict_api(asr_dict);
-
-                    return_type = dict_api->get_dict_type(key_type_code, value_type_code, key_type_size,value_type_size, key_llvm_type, value_llvm_type);
-                    break;
-                }
-                case (ASR::ttypeType::Set) : {
-                    ASR::Set_t* asr_set = ASR::down_cast<ASR::Set_t>(return_var_type0);
-                    std::string el_type_code = ASRUtils::get_type_code(asr_set->m_type);
-
-                    bool is_local_array_type = false, is_local_malloc_array_type = false;
-                    bool is_local_list = false;
-                    ASR::dimension_t* local_m_dims = nullptr;
-                    ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                    int local_n_dims = 0, local_a_kind = -1;
-
-                    llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_set->m_type,
-                        nullptr, local_m_storage, is_local_array_type, is_local_malloc_array_type,
-                        is_local_list, local_m_dims, local_n_dims, local_a_kind, module);
-                    int32_t el_type_size = get_type_size(asr_set->m_type, el_llvm_type, local_a_kind, module);
-
-                    set_set_api(asr_set);
-
-                    return_type = set_api->get_set_type(el_type_code, el_type_size, el_llvm_type);
-                    break;
-                }
-                default :
-                    throw CodeGenError("Type not implemented " + ASRUtils::type_to_str_python(return_var_type0));
-            }
-        } else {
-            return_type = llvm::Type::getVoidTy(context);
-        }
-        std::vector<llvm::Type*> args = convert_args(x, module);
-        llvm::FunctionType *function_type = llvm::FunctionType::get(
-                return_type, args, false);
-        return function_type;
-    }
-
     llvm::Type* LLVMUtils::get_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
         ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
@@ -1239,7 +1063,7 @@ namespace LCompilers {
                     llvm_type = character_type;                                 \
                 }                                                               \
             } else {                                                            \
-                llvm_type = get_type_from_ttype_t(t2, nullptr, m_storage,       \
+                llvm_type = get_type_from_ttype_t(arg_expr, t2, nullptr, m_storage,       \
                     is_array_type, is_malloc_array_type, is_list, m_dims,       \
                     n_dims, a_kind, module, m_abi);                             \
                 if( !is_pointer_ ) {                                            \
@@ -1373,7 +1197,7 @@ namespace LCompilers {
             case (ASR::ttypeType::List) : {
                 is_list = true;
                 ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(asr_type);
-                llvm::Type* el_llvm_type = get_type_from_ttype_t(asr_list->m_type, nullptr, m_storage,
+                llvm::Type* el_llvm_type = get_type_from_ttype_t(arg_expr, asr_list->m_type, nullptr, m_storage,
                                                                  is_array_type, is_malloc_array_type,
                                                                  is_list, m_dims, n_dims,
                                                                  a_kind, module, m_abi);
@@ -1391,11 +1215,11 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::Dict): {
-                llvm_type = get_dict_type(asr_type, module);
+                llvm_type = get_dict_type(arg_expr, asr_type, module);
                 break;
             }
             case (ASR::ttypeType::Set): {
-                llvm_type = get_set_type(asr_type, module);
+                llvm_type = get_set_type(arg_expr, asr_type, module);
                 break;
             }
             case (ASR::ttypeType::Tuple) : {
@@ -1410,7 +1234,7 @@ namespace LCompilers {
                     int local_n_dims = 0;
                     int local_a_kind = -1;
                     ASR::storage_typeType local_m_storage = ASR::storage_typeType::Default;
-                    llvm_el_types.push_back(get_type_from_ttype_t(asr_tuple->m_type[i], nullptr, local_m_storage,
+                    llvm_el_types.push_back(get_type_from_ttype_t(arg_expr, asr_tuple->m_type[i], nullptr, local_m_storage,
                         is_local_array_type, is_local_malloc_array_type,
                         is_local_list, local_m_dims, local_n_dims, local_a_kind, module, m_abi));
                 }
@@ -1432,7 +1256,7 @@ namespace LCompilers {
                         ASRUtils::symbol_get_past_external(type_declaration));
                     llvm_type = get_function_type(*fn, module)->getPointerTo();
                 } else {
-                    llvm_type = get_function_type(ASRUtils::get_function_from_expr(arg_expr), module)->getPointerTo();
+                    llvm_type = get_function_type(*ASRUtils::get_function_from_expr(arg_expr), module)->getPointerTo();
                 }
                 break;
             }
@@ -2023,14 +1847,14 @@ namespace LCompilers {
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(
+                            llvm::Type* llvm_array_type = get_type_from_ttype_t_util(src_expr,
                                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_type)), module);
                             src = create_gep2(llvm_array_type, src, 0);
                             dest = create_gep2(llvm_array_type, dest, 0);
                             ASR::dimension_t* asr_dims = nullptr;
                             size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(asr_type, asr_dims);
                             int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
-                            llvm::Type* llvm_data_type = get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
+                            llvm::Type* llvm_data_type = get_type_from_ttype_t_util(src_expr, ASRUtils::type_get_past_array(
                                 ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(asr_type))), module);
                             llvm::DataLayout data_layout(module->getDataLayout());
                             uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
@@ -2061,7 +1885,7 @@ namespace LCompilers {
                     lfortran_str_copy(dest, src, true, *module, *builder, context, string_descriptor);
                 } else {
                     if( ASRUtils::is_array(alloc_type->m_type) ) {
-                        llvm::Type *array_type = get_type_from_ttype_t_util(alloc_type->m_type, module);
+                        llvm::Type *array_type = get_type_from_ttype_t_util(src_expr, alloc_type->m_type, module);
                         src = CreateLoad2(array_type->getPointerTo(), src);
                     }
                     LLVM::CreateStore(*builder, src, dest);
@@ -2080,7 +1904,7 @@ namespace LCompilers {
             }
             case ASR::ttypeType::Pointer: {
                 ASR::Pointer_t* pointer_type = ASR::down_cast<ASR::Pointer_t>(asr_type);
-                src = CreateLoad2(get_type_from_ttype_t_util(pointer_type->m_type, module)->getPointerTo(), src);
+                src = CreateLoad2(get_type_from_ttype_t_util(src_expr, pointer_type->m_type, module)->getPointerTo(), src);
                 LLVM::CreateStore(*builder, src, dest);
                 break ;
             }
@@ -2095,6 +1919,7 @@ namespace LCompilers {
                     ASRUtils::get_struct_sym_from_struct_expr(src_expr));
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
                 std::string der_type_name = std::string(struct_sym->m_name);
+                Allocator al(1024);
                 while( struct_sym != nullptr ) {
                     for (size_t i = 0; i < struct_sym->n_members; i++) {
                         std::string mem_name = struct_sym->m_members[i];
@@ -2107,7 +1932,7 @@ namespace LCompilers {
                         } else {
                             src_member = create_gep2(name2dertype[der_type_name], src, mem_idx);
                         }
-                        llvm::Type *mem_type = get_type_from_ttype_t_util(
+                        llvm::Type *mem_type = get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, mem_sym),
                             ASRUtils::symbol_type(mem_sym), module);
                         ASR::ttype_t* member_type = ASRUtils::symbol_type(mem_sym);
                         if( !LLVM::is_llvm_struct(member_type) &&
@@ -3044,7 +2869,7 @@ namespace LCompilers {
         if( enable_bounds_checking ) {
             check_index_within_bounds(list, pos, module);
         }
-        llvm::Type* t_ = llvm_utils->get_type_from_ttype_t_util(
+        llvm::Type* t_ = llvm_utils->get_type_from_ttype_t_util(expr,
             ASRUtils::extract_type(asr_type), module);
         std::string el_type_code = ASRUtils::get_type_code(ASRUtils::extract_type(asr_type));
         llvm::Type* list_type = llvm_utils->list_api->get_list_type(nullptr, el_type_code, 0);
@@ -3085,7 +2910,7 @@ namespace LCompilers {
         return llvm_utils->create_gep(dict, 4);
     }
 
-    void LLVMDict::resolve_collision(
+    void LLVMDict::resolve_collision([[maybe_unused]]ASR::expr_t* dict_expr,
         llvm::Value* capacity, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* key_list,
         llvm::Value* key_mask, llvm::Module* module,
@@ -3166,7 +2991,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopend);
     }
 
-    void LLVMDictOptimizedLinearProbing::resolve_collision(
+    void LLVMDictOptimizedLinearProbing::resolve_collision([[maybe_unused]]ASR::expr_t* dict_expr,
         llvm::Value* capacity, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* key_list,
         llvm::Value* key_mask, llvm::Module* module,
@@ -3288,7 +3113,7 @@ namespace LCompilers {
         llvm_utils->start_new_block(loopend);
     }
 
-    void LLVMDictSeparateChaining::resolve_collision(
+    void LLVMDictSeparateChaining::resolve_collision(ASR::expr_t* dict_expr,
         llvm::Value* /*capacity*/, llvm::Value* key_hash,
         llvm::Value* key, llvm::Value* key_value_pair_linked_list,
         llvm::Type* kv_pair_type, llvm::Value* key_mask,
@@ -3364,7 +3189,7 @@ namespace LCompilers {
             llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad2(
                 llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
             llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_pair_type->getPointerTo());
-            llvm::Type* llvm_key_type = llvm_utils->get_type_from_ttype_t_util(key_asr_type, module);
+            llvm::Type* llvm_key_type = llvm_utils->get_type_from_ttype_t_util(dict_expr, key_asr_type, module);
             llvm::Value* kv_struct_key = llvm_utils->create_gep2(kv_pair_type, kv_struct, 0);
             if( !LLVM::is_llvm_struct(key_asr_type) ) {
                 kv_struct_key = llvm_utils->CreateLoad2(llvm_key_type, kv_struct_key);
@@ -3400,7 +3225,7 @@ namespace LCompilers {
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
-        this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), pos_ptr);
         llvm_utils->list_api->write_item(dict_expr, key_list, pos, key,
                                          key_asr_type, false, module, name2memidx);
@@ -3459,7 +3284,7 @@ namespace LCompilers {
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_typecode(key_type_code, value_type_code, dict));
-        this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask, module, key_asr_type);
         llvm::Value* pos = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), pos_ptr);
         llvm_utils->list_api->write_item(dict_expr, key_list, pos, key,
@@ -3620,7 +3445,7 @@ namespace LCompilers {
             key_mask_value_ptr);
     }
 
-    llvm::Value* LLVMDict::resolve_collision_for_read(
+    llvm::Value* LLVMDict::resolve_collision_for_read(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* /*value_asr_type*/) {
@@ -3630,14 +3455,14 @@ namespace LCompilers {
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
-        this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
         llvm::Value* pos = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* item = llvm_utils->list_api->read_item(value_list, pos, false, module, true);
         return item;
     }
 
-    llvm::Value* LLVMDict::resolve_collision_for_read_with_bound_check(
+    llvm::Value* LLVMDict::resolve_collision_for_read_with_bound_check(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* /*value_asr_type*/) {
@@ -3647,7 +3472,7 @@ namespace LCompilers {
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
-        this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
         llvm::Value* pos = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), pos_ptr);
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
@@ -3670,7 +3495,7 @@ namespace LCompilers {
         return item;
     }
 
-    void LLVMDict::_check_key_present_or_default(llvm::Module* module, llvm::Value *key, llvm::Value *key_list,
+    void LLVMDict::_check_key_present_or_default(ASR::expr_t* dict_expr, llvm::Module* module, llvm::Value *key, llvm::Value *key_list,
         ASR::ttype_t* key_asr_type, llvm::Value *value_list, ASR::ttype_t* value_asr_type, llvm::Value *pos,
         llvm::Value *def_value, llvm::Value* &result) {
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
@@ -3681,13 +3506,13 @@ namespace LCompilers {
                                                 false, module, false);
             LLVM::CreateStore(*builder, item, result);
         }, [=]() {
-            llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(
+            llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(dict_expr,
                 value_asr_type, module);
             LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(llvm_value_type, def_value), result);
         });
     }
 
-    llvm::Value* LLVMDict::resolve_collision_for_read_with_default(
+    llvm::Value* LLVMDict::resolve_collision_for_read_with_default(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
@@ -3698,7 +3523,7 @@ namespace LCompilers {
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
-        this->resolve_collision(capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask, module, key_asr_type, true);
         llvm::Value* pos = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context), pos_ptr);
         std::pair<std::string, std::string> llvm_key = std::make_pair(
@@ -3707,12 +3532,12 @@ namespace LCompilers {
         );
         llvm::Type* value_type = std::get<2>(typecode2dicttype[llvm_key]).second;
         llvm::Value* result = llvm_utils->CreateAlloca(value_type);
-        _check_key_present_or_default(module, key, key_list, key_asr_type, value_list,
+        _check_key_present_or_default(dict_expr, module, key, key_list, key_asr_type, value_list,
                                         value_asr_type, pos, def_value, result);
         return result;
     }
 
-    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read_with_bound_check(
+    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read_with_bound_check(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3791,7 +3616,7 @@ namespace LCompilers {
         builder->CreateBr(mergeBB);
         llvm_utils->start_new_block(elseBB);
         {
-            this->resolve_collision(capacity, key_hash, key, key_list, key_mask,
+            this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask,
                            module, key_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
@@ -3817,7 +3642,7 @@ namespace LCompilers {
         return item;
     }
 
-    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read(
+    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3861,7 +3686,7 @@ namespace LCompilers {
         builder->CreateBr(mergeBB);
         llvm_utils->start_new_block(elseBB);
         {
-            this->resolve_collision(capacity, key_hash, key, key_list, key_mask,
+            this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask,
                            module, key_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
@@ -3871,7 +3696,7 @@ namespace LCompilers {
         return item;
     }
 
-    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read_with_default(
+    llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read_with_default(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
@@ -3910,17 +3735,17 @@ namespace LCompilers {
         builder->CreateBr(mergeBB);
         llvm_utils->start_new_block(elseBB);
         {
-            this->resolve_collision(capacity, key_hash, key, key_list, key_mask,
+            this->resolve_collision(dict_expr, capacity, key_hash, key, key_list, key_mask,
                            module, key_asr_type, true);
         }
         llvm_utils->start_new_block(mergeBB);
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
-        _check_key_present_or_default(module, key, key_list, key_asr_type, value_list,
+        _check_key_present_or_default(dict_expr, module, key, key_list, key_asr_type, value_list,
                                       value_asr_type, pos, def_value, result);
         return result;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read(
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read([[maybe_unused]]ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3944,7 +3769,7 @@ namespace LCompilers {
         return tmp_value_ptr;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check(
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check([[maybe_unused]]ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3999,7 +3824,7 @@ namespace LCompilers {
         return tmp_value_ptr;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_default(
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_default([[maybe_unused]]ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value *def_value) {
@@ -4227,7 +4052,7 @@ namespace LCompilers {
                 llvm::Value* value = llvm_utils->list_api->read_item_using_typecode(value_type_code, value_list,
                     idx, false, module, LLVM::is_llvm_struct(value_asr_type));
                 llvm::Value* key_hash = get_key_hash(current_capacity, key, key_asr_type, module);
-                this->resolve_collision(current_capacity, key_hash, key, new_key_list,
+                this->resolve_collision( dict_expr, current_capacity, key_hash, key, new_key_list,
                                new_key_mask, module, key_asr_type);
                 llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
                 llvm::Value* key_dest = llvm_utils->list_api->read_item_using_typecode(key_type_code,
@@ -4472,7 +4297,7 @@ namespace LCompilers {
         rehash_all_at_once_if_needed(dict_expr, dict, module, key_asr_type, value_asr_type, name2memidx);
     }
 
-    llvm::Value* LLVMDict::read_item(llvm::Value* dict, llvm::Value* key,
+    llvm::Value* LLVMDict::read_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
                              llvm::Module* module, ASR::Dict_t* dict_type, bool enable_bounds_checking,
                              bool get_pointer) {
 
@@ -4486,10 +4311,10 @@ namespace LCompilers {
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr;
         if (enable_bounds_checking) {
-            value_ptr = this->resolve_collision_for_read_with_bound_check(dict, key_hash, key, module,
+            value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         } else {
-            value_ptr = this->resolve_collision_for_read(dict, key_hash, key, module,
+            value_ptr = this->resolve_collision_for_read(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         }
         if( get_pointer ) {
@@ -4498,12 +4323,12 @@ namespace LCompilers {
         return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
-    llvm::Value* LLVMDict::get_item(llvm::Value* dict, llvm::Value* key,
+    llvm::Value* LLVMDict::get_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
                              llvm::Module* module, ASR::Dict_t* dict_type, llvm::Value* def_value,
                              bool get_pointer) {
         llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
-        llvm::Value* value_ptr = this->resolve_collision_for_read_with_default(dict, key_hash, key, module,
+        llvm::Value* value_ptr = this->resolve_collision_for_read_with_default(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type,
                                                                   def_value);
         if( get_pointer ) {
@@ -4512,16 +4337,16 @@ namespace LCompilers {
         return llvm_utils->CreateLoad(value_ptr);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::read_item(llvm::Value* dict, llvm::Value* key,
+    llvm::Value* LLVMDictSeparateChaining::read_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
         llvm::Module* module, ASR::Dict_t* dict_type, bool enable_bounds_checking, bool get_pointer) {
         llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr;
         if (enable_bounds_checking) {
-            value_ptr = this->resolve_collision_for_read_with_bound_check(dict, key_hash, key, module,
+            value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         } else {
-            value_ptr = this->resolve_collision_for_read(dict, key_hash, key, module,
+            value_ptr = this->resolve_collision_for_read(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         }
         std::pair<std::string, std::string> llvm_key = std::make_pair(
@@ -4536,11 +4361,11 @@ namespace LCompilers {
         return llvm_utils->CreateLoad(value_ptr);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::get_item(llvm::Value* dict, llvm::Value* key,
+    llvm::Value* LLVMDictSeparateChaining::get_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
         llvm::Module* module, ASR::Dict_t* dict_type, llvm::Value* def_value, bool get_pointer) {
         llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
-        llvm::Value* value_ptr = this->resolve_collision_for_read_with_default(dict, key_hash, key, module,
+        llvm::Value* value_ptr = this->resolve_collision_for_read_with_default(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type,
                                                                   def_value);
         std::pair<std::string, std::string> llvm_key = std::make_pair(
@@ -4555,7 +4380,7 @@ namespace LCompilers {
         return llvm_utils->CreateLoad(value_ptr);
     }
 
-    llvm::Value* LLVMDict::pop_item(llvm::Value* dict, llvm::Value* key,
+    llvm::Value* LLVMDict::pop_item(ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Value* key,
         llvm::Module* module, ASR::Dict_t* dict_type,
         bool get_pointer) {
         /**
@@ -4572,7 +4397,7 @@ namespace LCompilers {
                                                                 get_pointer_to_capacity_using_typecode(
                                                                     key_type_code, value_type_code, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
-        llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict, key_hash, key, module,
+        llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
@@ -4599,7 +4424,7 @@ namespace LCompilers {
         return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
-    llvm::Value* LLVMDictSeparateChaining::pop_item(
+    llvm::Value* LLVMDictSeparateChaining::pop_item(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key,
         llvm::Module* module, ASR::Dict_t* dict_type,
         bool get_pointer) {
@@ -4631,7 +4456,7 @@ namespace LCompilers {
 
         llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
-        llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict, key_hash, key, module,
+        llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict_expr, dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         std::pair<std::string, std::string> llvm_key = std::make_pair(
             ASRUtils::get_type_code(dict_type->m_key_type),
@@ -5822,7 +5647,7 @@ namespace LCompilers {
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         for( size_t i = 0; i < values.size(); i++ ) {
-            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_expr, tuple_type->m_type[i], module); 
             llvm::Value* item_ptr = read_item_using_typecode(el_type, llvm_tuple, i, true);
             llvm_utils->deepcopy(tuple_expr, values[i], item_ptr,
                                  tuple_type->m_type[i], module,
@@ -5835,7 +5660,7 @@ namespace LCompilers {
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
-            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(src_expr, tuple_type->m_type[i], module); 
             llvm::Value* src_item = read_item_using_typecode(el_type, src, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
             llvm::Value* dest_item_ptr = read_item_using_typecode(el_type, dest, i, true);
