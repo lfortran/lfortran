@@ -2895,7 +2895,7 @@ class ParallelRegionVisitor :
             
             // Create task data variable
             ASR::expr_t* task_data_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data"), 
-                ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, task_data_ext_sym)), ASR::intentType::Local);
+                ASRUtils::make_StructType_t_util(al, loc, task_data_ext_sym), ASR::intentType::Local);
             
             // Create task pointer variable
             ASR::expr_t* task_ptr_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data_ptr"), 
@@ -3029,7 +3029,7 @@ class ParallelRegionVisitor :
             
             // Create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "task_data_ptr", 
-                ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
+                ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
                 ASR::intentType::Local, ASR::abiType::BindC);
                         
             Vec<ASR::stmt_t*> fn_body; 

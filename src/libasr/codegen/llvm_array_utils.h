@@ -139,7 +139,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true) = 0;
 
                 virtual
-                void fill_array_details(
+                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data) = 0;
 
@@ -377,7 +377,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true);
 
                 virtual
-                void fill_array_details(
+                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data);
 
