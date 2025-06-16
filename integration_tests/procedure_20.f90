@@ -27,7 +27,7 @@ module procedure_20_mod2
     use procedure_20_mod1
     implicit none
     contains
-    subroutine wind0_sngl(f, i)
+    subroutine wind0_sngl(i, f)
         interface
             function f(z) result(r)
                 integer r
@@ -36,6 +36,7 @@ module procedure_20_mod2
         end interface
 
         integer, intent(out) :: i
+
         call cauchy(f, i)
     end subroutine wind0_sngl
 end module procedure_20_mod2
@@ -45,9 +46,9 @@ program procedure_20
    implicit none
    integer :: i
 
-   call wind0_sngl(test_function, i)
+   call wind0_sngl(i, test_function)
    print *, "i: ", i
-   if (i / = 10) error stop
+   if (i /= 10) error stop
 
 contains
    function test_function(z) result(r)
