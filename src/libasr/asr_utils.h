@@ -2137,7 +2137,7 @@ static inline ASR::expr_t* get_constant_one_with_given_type(Allocator& al, ASR::
             return ASRUtils::EXPR(ASR::make_RealConstant_t(al, asr_type->base.loc, 1.0, asr_type));
         }
         case ASR::ttypeType::Complex: {
-            return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 1.0, asr_type));
+            return ASRUtils::EXPR(ASR::make_ComplexConstant_t(al, asr_type->base.loc, 1.0, 0.0, asr_type));
         }
         case ASR::ttypeType::Logical: {
             return ASRUtils::EXPR(ASR::make_LogicalConstant_t(al, asr_type->base.loc, true, asr_type));

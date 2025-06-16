@@ -1140,6 +1140,7 @@ RUN(NAME intrinsics_382 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 RUN(NAME intrinsics_383 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # pack
 RUN(NAME intrinsics_384 LABELS gfortran llvm fortran) # eoshift
 RUN(NAME intrinsics_385 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nearest
+RUN(NAME intrinsics_386 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # product
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
