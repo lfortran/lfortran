@@ -976,8 +976,8 @@
                                     )]
                                     (Var 4 hash)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             fnv_1a_string_t:
@@ -1262,8 +1262,8 @@
                                     )]
                                     (Var 5 hash)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             is_fortran_name:
@@ -1655,8 +1655,8 @@
                                     )]
                                     (Var 6 lout)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_cat:
@@ -2034,8 +2034,8 @@
                                     )]
                                     (Var 7 cat)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:

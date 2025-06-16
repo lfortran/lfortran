@@ -570,8 +570,8 @@
                                     )]
                                     (Var 10 specified)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })

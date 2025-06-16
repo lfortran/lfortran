@@ -183,8 +183,8 @@
                                     )]
                                     (Var 7 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             cast_r:
@@ -368,8 +368,8 @@
                                     )]
                                     (Var 8 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             div_integer:
@@ -471,8 +471,8 @@
                                     )]
                                     (Var 9 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             div_real:
@@ -579,8 +579,8 @@
                                     )]
                                     (Var 10 res)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             generic_avg:
@@ -1278,8 +1278,8 @@
                                                     )]
                                                     (Var 19 res)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             integer:
@@ -1740,8 +1740,8 @@
                                                     )]
                                                     (Var 14 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

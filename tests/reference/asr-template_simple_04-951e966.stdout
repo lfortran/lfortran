@@ -153,8 +153,8 @@
                                     )]
                                     (Var 11 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             cast_r:
@@ -340,8 +340,8 @@
                                     )]
                                     (Var 12 r)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             generic_sum:
@@ -731,8 +731,8 @@
                                                     )]
                                                     (Var 10 res)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

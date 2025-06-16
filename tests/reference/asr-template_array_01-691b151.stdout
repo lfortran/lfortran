@@ -198,8 +198,8 @@
                                                     )]
                                                     (Var 5 r)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             insert_t_n:
@@ -369,8 +369,8 @@
                                                     )]
                                                     (Var 6 r)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:

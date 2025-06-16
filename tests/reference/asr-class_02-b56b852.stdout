@@ -201,7 +201,7 @@
                                     (Var 4 circle_area)
                                     Private
                                     .false.
-                                    .false.
+                                    .true.
                                     ()
                                 ),
                             circle_print:

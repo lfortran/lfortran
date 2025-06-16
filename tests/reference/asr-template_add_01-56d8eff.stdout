@@ -192,8 +192,8 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             f:
@@ -431,8 +431,8 @@
                                     )]
                                     (Var 9 z)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             func_arg_real:
@@ -534,8 +534,8 @@
                                     )]
                                     (Var 8 z)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             r:

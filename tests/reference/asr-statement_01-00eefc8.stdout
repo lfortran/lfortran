@@ -149,8 +149,8 @@
                     [(Return)]
                     (Var 2 alnorm)
                     Public
-                    .false.
-                    .false.
+                    .true.
+                    .true.
                     ()
                 ),
             statement_01:

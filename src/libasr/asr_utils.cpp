@@ -282,6 +282,35 @@ void update_call_args(Allocator &al, SymbolTable *current_scope, bool implicit_i
     }
 }
 
+bool does_node_contain_global_var(ASR::asr_t* asr, SymbolTable* current_scope ) {
+
+    class NodeVisitor : public ASR::BaseWalkVisitor<NodeVisitor> {
+        public:
+        bool &contain_global_var;
+        SymbolTable* current_scope;
+
+        NodeVisitor(bool &contain_global_var, SymbolTable* current_scope) : contain_global_var(contain_global_var),
+        current_scope(current_scope) {}
+
+        void visit_Var(const ASR::Var_t &x) {
+            ASR::symbol_t* sym = x.m_v;
+            if (sym == nullptr) {
+                return;
+            }
+            if (ASRUtils::symbol_parent_symtab(ASRUtils::symbol_get_past_external(sym))->counter != current_scope->counter) {
+                contain_global_var = true;
+                return;
+            }
+        }
+    };
+
+    bool contain_global_var = false;
+    NodeVisitor visitor(contain_global_var, current_scope);
+    if ( asr == nullptr ) return false;
+    visitor.visit_asr(*asr);
+    return contain_global_var;
+}
+
 ASR::Module_t* extract_module(const ASR::TranslationUnit_t &m) {
     LCOMPILERS_ASSERT(m.m_symtab->get_scope().size()== 1);
     for (auto &a : m.m_symtab->get_scope()) {

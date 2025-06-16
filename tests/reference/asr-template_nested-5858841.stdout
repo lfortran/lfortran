@@ -182,8 +182,8 @@
                                                     )]
                                                     (Var 7 z)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             call_add_generic:
@@ -301,8 +301,8 @@
                                                     )]
                                                     (Var 8 z)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             f:
@@ -540,8 +540,8 @@
                                     )]
                                     (Var 9 z)
                                     Private
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             r:

@@ -83,8 +83,8 @@
                                     []
                                     (Var 10 match)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             t1:

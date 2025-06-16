@@ -217,8 +217,8 @@
                                     )]
                                     (Var 3 cb)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             foo:
@@ -351,8 +351,8 @@
                                                     )]
                                                     (Var 6 f)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 )
                                         })

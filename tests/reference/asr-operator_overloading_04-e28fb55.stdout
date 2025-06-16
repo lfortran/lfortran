@@ -299,8 +299,8 @@
                                     )]
                                     (Var 5 trimmed_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             ~assign:
@@ -447,8 +447,8 @@
                                     []
                                     (Var 7 chomped_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_type:

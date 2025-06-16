@@ -168,8 +168,8 @@
                                     )]
                                     (Var 19 tempfile)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             list_files:
@@ -554,8 +554,8 @@
                                     )]
                                     (Var 6 s)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             f_string_cptr_n:
@@ -650,8 +650,8 @@
                                     []
                                     (Var 8 s)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             f_string~genericprocedure:
@@ -734,8 +734,8 @@
                                     []
                                     (Var 9 f_string)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             string_t:

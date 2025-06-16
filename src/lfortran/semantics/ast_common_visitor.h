@@ -1414,6 +1414,8 @@ public:
     bool _processing_char_len = false;
     bool _declaring_variable = false;
     bool is_implicit_interface = false;
+    bool is_side_effect_free = true;
+    bool is_deterministic = true;
     Vec<ASR::stmt_t*> *current_body = nullptr;
 
     std::map<std::string, ASR::ttype_t*> implicit_dictionary;

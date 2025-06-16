@@ -1769,8 +1769,8 @@
                                                     )]
                                                     (Var 11 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             avg_s_from_t:
@@ -1962,8 +1962,8 @@
                                                     )]
                                                     (Var 10 avg)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             d:

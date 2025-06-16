@@ -13855,8 +13855,8 @@
                                                     )]
                                                     (Var 102 inverse)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             minus:
@@ -14531,8 +14531,8 @@
                                                     )]
                                                     (Var 111 quotient)
                                                     Private
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             invert:
@@ -17243,8 +17243,8 @@
                                     )]
                                     (Var 143 z)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             one_real:
@@ -17306,8 +17306,8 @@
                                     )]
                                     (Var 145 z)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             zero_integer:
@@ -17361,8 +17361,8 @@
                                     )]
                                     (Var 142 z)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 ),
                             zero_real:
@@ -17424,8 +17424,8 @@
                                     )]
                                     (Var 144 z)
                                     Public
-                                    .false.
-                                    .false.
+                                    .true.
+                                    .true.
                                     ()
                                 )
                         })
@@ -18465,8 +18465,8 @@
                                                                                     )]
                                                                                     (Var 135 quotient)
                                                                                     Private
-                                                                                    .false.
-                                                                                    .false.
+                                                                                    .true.
+                                                                                    .true.
                                                                                     ()
                                                                                 ),
                                                                             div_t:
@@ -22008,8 +22008,8 @@
                                                     )]
                                                     (Var 27 combined)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             stimes:
@@ -23219,8 +23219,8 @@
                                                     )]
                                                     (Var 11 combined)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             stimes:
@@ -23384,8 +23384,8 @@
                                                     )]
                                                     (Var 12 repeated)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             t:
@@ -24595,8 +24595,8 @@
                                                     )]
                                                     (Var 60 negated)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             one:
@@ -24981,8 +24981,8 @@
                                                     )]
                                                     (Var 67 difference)
                                                     Public
-                                                    .false.
-                                                    .false.
+                                                    .true.
+                                                    .true.
                                                     ()
                                                 ),
                                             mult:
