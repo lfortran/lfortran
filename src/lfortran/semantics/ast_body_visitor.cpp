@@ -372,6 +372,18 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_status))){
                     a_status = ASRUtils::cast_string_descriptor_to_pointer(al, a_status);
                 }
+                if (ASR::is_a<ASR::StringConstant_t>(*a_status)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_status)->m_s);
+                    rtrim(str);
+                    a_status = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_status->base.loc, 1,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_status->base.loc, str.length(),
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, a_status->base.loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("form") ) {
                 if ( a_form != nullptr ) {
                     diag.add(Diagnostic(
@@ -396,7 +408,18 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_form))){
                     a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
                 }
-
+                if (ASR::is_a<ASR::StringConstant_t>(*a_form)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_form)->m_s);
+                    rtrim(str);
+                    a_form = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_form->base.loc, 1,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_form->base.loc, str.length(),
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, a_form->base.loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("access") ) {  //TODO: Handle 'direct' as access argument
                 if ( a_access != nullptr ) {
                     diag.add(Diagnostic(
