@@ -5889,11 +5889,27 @@ namespace LCompilers {
         return read_item(llvm_tuple, llvm_pos, get_pointer);
     }
 
+    llvm::Value* LLVMTuple::read_item2(llvm::Type* el_type, llvm::Value* llvm_tuple, llvm::Value* pos,
+                                      bool get_pointer) {
+        llvm::Value* item = llvm_utils->create_gep(llvm_tuple, pos);
+        if( get_pointer ) {
+            return item;
+        }
+        return llvm_utils->CreateLoad2(el_type, item);
+    }
+
+    llvm::Value* LLVMTuple::read_item2(llvm::Type* el_type, llvm::Value* llvm_tuple, size_t pos,
+                                      bool get_pointer) {
+        llvm::Value* llvm_pos = llvm::ConstantInt::get(context, llvm::APInt(32, pos));
+        return read_item2(el_type, llvm_tuple, llvm_pos, get_pointer);
+    }
+
     void LLVMTuple::tuple_init(llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         for( size_t i = 0; i < values.size(); i++ ) {
-            llvm::Value* item_ptr = read_item(llvm_tuple, i, true);
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
+            llvm::Value* item_ptr = read_item2(el_type, llvm_tuple, i, true);
             llvm_utils->deepcopy(values[i], item_ptr,
                                  tuple_type->m_type[i], module,
                                  name2memidx);
@@ -5905,9 +5921,10 @@ namespace LCompilers {
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
-            llvm::Value* src_item = read_item(src, i, LLVM::is_llvm_struct(
+            llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
+            llvm::Value* src_item = read_item2(el_type, src, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
-            llvm::Value* dest_item_ptr = read_item(dest, i, true);
+            llvm::Value* dest_item_ptr = read_item2(el_type, dest, i, true);
             llvm_utils->deepcopy(src_item, dest_item_ptr,
                                  tuple_type->m_type[i], module,
                                  name2memidx);
