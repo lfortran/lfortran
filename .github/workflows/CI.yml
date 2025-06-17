@@ -85,6 +85,16 @@ jobs:
         shell: bash -e -l {0}
         run: micromamba install bison=3.4
 
+      - name: Install Linux / macOS Packages with LLVM 11
+        if: contains(matrix.llvm-version, '11')
+        shell: bash -e -l {0}
+        run: micromamba install zstd-static=1.5.5 zlib=1.2.13
+
+      - name: Install Linux / macOS Packages with LLVM 20
+        if: contains(matrix.llvm-version, '20')
+        shell: bash -e -l {0}
+        run: micromamba install zstd-static=1.5.7 zlib=1.3.1
+
       - uses: hendrikmuhs/ccache-action@main
         with:
           key: ${{ github.job }}-${{ matrix.os }}
