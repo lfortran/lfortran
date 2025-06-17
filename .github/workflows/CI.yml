@@ -44,13 +44,24 @@ jobs:
           python3 check_binary_file_in_git_history.py
 
   Build:
-    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }})
+    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }}, ${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: ["windows-2025", "macos-latest", "ubuntu-latest"]
-        python-version: ["3.10"]
+        include:
+          - os: macos-latest
+            python-version: "3.10"
+            llvm-version: "11"
+          - os: ubuntu-latest
+            python-version: "3.10"
+            llvm-version: "11"
+          - os: ubuntu-latest
+            python-version: "3.10"
+            llvm-version: "20"
+          - os: windows-2025
+            python-version: "3.10"
+            llvm-version: "11"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -62,6 +73,7 @@ jobs:
           environment-file: ci/environment.yml
           create-args: >-
             python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
 
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
