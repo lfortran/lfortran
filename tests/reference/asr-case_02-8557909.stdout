@@ -57,6 +57,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerConstant 91 (Integer 4) Decimal)
@@ -196,6 +197,7 @@
                         []
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerConstant 91 (Integer 4) Decimal)
@@ -279,6 +281,7 @@
                         )
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerConstant 91 (Integer 4) Decimal)

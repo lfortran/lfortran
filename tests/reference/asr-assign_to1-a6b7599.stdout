@@ -59,6 +59,7 @@
                         100
                     )
                     (Select
+                        ()
                         (Var 2 k)
                         [(CaseStmt
                             [(IntegerConstant 100 (Integer 4) Decimal)]
