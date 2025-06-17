@@ -660,7 +660,13 @@ public:
 
     void visit_Struct(const ASR::Struct_t &x) {
         std::string r = indent;
-        r += "type :: ";
+        r += "type";
+        if (x.m_parent) {
+            r += ", extends(";
+            r += std::string(ASR::down_cast<ASR::Struct_t>(x.m_parent)->m_name);
+            r += ")";
+        }
+        r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
         r += "\n";
