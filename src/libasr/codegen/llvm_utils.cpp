@@ -2330,7 +2330,7 @@ namespace LCompilers {
         return list_desc;
     }
 
-    llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* type, int type_size) {
+    llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* el_ttype, int type_size) {
         if( type2listtype.find(type) != type2listtype.end() ) {
             return std::get<0>(type2listtype[type]);
         }
