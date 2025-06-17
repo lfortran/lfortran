@@ -225,7 +225,8 @@ public:
             /* n_body */ body.n,
             /* a_return_var */ result,
             ASR::abiType::Source,
-            ASR::accessType::Public, ASR::deftypeType::Implementation,
+            ASR::accessType::Public, ASR::presenceType::Required,
+            ASR::deftypeType::Implementation,
             nullptr, false, false, false, false, false, nullptr, 0,
             false, false, false);
         ASR::symbol_t *fn_sym = ASR::down_cast<ASR::symbol_t>(fn);
@@ -408,7 +409,8 @@ public:
             /* n_body */ body.n,
             /* a_return_var */ result,
             ASR::abiType::Source,
-            ASR::accessType::Public, ASR::deftypeType::Implementation,
+            ASR::accessType::Public, ASR::presenceType::Required,
+            ASR::deftypeType::Implementation,
             nullptr,
             false, false, false, false, false,
             nullptr, 0,

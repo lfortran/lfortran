@@ -170,8 +170,8 @@ class PassArrayByDataProcedureVisitor : public PassUtils::PassVisitor<PassArrayB
                 ASR::asr_t* new_subrout = ASRUtils::make_Function_t_util(al, x->base.base.loc,
                     new_symtab, s2c(al, new_name), x->m_dependencies, x->n_dependencies,
                     new_args.p, new_args.size(),  new_body.p, new_body.size(),
-                    return_var, x_func_type->m_abi, x->m_access, x_func_type->m_deftype,
-                    s2c(al, new_bindc_name), x_func_type->m_elemental,
+                    return_var, x_func_type->m_abi, x->m_access, x->m_presence,
+                    x_func_type->m_deftype, s2c(al, new_bindc_name), x_func_type->m_elemental,
                     x_func_type->m_pure, x_func_type->m_module, x_func_type->m_inline,
                     x_func_type->m_static,
                     x_func_type->m_restrictions, x_func_type->n_restrictions, false, false, false);

@@ -132,7 +132,8 @@ public:
             fn_sym = ASR::down_cast<ASR::symbol_t>( ASRUtils::make_Function_t_util(
                 al, loc, fn_symtab, s2c(al, fn_name), dep.p, dep.n, args.p, args.n,
                 body.p, body.n, return_var, ASR::abiType::BindC, ASR::accessType::Public,
-                ASR::deftypeType::Interface, s2c(al, fn_name), false, false, false,
+                ASR::presenceType::Required, ASR::deftypeType::Interface,
+                s2c(al, fn_name), false, false, false,
                 false, false, nullptr, 0, false, false, false, s2c(al, header)));
             current_scope->parent->add_symbol(fn_name, fn_sym);
         }

@@ -1106,7 +1106,7 @@ namespace LCompilers {
                 s2c(al, vector_copy_name), nullptr, 0, arg_exprs.p, arg_exprs.size(),
                 /* nullptr, 0, */ body.p, body.size(), nullptr,
                 ASR::abiType::Source, ASR::accessType::Public,
-                ASR::deftypeType::Implementation,
+                ASR::presenceType::Required, ASR::deftypeType::Implementation,
                 nullptr, false, false, false, false, false,
                 nullptr, 0, false, false, false);
             global_scope->add_symbol(vector_copy_name, ASR::down_cast<ASR::symbol_t>(vector_copy_asr));

@@ -736,10 +736,11 @@ public:
             /* n_body */ 0,
             return_var_expr,
             current_procedure_abi_type,
-            s_access, deftype, nullptr,
-            false, false, false, false, false,
-            nullptr, 0,
-            is_requirement, false, false);
+            s_access, ASR::presenceType::Required,
+            deftype, nullptr, false, false, false,
+            false, false, nullptr, 0,
+            is_requirement, false, false
+        );
         parent_scope->add_symbol(function_name, ASR::down_cast<ASR::symbol_t>(tmp_));
 
         for (auto &item: current_scope->get_scope()) {
@@ -1096,10 +1097,11 @@ public:
             /* n_body */ 0,
             nullptr,
             current_procedure_abi_type,
-            s_access, deftype, bindc_name,
+            s_access, ASR::presenceType::Required, deftype, bindc_name,
             is_elemental, is_pure, is_module, false, false,
             nullptr, 0,
-            is_requirement, false, false);
+            is_requirement, false, false
+        );
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -1637,10 +1639,12 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype,
-            bindc_name, is_elemental, is_pure, false, false, false,
-            nullptr, 0, is_requirement, false, false, nullptr, x.m_start_name ? x.m_start_name : nullptr,
-            x.m_end_name ? x.m_end_name : nullptr);
+            current_procedure_abi_type, s_access, ASR::presenceType::Required,
+            deftype, bindc_name, is_elemental, is_pure, false, false, false,
+            nullptr, 0, is_requirement, false, false, nullptr,
+            x.m_start_name ? x.m_start_name : nullptr,
+            x.m_end_name ? x.m_end_name : nullptr
+        );
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
@@ -3830,11 +3834,12 @@ public:
                     ASR::asr_t *op_function = ASRUtils::make_Function_t_util(
                         al, x.base.base.loc, current_scope, s2c(al, func_name),
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
-                        ASR::abiType::Source, ASR::accessType::Public,
+                        ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                         ASR::deftypeType::Implementation, nullptr, req_type->m_elemental,
                         req_type->m_pure, req_type->m_module, req_type->m_inline,
                         req_type->m_static, nullptr, 0, f->m_deterministic,
-                        f->m_side_effect_free, true);
+                        f->m_side_effect_free, true
+                    );
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
 
@@ -4034,10 +4039,11 @@ public:
                 ASR::asr_t* new_f = ASRUtils::make_Function_t_util(al, f->base.base.loc,
                     new_scope, s2c(al, name), f->m_dependencies, f->n_dependencies, args.p,
                     args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi, f->m_access,
-                    ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental, ftype->m_pure,
-                    ftype->m_module, ftype->m_inline, ftype->m_static,
-                    ftype->m_restrictions, ftype->n_restrictions,
-                    ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free);
+                    f->m_presence, ftype->m_deftype, ftype->m_bindc_name,
+                    ftype->m_elemental, ftype->m_pure, ftype->m_module, ftype->m_inline,
+                    ftype->m_static, ftype->m_restrictions, ftype->n_restrictions,
+                    ftype->m_is_restriction, f->m_deterministic, f->m_side_effect_free
+                );
                 return ASR::down_cast<ASR::symbol_t>(new_f);
             }
             default : {

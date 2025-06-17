@@ -1102,7 +1102,7 @@ class ParallelRegionVisitor :
                 nullptr, 0,
                 args.p, args.n,
                 body.p, body.n,
-                nullptr, ASR::abiType::BindC, ASR::accessType::Public,
+                nullptr, ASR::abiType::BindC, ASR::accessType::Public, ASR::presenceType::Required,
                 ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
                 nullptr, 0,
                 false, false, false, nullptr));
@@ -1128,8 +1128,8 @@ class ParallelRegionVisitor :
             ASR::symbol_t* interface_function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, func->base.base.loc,
                     current_scope, func->m_name, func->m_dependencies, func->n_dependencies,
                     args.p, args.n, nullptr, 0, nullptr, ASR::abiType::BindC, ASR::accessType::Public,
-                    ASR::deftypeType::Interface, nullptr, false, false, false, false, false, nullptr, 0,
-                    false, false, false, nullptr));
+                    ASR::presenceType::Required, ASR::deftypeType::Interface, nullptr, false, false,
+                    false, false, false, nullptr, 0, false, false, false, nullptr));
             current_scope->parent->add_symbol(ASRUtils::symbol_name(interface_function), interface_function);
             current_scope = current_scope_copy;
             return interface_function;
@@ -1597,7 +1597,8 @@ class ParallelRegionVisitor :
                     ASRUtils::make_Function_t_util(al, loc, fn_scope,
                     s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
                     fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
-                    ASR::accessType::Public, ASR::deftypeType::Implementation,
+                    ASR::accessType::Public, ASR::presenceType::Required,
+                    ASR::deftypeType::Implementation,
                     nullptr, false, false, false, false, false, nullptr, 0,
                     false, false, false, nullptr));
                 mod_scope->add_symbol(fn_name, function);
@@ -1624,7 +1625,8 @@ class ParallelRegionVisitor :
                     ASRUtils::make_Function_t_util(al, loc, fnI_scope,
                     s2c(al, fn_name), nullptr, 0, fnI_args.p, fnI_args.n,
                     nullptr, 0, nullptr, ASR::abiType::BindC,
-                    ASR::accessType::Public, ASR::deftypeType::Interface,
+                    ASR::accessType::Public, ASR::presenceType::Required,
+                    ASR::deftypeType::Interface,
                     nullptr, false, false, false, false, false, nullptr, 0,
                     false, false, false, nullptr));
                 current_scope->add_symbol(fn_name, fnInterface);
@@ -2064,7 +2066,8 @@ class ParallelRegionVisitor :
                 ASRUtils::make_Function_t_util(al, loc, current_scope,
                 s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
                 fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
-                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                ASR::accessType::Public, ASR::presenceType::Required,
+                ASR::deftypeType::Implementation,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr));
             
@@ -2608,7 +2611,8 @@ class ParallelRegionVisitor :
                 ASRUtils::make_Function_t_util(al, loc, current_scope,
                 s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
                 fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
-                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                ASR::accessType::Public, ASR::presenceType::Required,
+                ASR::deftypeType::Implementation,
                 nullptr, false, false, false, false, false, nullptr, 0,
                 false, false, false, nullptr));
             

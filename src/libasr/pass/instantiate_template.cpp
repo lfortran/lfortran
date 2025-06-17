@@ -101,7 +101,7 @@ public:
         ASR::symbol_t *new_f = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
             al, x->base.base.loc, current_scope, s2c(al, new_sym_name), x->m_dependencies,
             x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
-            x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
+            x->m_access, x->m_presence, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
             ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
 
@@ -282,6 +282,7 @@ public:
         ASR::abiType func_abi = ASRUtils::get_FunctionType(x)->m_abi;
         ASR::accessType func_access = x->m_access;
         ASR::deftypeType func_deftype = ASRUtils::get_FunctionType(x)->m_deftype;
+        ASR::presenceType func_presence = x->m_presence;
         char *bindc_name = ASRUtils::get_FunctionType(x)->m_bindc_name;
 
         bool func_elemental =  ASRUtils::get_FunctionType(x)->m_elemental;
@@ -302,7 +303,7 @@ public:
             args.p, args.size(),
             nullptr, 0,
             new_return_var_ref,
-            func_abi, func_access, func_deftype, bindc_name,
+            func_abi, func_access, func_presence, func_deftype, bindc_name,
             func_elemental, func_pure, func_module, ASRUtils::get_FunctionType(x)->m_inline,
             ASRUtils::get_FunctionType(x)->m_static, ASRUtils::get_FunctionType(x)->m_restrictions,
             ASRUtils::get_FunctionType(x)->n_restrictions, false, false, false);
@@ -993,7 +994,7 @@ public:
         ASR::symbol_t *new_f = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(
             al, x->base.base.loc, current_scope, s2c(al, new_sym_name), x->m_dependencies,
             x->n_dependencies, args.p, args.size(), nullptr, 0, new_return_var_ref, ftype->m_abi,
-            x->m_access, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
+            x->m_access, x->m_presence, ftype->m_deftype, ftype->m_bindc_name, ftype->m_elemental,
             ftype->m_pure, ftype->m_module, ftype->m_inline, ftype->m_static, ftype->m_restrictions,
             ftype->n_restrictions, ftype->m_is_restriction, x->m_deterministic, x->m_side_effect_free));
 
@@ -1194,7 +1195,7 @@ public:
             al, x->base.base.loc, new_scope, s2c(al, new_sym_name),
             deps_vec.p, deps_vec.size(), args.p, args.size(),
             nullptr, 0, new_return_var_ref,
-            ASRUtils::get_FunctionType(x)->m_abi, x->m_access,
+            ASRUtils::get_FunctionType(x)->m_abi, x->m_access, x->m_presence,
             ASRUtils::get_FunctionType(x)->m_deftype, ASRUtils::get_FunctionType(x)->m_bindc_name,
             ASRUtils::get_FunctionType(x)->m_elemental, ASRUtils::get_FunctionType(x)->m_pure,
             ASRUtils::get_FunctionType(x)->m_module, ASRUtils::get_FunctionType(x)->m_inline,
