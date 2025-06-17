@@ -3113,9 +3113,18 @@ static inline void set_absent_optional_arguments_to_null(
     ASR::expr_t* dt=nullptr, bool nopass = false) {
     int offset = (dt != nullptr) && (!nopass);
     for( size_t i = args.size(); i + offset < func->n_args; i++ ) {
-        if( ASR::is_a<ASR::Variable_t>(
-                *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
             LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[i + offset])->m_presence ==
+                                ASR::presenceType::Optional);
+            ASR::call_arg_t empty_arg;
+            Location loc;
+            loc.first = 1, loc.last = 1;
+            empty_arg.loc = loc;
+            empty_arg.m_value = nullptr;
+            args.push_back(al, empty_arg);
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            LCOMPILERS_ASSERT(ASRUtils::EXPR2FUN(func->m_args[i + offset])->m_presence ==
                                 ASR::presenceType::Optional);
             ASR::call_arg_t empty_arg;
             Location loc;
