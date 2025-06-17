@@ -448,6 +448,7 @@
                         )]
                     )
                     (Select
+                        ()
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a

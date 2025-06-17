@@ -37,6 +37,7 @@
                     case_05
                     []
                     [(Select
+                        ()
                         (Var 2 grade)
                         [(CaseStmt
                             [(StringConstant

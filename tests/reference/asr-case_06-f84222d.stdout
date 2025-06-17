@@ -261,6 +261,7 @@
                     cond_03
                     []
                     [(Select
+                        ()
                         (Var 2 grade_fixed)
                         [(CaseStmt
                             [(StringConstant
@@ -459,6 +460,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
@@ -514,6 +516,7 @@
                         )
                     )
                     (Select
+                        ()
                         (Var 2 marks_fixed)
                         [(CaseStmt_Range
                             (IntegerBinOp

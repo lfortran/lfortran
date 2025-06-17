@@ -63,6 +63,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (IntegerBinOp
                             (Var 2 n)
                             Sub
@@ -172,6 +173,7 @@
                         []
                     )
                     (Select
+                        ()
                         (IntegerBinOp
                             (Var 2 n)
                             Add
@@ -281,6 +283,7 @@
                         []
                     )
                     (Select
+                        ()
                         (IntegerBinOp
                             (Var 2 n)
                             Mul
