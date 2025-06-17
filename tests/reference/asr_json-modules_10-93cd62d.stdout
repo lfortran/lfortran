@@ -115,6 +115,7 @@
                                         ],
                                         "return_var": [],
                                         "access": "Public",
+                                        "presence": "Required",
                                         "deterministic": false,
                                         "side_effect_free": false,
                                         "module_file": []
@@ -378,6 +379,7 @@
                                         ],
                                         "return_var": [],
                                         "access": "Public",
+                                        "presence": "Required",
                                         "deterministic": false,
                                         "side_effect_free": false,
                                         "module_file": []

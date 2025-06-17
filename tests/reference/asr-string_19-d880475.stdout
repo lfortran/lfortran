@@ -254,6 +254,7 @@
                                     []
                                     (Var 5 character_string)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -341,6 +342,7 @@
                                     []
                                     (Var 4 length)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -504,6 +506,7 @@
                                     []
                                     (Var 7 lps_array)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -598,6 +601,7 @@
                                     )]
                                     (Var 8 l)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -714,6 +718,7 @@
                                     )]
                                     (Var 9 l)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -874,6 +879,7 @@
                                     )]
                                     (Var 12 res)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1039,6 +1045,7 @@
                                     []
                                     (Var 13 res)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1270,6 +1277,7 @@
                                     )]
                                     (Var 10 res)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1520,6 +1528,7 @@
                                     )]
                                     (Var 11 res)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

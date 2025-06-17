@@ -175,6 +175,7 @@
                     )]
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -348,6 +349,7 @@
                     )]
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -496,6 +498,7 @@
                                     )]
                                     (Var 6 ftol_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -695,6 +698,7 @@
                     (Return)]
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

@@ -117,6 +117,7 @@
                                     )]
                                     (Var 4 dg_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -142,6 +143,7 @@
                     []
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

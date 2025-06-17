@@ -205,6 +205,7 @@
                                     )]
                                     (Var 5 target_ptr)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

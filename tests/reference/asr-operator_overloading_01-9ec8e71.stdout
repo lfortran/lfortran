@@ -465,6 +465,7 @@
                                     )]
                                     (Var 4 bin_add)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -568,6 +569,7 @@
                                     )]
                                     (Var 3 logical_and)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

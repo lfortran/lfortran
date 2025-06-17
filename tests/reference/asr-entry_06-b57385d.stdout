@@ -83,6 +83,7 @@
                                     []
                                     (Var 6 mvndfn)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -263,6 +264,7 @@
                     )]
                     (Var 2 mvndfn)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -700,6 +702,7 @@
                     )]
                     (Var 4 mvndfn_main__lcompilers)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -810,6 +813,7 @@
                     )]
                     (Var 3 mvndnt)
                     Public
+                    Required
                     .false.
                     .false.
                     ()

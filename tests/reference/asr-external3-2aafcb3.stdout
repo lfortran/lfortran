@@ -175,6 +175,7 @@
                                     []
                                     (Var 5 bcorr_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -264,6 +265,7 @@
                     (Return)]
                     (Var 2 brcmp1)
                     Public
+                    Required
                     .false.
                     .false.
                     ()

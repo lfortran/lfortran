@@ -200,6 +200,7 @@
                                     )]
                                     (Var 4 b)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -313,6 +314,7 @@
                                     )]
                                     (Var 5 b)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

@@ -158,6 +158,7 @@
                                     )]
                                     (Var 4 length)
                                     Private
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -348,6 +349,7 @@
                                     )]
                                     (Var 5 maybe_string)
                                     Private
+                                    Required
                                     .false.
                                     .false.
                                     ()

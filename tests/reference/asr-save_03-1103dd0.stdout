@@ -380,6 +380,7 @@
                     []
                     (Var 6 save_func)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -676,6 +677,7 @@
                                     []
                                     (Var 12 save_func_mod)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -867,6 +869,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1089,6 +1092,7 @@
                                     []
                                     (Var 8 save_func)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1260,6 +1264,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1285,6 +1290,7 @@
                     []
                     (Var 7 save_nested_func)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -1501,6 +1507,7 @@
                                     []
                                     (Var 5 save_func)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1652,6 +1659,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1677,6 +1685,7 @@
                     []
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -1868,6 +1877,7 @@
                     []
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

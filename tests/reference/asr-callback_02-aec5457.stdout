@@ -120,6 +120,7 @@
                                                     []
                                                     ()
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -243,6 +244,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -379,6 +381,7 @@
                                                     )]
                                                     ()
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -462,6 +465,7 @@
                                     )]
                                     (Var 5 foo)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

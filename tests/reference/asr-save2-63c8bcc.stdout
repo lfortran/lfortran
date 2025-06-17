@@ -326,6 +326,7 @@
                     []
                     (Var 3 save_fun)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -567,6 +568,7 @@
                                     []
                                     (Var 6 fun_save)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -731,6 +733,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -983,6 +986,7 @@
                     []
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

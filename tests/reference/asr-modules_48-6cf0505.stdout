@@ -983,6 +983,7 @@
                                     )]
                                     (Var 4 hash)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1269,6 +1270,7 @@
                                     )]
                                     (Var 5 hash)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1663,6 +1665,7 @@
                                     )]
                                     (Var 6 lout)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -2044,6 +2047,7 @@
                                     )]
                                     (Var 7 cat)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

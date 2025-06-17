@@ -115,6 +115,7 @@
                                     []
                                     (Var 5 lsame_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -218,6 +219,7 @@
                     (Return)]
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

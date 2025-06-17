@@ -95,6 +95,7 @@
                                     []
                                     (Var 4 alnorm_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -209,6 +210,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -537,6 +539,7 @@
                     (Return)]
                     (Var 2 prho)
                     Public
+                    Required
                     .false.
                     .false.
                     ()

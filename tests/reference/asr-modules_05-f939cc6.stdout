@@ -126,6 +126,7 @@
                                     )]
                                     (Var 3 print_vars)
                                     Private
+                                    Required
                                     .false.
                                     .false.
                                     ()
