@@ -452,6 +452,7 @@
                                     [(Var 3 log1)
                                     (Var 3 log2)]
                                     [(If
+                                        ()
                                         (LogicalBinOp
                                             (LogicalBinOp
                                                 (Var 3 log1)
@@ -588,6 +589,7 @@
                                     [(Var 4 log1)
                                     (Var 4 log2)]
                                     [(If
+                                        ()
                                         (LogicalBinOp
                                             (LogicalBinOp
                                                 (Var 4 log1)

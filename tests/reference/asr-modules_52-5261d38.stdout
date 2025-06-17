@@ -142,6 +142,7 @@
                                     []
                                     [(Var 3 input)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(Var 3 table)]

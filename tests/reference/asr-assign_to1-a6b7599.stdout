@@ -35,6 +35,7 @@
                         1000
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
@@ -58,6 +59,7 @@
                         100
                     )
                     (Select
+                        ()
                         (Var 2 k)
                         [(CaseStmt
                             [(IntegerConstant 100 (Integer 4) Decimal)]

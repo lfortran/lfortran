@@ -77,6 +77,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
@@ -142,6 +143,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp

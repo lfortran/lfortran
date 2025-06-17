@@ -792,6 +792,7 @@
                                                     (Var 11 low)
                                                     (Var 11 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 11 low)
                                                             Lt
@@ -840,6 +841,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     8 lt
                                                                     ()
@@ -1680,6 +1682,7 @@
                                                     (Var 15 low)
                                                     (Var 15 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 15 low)
                                                             Lt
@@ -1726,6 +1729,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_integer
                                                                     ()
@@ -2037,6 +2041,7 @@
                                                     (Var 17 low)
                                                     (Var 17 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 17 low)
                                                             Lt
@@ -2088,6 +2093,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_my_type
                                                                     ()
@@ -2420,6 +2426,7 @@
                                                     (Var 16 low)
                                                     (Var 16 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 16 low)
                                                             Lt
@@ -2466,6 +2473,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_real
                                                                     ()

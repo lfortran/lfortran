@@ -102,7 +102,7 @@ class TransformWhereVisitor: public ASR::CallReplacerOnExpressionsVisitor<Transf
             }
         }
 
-        return ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc,
+        return ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, nullptr,
             x.m_test, body_vec.p, body_vec.size(), or_else_vec.p, or_else_vec.size()));
     }
 

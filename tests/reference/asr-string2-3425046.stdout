@@ -274,6 +274,7 @@
                                             (Logical 4)
                                         )
                                         [(If
+                                            ()
                                             (LogicalNot
                                                 (PointerAssociated
                                                     (Var 18 dir_entry_c)

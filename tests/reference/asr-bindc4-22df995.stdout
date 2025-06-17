@@ -610,6 +610,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries)
                             (PointerToCPtr
@@ -643,6 +644,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 queries)
@@ -663,6 +665,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries)
                             (PointerToCPtr
@@ -679,6 +682,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries2)
                             ()

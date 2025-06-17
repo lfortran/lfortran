@@ -147,6 +147,7 @@
                                     [(Var 4 message)
                                     (Var 4 context)]
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 4 context)

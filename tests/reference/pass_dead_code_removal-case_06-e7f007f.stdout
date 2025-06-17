@@ -261,6 +261,7 @@
                     cond_03
                     []
                     [(If
+                        ()
                         (IntegerCompare
                             (Var 2 a)
                             Eq
@@ -313,6 +314,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp

@@ -94,13 +94,13 @@ void case_to_if(Allocator& al, const ASR::Select_t& x, ASR::expr_t* a_test, Vec<
         case ASR::case_stmtType::CaseStmt: {
             ASR::CaseStmt_t* Case_Stmt = (ASR::CaseStmt_t*)(&(case_body->base));
             ASR::expr_t* test_expr = gen_test_expr_CaseStmt(al, x.base.base.loc, Case_Stmt, a_test);
-            last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, test_expr, Case_Stmt->m_body, Case_Stmt->n_body, x.m_default, x.n_default));
+            last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, x.m_name, test_expr, Case_Stmt->m_body, Case_Stmt->n_body, x.m_default, x.n_default));
             break;
         }
         case ASR::case_stmtType::CaseStmt_Range: {
             ASR::CaseStmt_Range_t* Case_Stmt = (ASR::CaseStmt_Range_t*)(&(case_body->base));
             ASR::expr_t* test_expr = gen_test_expr_CaseStmt_Range(al, x.base.base.loc, Case_Stmt, a_test);
-            last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, test_expr, Case_Stmt->m_body, Case_Stmt->n_body, x.m_default, x.n_default));
+            last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, x.m_name, test_expr, Case_Stmt->m_body, Case_Stmt->n_body, x.m_default, x.n_default));
             break;
         }
     }
@@ -129,7 +129,7 @@ void case_to_if(Allocator& al, const ASR::Select_t& x, ASR::expr_t* a_test, Vec<
         Vec<ASR::stmt_t*> if_body_vec;
         if_body_vec.reserve(al, 1);
         if_body_vec.push_back(al, last_if_else);
-        last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, test_expr, m_body, n_body, if_body_vec.p, if_body_vec.size()));
+        last_if_else = ASRUtils::STMT(ASR::make_If_t(al, x.base.base.loc, x.m_name, test_expr, m_body, n_body, if_body_vec.p, if_body_vec.size()));
     }
     body.reserve(al, 1);
     body.push_back(al, last_if_else);
@@ -183,7 +183,7 @@ void case_to_if_with_fall_through(Allocator& al, const ASR::Select_t& x,
                     case_body.push_back(al, ASRUtils::STMT(ASR::make_GoTo_t(al, loc,
                         label_id, s2c(al, scope->get_unique_name("switch_case_label")))));
                 }
-                body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc,
+                body.push_back(al, ASRUtils::STMT(ASR::make_If_t(al, loc, x.m_name,
                     test_expr, case_body.p, case_body.size(), nullptr, 0)));
                 break;
             }

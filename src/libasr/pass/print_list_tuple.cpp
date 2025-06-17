@@ -165,7 +165,7 @@ class PrintListTupleVisitor
         if_body.push_back(al, print_comma_space);
 
         ASR::stmt_t *if_cond = ASRUtils::STMT(
-            ASR::make_If_t(al, loc, compare_cond, if_body.p,
+            ASR::make_If_t(al, loc, nullptr, compare_cond, if_body.p,
                             if_body.size(), nullptr, 0));
 
         ASR::do_loop_head_t loop_head;

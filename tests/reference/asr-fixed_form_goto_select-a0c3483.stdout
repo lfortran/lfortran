@@ -115,6 +115,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 m)
                         [(CaseStmt
                             [(IntegerConstant 1 (Integer 4) Decimal)]
@@ -136,6 +137,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 n)
                         [(CaseStmt
                             [(IntegerConstant 1 (Integer 4) Decimal)]

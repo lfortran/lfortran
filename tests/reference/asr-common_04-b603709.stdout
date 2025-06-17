@@ -334,6 +334,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -352,6 +353,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -370,6 +372,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (StructInstanceMember
@@ -401,6 +404,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (StructInstanceMember
@@ -432,6 +436,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (StructInstanceMember
@@ -463,6 +468,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (StructInstanceMember
@@ -494,6 +500,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (StructInstanceMember
@@ -525,6 +532,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 d)
                             NotEq

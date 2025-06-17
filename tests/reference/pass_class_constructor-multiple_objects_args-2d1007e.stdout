@@ -306,6 +306,7 @@
                         ()
                     )
                     (If
+                        ()
                         (LogicalNot
                             (Var 2 was_called)
                             (Logical 4)

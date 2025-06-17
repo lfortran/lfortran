@@ -372,6 +372,18 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_status))){
                     a_status = ASRUtils::cast_string_descriptor_to_pointer(al, a_status);
                 }
+                if (ASR::is_a<ASR::StringConstant_t>(*a_status)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_status)->m_s);
+                    rtrim(str);
+                    a_status = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_status->base.loc, 1,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_status->base.loc, str.length(),
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, a_status->base.loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("form") ) {
                 if ( a_form != nullptr ) {
                     diag.add(Diagnostic(
@@ -396,7 +408,18 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_form))){
                     a_form = ASRUtils::cast_string_descriptor_to_pointer(al, a_form);
                 }
-
+                if (ASR::is_a<ASR::StringConstant_t>(*a_form)) {
+                    std::string str = std::string(ASR::down_cast<ASR::StringConstant_t>(a_form)->m_s);
+                    rtrim(str);
+                    a_form = ASRUtils::EXPR(ASR::make_StringConstant_t(
+                                al, x.base.base.loc, s2c(al, str),
+                                ASRUtils::TYPE(ASR::make_String_t(
+                                    al, a_form->base.loc, 1,
+                                    ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, a_form->base.loc, str.length(),
+                                        ASRUtils::TYPE(ASR::make_Integer_t(al, a_form->base.loc, 4)))),
+                                    ASR::string_length_kindType::ExpressionLength,
+                                    ASR::string_physical_typeType::PointerString))));
+                }
             } else if( m_arg_str == std::string("access") ) {  //TODO: Handle 'direct' as access argument
                 if ( a_access != nullptr ) {
                     diag.add(Diagnostic(
@@ -1036,7 +1059,7 @@ public:
                         nullptr, 0, nullptr, newline, nullptr, formatted)));
                     // TODO: Compare with "no" (case-insensitive) in else part
                     // Throw runtime error if advance expression does not match "no"
-                    newline_for_advance.push_back(ASR::make_If_t(al, loc, test, body.p,
+                    newline_for_advance.push_back(ASR::make_If_t(al, loc, nullptr, test, body.p,
                             body.size(), nullptr, 0));
                     a_end = empty;
                 }
@@ -1927,17 +1950,12 @@ public:
             }
         }
 
-        if (ASR::is_a<ASR::Var_t>(*a_test)) {
-            ASR::Var_t *var = ASR::down_cast<ASR::Var_t>(a_test);
-            if (ASR::is_a<ASR::Variable_t>(*var->m_v)) {
-                ASR::Variable_t *variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
-                if (ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(variable->m_type)) && ASRUtils::is_allocatable(variable->m_type)) {
-                    a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
-                }
-            }
+        if ((ASR::is_a<ASR::FunctionCall_t>(*a_test) || ASR::is_a<ASR::Var_t>(*a_test)) &&
+                    ASRUtils::is_descriptorString(ASRUtils::expr_type(a_test))) {
+            a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
         }
 
-        tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
+        tmp = ASR::make_Select_t(al, x.base.base.loc, x.m_stmt_name, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
@@ -2592,7 +2610,7 @@ public:
             ASR::stmt_t* go_to_label = ASRUtils::STMT(ASR::make_GoTo_t(al, loc, i+1, s2c(al, std::to_string(i+1))));
             if_body.push_back(al, go_to_label);
 
-            if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, cmp, if_body.p, if_body.size(), nullptr, 0));
+            if_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, cmp, if_body.p, if_body.size(), nullptr, 0));
             stmt_vector.push_back(if_stmt);
         }
 
@@ -4561,7 +4579,7 @@ public:
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
-        tmp = ASR::make_If_t(al, x.base.base.loc, test, body.p,
+        tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test, body.p,
                 body.size(), orelse.p, orelse.size());
         all_blocks_nesting--;
     }
@@ -4626,9 +4644,9 @@ public:
                 s2c(al, std::to_string(x.m_eq_label)))));
 
         orelse.push_back(al, ASRUtils::STMT(
-            ASR::make_If_t(al, x.base.base.loc, test_gt, body_gt.p,
+            ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test_gt, body_gt.p,
                 body_gt.size(), orelse_gt.p, orelse_gt.size())));
-        tmp = ASR::make_If_t(al, x.base.base.loc, test_lt, body.p,
+        tmp = ASR::make_If_t(al, x.base.base.loc, x.m_stmt_name, test_lt, body.p,
                 body.size(), orelse.p, orelse.size());
     }
 
@@ -5037,7 +5055,7 @@ public:
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1, false)));
                     }
                 }
-                tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
+                tmp = ASR::make_Select_t(al, x.base.base.loc, nullptr, goto_label, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
             }
         } else if (x.m_int_var) {
@@ -5121,7 +5139,7 @@ public:
                 }
             }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-            tmp = ASR::make_Select_t(al, x.base.base.loc, var_expr, a_body_vec.p,
+            tmp = ASR::make_Select_t(al, x.base.base.loc, nullptr, var_expr, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
         } else {
             diag.add(Diagnostic(
