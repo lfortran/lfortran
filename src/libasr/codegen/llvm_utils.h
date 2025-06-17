@@ -468,7 +468,7 @@ namespace LCompilers {
             llvm::Type* get_list_type(llvm::Type* el_type, std::string& type_code,
                                         int32_t type_size);
 
-            llvm::Type* get_list_type_from_ttype(ASR::ttype_t* el_ttype);
+            llvm::Type* get_list_type_from_ttype(ASR::ttype_t* el_ttype, int type_size=0);
 
             void list_init(std::string& type_code, llvm::Value* list,
                            llvm::Module* module, llvm::Value* initial_capacity,

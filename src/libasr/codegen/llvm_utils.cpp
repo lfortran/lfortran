@@ -1430,6 +1430,10 @@ namespace LCompilers {
                     type_size = a_kind;
                 }
                 llvm_type = list_api->get_list_type(el_llvm_type, el_type_code, type_size);
+                
+                // Side effect call for adding size to map, replace above call 
+                // after full refactor
+                list_api->get_list_type_from_ttype(asr_list->m_type, type_size);
                 break;
             }
             case (ASR::ttypeType::Dict): {
@@ -2327,17 +2331,18 @@ namespace LCompilers {
         return list_desc;
     }
 
-    llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* type) {
+    llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* type, int type_size) {
         if( type2listtype.find(type) != type2listtype.end() ) {
             return std::get<0>(type2listtype[type]);
         }
 
+        LCOMPILERS_ASSERT(type_size != 0);
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(type, llvm_utils->module);
         std::vector<llvm::Type*> list_type_vec = {llvm::Type::getInt32Ty(context),
                                                   llvm::Type::getInt32Ty(context),
                                                   el_type->getPointerTo()};
         llvm::StructType* list_desc = llvm::StructType::create(context, list_type_vec, "list");
-        type2listtype[type] = std::make_tuple(list_desc, el_type->getScalarSizeInBits()/8, el_type);
+        type2listtype[type] = std::make_tuple(list_desc, type_size, el_type);
         return list_desc;
     }
 
@@ -5113,7 +5118,7 @@ namespace LCompilers {
                           ASR::ttype_t* asr_type, llvm::Module* module,
                           std::map<std::string, std::map<std::string, int>>& name2memidx) {
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
-        int type_size = el_type->getScalarSizeInBits()/8;
+        int type_size = std::get<1>(type2listtype[asr_type]);
         llvm::Type* list_type = get_list_type_from_ttype(asr_type);
 
 
