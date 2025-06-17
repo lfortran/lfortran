@@ -1,4 +1,3 @@
-#include "libasr/asr.h"
 #include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
@@ -2337,6 +2336,14 @@ namespace LCompilers {
         }
 
         LCOMPILERS_ASSERT(type_size != 0);
+
+        // Remove after refactor for LLVM<17
+        std::string type_code = ASRUtils::get_type_code(type);
+        if ( typecode2listtype.find(type_code) != typecode2listtype.end() ) {
+            type2listtype[type] = typecode2listtype[type_code];
+            return std::get<0>(type2listtype[type]);
+        }
+
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(type, llvm_utils->module);
         std::vector<llvm::Type*> list_type_vec = {llvm::Type::getInt32Ty(context),
                                                   llvm::Type::getInt32Ty(context),
@@ -5120,7 +5127,6 @@ namespace LCompilers {
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(asr_type, module);
         int type_size = std::get<1>(type2listtype[asr_type]);
         llvm::Type* list_type = get_list_type_from_ttype(asr_type);
-
 
         llvm::Value* current_end_point = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
                                                                  get_pointer_to_current_end_point2(list_type, list));
