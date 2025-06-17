@@ -78,7 +78,8 @@ jobs:
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
         shell: bash -e -l {0}
-        run: micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1
+        run: |
+          micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1 zstd-static=1.5.5 zlib=1.2.13
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -90,7 +91,7 @@ jobs:
           elif [[ "${{ matrix.llvm-version }}" == "20" ]]; then
             micromamba install zstd-static=1.5.7 zlib=1.3.1
           fi
-          if [[ "${{ matrix.os }}" == "ubuntu" && "${{ matrix.llvm-version }}" != "11" ]]; then
+          if [[ "${{ matrix.os }}" == "ubuntu-latest" && "${{ matrix.llvm-version }}" != "11" ]]; then
             micromamba install libunwind=1.7.2
           fi
 
