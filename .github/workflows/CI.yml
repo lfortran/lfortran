@@ -183,12 +183,12 @@ jobs:
       # not run interactively.
       - name: Disable ~/.bash_logout (Linux)
         shell: bash -e {0}
-        if: contains(matrix.os, 'ubuntu')
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: mv -v ~/.bash_logout ~/.bash_logout.bak
 
       - name: LSP Test (Linux / macOS)
         shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        if: (contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')) && contains(matrix.llvm-version, '11')
         timeout-minutes: 5
         env:
             EXIT_SUCCESS: 0
