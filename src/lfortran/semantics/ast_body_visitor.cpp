@@ -1955,7 +1955,7 @@ public:
             a_test = ASRUtils::cast_string_descriptor_to_pointer(al, a_test);
         }
 
-        tmp = ASR::make_Select_t(al, x.base.base.loc, a_test, a_body_vec.p,
+        tmp = ASR::make_Select_t(al, x.base.base.loc, x.m_stmt_name, a_test, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
@@ -5055,7 +5055,7 @@ public:
                         a_body_vec.push_back(al, ASR::down_cast<ASR::case_stmt_t>(ASR::make_CaseStmt_t(al, x.base.base.loc, comparator_one.p, 1, body.p, 1, false)));
                     }
                 }
-                tmp = ASR::make_Select_t(al, x.base.base.loc, goto_label, a_body_vec.p,
+                tmp = ASR::make_Select_t(al, x.base.base.loc, nullptr, goto_label, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
             }
         } else if (x.m_int_var) {
@@ -5139,7 +5139,7 @@ public:
                 }
             }
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, sym));
-            tmp = ASR::make_Select_t(al, x.base.base.loc, var_expr, a_body_vec.p,
+            tmp = ASR::make_Select_t(al, x.base.base.loc, nullptr, var_expr, a_body_vec.p,
                            a_body_vec.size(), def_body.p, def_body.size(), false);
         } else {
             diag.add(Diagnostic(
