@@ -376,6 +376,9 @@ RUN(NAME arithmetic_if_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortra
 
 RUN(NAME if_label_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
+RUN(NAME select_label_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+
+
 RUN(NAME variables_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME variables_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp x86 wasm c fortran)
 RUN(NAME variables_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc cpp wasm c fortran)
