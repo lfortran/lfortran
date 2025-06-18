@@ -1664,8 +1664,13 @@ namespace LCompilers {
         return builder->CreateGEP(t2, x, idx);
 #else
         llvm::Type *type = nullptr;
-        if (ptr_type.find(x) != ptr_type.end()) {
-            type = ptr_type[x];
+        auto it = ptr_type.find(x);
+        if (it != ptr_type.end()) {
+            type = it->second;
+        } else if (auto* AI = llvm::dyn_cast<llvm::AllocaInst>(x)) {
+            type = AI->getAllocatedType();
+        } else if (auto* GV = llvm::dyn_cast<llvm::GlobalVariable>(x)) {
+            type = GV->getValueType();
         }
         LCOMPILERS_ASSERT(type);
         return builder->CreateGEP(type, x, idx);
