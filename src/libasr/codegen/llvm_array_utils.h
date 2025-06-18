@@ -24,6 +24,8 @@ namespace LCompilers {
 
         llvm::Value* lfortran_malloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* arg_size);
+        llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
+                llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size);
 
         /*
         * This function checks whether the
@@ -149,8 +151,8 @@ namespace LCompilers {
                 */
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
                     llvm::Module* module, bool realloc=false) = 0;
 
                 virtual
@@ -168,14 +170,16 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* target, ASR::ttype_t* target_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank) = 0;
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* target, ASR::ttype_t* target_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank) = 0;
@@ -194,6 +198,14 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr) = 0;
+
+            //     /*
+            //     * Fetches array element based on passed index.
+            //     * Handles different array physical types.
+            //     */
+            //    virtual
+            //     llvm::Value* fetch_array_element(llvm::Value* arr, llvm::Type* arr_type,
+            //         llvm::Value* idx, ASR::Array_t* arr_llvm_type);
 
                 /*
                 * Returns pointer to data in the input
@@ -283,12 +295,13 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false) = 0;
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::ttype_t* array_type) = 0;
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
@@ -383,8 +396,8 @@ namespace LCompilers {
 
                 virtual
                 void fill_malloc_array_details(
-                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, int n_dims,
-                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
+                    llvm::Value* arr, llvm::Type *arr_type, llvm::Type* llvm_data_type, ASR::ttype_t* asr_type, int n_dims,
+                    std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims, llvm::Value* string_len,
                     llvm::Module* module, bool realloc=false);
 
                 virtual
@@ -402,14 +415,16 @@ namespace LCompilers {
 
                 virtual
                 void fill_descriptor_for_array_section(
-                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* target, ASR::ttype_t* target_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     int value_rank, int target_rank);
 
                 virtual
                 void fill_descriptor_for_array_section_data_only(
-                    llvm::Value* value_desc, llvm::Type* value_el_type, llvm::Value* target,
+                    llvm::Value* value_desc, llvm::Type* value_el_type, ASR::ttype_t* value_type,
+                    llvm::Value* target, ASR::ttype_t* target_type,
                     llvm::Value** lbs, llvm::Value** ubs,
                     llvm::Value** ds, llvm::Value** non_sliced_indices,
                     llvm::Value** llvm_diminfo, int value_rank, int target_rank);
@@ -419,6 +434,14 @@ namespace LCompilers {
 
                 virtual
                 llvm::Value* get_pointer_to_data(llvm::Value* arr);
+                
+                // /*
+                // * Fetches array element based on passed index.
+                // * Handles different array physical types.
+                // */
+                // virtual
+                // llvm::Value* fetch_array_element(llvm::Value* arr, llvm::Type* arr_llvm_type,
+                //     llvm::Value* idx, ASR::Array_t* arr_type);
 
                 /*
                  * Return pointer to data in array descriptor,
@@ -466,12 +489,13 @@ namespace LCompilers {
                 virtual
                 llvm::Value* get_single_element(llvm::Type *type, llvm::Value* array,
                     std::vector<llvm::Value*>& m_args, int n_args,
+                    ASR::ttype_t* asr_type,
                     bool data_only=false, bool is_fixed_size=false,
                     llvm::Value** llvm_diminfo=nullptr,
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false);
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
+                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::ttype_t* array_type);
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);

@@ -94,6 +94,11 @@ struct Stacktrace {
     #define INT64 "%ld"
 #endif
 
+typedef struct string_descriptor {
+    char* data;
+    int64_t len;
+} string_descriptor;
+
 // This function performs case insensitive string comparison
 bool streql(const char *s1, const char* s2) {
 #if defined(_MSC_VER)
@@ -1087,7 +1092,7 @@ void move_containing_ptr_next(Serialization_Info* s_info){
         sizeof(int8_t) , sizeof(double), sizeof(float), 
         sizeof(char*), sizeof(bool), sizeof(void*), 0 /*Important to be zero*/};
     
-    if(false /*Remove after stringsArray refactoring*/ && !stack_empty(s_info->array_sizes_stack) && 
+    if(!stack_empty(s_info->array_sizes_stack) && 
         s_info->current_element_type == CHARACTER_TYPE){ // Array of strings (Single Ptr)
         char* arr_str_ptr = *(char**)s_info->current_arg_info.current_arg;
         s_info->temp_char_pp =  arr_str_ptr + s_info->current_arg_info.current_string_len + 1 /*\0*/;
@@ -1247,7 +1252,7 @@ bool move_to_next_element(struct serialization_info* s_info, bool peek){
                 set_current_PrimitiveType(s_info);/*Keep deserializing*/
                 continue;
             }
-            move_containing_ptr_next(s_info); // Moves containing pointer to the next element (Non-Primitive Types).
+            move_containing_ptr_next(s_info); // Moves containing pointer to the next element
             set_current_PrimitiveType(s_info);
             return true;
         }
@@ -1385,7 +1390,7 @@ void free_serialization_info(Serialization_Info* s_info){
     va_end(*s_info->current_arg_info.args);
 }
 
-LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const char* serialization_string, 
+LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, 
     int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...)
 {
     va_list args;
@@ -2567,24 +2572,24 @@ LFORTRAN_API double _lfortran_zphase(double_complex_t x)
 
 // strcat  --------------------------------------------------------------------
 
-LFORTRAN_API void _lfortran_strcat(char** s1, char** s2, char** dest)
-{
+LFORTRAN_API char* _lfortran_strcat(
+    char* s1, int64_t s1_len,
+    char* s2, int64_t s2_len)
+{  
     int cntr = 0;
     char trmn = '\0';
-    int s1_len = strlen(*s1);
-    int s2_len = strlen(*s2);
     int trmn_size = sizeof(trmn);
     char* dest_char = (char*)malloc(s1_len+s2_len+trmn_size);
     for (int i = 0; i < s1_len; i++) {
-        dest_char[cntr] = (*s1)[i];
+        dest_char[cntr] = s1[i];
         cntr++;
     }
     for (int i = 0; i < s2_len; i++) {
-        dest_char[cntr] = (*s2)[i];
+        dest_char[cntr] = s2[i];
         cntr++;
     }
     dest_char[cntr] = trmn;
-    *dest = &(dest_char[0]);
+    return dest_char;
 }
 // Allocate_allocatable-strings + Extend String ----------------------------------------------------------- 
 
@@ -2603,89 +2608,124 @@ void extend_string(char** ptr, int32_t new_size /*Null-Character Counted*/, int6
     *string_capacity = new_capacity;
 }
 
-LFORTRAN_API void _lfortran_allocate_string(char** ptr, int64_t desired_size /*Null-Character Counted*/
-    , int64_t* string_size, int64_t* string_capacity) {
-    if(*ptr == NULL && *string_size == 0 && *string_capacity == 0){
-        // Start off with (inital_capacity >= 100).
-        int32_t inital_capacity;
-        if(100 < desired_size){
-            inital_capacity = desired_size;
-        } else {
-            inital_capacity = 100; 
-        }
-        *ptr = (char*)malloc(inital_capacity);
-        *string_capacity = inital_capacity;
-        const int8_t null_terminated_char_len = 1;
-        *string_size = desired_size - null_terminated_char_len;
-    } else if(*ptr != NULL && *string_capacity != 0){
-        printf("runtime error: Attempting to allocate already allocated variable\n");
-        exit(1);
-    } else {
-        printf("Compiler Internal Error :Invalid state of string descriptor\n");
-        exit(1);
-    }
-}
+// LFORTRAN_API void _lfortran_allocate_string(char** ptr, int64_t desired_size /*Null-Character Counted*/
+//     , int64_t* string_size, int64_t* string_capacity) {
+//     if(*ptr == NULL && *string_size == 0 && *string_capacity == 0){
+//         // Start off with (inital_capacity >= 100).
+//         int32_t inital_capacity;
+//         if(100 < desired_size){
+//             inital_capacity = desired_size;
+//         } else {
+//             inital_capacity = 100; 
+//         }
+//         *ptr = (char*)malloc(inital_capacity);
+//         *string_capacity = inital_capacity;
+//         const int8_t null_terminated_char_len = 1;
+//         *string_size = desired_size - null_terminated_char_len;
+//     } else if(*ptr != NULL && *string_capacity != 0){
+//         printf("runtime error: Attempting to allocate already allocated variable\n");
+//         exit(1);
+//     } else {
+//         printf("Compiler Internal Error :Invalid state of string descriptor\n");
+//         exit(1);
+//     }
+// }
 
 // strcpy -----------------------------------------------------------
 
 
-LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t* x_string_size, int64_t* x_string_capacity)
-{
-    ASSERT_MSG(x_string_size != NULL,"%s", "string size is NULL");
-    ASSERT_MSG(x_string_capacity != NULL, "%s", "string capacity is NULL");
-    ASSERT_MSG(((*x != NULL) && (*x_string_size <= (*x_string_capacity - 1))) ||
-        (*x == NULL && *x_string_size == 0 && *x_string_capacity == 0) , "%s",
-    "compiler-behavior error : string x_string_capacity < string size");
+// LFORTRAN_API void _lfortran_strcpy_descriptor_string(char** x, char *y, int64_t* x_string_size, int64_t* x_string_capacity)
+// {
+//     ASSERT_MSG(x_string_size != NULL,"%s", "string size is NULL");
+//     ASSERT_MSG(x_string_capacity != NULL, "%s", "string capacity is NULL");
+//     ASSERT_MSG(((*x != NULL) && (*x_string_size <= (*x_string_capacity - 1))) ||
+//         (*x == NULL && *x_string_size == 0 && *x_string_capacity == 0) , "%s",
+//     "compiler-behavior error : string x_string_capacity < string size");
     
-    if(y == NULL){
-        fprintf(stderr,
-        "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
-        exit(1);
-    }
-    size_t y_len, x_len; 
-    y_len = strlen(y); 
-    x_len = y_len;
+//     if(y == NULL){
+//         fprintf(stderr,
+//         "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
+//         exit(1);
+//     }
+//     size_t y_len, x_len; 
+//     y_len = strlen(y); 
+//     x_len = y_len;
 
-    if (*x == NULL) {
-        _lfortran_allocate_string(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
-    } else {
-        int8_t null_char_len = 1;
-        if(*x_string_capacity < (y_len + null_char_len)){
-            extend_string(x, y_len+1, x_string_capacity);
-        }
-    }
-    int64_t null_character_index = x_len;
-    (*x)[null_character_index] = '\0'; 
-    for (size_t i = 0; i < x_len; i++) {
-        (*x)[i] = y[i];
-    }
-    *x_string_size = y_len;
-}
+//     if (*x == NULL) {
+//         _lfortran_allocate_string(x, y_len+1, x_string_size, x_string_capacity); // Allocate new memory for x.
+//     } else {
+//         int8_t null_char_len = 1;
+//         if(*x_string_capacity < (y_len + null_char_len)){
+//             extend_string(x, y_len+1, x_string_capacity);
+//         }
+//     }
+//     int64_t null_character_index = x_len;
+//     (*x)[null_character_index] = '\0'; 
+//     for (size_t i = 0; i < x_len; i++) {
+//         (*x)[i] = y[i];
+//     }
+//     *x_string_size = y_len;
+// }
 
-LFORTRAN_API void _lfortran_strcpy_pointer_string(char** x, char *y)
-{
-    if(y == NULL){
-        fprintf(stderr,
-        "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
-        exit(1);
-    }
-    size_t y_len;
-    y_len = strlen(y); 
-    // A workaround :
-    // every LHS string that's not allocatable should have been
-    // allocated a fixed-size-memory space that stays there for the whole life time of the program.
-    if( *x == NULL ) {
-        *x = (char*) malloc((y_len + 1) * sizeof(char));
-        _lfortran_string_init(y_len + 1, *x);
-    }
-    for (size_t i = 0; i < strlen(*x); i++) {
-        if (i < y_len) {
-            x[0][i] = y[i];
+// LFORTRAN_API void _lfortran_strcpy_pointer_string(char** x, char *y)
+// {
+//     if(y == NULL){
+//         fprintf(stderr,
+//         "Runtime Error : RHS allocatable-character variable must be allocated before assignment.\n");
+//         exit(1);
+//     }
+//     size_t y_len;
+//     y_len = strlen(y); 
+//     // A workaround :
+//     // every LHS string that's not allocatable should have been
+//     // allocated a fixed-size-memory space that stays there for the whole life time of the program.
+//     if( *x == NULL ) {
+//         *x = (char*) malloc((y_len + 1) * sizeof(char));
+//         _lfortran_string_init(y_len + 1, *x);
+//     }
+//     for (size_t i = 0; i < strlen(*x); i++) {
+//         if (i < y_len) {
+//             x[0][i] = y[i];
+//         } else {
+//             x[0][i] = ' ';
+//         }
+//     }
+// }
+
+LFORTRAN_API void _lfortran_copy_str_and_pad(
+    char* lhs, int64_t lhs_len,
+    char* rhs, int64_t rhs_len){
+    for (int64_t i = 0; i < lhs_len; i++) {
+        if (i < rhs_len) {
+            lhs[i] = rhs[i];
         } else {
-            x[0][i] = ' ';
+            lhs[i] = ' ';
         }
     }
+    lhs[lhs_len] = '\0'; // Null-terminate the string(TODO::remove)
 }
+// TODO : split them into three functions instead of making compile-time choices at runtime
+LFORTRAN_API void _lfortran_strcpy(
+    char** lhs, int64_t* lhs_len,
+    bool is_lhs_allocatable, bool is_lhs_deferred,
+    char* rhs, int64_t rhs_len){
+    int null_terminated_string = 1; //TODO : remove this
+    if(!is_lhs_deferred && !is_lhs_allocatable){
+        // LHS must've been allocated alraedy with size = x_len
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    } else if (!is_lhs_deferred && is_lhs_allocatable){ // Automatic Allocation
+        if(*lhs == NULL) *lhs = (char*)malloc((*lhs_len + null_terminated_string) * sizeof(char));
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
+        *lhs = (char*)realloc(*lhs, (rhs_len + null_terminated_string) * sizeof(char));
+        *lhs_len = rhs_len;
+        for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];if(null_terminated_string)(*lhs)[rhs_len] = '\0';}
+    } else if(is_lhs_deferred && !is_lhs_allocatable) {
+        if(*lhs == NULL){fprintf(stderr,"Runtime Error : String not allocted\n");exit(1);}
+        _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
+    }
+}
+
 
 #define MIN(x, y) ((x < y) ? x : y)
 
@@ -2695,51 +2735,50 @@ int strlen_without_trailing_space(char *str) {
     return end + 1;
 }
 
-int str_compare(char **s1, char **s2)
-{
-    int s1_len = strlen_without_trailing_space(*s1);
-    int s2_len = strlen_without_trailing_space(*s2);
-    int lim = MIN(s1_len, s2_len);
+int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
+    int s1_len_ = strlen_without_trailing_space(s1);
+    int s2_len_ = strlen_without_trailing_space(s2);
+    int lim = MIN(s1_len_, s2_len_);
     int res = 0;
     int i ;
     for (i = 0; i < lim; i++) {
-        if ((*s1)[i] != (*s2)[i]) {
-            res = (*s1)[i] - (*s2)[i];
+        if ((*s1) != (*s2)) {
+            res = (*s1) - (*s2);
             break;
         }
     }
-    res = (i == lim)? s1_len - s2_len : res;
+    res = (i == lim)? s1_len_ - s2_len_ : res;
     return res;
 }
-LFORTRAN_API bool _lpython_str_compare_eq(char **s1, char **s2)
-{
-    return str_compare(s1, s2) == 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_eq(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) == 0;
+// }
 
-LFORTRAN_API bool _lpython_str_compare_noteq(char **s1, char **s2)
-{
-    return str_compare(s1, s2) != 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_noteq(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) != 0;
+// }
 
-LFORTRAN_API bool _lpython_str_compare_gt(char **s1, char **s2)
-{
-    return str_compare(s1, s2) > 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_gt(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) > 0;
+// }
 
-LFORTRAN_API bool _lpython_str_compare_lte(char **s1, char **s2)
-{
-    return str_compare(s1, s2) <= 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_lte(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) <= 0;
+// }
 
-LFORTRAN_API bool _lpython_str_compare_lt(char **s1, char **s2)
-{
-    return str_compare(s1, s2) < 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_lt(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) < 0;
+// }
 
-LFORTRAN_API bool _lpython_str_compare_gte(char **s1, char **s2)
-{
-    return str_compare(s1, s2) >= 0;
-}
+// LFORTRAN_API bool _lpython_str_compare_gte(char **s1, char **s2)
+// {
+//     return str_compare(s1, s2) >= 0;
+// }
 
 LFORTRAN_API char* _lfortran_float_to_str4(float num)
 {
@@ -2870,10 +2909,9 @@ LFORTRAN_API char* _lfortran_strrepeat_c(char* s, int32_t n)
 }
 
 // idx starts from 1
-LFORTRAN_API char* _lfortran_str_item(char* s, int64_t idx) {
+LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx) {
 
-    int s_len = strlen(s);
-    // TODO: Remove bound check in Release mode
+    // TODO: Check at compile time instead of runtime. if out of bound due to runtime values, it's user's problem.
     int64_t original_idx = idx - 1;
     if (idx < 1) idx += s_len;
     if (idx < 1 || idx >= s_len + 1) {
@@ -2886,32 +2924,20 @@ LFORTRAN_API char* _lfortran_str_item(char* s, int64_t idx) {
     return res;
 }
 
-// idx1 and idx2 both start from 1
-LFORTRAN_API char* _lfortran_str_copy(char* s, int32_t idx1, int32_t idx2) {
+// Specific Fors Fortran Strings
+LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end){
+    if( start<=0 || end <=0 ){
+        return "";
+    }
+    char* return_str = (char*)malloc(end - start + 1 + 1 /*Null Char*/);
+    memcpy(return_str, s + start - 1, end - start + 1);
+    return_str[end - start + 1] = '\0';
+    return return_str;
 
-    int s_len = strlen(s);
-    if(idx1 > s_len || idx1 <= (-1*s_len)){
-        printf("String index out of Bounds\n");
-        exit(1);
-    }
-    if(idx1 <= 0) {
-        idx1 = s_len + idx1;
-    }
-    if(idx2 <= 0) {
-        idx2 = s_len + idx2;
-    }
-    char* dest_char = (char*)malloc(idx2-idx1+2);
-    for (int i=idx1; i <= idx2; i++)
-    {
-        dest_char[i-idx1] = s[i-1];
-    }
-    dest_char[idx2-idx1+1] = '\0';
-    return dest_char;
 }
 
-LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int32_t step,
-                        bool idx1_present, bool idx2_present) {
-    int s_len = strlen(s);
+LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int64_t idx2, int64_t step,
+                        bool idx1_present, bool idx2_present) {    
     if (step == 0) {
         printf("slice step cannot be zero\n");
         exit(1);
@@ -2956,10 +2982,9 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int32_t idx1, int32_t idx2, int3
     return dest_char;
 }
 
-LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, int32_t idx2, int32_t step,
+LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, int64_t r_len, int32_t idx1 /*1-Index-based*/, int32_t idx2, int32_t step,
                         bool idx1_present, bool idx2_present) {
-    int s_len = strlen(s);
-    int r_len = strlen(r);
+    idx1--;
     if (step == 0) {
         printf("slice step cannot be zero\n");
         exit(1);
@@ -2998,9 +3023,9 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, char *r, int32_t idx1, in
     return dest_char;
 }
 
-LFORTRAN_API int32_t _lfortran_str_len(char** s)
+LFORTRAN_API int64_t _lfortran_str_len(char* s)
 {
-    return strlen(*s);
+    return strlen(s);
 }
 
 LFORTRAN_API int _lfortran_str_to_int(char** s)
@@ -3032,12 +3057,12 @@ LFORTRAN_API void _lfortran_memset(void* s, int32_t c, int32_t size) {
     memset(s, c, size);
 }
 
-LFORTRAN_API void* _lfortran_malloc(int32_t size) {
-    return malloc(size);
+LFORTRAN_API void* _lfortran_malloc(int64_t size) {
+    return malloc((size_t)size);
 }
 
-LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int32_t size) {
-    return (int8_t*) realloc(ptr, size);
+LFORTRAN_API int8_t* _lfortran_realloc(int8_t* ptr, int64_t size) {
+    return (int8_t*) realloc(ptr, (size_t)size);
 }
 
 LFORTRAN_API int8_t* _lfortran_calloc(int32_t count, int32_t size) {
@@ -3052,9 +3077,9 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
 // size_plus_one is the size of the string including the null character
 LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one, char *s) {
     int size = size_plus_one-1;
-    for (int i=0; i < size; i++) {
-        s[i] = ' ';
-    }
+    // for (int i=0; i < size; i++) {
+    //     s[i] = ' ';
+    // }
     s[size] = '\0';
 }
 
@@ -3499,12 +3524,18 @@ void get_unique_ID(char buffer[ID_LEN + 1]) {
     buffer[ID_LEN] = '\0';
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char *form, char *access, int32_t *iostat, char **iomsg)
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
+    char* f_name, int64_t f_name_len,
+    char* status, int64_t status_len,
+    char* form, int64_t form_len,
+    char* access, int64_t access_len,
+    char* iomsg, int64_t iomsg_len,
+    int32_t *iostat)
 {
     if (iostat != NULL) {
         *iostat = 0;
     }
-    if (f_name == NULL) {
+    if (f_name == NULL) { // Not Provided
         char *prefix = "_lfortran_generated_file", *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
@@ -3537,7 +3568,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
-    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL);
+    _lfortran_inquire(f_name,f_name_len, file_exists, -1, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3548,26 +3579,20 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
      * "replace" (file will be created, replacing any existing file)
      * "unknown" (it is not known whether the file exists)
      */
-    size_t iomsg_len;
-    if (iomsg && *iomsg) {
-        iomsg_len = strlen(*iomsg);
-    } else {
-        iomsg_len = 0;
-    }
     if (streql(status, "old")) {
         if (!*file_exists) {
             if (iostat != NULL) {
                 *iostat = 2;
-                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
                     size_t err_len = strlen(temp) - 1 + strlen(f_name); 
                     int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
                     size += 1;   // endline char
-                    snprintf(*iomsg, size, temp, f_name);
+                    snprintf(iomsg, size, temp, f_name);
                     for (size_t i = size - 1; i < iomsg_len; i++) {
-                        (*iomsg)[i - 1] = ' ';
+                        (iomsg)[i - 1] = ' ';
                     }
-                    (*iomsg)[iomsg_len] = '\0';
+                    (iomsg)[iomsg_len] = '\0';
                 }
             } else {
                 printf("Runtime error: File `%s` does not exists!\nCannot open a "
@@ -3580,16 +3605,16 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         if (*file_exists) {
             if (iostat != NULL) {
                 *iostat = 17;
-                if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+                if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
                     size_t err_len = strlen(temp) - 1 + strlen(f_name); 
                     int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
                     size += 1;   // endline char
-                    snprintf(*iomsg, size, temp, f_name);
+                    snprintf(iomsg, size, temp, f_name);
                     for (size_t i = size - 1; i < iomsg_len; i++) {
-                        (*iomsg)[i - 1] = ' ';
+                        (iomsg)[i - 1] = ' ';
                     }
-                    (*iomsg)[iomsg_len] = '\0';
+                    (iomsg)[iomsg_len] = '\0';
                 }
             } else {
                 printf("Runtime error: File `%s` exists!\nCannot open a file with "
@@ -3611,15 +3636,15 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
-            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "STATUS specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, "%s", temp);
+                snprintf(iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
-                    (*iomsg)[i - 1] = ' ';
+                    (iomsg)[i - 1] = ' ';
                 }
-                (*iomsg)[iomsg_len] = '\0';
+                (iomsg)[iomsg_len] = '\0';
             }
         } else {
             printf("Runtime error: STATUS specifier in OPEN statement has "
@@ -3637,15 +3662,15 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
-            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "FORM specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, "%s", temp);
+                snprintf(iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
-                    (*iomsg)[i - 1] = ' ';
+                    (iomsg)[i - 1] = ' ';
                 }
-                (*iomsg)[iomsg_len] = '\0';
+                (iomsg)[iomsg_len] = '\0';
             }
         } else {
             printf("Runtime error: FORM specifier in OPEN statement has "
@@ -3663,15 +3688,15 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
-            if ((iomsg != NULL) && (*iomsg != NULL) && (iomsg_len > 0)) {
+            if ((iomsg != NULL)&& (iomsg_len > 0)) {
                 char *temp = "ACCESS specifier in OPEN statement has invalid value.";
                 int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
                 size += 1;   // endline char
-                snprintf(*iomsg, size, "%s", temp);
+                snprintf(iomsg, size, "%s", temp);
                 for (size_t i = size; i < iomsg_len; i++) {
-                    (*iomsg)[i - 1] = ' ';
+                    (iomsg)[i - 1] = ' ';
                 }
-                (*iomsg)[iomsg_len] = '\0';
+                (iomsg)[iomsg_len] = '\0';
             }
         } else {
             printf("Runtime error: ACCESS specifier in OPEN statement has "
@@ -3734,14 +3759,14 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num,
+LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos) {
-    if (f_name && unit_num != -1) {
+    if (f_name_data && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
     }
-    if (f_name != NULL) {
-        FILE *fp = fopen(f_name, "r");
+    if (f_name_data != NULL) {
+        FILE *fp = fopen(f_name_data, "r");
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
@@ -4100,21 +4125,20 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
     }
 }
 
-LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
+LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num, ...)
 {
     const char SPACE = ' ';
-    int n = strlen(*p);
     if (unit_num == -1) {
         // Read from stdin
-        *p = (char*)malloc(n * sizeof(char));
-        (void)!fgets(*p, n + 1, stdin);
+        *p = (char*)malloc(p_len * sizeof(char));
+        (void)!fgets(*p, p_len + 1, stdin);
         (*p)[strcspn(*p, "\n")] = 0;
         size_t input_length = strlen(*p);
-        while (input_length < n) {
+        while (input_length < p_len) {
             strncat(*p, &SPACE, 1);
             input_length++;
         }
-        (*p)[n] = '\0';
+        (*p)[p_len] = '\0';
         return;
     }
 
@@ -4169,16 +4193,16 @@ LFORTRAN_API void _lfortran_read_char(char **p, int32_t unit_num, ...)
         (*p)[var_len] = '\0';
         va_end(args);
     } else {
-        char *tmp_buffer = (char*)malloc((n + 1) * sizeof(char));
+        char *tmp_buffer = (char*)malloc((p_len + 1) * sizeof(char));
         (void)!fscanf(filep, "%s", tmp_buffer);
         size_t input_length = strlen(tmp_buffer);
         strcpy(*p, tmp_buffer);
         free(tmp_buffer);
-        while (input_length < n) {
+        while (input_length < p_len) {
             strncat(*p, &SPACE, 1);
             input_length++;
         }
-        (*p)[n] = '\0';
+        (*p)[p_len] = '\0';
     }
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
@@ -4573,7 +4597,7 @@ LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n)
     return c;
 }
 
-LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char *format, ...)
+LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const char* format_data, int64_t format_len, ...)
 {
     bool unit_file_bin;
     int access_id;
@@ -4584,7 +4608,8 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     if (unit_file_bin) {
         fseek(filep, 0, SEEK_END);
         va_list args;
-        va_start(args, format);
+        va_start(args, format_len);
+        va_arg(args, int64_t); // Get format_len (Not used for now)
 
         size_t total_size = 0;
         struct {
@@ -4631,8 +4656,9 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
         }
     } else {
         va_list args;
-        va_start(args, format);
+        va_start(args, format_len);
         char* str = va_arg(args, char*);
+        // int64_t str_len = va_arg(args, int64_t); >>>>> TODO : pass length
         // Detect "\b" to raise error
         if(str[0] == '\b'){
             if(iostat == NULL){
@@ -4644,11 +4670,12 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
                 return;
             }
         }
-        if(strcmp(format, "%s%s") == 0){
+        if(strcmp(format_data, "%s%s") == 0){
             char* end = va_arg(args, char*);
-            fprintf(filep, format, str, end);
+            int64_t end_len = va_arg(args, int64_t);
+            fprintf(filep, format_data, str, end);
         } else {
-            fprintf(filep, format, str);
+            fprintf(filep, format_data, str);
         }
         if(iostat != NULL) *iostat = 0;
         va_end(args);
@@ -4656,14 +4683,18 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
     (void)!ftruncate(fileno(filep), ftell(filep));
 }
 
-LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t* size, int64_t* capacity, int32_t* iostat, const char *format, ...) {
+LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable, bool is_deferred, int64_t* len, int32_t* iostat, const char* format,
+    int64_t format_len, ...) {
     va_list args;
-    va_start(args, format);
+    va_start(args, format_len);
     char* str;
-    char* end = "";
+    // int64_t str_len; >> TODO: Pass length
+    char* end_data = ""; int64_t end_len;
     if(strcmp(format, "%s%s") == 0){
         str = va_arg(args, char*);
-        end = va_arg(args, char*);
+        // str_len >> Should pass rhs_len
+        end_data = va_arg(args, char*);
+        end_len = va_arg(args, int64_t); 
     } else if(strcmp(format, "%s") == 0){
         str = va_arg(args, char*);
     } else {
@@ -4683,32 +4714,28 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, int64_t* size, int64
         }
     }
 
-    char *s = (char *) malloc(strlen(str)*sizeof(char) + strlen(end)*sizeof(char) + 1);
-    sprintf(s, format, str, end);
+    char *s = (char *) malloc(strlen(str)*sizeof(char) + strlen(end_data)*sizeof(char) + 1);
+    sprintf(s, format, str, end_data);
 
-    if(((*size) == -1) && ((*capacity) == -1)){ 
-        _lfortran_strcpy_pointer_string(str_holder, s);
-    } else {
-        _lfortran_strcpy_descriptor_string(str_holder, s, size, capacity);
-    }
+    _lfortran_strcpy(str_holder, len, is_allocatable, is_deferred, str, strlen(str));
     free(s);
     va_end(args);
     if(iostat != NULL) *iostat = 0;
 }
 
-LFORTRAN_API void _lfortran_string_read_i32(char *str, char *format, int32_t *i) {
+LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
     sscanf(str, format, i);
 }
 
-LFORTRAN_API void _lfortran_string_read_i64(char *str, char *format, int64_t *i) {
+LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
     sscanf(str, format, i);
 }
 
-LFORTRAN_API void _lfortran_string_read_f32(char *str, char *format, float *f) {
+LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
     sscanf(str, format, f);
 }
 
-LFORTRAN_API void _lfortran_string_read_f64(char *str, char *format, double *f) {
+LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
     sscanf(str, format, f);
 }
 
@@ -4729,7 +4756,7 @@ char *remove_whitespace(char *str) {
     return str;
 }
 
-LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
+LFORTRAN_API void _lfortran_string_read_str(char *str, int64_t len, char *format, char **s) {
     char* without_whitespace_str = remove_whitespace(str);
     if (without_whitespace_str[0] == '\'' && without_whitespace_str[1] == '\'' &&
         without_whitespace_str[2] == '\0'
@@ -4740,7 +4767,7 @@ LFORTRAN_API void _lfortran_string_read_str(char *str, char *format, char **s) {
     }
 }
 
-LFORTRAN_API void _lfortran_string_read_bool(char *str, char *format, int32_t *i) {
+LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i) {
     sscanf(str, format, i);
     printf("%s\n", str);
 }
@@ -4752,23 +4779,23 @@ void lfortran_error(const char *message) {
 
 // TODO: add support for reading comma separated string, into `_arr` functions
 // by accepting array size as an argument as well
-LFORTRAN_API void _lfortran_string_read_i32_array(char *str, char *format, int32_t *arr) {
+LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr) {
     lfortran_error("Reading into an array of int32_t is not supported.");
 }
 
-LFORTRAN_API void _lfortran_string_read_i64_array(char *str, char *format, int64_t *arr) {
+LFORTRAN_API void _lfortran_string_read_i64_array(char *str, int64_t len, char *format, int64_t *arr) {
     lfortran_error("Reading into an array of int64_t is not supported.");
 }
 
-LFORTRAN_API void _lfortran_string_read_f32_array(char *str, char *format, float *arr) {
+LFORTRAN_API void _lfortran_string_read_f32_array(char *str, int64_t len, char *format, float *arr) {
     lfortran_error("Reading into an array of float is not supported.");
 }
 
-LFORTRAN_API void _lfortran_string_read_f64_array(char *str, char *format, double *arr) {
+LFORTRAN_API void _lfortran_string_read_f64_array(char *str, int64_t len, char *format, double *arr) {
     lfortran_error("Reading into an array of double is not supported.");
 }
 
-LFORTRAN_API void _lfortran_string_read_str_array(char *str, char *format, char **arr) {
+LFORTRAN_API void _lfortran_string_read_str_array(char *str, int64_t len, char *format, char **arr) {
     lfortran_error("Reading into an array of strings is not supported.");
 }
 

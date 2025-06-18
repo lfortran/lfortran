@@ -109,7 +109,11 @@ class ASRBuilder {
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
                             al, loc, x, int32)),\
                             ASR::string_length_kindType::ExpressionLength,\
-                            ASR::string_physical_typeType::PointerString))
+                            ASR::string_physical_typeType::DescriptorString))
+    #define character_deferred() ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,\
+                                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,\
+                            ASR::string_length_kindType::DeferredLength,\
+                            ASR::string_physical_typeType::DescriptorString))))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -135,6 +139,30 @@ class ASRBuilder {
             m_dims.push_back(al, dim);
         }
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
+    }
+
+
+    ASR::ttype_t* String(ASR::expr_t* len,
+        ASR::string_length_kindType len_kind, 
+        ASR::string_physical_typeType physical_type = ASR::DescriptorString) {
+
+        if(!(
+                (len_kind == ASR::AssumedLength && !len) || 
+                (len_kind == ASR::DeferredLength && !len) ||
+                (len_kind == ASR::ExpressionLength && len)
+            )){
+            throw LCompilersException("Invalid String Node Status");
+        }
+
+        if((physical_type == ASR::CChar)){
+            int64_t len_const;
+            is_value_constant(len, len_const);
+            if(len_const != 1) LCompilersException("Invalid String Node Status");
+
+        }
+
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len,
+            len_kind, physical_type));
     }
 
     ASR::ttype_t* CPtr() {
@@ -279,11 +307,21 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
-        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), character(-2), nullptr));
+        int64_t start_const, end_const;
+        ASR::ttype_t* string_type {};
+        LCOMPILERS_ASSERT(start && end)
+        if( ASRUtils::is_value_constant(start, start_const) &&
+            ASRUtils::is_value_constant(end, end_const)){
+            string_type = character(end_const - start_const + 1);
+        } else {
+            string_type = String(Add(Sub(end, start),i_t(1, expr_type(start))),
+                ASR::string_length_kindType::ExpressionLength);
+        }
+        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
 
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
-        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(-2), nullptr));
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(1), nullptr));
     }
 
     inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {
@@ -976,6 +1014,10 @@ class ASRBuilder {
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
+    }
+
+    ASR::ttype_t* allocatable(ASR::ttype_t* type){
+        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, type));
     }
 
 

@@ -442,8 +442,7 @@ namespace GetCommandArgument {
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
         fill_func_arg_sub("number", arg_types[0], In);
         if (arg_types.size() > 1) { // TODO : Correct this as it assumes `arg[1]` to be the `value` (this function has all parameters as optional)
-            ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            ASR::ttype_t* String_type = character(-1);
             fill_func_arg_sub("value", arg_types[1], InOut);
             Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
             SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
@@ -453,7 +452,7 @@ namespace GetCommandArgument {
             SetChar dep_1; dep_1.reserve(al, 1);
             Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
             ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name_1,
-                ASRUtils::is_character(*arg_types[1])? CString_type : ASRUtils::extract_type(arg_types[1]),
+                ASRUtils::is_character(*arg_types[1])? String_type : ASRUtils::extract_type(arg_types[1]),
                 ASRUtils::intent_return_var, ASR::abiType::BindC, false);
             ASR::symbol_t *s_1 = make_ASR_Function_t(c_func_name_1, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name_1));
@@ -464,8 +463,7 @@ namespace GetCommandArgument {
             call_args1.push_back(al, args[0]);
             body.push_back(al, b.Assignment(args[1], 
                 ASRUtils::is_character(*arg_types[1])?
-                    ASRUtils::create_string_physical_cast(al, b.Call(s_1, call_args1, CString_type),
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)
+                    b.Call(s_1, call_args1, String_type)
                     :b.Call(s_1, call_args1, arg_types[1])));
         }
         if (arg_types.size() > 2) {
@@ -738,11 +736,10 @@ namespace GetEnvironmentVariable {
         ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
             ASR::intentType::InOut, ASR::abiType::BindC, true);
         args_1.push_back(al, arg);
-        ASR::ttype_t* CString_type = character(-1);
-        ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+        ASR::ttype_t* String_type = character(-1);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
             ASRUtils::is_character(*arg_types[1]) ?
-            CString_type :
+            String_type :
             ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[1])),
             ASRUtils::intent_return_var, ASR::abiType::BindC, false);
            
@@ -756,8 +753,7 @@ namespace GetEnvironmentVariable {
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
         call_args.push_back(al, args[0]);
         body.push_back(al, b.Assignment(args[1], ASRUtils::is_character(*arg_types[1])?
-            ASRUtils::create_string_physical_cast(al, b.Call(s, call_args, CString_type),
-                ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type) 
+        b.Call(s, call_args, String_type)
         : b.Call(s, call_args, arg_types[1])));
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);

@@ -249,7 +249,7 @@ public:
                                     al, x.base.base.loc, a_len,
                                     ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
                                     ASR::string_length_kindType::ExpressionLength,
-                                ASR::string_physical_typeType::PointerString));
+                                ASR::string_physical_typeType::DescriptorString));
                             break;
                         }
                         default :
@@ -1479,7 +1479,7 @@ public:
                         ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, a_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, a_kind)))),
                         ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::PointerString));
+                        ASR::string_physical_typeType::DescriptorString));
                     break;
                 }
                 case (AST::decl_typeType::TypeType) : {
@@ -3407,7 +3407,7 @@ public:
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *ttype = determine_type(attr->base.loc, req_param,
-                    attr, false, false, dims, type_declaration, current_procedure_abi_type);
+                    attr, false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
 
                 req_arg = ASRUtils::type_to_str_fortran(ttype);
                 type_subs[req_param] = ttype;
@@ -3571,7 +3571,7 @@ public:
                 dims.reserve(al, 0);
                 ASR::symbol_t *type_declaration;
                 ASR::ttype_t *arg_type = determine_type(x.m_args[i]->base.loc, param,
-                    x.m_args[i], false, false, dims, type_declaration, current_procedure_abi_type);
+                    x.m_args[i], false, false, dims, nullptr, type_declaration, current_procedure_abi_type);
                 ASR::ttype_t *param_type = ASRUtils::symbol_type(param_sym);
                 if (!ASRUtils::is_type_parameter(*param_type)) {
                     diag.add(diag::Diagnostic(

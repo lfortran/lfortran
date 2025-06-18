@@ -199,7 +199,7 @@ intrinsic_funcs_args = {
     "Repeat": [
         {
             "args": [("char", "int")],
-            "ret_type_arg_idx": 0
+            "return": "character_deferred()"
         }
     ],
     "StringContainsSet": [
