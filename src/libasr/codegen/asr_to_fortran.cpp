@@ -656,6 +656,14 @@ public:
             src.append(x.m_original_name);
             src += "\n";
         }
+        if (ASR::is_a<ASR::Struct_t>(*sym)) {
+            ASR::symbol_t* s = x.m_external;
+            if (ASR::is_a<ASR::ClassProcedure_t>(*s)) {
+                src = "";
+                ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(s);
+                src += std::string(cp->m_name);
+            }
+        }
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
@@ -679,6 +687,7 @@ public:
                 r += src;
             }
         }
+
         dec_indent();
         r += "end type ";
         r.append(x.m_name);
@@ -1359,7 +1368,14 @@ public:
         if (x.m_original_name) {
             r += ASRUtils::symbol_name(x.m_original_name);
         } else {
-            r += ASRUtils::symbol_name(x.m_name);
+            if (x.m_dt) {
+                visit_expr(*x.m_dt);
+                r += src + "%";
+                visit_symbol(*x.m_name);
+                r += src;
+            } else {
+                r += ASRUtils::symbol_name(x.m_name);
+            }
         }
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
