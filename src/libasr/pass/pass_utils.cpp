@@ -1543,7 +1543,7 @@ namespace LCompilers {
                         create_do_loop(al, loc, n_dims, curr_init, idx_vars, doloop_body,
                             [=, &idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type] () {
                             ASR::expr_t* ref = PassUtils::create_array_ref(curr_init, idx_vars, al,
-                                current_scope, perform_cast, cast_kind, casted_type);
+                                perform_cast, cast_kind, casted_type);
                             ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
                             ASR::stmt_t* assign = builder.Assignment(res, ref);
                             doloop_body.push_back(al, assign);
@@ -1570,7 +1570,7 @@ namespace LCompilers {
                     create_do_loop(al, loc, array_section, idx_vars, temp_idx_vars, doloop_body,
                         [=, &temp_idx_vars, &doloop_body, &builder, &al] () {
                         ASR::expr_t* ref = PassUtils::create_array_ref(array_section->m_v, temp_idx_vars,
-                            al, current_scope, perform_cast, cast_kind, casted_type);
+                            al, perform_cast, cast_kind, casted_type);
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
                         ASR::stmt_t* assign = builder.Assignment(res, ref);
                         doloop_body.push_back(al, assign);
@@ -1592,7 +1592,7 @@ namespace LCompilers {
                         create_do_loop(al, loc, array_item, idx_vars, temp_idx_vars, doloop_body,
                             [=, &temp_idx_vars, &doloop_body, &builder, &al, &perform_cast, &cast_kind, &casted_type] () {
                             ASR::expr_t* ref = PassUtils::create_array_ref(array_item->m_v, temp_idx_vars, al,
-                                current_scope, perform_cast, cast_kind, casted_type);
+                                perform_cast, cast_kind, casted_type);
                             ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
                             ASR::stmt_t* assign = builder.Assignment(res, ref);
                             doloop_body.push_back(al, assign);

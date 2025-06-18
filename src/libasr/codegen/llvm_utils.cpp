@@ -3226,7 +3226,7 @@ namespace LCompilers {
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
-        this->resolve_collision(capacity, key_hash, key, key_value_pair_linked_list,
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_value_pair_linked_list,
                                 kv_struct_type, key_mask, module, key_asr_type);
         llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), chain_itr);
@@ -3611,7 +3611,7 @@ namespace LCompilers {
         return result;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read([[maybe_unused]]ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3638,7 +3638,7 @@ namespace LCompilers {
         return tmp_value_ptr;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check([[maybe_unused]]ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3694,7 +3694,7 @@ namespace LCompilers {
         return tmp_value_ptr;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_default([[maybe_unused]]ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_default(ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type, llvm::Value *def_value) {
@@ -3703,7 +3703,7 @@ namespace LCompilers {
         llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep(key_value_pairs, key_hash);
         llvm::Value* key_mask = llvm_utils->CreateLoad(get_pointer_to_keymask(dict));
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
-        this->resolve_collision(capacity, key_hash, key, key_value_pair_linked_list,
+        this->resolve_collision(dict_expr, capacity, key_hash, key, key_value_pair_linked_list,
                                 kv_struct_type, key_mask, module, key_asr_type);
         std::pair<std::string, std::string> llvm_key = std::make_pair(
             ASRUtils::get_type_code(key_asr_type),
@@ -3922,7 +3922,7 @@ namespace LCompilers {
                 llvm::Value* value = llvm_utils->list_api->read_item_using_ttype(value_asr_type, value_list,
                     idx, false, module, LLVM::is_llvm_struct(value_asr_type));
                 llvm::Value* key_hash = get_key_hash(current_capacity, key, key_asr_type, module);
-                this->resolve_collision( dict_expr, current_capacity, key_hash, key, new_key_list,
+                this->resolve_collision(dict_expr, current_capacity, key_hash, key, new_key_list,
                                new_key_mask, module, key_asr_type);
                 llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
                 llvm::Value* key_dest = llvm_utils->list_api->read_item_using_ttype(key_asr_type,
