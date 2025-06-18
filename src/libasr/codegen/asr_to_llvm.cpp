@@ -1090,6 +1090,9 @@ public:
                         llvm::Type* llvm_arg_type = llvm_utils->get_type_from_ttype_t_util(curr_arg_m_a_type, module.get());
                         builder->CreateStore(builder->CreateBitCast(
                             malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
+
+                        x_arr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
+                        allocate_array_members_of_struct(x_arr, curr_arg_m_a_type);
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
                         // If no type specified then use curr_arg_m_a_type as default
@@ -3737,7 +3740,7 @@ public:
             }\
         } \
 
-    void allocate_array_members_of_struct(llvm::Value* ptr, ASR::ttype_t* asr_type) {
+    void allocate_array_members_of_struct(llvm::Value* ptr, ASR::ttype_t* asr_type, bool is_intent_out = false) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::StructType_t>(*asr_type));
         ASR::Struct_t* struct_type_t = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*asr_type)) {
@@ -3764,13 +3767,15 @@ public:
                 llvm::Type* type = name2dertype[struct_type_name];
                 llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
                 ASR::Variable_t* v = nullptr;
-                if( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                // Don't reinitialize arrays where the type's intent is out because array descriptor is allocated on the stack
+                // and might be returned.
+                if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
                     set_pointer_variable_to_null(llvm::Constant::getNullValue(
                         llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get())),
                         ptr_member);
                 }
-                if( ASRUtils::is_array(symbol_type) && v) {
+                if( ASRUtils::is_array(symbol_type) && v && !is_intent_out) {
                     ASR::dimension_t* m_dims = nullptr;
                     size_t n_dims = ASRUtils::extract_dimensions_from_ttype(symbol_type, m_dims);
                     ASR::array_physical_typeType phy_type = ASRUtils::extract_physical_type(symbol_type);
@@ -3807,7 +3812,7 @@ public:
                         allocate_array_members_of_struct_arrays(ptr_member, symbol_type);
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
-                    allocate_array_members_of_struct(ptr_member, symbol_type);
+                    allocate_array_members_of_struct(ptr_member, symbol_type, is_intent_out);
                 } else if( ASR::is_a<ASR::String_t>(*symbol_type) &&
                     ASR::down_cast<ASR::String_t>(symbol_type)->m_physical_type ==
                         ASR::string_physical_typeType::PointerString) { // FixedSize Strings
@@ -4664,6 +4669,27 @@ public:
                 continue;
             }
             ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym.second);
+            // Reinitialize StructType members if intent is intent_out
+            if (ASR::is_a<ASR::StructType_t>(*symbol_type) && symbol_intent == ASRUtils::intent_out) {
+                uint32_t h = get_hash((ASR::asr_t*)sym.second);
+                LCOMPILERS_ASSERT(llvm_symtab.find(h) != llvm_symtab.end());
+                llvm::Value* st_desc = llvm_symtab[h];
+
+                if (ASRUtils::is_class_type(symbol_type)) {
+                    // TODO: Make this work for extended types too
+                    llvm::Type* src_class_type = llvm_utils->get_type_from_ttype_t_util(symbol_type, module.get());
+                    st_desc = llvm_utils->create_gep2(src_class_type, st_desc, 1);
+
+                    ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(
+                            ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(symbol_type)->m_derived_type));
+                    llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
+                    st_desc = llvm_utils->CreateLoad2(src_struct_type, st_desc);
+
+                    allocate_array_members_of_struct(st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
+                } else {
+                    allocate_array_members_of_struct(st_desc, ASR::down_cast<ASR::Variable_t>(sym.second)->m_type, true);
+                }
+            }
             if( !(ASRUtils::is_pointer(symbol_type) || ASRUtils::is_allocatable(symbol_type)) &&
                 ASRUtils::is_array(symbol_type) &&
                 ASRUtils::extract_physical_type(symbol_type)
