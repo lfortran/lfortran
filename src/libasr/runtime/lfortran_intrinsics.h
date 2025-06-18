@@ -241,17 +241,12 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size, int32_t *pos);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...);
 LFORTRAN_API char* _lpython_read(int64_t fd, int64_t n);
-<<<<<<< HEAD
 LFORTRAN_API void _lfortran_read_int16(int16_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num);
-LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_array_int16(int16_t *p, int array_size, int32_t unit_num);
-=======
 LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_int64(int64_t *p, int32_t unit_num, int32_t *iostat);
 LFORTRAN_API void _lfortran_read_logical(bool *p, int32_t unit_num, int32_t *iostat);
->>>>>>> 6dfac6130 (Added Iostat everywhere as a variabel to avoid getting error)
+
 LFORTRAN_API void _lfortran_read_array_int32(int32_t *p, int array_size, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t unit_num);
 LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num , int32_t *iostat);
