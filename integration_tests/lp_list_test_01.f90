@@ -3,7 +3,7 @@ program lp_list_test_01
    integer :: x
    real :: eps = 1e-6
 
-   type(_lfortran_list(integer)) :: test_list
+   _lfortran_list(integer) :: test_list
    call _lfortran_list_append(test_list, 1)
    call _lfortran_list_append(test_list, 10)
    x = _lfortran_len(test_list)
