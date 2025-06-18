@@ -509,7 +509,7 @@ semantic error: Type mismatch in argument at argument (1); passed `real` to `int
 334 |     print *, f(42.9)
     |                ^^^^ 
 
-semantic error: Argument to Ichar must have length one
+semantic error: Argument 0 to Ichar must have length 1
    --> tests/errors/continue_compilation_2.f90:336:13
     |
 336 |     print*, ichar("okay")
