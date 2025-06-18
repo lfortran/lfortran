@@ -3181,16 +3181,8 @@ public:
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        if (type->isPointerTy()) {
-                            module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(type))
-                            );
-                        } else {
-                            // Avoid initializing non-pointers to null
-                            // Use UndefValue instead or don't set initializer
-                            module->getNamedGlobal(llvm_var_name)
-                                ->setInitializer(llvm::Constant::getNullValue(type));
-                        }
+                        module->getNamedGlobal(llvm_var_name)
+                            ->setInitializer(llvm::Constant::getNullValue(type));
                     }
                 }
                 llvm_symtab[h] = ptr;
