@@ -2331,25 +2331,25 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMList::get_list_type_from_ttype(ASR::ttype_t* el_ttype, int type_size) {
-        if( type2listtype.find(type) != type2listtype.end() ) {
-            return std::get<0>(type2listtype[type]);
+        if( type2listtype.find(el_ttype) != type2listtype.end() ) {
+            return std::get<0>(type2listtype[el_ttype]);
         }
 
         LCOMPILERS_ASSERT(type_size != 0);
 
         // Remove after refactor for LLVM<17
-        std::string type_code = ASRUtils::get_type_code(type);
+        std::string type_code = ASRUtils::get_type_code(el_ttype);
         if ( typecode2listtype.find(type_code) != typecode2listtype.end() ) {
-            type2listtype[type] = typecode2listtype[type_code];
-            return std::get<0>(type2listtype[type]);
+            type2listtype[el_ttype] = typecode2listtype[type_code];
+            return std::get<0>(type2listtype[el_ttype]);
         }
 
-        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(type, llvm_utils->module);
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(el_ttype, llvm_utils->module);
         std::vector<llvm::Type*> list_type_vec = {llvm::Type::getInt32Ty(context),
                                                   llvm::Type::getInt32Ty(context),
                                                   el_type->getPointerTo()};
         llvm::StructType* list_desc = llvm::StructType::create(context, list_type_vec, "list");
-        type2listtype[type] = std::make_tuple(list_desc, type_size, el_type);
+        type2listtype[el_ttype] = std::make_tuple(list_desc, type_size, el_type);
         return list_desc;
     }
 
