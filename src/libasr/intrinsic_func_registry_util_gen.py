@@ -500,6 +500,7 @@ intrinsic_funcs_args = {
     "Idint": [
         {
             "args": [("real",)],
+            "kind_validation": [{"first":{0: 8}}],
             "return": "int32"
         }
     ],
@@ -1005,6 +1006,18 @@ def add_create_func_arg_type_src(func_name):
             src += 4 * indent + f'append_error(diag, "Kind of all the arguments of {func_name} must be the same", loc);\n'
             src += 4 * indent + f'return nullptr;\n'
             src += 3 * indent + '}\n'
+        
+        # Add kind validation for specific functions
+        kind_validation_info = arg_info.get("kind_validation", [])
+        for validation_item in kind_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]  # Get the argument index (0-based)
+                required_kind = list(arg_spec.values())[0]  # Get the required kind
+                src += 3 * indent + f"int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[{arg_pos}]));\n"
+                src += 3 * indent + f"if(kind != {required_kind}) " + "{\n"
+                src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equals to {required_kind}", loc);\n'
+                src += 4 * indent + f'return nullptr;\n'
+                src += 3 * indent + '}\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'
