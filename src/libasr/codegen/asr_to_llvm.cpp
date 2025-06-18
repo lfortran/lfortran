@@ -10497,6 +10497,12 @@ public:
                     llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                     llvm::APInt(64, get_class_hash(struct_sym)));
                     builder->CreateStore(hash, type_id_addr);
+                } else {  
+                    // Case: when integer, real, character etc. passed to class(*) argument
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                        llvm::APInt(64, -((int) arg_type->type) -
+                        ASRUtils::extract_kind_from_ttype_t(arg_type), true));
+                    builder->CreateStore(hash, type_id_addr);
                 }
                 return abstract_;
             }
