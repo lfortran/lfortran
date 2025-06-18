@@ -6885,6 +6885,9 @@ public:
                         x.base.base.loc);
             }
         }
+        if ( left->getType() == string_descriptor->getPointerTo() ) {
+            left = llvm_utils->CreateLoad(llvm_utils->create_gep2(string_descriptor, left, 0));
+        }
         tmp = lfortran_str_cmp(left, right, fn);
     }
 
