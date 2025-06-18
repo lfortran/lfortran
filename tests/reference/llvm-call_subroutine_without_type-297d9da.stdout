@@ -1,0 +1,78 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+%mytype_polymorphic = type { i64, %mytype* }
+%mytype = type <{ float }>
+%__vtab_mytype = type { i64 }
+
+@__lcompilers_created__nested_context__get_i_self = global %mytype_polymorphic zeroinitializer
+@0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info = private unnamed_addr constant [7 x i8] c"S-4,R4\00", align 1
+@1 = private unnamed_addr constant [5 x i8] c"r = \00", align 1
+@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+
+define void @__module_module_call_subroutine_without_type_get_i(%mytype_polymorphic* %self) {
+.entry:
+  %0 = alloca %__vtab_mytype, align 8
+  %1 = getelementptr %__vtab_mytype, %__vtab_mytype* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
+  %2 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 0
+  %3 = load i64, i64* %2, align 4
+  store i64 %3, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
+  %4 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
+  %5 = load %mytype*, %mytype** %4, align 8
+  %6 = load %mytype, %mytype* %5, align 1
+  %7 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  store %mytype %6, %mytype* %7, align 1
+  call void @get_i.__module_module_call_subroutine_without_type_get_r()
+  %8 = load i64, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
+  %9 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 0
+  store i64 %8, i64* %9, align 4
+  %10 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  %11 = load %mytype, %mytype* %10, align 1
+  %12 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
+  %13 = load %mytype*, %mytype** %12, align 8
+  store %mytype %11, %mytype* %13, align 1
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+define void @get_i.__module_module_call_subroutine_without_type_get_r() {
+.entry:
+  %0 = alloca %__vtab_mytype, align 8
+  %1 = getelementptr %__vtab_mytype, %__vtab_mytype* %0, i32 0, i32 0
+  store i64 0, i64* %1, align 4
+  %2 = alloca i8*, align 8
+  store i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8** %2, align 8
+  %3 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  %4 = getelementptr %mytype, %mytype* %3, i32 0, i32 0
+  %5 = load float, float* %4, align 4
+  %6 = alloca float, align 4
+  store float %5, float* %6, align 4
+  %7 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([7 x i8], [7 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i8** %2, float* %6)
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
+declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+
+declare void @_lfortran_printf(i8*, ...)
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare void @_lpython_free_argv()

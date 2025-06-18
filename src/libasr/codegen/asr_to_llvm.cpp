@@ -3173,18 +3173,24 @@ public:
                     llvm_symtab[h] = ptr;
                 }
             } else {
-                llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
                 llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                    void_ptr);
+                    type);
                 if (!external) {
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantPointerNull::get(
-                                    static_cast<llvm::PointerType*>(void_ptr))
-                                );
+                        if (type->isPointerTy()) {
+                            module->getNamedGlobal(llvm_var_name)->setInitializer(
+                                llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(type))
+                            );
+                        } else {
+                            // Avoid initializing non-pointers to null
+                            // Use UndefValue instead or don't set initializer
+                            module->getNamedGlobal(llvm_var_name)
+                                ->setInitializer(llvm::Constant::getNullValue(type));
+                        }
                     }
                 }
                 llvm_symtab[h] = ptr;
