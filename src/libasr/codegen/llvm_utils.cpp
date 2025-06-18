@@ -1525,20 +1525,6 @@ namespace LCompilers {
         return LLVMUtils::CreateGEP2(t, ds, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::create_gep2(ASR::ttype_t *t, llvm::Value* ds, int idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateGEP2(t, ds, idx_vec);
-    }
-
-    llvm::Value* LLVMUtils::create_gep2(ASR::ttype_t *t, llvm::Value* ds, llvm::Value* idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        idx};
-        return LLVMUtils::CreateGEP2(t, ds, idx_vec);
-    }
-
     llvm::Value* LLVMUtils::create_ptr_gep(llvm::Value* ptr, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
@@ -1556,18 +1542,7 @@ namespace LCompilers {
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
 
-    llvm::Value* LLVMUtils::create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, int idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
-    }
-
     llvm::Value* LLVMUtils::create_ptr_gep2(llvm::Type* type, llvm::Value* ptr, llvm::Value* idx) {
-        std::vector<llvm::Value*> idx_vec = {idx};
-        return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
-    }
-
-    llvm::Value* LLVMUtils::create_ptr_gep2(ASR::ttype_t* type, llvm::Value* ptr, llvm::Value* idx) {
         std::vector<llvm::Value*> idx_vec = {idx};
         return LLVMUtils::CreateInBoundsGEP2(type, ptr, idx_vec);
     }
@@ -1679,11 +1654,6 @@ namespace LCompilers {
         return builder->CreateLoad(t, x, is_volatile);
     }
 
-    llvm::Value* LLVMUtils::CreateLoad2(ASR::ttype_t *type, llvm::Value *x, bool is_volatile) {
-        llvm::Type* el_type = LLVMUtils::get_type_from_ttype_t_util(type, module);
-        return builder->CreateLoad(el_type, x, is_volatile);
-    }
-
     llvm::Value* LLVMUtils::CreateGEP(llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
 #if LLVM_VERSION_MAJOR <= 16
@@ -1705,22 +1675,6 @@ namespace LCompilers {
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *t, llvm::Value *x,
             std::vector<llvm::Value *> &idx) {
         return builder->CreateGEP(t, x, idx);
-    }
-
-    llvm::Value* LLVMUtils::CreateGEP2(ASR::ttype_t *t, llvm::Value *x,
-        std::vector<llvm::Value *> &idx) {
-        llvm::Type* t_ = get_type_from_ttype_t_util(t, module);
-        return builder->CreateGEP(t_, x, idx);
-    }
-
-    llvm::Value* LLVMUtils::CreateGEP2(ASR::ttype_t *type,
-            llvm::Value *x, int idx) {
-        std::vector<llvm::Value*> idx_vec = {
-        llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-        llvm::ConstantInt::get(context, llvm::APInt(32, idx))};
-        llvm::Type* llvm_type = LLVMUtils::get_type_from_ttype_t_util(type,
-            module);
-        return LLVMUtils::CreateGEP2(llvm_type, x, idx_vec);
     }
 
     llvm::Value* LLVMUtils::CreateGEP2(llvm::Type *type,
@@ -1753,12 +1707,6 @@ namespace LCompilers {
             llvm::Value *x, std::vector<llvm::Value *> &idx) {
         return builder->CreateInBoundsGEP(t, x, idx);
     }
-
-    llvm::Value* LLVMUtils::CreateInBoundsGEP2(ASR::ttype_t *t,
-        llvm::Value *x, std::vector<llvm::Value *> &idx) {
-    llvm::Type* t_ = get_type_from_ttype_t_util(t, module);
-    return builder->CreateInBoundsGEP(t_, x, idx);
-}
 
     llvm::Type* LLVMUtils::getIntType(int a_kind, bool get_pointer) {
         llvm::Type* type_ptr = nullptr;
