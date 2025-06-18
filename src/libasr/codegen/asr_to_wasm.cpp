@@ -841,7 +841,7 @@ class ASRToWASMVisitor : public ASR::BaseVisitor<ASRToWASMVisitor> {
             main_func = ASR::down_cast2<ASR::Function_t>(ASRUtils::make_Function_t_util(
                 m_al, x.base.base.loc, x.m_symtab, s2c(m_al, "_start"),
                 nullptr, 0, nullptr, 0, x.m_body, x.n_body, nullptr,
-                ASR::abiType::Source, ASR::accessType::Public,
+                ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                 ASR::deftypeType::Implementation, nullptr, false, false, false, false, false,
                 nullptr, 0, false, false, false));
         }

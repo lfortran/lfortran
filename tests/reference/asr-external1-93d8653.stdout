@@ -53,6 +53,7 @@
                                     []
                                     (Var 3 matvect_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -91,6 +92,7 @@
                     []
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()

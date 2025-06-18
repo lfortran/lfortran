@@ -94,6 +94,7 @@
                                     []
                                     (Var 4 all)
                                     Private
+                                    Required
                                     .false.
                                     .false.
                                     ()

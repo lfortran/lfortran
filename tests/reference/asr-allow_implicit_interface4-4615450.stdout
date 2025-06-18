@@ -53,6 +53,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -143,6 +144,7 @@
                                     []
                                     (Var 6 f_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -209,6 +211,7 @@
                     )]
                     ()
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -304,6 +307,7 @@
                                     []
                                     (Var 8 c_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -414,6 +418,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -460,6 +465,7 @@
                     )]
                     (Var 3 func)
                     Public
+                    Required
                     .false.
                     .false.
                     ()
@@ -555,6 +561,7 @@
                                     []
                                     (Var 10 a_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -625,6 +632,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

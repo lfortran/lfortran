@@ -499,6 +499,7 @@
                                     )]
                                     (Var 3 greater_than_inverse)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -636,6 +637,7 @@
                                     )]
                                     (Var 4 less_than_inverse)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -748,6 +750,7 @@
                                     )]
                                     (Var 5 less_than_overload_use)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

@@ -472,6 +472,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -571,6 +572,7 @@
                                     )]
                                     (Var 10 specified)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

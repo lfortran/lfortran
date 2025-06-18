@@ -1694,7 +1694,7 @@ public:
         ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, loc,
                                 current_scope, s2c(al, func_name), nullptr, 0, nullptr, 0, body.p, body.n,
                                 return_var_expr, ASR::abiType::Source,
-                                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                                ASR::accessType::Public, ASR::presenceType::Required, ASR::deftypeType::Implementation,
                                 nullptr, false, true, false, false, false, nullptr, 0, false, false, false, nullptr));
         current_scope = current_scope_copy;
         parent_scope->add_symbol(func_name,func_sym);
@@ -2815,9 +2815,11 @@ public:
                 /* a_body */ nullptr,
                 /* n_body */ 0,
                 /* a_return_var */ to_return,
-                ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+                ASR::abiType::BindC, ASR::accessType::Public,
+                ASR::presenceType::Required, ASR::deftypeType::Interface,
                 nullptr, false, false, false, false, false, nullptr, 0,
-                false, false, false);
+                false, false, false
+            );
             parent_scope->add_or_overwrite_symbol(sym, ASR::down_cast<ASR::symbol_t>(tmp));
             current_scope = parent_scope;
         } else {
@@ -3096,9 +3098,16 @@ public:
                                     if (!sym_) {
                                         assgnd_presence[sym] = ASR::presenceType::Optional;
                                     } else {
-                                        ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
-                                            ASRUtils::symbol_get_past_external(sym_));
-                                        v->m_presence = ASR::presenceType::Optional;
+                                        if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(sym_))) {
+                                            ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(
+                                                ASRUtils::symbol_get_past_external(sym_));
+                                            v->m_presence = ASR::presenceType::Optional;
+                                        } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(sym_))) {
+                                            ASR::Function_t* g = ASR::down_cast<ASR::Function_t>(
+                                                ASRUtils::symbol_get_past_external(sym_)
+                                            );
+                                            g->m_presence = ASR::presenceType::Optional;
+                                        }
                                     }
                                 } else if(sa->m_attr == AST::simple_attributeType
                                         ::AttrIntrinsic) {
@@ -8847,9 +8856,11 @@ public:
             /* a_body */ nullptr,
             /* n_body */ 0,
             /* a_return_var */ to_return,
-            ASR::abiType::BindC, ASR::accessType::Public, ASR::deftypeType::Interface,
+            ASR::abiType::BindC, ASR::accessType::Public,
+            ASR::presenceType::Required, ASR::deftypeType::Interface,
             nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+            false, false, false
+        );
         parent_scope->add_or_overwrite_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
 
@@ -10203,8 +10214,10 @@ public:
                         al, loc, current_scope, s2c(al, func_name),
                         nullptr, 0, args.p, 2, body.p, 1, return_expr,
                         ASR::abiType::Source, ASR::accessType::Public,
-                        ASR::deftypeType::Implementation, nullptr, false, true,
-                        false, false, false, nullptr, 0, false, false, true);
+                        ASR::presenceType::Required, ASR::deftypeType::Implementation,
+                        nullptr, false, true, false, false, false, nullptr, 0,
+                        false, false, true
+                    );
                     ASR::symbol_t *op_sym = ASR::down_cast<ASR::symbol_t>(op_function);
                     parent_scope->add_symbol(func_name, op_sym);
 

@@ -111,6 +111,7 @@
                                     )]
                                     (Var 4 dfloat_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -263,6 +264,7 @@
                                     )]
                                     (Var 5 ifloat_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -391,6 +393,7 @@
                                     )]
                                     (Var 3 sfloat_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

@@ -73,6 +73,7 @@
                                     []
                                     (Var 3 f_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -165,6 +166,7 @@
                                     []
                                     (Var 4 g_return_var_name)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

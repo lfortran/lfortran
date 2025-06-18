@@ -94,6 +94,7 @@
                                     []
                                     (Var 4 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -174,6 +175,7 @@
                                     []
                                     (Var 5 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -254,6 +256,7 @@
                                     []
                                     (Var 6 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -334,6 +337,7 @@
                                     []
                                     (Var 7 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -475,6 +479,7 @@
                                     []
                                     (Var 9 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -555,6 +560,7 @@
                                     []
                                     (Var 10 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -635,6 +641,7 @@
                                     []
                                     (Var 11 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -715,6 +722,7 @@
                                     []
                                     (Var 12 new)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

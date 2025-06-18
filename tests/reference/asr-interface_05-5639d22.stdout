@@ -306,6 +306,7 @@
                                     )]
                                     (Var 3 a1)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -395,6 +396,7 @@
                                     )]
                                     (Var 4 a2)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

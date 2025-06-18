@@ -374,6 +374,7 @@
                                     )]
                                     (Var 12 mask)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -745,6 +746,7 @@
                                     )]
                                     (Var 10 mask)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -876,6 +878,7 @@
                                     )]
                                     (Var 9 ret)
                                     Public
+                                    Required
                                     .false.
                                     .true.
                                     ()
@@ -979,6 +982,7 @@
                                     )]
                                     (Var 11 ret)
                                     Public
+                                    Required
                                     .false.
                                     .true.
                                     ()
@@ -1460,6 +1464,7 @@
                                                     )]
                                                     (Var 7 mask)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1560,6 +1565,7 @@
                                                     []
                                                     (Var 6 ne)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1697,6 +1703,7 @@
                                                     []
                                                     (Var 4 ne)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()

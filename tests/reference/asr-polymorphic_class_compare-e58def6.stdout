@@ -146,6 +146,7 @@
                                     )]
                                     (Var 4 eq)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -288,6 +289,7 @@
                                     )]
                                     (Var 5 ne)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

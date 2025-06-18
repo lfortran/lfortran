@@ -335,6 +335,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -456,6 +457,7 @@
                                     )]
                                     (Var 12 string)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -549,6 +551,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

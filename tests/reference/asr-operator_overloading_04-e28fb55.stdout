@@ -115,6 +115,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -299,6 +300,7 @@
                                     )]
                                     (Var 5 trimmed_string)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -447,6 +449,7 @@
                                     []
                                     (Var 7 chomped_string)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

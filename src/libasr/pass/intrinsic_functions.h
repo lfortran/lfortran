@@ -1858,15 +1858,28 @@ namespace Present {
         }
 
         ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(arg)->m_v;
-        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
-        if (var->m_presence != ASR::presenceType::Optional) {
-            diag.semantic_error_label(
-                "Argument to 'present' must be an optional dummy argument",
-                {arg->base.loc},
-                "This variable is not 'optional'"
-            );
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            if (var->m_presence != ASR::presenceType::Optional) {
+                diag.semantic_error_label(
+                    "Argument to 'present' must be an optional dummy argument",
+                    {arg->base.loc},
+                    "This variable is not 'optional'"
+                );
 
-            return nullptr;
+                return nullptr;
+            }
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(sym);
+            if (func->m_presence != ASR::presenceType::Optional) {
+                diag.semantic_error_label(
+                    "Argument to 'present' must be an optional dummy argument",
+                    {arg->base.loc},
+                    "This variable is not 'optional'"
+                );
+
+                return nullptr;
+            }
         }
 
         ASRUtils::ExprStmtDuplicator expr_duplicator(al);

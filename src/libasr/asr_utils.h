@@ -3113,9 +3113,18 @@ static inline void set_absent_optional_arguments_to_null(
     ASR::expr_t* dt=nullptr, bool nopass = false) {
     int offset = (dt != nullptr) && (!nopass);
     for( size_t i = args.size(); i + offset < func->n_args; i++ ) {
-        if( ASR::is_a<ASR::Variable_t>(
-                *ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v) ) {
+        ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(func->m_args[i + offset])->m_v;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
             LCOMPILERS_ASSERT(ASRUtils::EXPR2VAR(func->m_args[i + offset])->m_presence ==
+                                ASR::presenceType::Optional);
+            ASR::call_arg_t empty_arg;
+            Location loc;
+            loc.first = 1, loc.last = 1;
+            empty_arg.loc = loc;
+            empty_arg.m_value = nullptr;
+            args.push_back(al, empty_arg);
+        } else if (ASR::is_a<ASR::Function_t>(*sym)) {
+            LCOMPILERS_ASSERT(ASRUtils::EXPR2FUN(func->m_args[i + offset])->m_presence ==
                                 ASR::presenceType::Optional);
             ASR::call_arg_t empty_arg;
             Location loc;
@@ -4582,19 +4591,22 @@ inline ASR::asr_t* make_Function_t_util(Allocator& al, const Location& loc,
     SymbolTable* m_symtab, char* m_name, char** m_dependencies, size_t n_dependencies,
     ASR::expr_t** a_args, size_t n_args, ASR::stmt_t** m_body, size_t n_body,
     ASR::expr_t* m_return_var, ASR::abiType m_abi, ASR::accessType m_access,
-    ASR::deftypeType m_deftype, char* m_bindc_name, bool m_elemental, bool m_pure,
-    bool m_module, bool m_inline, bool m_static,
+    ASR::presenceType m_presence, ASR::deftypeType m_deftype, char* m_bindc_name,
+    bool m_elemental, bool m_pure, bool m_module, bool m_inline, bool m_static,
     ASR::symbol_t** m_restrictions, size_t n_restrictions, bool m_is_restriction,
-    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr, Location* m_start_name = nullptr,
-    Location* m_end_name = nullptr) {
+    bool m_deterministic, bool m_side_effect_free, char *m_c_header=nullptr,
+    Location* m_start_name = nullptr, Location* m_end_name = nullptr
+) {
     ASR::ttype_t* func_type = ASRUtils::TYPE(ASRUtils::make_FunctionType_t_util(
         al, loc, a_args, n_args, m_return_var, m_abi, m_deftype, m_bindc_name,
         m_elemental, m_pure, m_module, m_inline, m_static,
         m_restrictions, n_restrictions, m_is_restriction, m_symtab));
     return ASR::make_Function_t(
         al, loc, m_symtab, m_name, func_type, m_dependencies, n_dependencies,
-        a_args, n_args, m_body, n_body, m_return_var, m_access, m_deterministic,
-        m_side_effect_free, m_c_header, m_start_name, m_end_name);
+        a_args, n_args, m_body, n_body, m_return_var, m_access, m_presence,
+        m_deterministic, m_side_effect_free, m_c_header, m_start_name,
+        m_end_name
+    );
 }
 
 
@@ -4797,7 +4809,8 @@ class SymbolDuplicator {
             function->base.base.loc, function_symtab, function->m_name,
             function->m_dependencies, function->n_dependencies, new_args.p,
             new_args.size(), new_body.p, new_body.size(), new_return_var,
-            function_type->m_abi, function->m_access, function_type->m_deftype,
+            function_type->m_abi, function->m_access, function->m_presence,
+            function_type->m_deftype,
             function_type->m_bindc_name, function_type->m_elemental, function_type->m_pure,
             function_type->m_module, function_type->m_inline, function_type->m_static,
             function_type->m_restrictions, function_type->n_restrictions,

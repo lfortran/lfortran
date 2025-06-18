@@ -124,6 +124,7 @@
                                     )]
                                     (Var 4 self)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -220,6 +221,7 @@
                                     )]
                                     (Var 5 self)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -360,6 +362,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

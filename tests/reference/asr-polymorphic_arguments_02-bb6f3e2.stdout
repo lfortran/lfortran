@@ -217,6 +217,7 @@
                                     )]
                                     (Var 3 str_scalar)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

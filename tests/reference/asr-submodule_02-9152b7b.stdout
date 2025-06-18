@@ -176,6 +176,7 @@
                                     []
                                     (Var 8 distance)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -290,6 +291,7 @@
                                     []
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -514,6 +516,7 @@
                                     )]
                                     (Var 11 distance)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -709,6 +712,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

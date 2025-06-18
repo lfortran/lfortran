@@ -268,6 +268,7 @@
                                                     )]
                                                     (Var 23 avg)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -435,6 +436,7 @@
                                                     )]
                                                     (Var 21 avg)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -600,6 +602,7 @@
                                                     )]
                                                     (Var 20 avg)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -746,6 +749,7 @@
                                     )]
                                     ()
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -872,6 +876,7 @@
                                     )]
                                     (Var 3 total)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -975,6 +980,7 @@
                                     )]
                                     (Var 4 total)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -1127,6 +1133,7 @@
                                                     []
                                                     (Var 10 quotient)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1231,6 +1238,7 @@
                                                     []
                                                     (Var 9 quotient)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1335,6 +1343,7 @@
                                                     []
                                                     (Var 7 total)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1439,6 +1448,7 @@
                                                     []
                                                     (Var 8 total)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1703,6 +1713,7 @@
                                                     )]
                                                     (Var 17 avg)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -1896,6 +1907,7 @@
                                                     )]
                                                     (Var 16 avg)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -2022,6 +2034,7 @@
                                                     []
                                                     (Var 15 quotient)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -2126,6 +2139,7 @@
                                                     []
                                                     (Var 14 quotient)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -2230,6 +2244,7 @@
                                                     []
                                                     (Var 12 total)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -2334,6 +2349,7 @@
                                                     []
                                                     (Var 13 total)
                                                     Private
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()

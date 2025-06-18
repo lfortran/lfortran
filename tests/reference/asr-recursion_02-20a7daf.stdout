@@ -134,6 +134,7 @@
                                                     []
                                                     (Var 4 f)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -305,6 +306,7 @@
                                     )]
                                     (Var 3 solver)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()
@@ -378,6 +380,7 @@
                                                     )]
                                                     (Var 6 getx)
                                                     Public
+                                                    Required
                                                     .false.
                                                     .false.
                                                     ()
@@ -561,6 +564,7 @@
                                     )]
                                     (Var 5 sub1)
                                     Public
+                                    Required
                                     .false.
                                     .false.
                                     ()

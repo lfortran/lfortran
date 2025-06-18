@@ -137,11 +137,12 @@ void pass_wrap_global_stmts(Allocator &al,
         /* n_body */ body.size(),
         /* a_return_var */ (return_var ? return_var_ref : nullptr),
         (return_var ? ASR::abiType::BindC : ASR::abiType::Source),
-        ASR::Public, ASR::Implementation,
+        ASR::Public, ASR::presenceType::Required, ASR::Implementation,
         nullptr,
         false, false, false, false, false,
         nullptr, 0,
-        false, false, false);
+        false, false, false
+    );
     std::string sym_name = fn_name;
     if (unit.m_symtab->get_symbol(sym_name) != nullptr) {
         throw LCompilersException("Function already defined");
