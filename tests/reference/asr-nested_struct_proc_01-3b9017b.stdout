@@ -198,6 +198,16 @@
                                     iostat_end
                                     Public
                                 ),
+                            iostat_eor:
+                                (ExternalSymbol
+                                    2
+                                    iostat_eor
+                                    4 iostat_eor
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_eor
+                                    Public
+                                ),
                             logical_kinds:
                                 (ExternalSymbol
                                     2
@@ -1030,6 +1040,16 @@
                                     lfortran_intrinsic_iso_fortran_env
                                     []
                                     iostat_end
+                                    Public
+                                ),
+                            iostat_eor:
+                                (ExternalSymbol
+                                    11
+                                    iostat_eor
+                                    4 iostat_eor
+                                    lfortran_intrinsic_iso_fortran_env
+                                    []
+                                    iostat_eor
                                     Public
                                 ),
                             key:
