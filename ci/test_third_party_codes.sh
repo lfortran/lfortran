@@ -45,6 +45,31 @@ time_section() {
 TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
+time_section "🧪 Testing assert" '
+  git clone https://github.com/pranavchiku/assert.git
+  cd assert
+  export PATH="$(pwd)/../src/bin:$PATH"
+  micromamba install -c conda-forge fpm
+
+  # To debug https://github.com/lfortran/lfortran/issues/7732:
+  set -x
+  which fpm
+  realpath $(which fpm)
+  ls -l $(dirname $(realpath $(which fpm)))/../lib
+  ls -l $CONDA_PREFIX/lib
+  fpm --version
+  set +x
+
+  git checkout -t origin/fix-test
+  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
+  git clean -dfx
+  fpm build --compiler=$FC --flag "--cpp" --verbose
+  fpm test --compiler=$FC --flag "--cpp"
+
+  cd ../
+  rm -rf assert
+'
+
 
 time_section "🧪 Testing splpak" '
   git clone https://github.com/Pranavchiku/splpak.git
