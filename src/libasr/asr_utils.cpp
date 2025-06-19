@@ -94,6 +94,33 @@ std::vector<std::string> determine_function_definition_order(
     return ASRUtils::order_deps(func_dep_graph);
 }
 
+std::vector<std::string> determine_class_procedure_declaration_order(
+        SymbolTable* symtab) {
+    std::map<std::string, std::vector<std::string>> func_dep_graph;
+    ASR::symbol_t *sym;
+    for( auto itr: symtab->get_scope() ) {
+        if( ASR::is_a<ASR::ClassProcedure_t>(*itr.second) ) {
+            std::vector<std::string> deps;
+            ASR::symbol_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(itr.second)->m_proc;
+            if (ASR::is_a<ASR::Function_t>(*cp)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(cp);
+                for( size_t i = 0; i < func->n_dependencies; i++ ) {
+                    std::string dep = func->m_dependencies[i];
+                    // Check if the dependent variable is present in the symtab.
+                    // This will help us to include only local dependencies, and we
+                    // assume that dependencies in the parent symtab are already declared
+                    // earlier.
+                    sym = symtab->get_symbol(dep);
+                    if (sym != nullptr && ASR::is_a<ASR::Function_t>(*sym))
+                        deps.push_back(dep);
+                }
+                func_dep_graph[itr.first] = deps;
+            }
+        }
+    }
+    return ASRUtils::order_deps(func_dep_graph);
+}
+
 std::vector<std::string> determine_variable_declaration_order(
          SymbolTable* symtab) {
     std::map<std::string, std::vector<std::string>> var_dep_graph;

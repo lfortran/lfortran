@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <map>
+#include <set>
 #include <limits>
 
 #include <libasr/assert.h>
@@ -997,7 +998,38 @@ static inline std::pair<char**, size_t> symbol_dependencies(const ASR::symbol_t 
         }
         case ASR::symbolType::Struct: {
             ASR::Struct_t* sym = ASR::down_cast<ASR::Struct_t>(f);
-            return std::make_pair(sym->m_dependencies, sym->n_dependencies);
+            char** deps = sym->m_dependencies;
+            size_t n_deps = sym->n_dependencies;
+
+            // we store dependencies in this
+            std::set<std::string> unique_deps;
+            // first we add the dependencies of sym itself
+            for (size_t i = 0; i < n_deps; ++i) {
+                if (deps[i]) unique_deps.insert(deps[i]);
+            }
+
+            // if there exists a parent, add parent and it's dependencies
+            if (sym->m_parent) {
+                ASR::Struct_t* parent = ASR::down_cast<ASR::Struct_t>(sym->m_parent);
+                unique_deps.insert(std::string(parent->m_name));
+
+                auto parent_deps = symbol_dependencies(sym->m_parent);
+                char** parent_dep_array = parent_deps.first;
+                size_t parent_dep_count = parent_deps.second;
+
+                for (size_t i = 0; i < parent_dep_count; ++i) {
+                    unique_deps.insert(parent_dep_array[i]);
+                }
+            }
+
+            size_t total_deps = unique_deps.size();
+            char** merged_deps = new char*[total_deps];
+            size_t idx = 0;
+            for (const auto& dep : unique_deps) {
+                merged_deps[idx] = strdup(dep.c_str());
+                ++idx;
+            }
+            return std::make_pair(merged_deps, total_deps);
         }
         case ASR::symbolType::Enum: {
             ASR::Enum_t* sym = ASR::down_cast<ASR::Enum_t>(f);
@@ -2264,6 +2296,9 @@ std::vector<std::string> determine_module_dependencies(
         const ASR::TranslationUnit_t &unit);
 
 std::vector<std::string> determine_function_definition_order(
+         SymbolTable* symtab);
+
+std::vector<std::string> determine_class_procedure_declaration_order(
          SymbolTable* symtab);
 
 std::vector<std::string> determine_variable_declaration_order(
