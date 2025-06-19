@@ -200,6 +200,9 @@ public:
             if (!exists_in_arginfo(arg_num, indices)) {
                 indices.push_back(info);
             }
+        } else if (is_a<ASR::LogicalNot_t>(*arg)) {
+            ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
+            helper_get_arg_indices_used(not_expr->m_arg, indices);
         }
     }
 
