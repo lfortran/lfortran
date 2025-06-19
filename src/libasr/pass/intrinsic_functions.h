@@ -4969,13 +4969,8 @@ namespace StringTrim {
 namespace Ichar {
 
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
-        int64_t len = std::strlen(str);
-        if (len != 1) {
-            append_error(diag, "Argument to Ichar must have length one", loc);
-            return nullptr;
-        }
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
