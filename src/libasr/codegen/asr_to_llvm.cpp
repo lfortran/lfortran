@@ -5713,7 +5713,30 @@ public:
             target_class_ptr = llvm_utils->CreateLoad2(wrapper_target_llvm_type->getPointerTo(), target_class_ptr);
 
             builder->CreateStore(value_class_ptr, target_class_ptr);
+            return;
+        } else if (!is_target_class && is_value_class) {
+            int64_t ptr_loads_copy = ptr_loads;
+            ptr_loads = 0;
+            this->visit_expr(*x.m_value);
+            llvm::Value* value_struct = tmp;
+            this->visit_expr(*x.m_target);
+            llvm::Value* target = tmp;
+            ptr_loads = ptr_loads_copy;
 
+            llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_value_type, module.get());
+            llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
+            ASR::ttype_t* wrapped_value_struct_type = ASRUtils::TYPE(
+                        ASRUtils::make_StructType_t_util(al, asr_value_type->base.loc,
+                            ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_value_type))->m_derived_type));
+            llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_value_struct_type, module.get());
+
+            // bitcast to the current select type block's type
+            value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
+            value_class_ptr = builder->CreateBitCast(value_class_ptr, current_select_type_block_type->getPointerTo());
+            llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_target_type, module.get());
+            value_class_ptr = llvm_utils->CreateLoad2(target_llvm_type, value_class_ptr);
+
+            builder->CreateStore(value_class_ptr, target);
             return;
         } else if (ASR::is_a<ASR::Allocatable_t>(*asr_target_type) &&
                    ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_target_type)) &&
@@ -6571,7 +6594,7 @@ public:
                         llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector));
                         _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(el_type, data_ptr, 0));
                     } else {
-                        _type_id = llvm_utils->CreateLoad(llvm_utils->create_gep(llvm_selector, 0));
+                        _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep(llvm_selector, 0));
                     }
                     cond = builder->CreateICmpEQ(_type_id, intrinsic_type_id);
                     type_block = type_stmt_type_t->m_body;
@@ -10496,6 +10519,12 @@ public:
                     ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
                     llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                     llvm::APInt(64, get_class_hash(struct_sym)));
+                    builder->CreateStore(hash, type_id_addr);
+                } else {  
+                    // Case: when integer, real, character etc. passed to class(*) argument
+                    llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                        llvm::APInt(64, -((int) arg_type->type) -
+                        ASRUtils::extract_kind_from_ttype_t(arg_type), true));
                     builder->CreateStore(hash, type_id_addr);
                 }
                 return abstract_;
