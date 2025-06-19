@@ -2526,6 +2526,10 @@ class ParallelRegionVisitor :
                 visit_OMPTask(x);
                 break;
 
+                case ASR::omp_region_typeType::Critical:
+                visit_OMPCritical(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -2788,7 +2792,16 @@ class ParallelRegionVisitor :
 
             // Add the innermost loop's body
             for (size_t i = 0; i < innermost_loop->n_body; i++) {
-                loop_body.push_back(innermost_loop->m_body[i]);
+                if(!ASR::is_a<ASR::OMPRegion_t>(*innermost_loop->m_body[i]) && !ASR::is_a<ASR::DoLoop_t>(*innermost_loop->m_body[i]) && !ASR::is_a<ASR::If_t>(*innermost_loop->m_body[i])) {
+                    loop_body.push_back(innermost_loop->m_body[i]);
+                    continue;
+                }
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                this->visit_stmt(*innermost_loop->m_body[i]);
+                for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                    loop_body.push_back(nested_lowered_body[j]);
+                }
+                nested_lowered_body = body_copy;
             }
 
             // Create the DoLoop statement (start + 1 to end, matching visit_DoConcurrentLoop)
@@ -3191,6 +3204,38 @@ class ParallelRegionVisitor :
 
             // Create if statement for single region
             nested_lowered_body.push_back(b.If(condition, single_body_s, {}));
+        }
+
+        void visit_OMPCritical(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Generate gomp_critical_start call
+            Vec<ASR::call_arg_t> start_args;
+            start_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_critical_start"), nullptr, start_args.p, start_args.n, nullptr)));
+
+            // Process the critical section body
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            Vec<ASR::stmt_t*> critical_body;
+            critical_body.reserve(al,1);
+            visit_OMPBody(&x, critical_body);
+
+            // Add body statements to nested_lowered_body
+            for (size_t i = 0; i < critical_body.size(); i++) {
+                nested_lowered_body.push_back(critical_body[i]);
+            }
+
+            // Generate gomp_critical_end call
+            Vec<ASR::call_arg_t> end_args;
+            end_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
         }
 };
 
