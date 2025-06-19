@@ -754,3 +754,15 @@ semantic error: Unequal character lengths in MERGE intrinsic
     |
 438 |     print*, merge("okay", "ok", .true.)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `idint` must have kind equals to 8
+   --> tests/errors/continue_compilation_2.f90:440:14
+    |
+440 |     print *, idint(4.23)
+    |              ^^^^^^^^^^^ 
+
+semantic error: first argument of `idint` must have kind equals to 8
+   --> tests/errors/continue_compilation_2.f90:441:14
+    |
+441 |     print *, idint(idint_kind_mismatch)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 

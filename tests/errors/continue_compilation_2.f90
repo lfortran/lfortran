@@ -197,7 +197,7 @@ program continue_compilation_2
     !tokenizer error
     integer  :: ? tokenizer_error
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
-
+    real :: idint_kind_mismatch = 4.23
 
 
 
@@ -436,6 +436,9 @@ program continue_compilation_2
     100 FORMAT(A10, @)
 
     print*, merge("okay", "ok", .true.)
+    !idint_kind_mismatch
+    print *, idint(4.23)
+    print *, idint(idint_kind_mismatch)
 
     contains
     logical function f(x)
