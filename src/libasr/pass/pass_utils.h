@@ -172,7 +172,10 @@ namespace LCompilers {
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
             return ASRUtils::is_descriptorString(x) || 
-                    (x && ASR::is_a<ASR::List_t>(*x));
+                    (x && (ASR::is_a<ASR::List_t>(*x) 
+                       || ASR::is_a<ASR::Dict_t>(*x)
+                       || ASR::is_a<ASR::Set_t>(*x)
+                       || ASR::is_a<ASR::Tuple_t>(*x)));
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
