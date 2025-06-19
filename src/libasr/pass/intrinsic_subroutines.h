@@ -819,6 +819,7 @@ namespace ExecuteCommandLine {
         std::string c_func_name = "_lfortran_exec_command";
         std::string new_name = "_lcompilers_execute_command_line_";
         ASR::symbol_t* s = scope->get_symbol(new_name);
+        ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
         ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString));
         if (s) {
             ASRBuilder b(al, loc);
@@ -826,13 +827,17 @@ namespace ExecuteCommandLine {
         } else {
             declare_basic_variables(new_name);
             fill_func_arg_sub("command", str_type, InOut);
-            if (arg_types.size() == 2) {
+            ASR::expr_t* exit_status_local = declare("_lcompilers_exit_status", ret_type, Local);
+            if (arg_types.size() >= 2) {
                 fill_func_arg_sub("wait", arg_types[1], InOut);
-            } else if (arg_types.size() == 3) {
+            }
+            if (arg_types.size() >= 3) {
                 fill_func_arg_sub("exitstat", arg_types[2], InOut);
-            } else if (arg_types.size() == 4) {
+            }
+            if (arg_types.size() >= 4) {
                 fill_func_arg_sub("cmdstat", arg_types[3], InOut);
-            } else if (arg_types.size() == 5) {
+            }
+            if (arg_types.size() >= 5) {
                 fill_func_arg_sub("cmdmsg", arg_types[4], InOut);
             }
 
@@ -843,7 +848,7 @@ namespace ExecuteCommandLine {
             args_1.push_back(al, arg);
 
             ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            str_type,
+            ret_type,
             ASRUtils::intent_return_var, ASR::abiType::BindC, false);
 
             SetChar dep_1; dep_1.reserve(al, 1);
@@ -855,9 +860,12 @@ namespace ExecuteCommandLine {
 
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, args[0]);
-            body.push_back(al, b.Assignment(args[0], b.Call(s, call_args, str_type)));
+            body.push_back(al, b.Assignment(exit_status_local, b.Call(s, call_args, ret_type)));
+            if ( arg_types.size() >= 3) {
+                body.push_back(al, b.Assignment(args[2], exit_status_local));
+            }
             ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-                body, nullptr, ASR::abiType::Intrinsic, ASR::deftypeType::Implementation, nullptr);
+                body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
             scope->add_symbol(fn_name, new_symbol);
             return b.SubroutineCall(new_symbol, new_args);
         }
