@@ -46,7 +46,7 @@ TMP_DIR=$(mktemp -d)
 cd "$TMP_DIR"
 
 time_section "🧪 Testing assert" '
-  git clone https://github.com/certik/assert.git
+  git clone https://github.com/pranavchiku/assert.git
   cd assert
   export PATH="$(pwd)/../src/bin:$PATH"
   micromamba install -c conda-forge fpm
@@ -60,8 +60,8 @@ time_section "🧪 Testing assert" '
   fpm --version
   set +x
 
-  git checkout -t origin/fix
-  git checkout 37ed09d48bdf127c0a9aee9018b00c50f2ff0d99
+  git checkout -t origin/fix-test
+  git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
   git clean -dfx
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
