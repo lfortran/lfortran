@@ -6908,6 +6908,14 @@ public:
                         x.base.base.loc);
             }
         }
+        if ( ASRUtils::is_descriptorString(ASRUtils::expr_type(x.m_left)) &&
+             left->getType() == string_descriptor->getPointerTo() ) {
+            llvm::Value* left_ptr = llvm_utils->create_gep2(string_descriptor, left, 0);
+#if LLVM_VERSION_MAJOR > 16
+            ptr_type[left_ptr] = left_ptr->getType();
+#endif
+            left = llvm_utils->CreateLoad(left_ptr);
+        }
         tmp = lfortran_str_cmp(left, right, fn);
     }
 
