@@ -1211,10 +1211,20 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     }
 
     void traverse_call_args(Vec<ASR::call_arg_t>& x_m_args_vec, ASR::call_arg_t* x_m_args,
-        size_t x_n_args, const std::string& name_hint) {
+        size_t x_n_args, ASR::expr_t **orig_args, const std::string& name_hint) {
         /* For other frontends, we might need to traverse the arguments
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
+            if (orig_args &&
+                ASR::is_a<ASR::Var_t>(*orig_args[i]) &&
+                ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(orig_args[i])->m_v)) &&
+                (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
+                ASR::intentType orig_intent = ASRUtils::EXPR2VAR(orig_args[i])->m_intent;
+                if (orig_intent == ASRUtils::intent_out || orig_intent == ASRUtils::intent_inout) {
+                    x_m_args_vec.push_back(al, x_m_args[i]);
+                    continue;
+                }
+            }
             if( is_temporary_needed(x_m_args[i].m_value) ) {
                 visit_call_arg(x_m_args[i]);
                 ASR::expr_t* array_var_temporary = call_create_and_allocate_temporary_variable(x_m_args[i].m_value, al, current_body, name_hint, current_scope, exprs_with_target);
@@ -1595,7 +1605,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_Call(const T& x, const std::string& name_hint) {
         LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        traverse_call_args(x_m_args, x.m_args, x.n_args,
+        ASR::expr_t **orig_args = nullptr;
+        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_args;
+        }
+        traverse_call_args(x_m_args, x.m_args, x.n_args, orig_args,
             name_hint + ASRUtils::symbol_name(x.m_name));
         T& xx = const_cast<T&>(x);
         xx.m_args = x_m_args.p;
@@ -1605,7 +1619,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_StructConstructor(const ASR::StructConstructor_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_StructConstructor(x);
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
-        traverse_call_args(x_m_args, x.m_args, x.n_args,
+        traverse_call_args(x_m_args, x.m_args, x.n_args, nullptr,
             std::string("_struct_type_constructor_") + ASRUtils::symbol_name(x.m_dt_sym));
         ASR::StructConstructor_t& xx = const_cast<ASR::StructConstructor_t&>(x);
         xx.m_args = x_m_args.p;
@@ -2571,8 +2585,17 @@ class VerifySimplifierASROutput:
         visit_IO(x);
     }
 
-    void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args) {
+    void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args, ASR::expr_t **orig_args = nullptr) {
         for( size_t i = 0; i < n_args; i++ ) {
+            if (orig_args &&
+                ASR::is_a<ASR::Var_t>(*orig_args[i]) &&
+                ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(orig_args[i])->m_v)) &&
+                (m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(m_args[i].m_value)))) {
+                ASR::intentType orig_intent = ASRUtils::EXPR2VAR(orig_args[i])->m_intent;
+                if (orig_intent == ASRUtils::intent_out || orig_intent == ASRUtils::intent_inout) {
+                    continue;
+                }
+            }
             check_for_var_if_array(m_args[i].m_value);
         }
     }
@@ -2585,7 +2608,11 @@ class VerifySimplifierASROutput:
 
     template <typename T>
     void visit_Call(const T& x) {
-        traverse_call_args(x.m_args, x.n_args);
+        ASR::expr_t **orig_args = nullptr;
+        if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
+            orig_args = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name))->m_args;
+        }
+        traverse_call_args(x.m_args, x.n_args, orig_args);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
