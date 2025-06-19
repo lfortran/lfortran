@@ -1751,7 +1751,7 @@ public:
         llvm::Value *pos = tmp;
 
         std::string type_code = ASRUtils::get_type_code(el_type);
-        tmp = list_api->read_item2(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        tmp = list_api->read_item_using_typecode(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -1816,7 +1816,7 @@ public:
             std::string type_code = ASRUtils::get_type_code(
                 ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg)));
             llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
-            tmp = list_api->len2(list_type, plist);
+            tmp = list_api->len_using_typecode(list_type, plist);
         }
     }
 
@@ -2420,7 +2420,7 @@ public:
         llvm::Value *pos = tmp;
 
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, llvm_utils->module); 
-        tmp = tuple_api->read_item2(el_type, ptuple, pos, LLVM::is_llvm_struct(x.m_type));
+        tmp = tuple_api->read_item_using_typecode(el_type, ptuple, pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_TupleConcat(const ASR::TupleConcat_t& x) {
@@ -5629,7 +5629,7 @@ public:
 
             std::string key_type_code = ASRUtils::get_type_code(value_dict_type->m_key_type);
             std::string value_type_code = ASRUtils::get_type_code(value_dict_type->m_value_type);
-            llvm_utils->dict_api->dict_deepcopy2(key_type_code, value_type_code, value_dict, target_dict,
+            llvm_utils->dict_api->dict_deepcopy_using_typecode(key_type_code, value_type_code, value_dict, target_dict,
                                     value_dict_type, module.get(), name2memidx);
             return ;
         } else if( is_target_set && is_value_set ) {
@@ -5866,7 +5866,7 @@ public:
                 llvm::Value* pos = tmp;
 
                 std::string type_code = ASRUtils::get_type_code(asr_target0->m_type);
-                target = list_api->read_item2(type_code, list, pos, compiler_options.enable_bounds_checking,
+                target = list_api->read_item_using_typecode(type_code, list, pos, compiler_options.enable_bounds_checking,
                                              module.get(), true);
             }
         } else {
