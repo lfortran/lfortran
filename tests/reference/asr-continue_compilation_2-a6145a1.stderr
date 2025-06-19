@@ -473,7 +473,7 @@ semantic error: Step expression (Increment) in DO loop cannot be zero
 319 |     do i_2 = 1, 5, 0
     |                    ^ 
 
-semantic error: Arguments to dprod must be real(4)
+semantic error: first argument of `dprod` must have kind equals to 4
    --> tests/errors/continue_compilation_2.f90:323:13
     |
 323 |     print*, dprod(4.23_8, 4.3_8)
