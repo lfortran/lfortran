@@ -1,4 +1,4 @@
-module tuple_test
+module tuple_test_01_mod
    implicit none
 
 contains
@@ -34,7 +34,7 @@ contains
 end module
 
 program main
-   use tuple_test
+   use tuple_test_01_mod
    implicit none
    call f()
 end program
