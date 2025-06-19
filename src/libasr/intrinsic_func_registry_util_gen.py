@@ -721,6 +721,7 @@ intrinsic_funcs_args = {
     "Dprod": [
         {
             "args": [("real", "real")],
+            "kind_validation": [{"first":{0: 4}}, {"second":{1: 4}}],
             "return": "real64"
         }
     ],
@@ -1010,11 +1011,13 @@ def add_create_func_arg_type_src(func_name):
             src += 4 * indent + f'return nullptr;\n'
             src += 3 * indent + '}\n'
         kind_validation_info = arg_info.get("kind_validation", [])
+        if kind_validation_info != []:
+            src += 3 * indent + "int kind = 0;\n"
         for validation_item in kind_validation_info:
             for arg_name, arg_spec in validation_item.items():
                 arg_pos = list(arg_spec.keys())[0]
                 required_kind = list(arg_spec.values())[0]
-                src += 3 * indent + f"int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[{arg_pos}]));\n"
+                src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[{arg_pos}]));\n"
                 src += 3 * indent + f"if(kind != {required_kind}) " + "{\n"
                 src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equals to {required_kind}", loc);\n'
                 src += 4 * indent + f'return nullptr;\n'
