@@ -198,7 +198,7 @@ program continue_compilation_2
     integer  :: ? tokenizer_error
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     real :: idint_kind_mismatch = 4.23
-
+    character(5):: ichar_runtime = "Hello"
 
 
 
@@ -439,6 +439,8 @@ program continue_compilation_2
     !idint_kind_mismatch
     print *, idint(4.23)
     print *, idint(idint_kind_mismatch)
+    !ichar_runtime
+    print *, ichar(ichar_runtime)
 
     contains
     logical function f(x)

@@ -6744,8 +6744,17 @@ class RemoveArrayProcessingNodeVisitor: public ASR::CallReplacerOnExpressionsVis
 
         ASR::CallReplacerOnExpressionsVisitor<RemoveArrayProcessingNodeVisitor>::visit_ArrayPhysicalCast(x);
     }
-
 };
+
+static inline int64_t get_fixed_string_len(const ASR::ttype_t* type_t) {
+    if (ASR::is_a<ASR::String_t>(*type_t)) {
+        ASR::expr_t* len_expr = ASR::down_cast<ASR::String_t>(type_t)->m_len;
+        if (len_expr && ASR::is_a<ASR::IntegerConstant_t>(*len_expr)) {
+            return ASR::down_cast<ASR::IntegerConstant_t>(len_expr)->m_n;
+        }
+    }
+    return -1;
+}
 
 } // namespace ASRUtils
 

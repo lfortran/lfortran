@@ -1,4 +1,4 @@
-semantic error: Argument to Ichar must have length one
+semantic error: Argument 1 to Ichar must have length 1
  --> tests/errors/ichar_01.f90:3:13
   |
 3 |     print*, ichar("okay")
