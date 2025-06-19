@@ -767,7 +767,10 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return": "int32",
-            "kind_arg": True
+            "kind_arg": True,
+            "char_len_validation": [
+                {1: {0: {"min": 1, "max": 1}}}
+            ]
         },
     ],
     "Char": [
@@ -1015,6 +1018,22 @@ def add_create_func_arg_type_src(func_name):
                 src += 3 * indent + f"if(kind != {required_kind}) " + "{\n"
                 src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equals to {required_kind}", loc);\n'
                 src += 4 * indent + f'return nullptr;\n'
+                src += 3 * indent + '}\n'
+        char_len_validation_info = arg_info.get("char_len_validation", [])
+        for validation_item in char_len_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]
+                constraint = list(arg_spec.values())[0]
+                src += 3 * indent + f'if (ASR::is_a<ASR::String_t>(*arg_type{arg_pos})) {{\n'
+                src += 4 * indent + f'int64_t len = ASRUtils::get_fixed_string_len(arg_type{arg_pos});\n'
+                if constraint["min"] == constraint["max"]:
+                    src += 4 * indent + f'if (len != -1 && len != {constraint["min"]}) {{\n'
+                    src += 5 * indent + f'append_error(diag, "Argument {arg_name} to {func_name} must have length {constraint["min"]}", loc);\n'
+                else:
+                    src += 4 * indent + f'if (len != -1 && (len < {constraint["min"]} || len > {constraint["max"]})) {{\n'
+                    src += 5 * indent + f'append_error(diag, "Argument {arg_name} to {func_name} must have length between {constraint["min"]} and {constraint["max"]}", loc);\n'
+                src += 5 * indent + 'return nullptr;\n'
+                src += 4 * indent + '}\n'
                 src += 3 * indent + '}\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
