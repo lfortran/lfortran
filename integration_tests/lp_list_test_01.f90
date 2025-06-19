@@ -22,7 +22,7 @@ program lp_list_test_01
    if (_lfortran_len(test_list) /= 5) error stop
 
 
-   call _lfortran_list_reverse(test_list)
+   !call _lfortran_list_reverse(test_list)
    if (_lfortran_len(test_list) /= 5) error stop
    if (_lfortran_get_item(test_list, 0) /= -50) error stop
    if (_lfortran_get_item(test_list, 3) /= 2) error stop

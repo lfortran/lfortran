@@ -460,18 +460,19 @@ namespace LCompilers {
             llvm::IRBuilder<>* builder;
 
             std::map<std::string, std::tuple<llvm::Type*, int32_t, llvm::Type*>> typecode2listtype;
+            std::map<ASR::ttype_t*, std::tuple<llvm::Type*, int32_t, llvm::Type*>> type2listtype;
 
             void resize_if_needed(llvm::Value* list, llvm::Value* n,
                                   llvm::Value* capacity, int32_t type_size,
                                   llvm::Type* el_type, llvm::Module* module);
 
-            void resize_if_needed2(std::string& type_code, llvm::Value* list, llvm::Value* n,
+            void resize_if_needed2(ASR::ttype_t* type, llvm::Value* list, llvm::Value* n,
                                   llvm::Value* capacity, int32_t type_size,
                                   llvm::Type* el_type, llvm::Module* module);
 
             void shift_end_point_by_one(llvm::Value* list);
 
-            void shift_end_point_by_one2(std::string& type_code, llvm::Value* list);
+            void shift_end_point_by_one2(ASR::ttype_t* type_code, llvm::Value* list);
 
         public:
 
@@ -480,6 +481,8 @@ namespace LCompilers {
 
             llvm::Type* get_list_type(llvm::Type* el_type, std::string& type_code,
                                         int32_t type_size);
+
+            llvm::Type* get_list_type_from_ttype(ASR::ttype_t* el_ttype, int type_size=0);
 
             void list_init(std::string& type_code, llvm::Value* list,
                            llvm::Module* module, llvm::Value* initial_capacity,
