@@ -19,6 +19,7 @@ integer, parameter :: character_kinds(1) = [1]
 integer, parameter :: logical_kinds(1) = [4]
 
 integer, parameter :: iostat_end = -1
+integer, parameter :: iostat_eor = -2
 
 integer, parameter :: numeric_storage_size = 32
 integer, parameter :: character_storage_size = 8
