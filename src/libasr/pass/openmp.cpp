@@ -2530,6 +2530,10 @@ class ParallelRegionVisitor :
                 visit_OMPCritical(x);
                 break;
 
+                case ASR::omp_region_typeType::Barrier:
+                visit_OMPBarrier(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -3234,6 +3238,20 @@ class ParallelRegionVisitor :
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                 current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPBarrier(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Generate gomp_barrier call
+            Vec<ASR::call_arg_t> barrier_args;
+            barrier_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }

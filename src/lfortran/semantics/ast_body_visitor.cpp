@@ -5467,6 +5467,14 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Critical, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "barrier") {
+                // pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Barrier, clauses.p, clauses.n, body.p, body.n)));
             } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
