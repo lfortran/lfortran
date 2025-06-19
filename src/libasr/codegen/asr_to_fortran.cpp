@@ -656,14 +656,6 @@ public:
             src.append(x.m_original_name);
             src += "\n";
         }
-        if (ASR::is_a<ASR::Struct_t>(*sym)) {
-            ASR::symbol_t* s = x.m_external;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*s)) {
-                src = "";
-                ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(s);
-                src += std::string(cp->m_name);
-            }
-        }
     }
 
     void visit_Struct(const ASR::Struct_t &x) {
@@ -673,6 +665,9 @@ public:
             r += ", extends(";
             r += std::string(ASR::down_cast<ASR::Struct_t>(x.m_parent)->m_name);
             r += ")";
+        }
+        if (x.m_is_abstract) {
+            r += ", abstract";
         }
         r += " :: ";
         r.append(x.m_name);
@@ -684,6 +679,16 @@ public:
             ASR::symbol_t* var_sym = x.m_symtab->get_symbol(item);
             if (is_a<ASR::Variable_t>(*var_sym)) {
                 visit_symbol(*var_sym);
+                r += src;
+            }
+        }
+
+        std::vector<std::string> class_procedure_order = ASRUtils::determine_class_procedure_declaration_order(x.m_symtab);
+        if (class_procedure_order.size() > 0) r += "contains\n";
+        for (auto &item : class_procedure_order) {
+            ASR::symbol_t* class_procedure_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::ClassProcedure_t>(*class_procedure_sym)) {
+                visit_symbol(*class_procedure_sym);
                 r += src;
             }
         }
@@ -778,7 +783,29 @@ public:
         src = r;
     }
 
-    // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
+    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
+        std::string r = indent;
+        r += "procedure";
+        if (x.m_is_deferred) {
+            if (strcmp(x.m_name, x.m_proc_name)) {
+                r += "(";
+                r += std::string(x.m_proc_name);
+                r += ")";
+            }
+            r += ", deferred";
+            r += " :: ";
+            r += std::string(x.m_name);
+        } else {
+            r += " :: ";
+            r += std::string(x.m_name);
+            if (strcmp(x.m_name, x.m_proc_name)) {
+                r += " => ";
+                r += std::string(x.m_proc_name);
+            }
+        }
+        r += "\n";
+        src = r;
+    }
 
     // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}
 
@@ -793,6 +820,11 @@ public:
         std::string r = indent;
         r += "allocate(";
         for (size_t i = 0; i < x.n_args; i ++) {
+            if (x.m_args[i].m_type) {
+                visit_ttype(*x.m_args[i].m_type);
+                r += src;
+                r += " :: ";
+            }
             visit_expr(*x.m_args[i].m_a);
             r += src;
             if (x.m_args[i].n_dims > 0) {
@@ -1246,7 +1278,11 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += "call ";
-        r += ASRUtils::symbol_name(x.m_name);
+        if (x.m_dt) {
+            visit_expr(*x.m_dt);
+            r += src + "%";
+        }
+        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
@@ -1371,11 +1407,8 @@ public:
             if (x.m_dt) {
                 visit_expr(*x.m_dt);
                 r += src + "%";
-                visit_symbol(*x.m_name);
-                r += src;
-            } else {
-                r += ASRUtils::symbol_name(x.m_name);
             }
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
@@ -2147,6 +2180,12 @@ public:
         src = r;
     }
 
+    /******************************* Ttype ********************************/
+    void visit_StructType(const ASR::StructType_t &x) {
+        std::string r = indent;
+        r += ASRUtils::symbol_name(x.m_derived_type);
+        src = r;
+    }
 };
 
 Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,

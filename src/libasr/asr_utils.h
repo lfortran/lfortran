@@ -2298,6 +2298,9 @@ std::vector<std::string> determine_module_dependencies(
 std::vector<std::string> determine_function_definition_order(
          SymbolTable* symtab);
 
+std::vector<std::string> determine_class_procedure_declaration_order(
+         SymbolTable* symtab);
+
 std::vector<std::string> determine_variable_declaration_order(
          SymbolTable* symtab);
 
