@@ -509,7 +509,7 @@ semantic error: Type mismatch in argument at argument (1); passed `real` to `int
 334 |     print *, f(42.9)
     |                ^^^^ 
 
-semantic error: Argument to Ichar must have length one
+semantic error: Argument 1 to Ichar must have length 1
    --> tests/errors/continue_compilation_2.f90:336:13
     |
 336 |     print*, ichar("okay")
@@ -766,3 +766,9 @@ semantic error: first argument of `idint` must have kind equals to 8
     |
 441 |     print *, idint(idint_kind_mismatch)
     |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument 1 to Ichar must have length 1
+   --> tests/errors/continue_compilation_2.f90:443:14
+    |
+443 |     print *, ichar(ichar_runtime)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
