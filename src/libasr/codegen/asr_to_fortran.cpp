@@ -825,6 +825,12 @@ public:
                 r += src;
                 r += " :: ";
             }
+            if (x.m_args[i].m_len_expr) {
+                r += "character(len=";
+                visit_expr(*x.m_args[i].m_len_expr);
+                r += src;
+                r += ") :: ";
+            }
             visit_expr(*x.m_args[i].m_a);
             r += src;
             if (x.m_args[i].n_dims > 0) {
