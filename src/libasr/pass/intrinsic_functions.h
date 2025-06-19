@@ -3136,13 +3136,8 @@ namespace Ifix {
 namespace Idint {
 
     static ASR::expr_t *eval_Idint(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        int kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[0]));
-        if(kind == 4) {
-            append_error(diag, "first argument of `idint` must have kind equals to 8", loc);
-            return nullptr;
-        }
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -3153,11 +3148,6 @@ namespace Idint {
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
 
-        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
-        if(kind == 4) {
-            throw LCompilersException("first argument of `idint` must have kind equals to 8");
-            return nullptr;
-        }
         body.push_back(al, b.Assignment(result, b.r2i_t(args[0], int32)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
