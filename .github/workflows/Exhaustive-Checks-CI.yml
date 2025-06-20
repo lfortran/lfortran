@@ -26,3 +26,62 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
+  debug_outOfSource:
+    name: Check Out-of-Source Debug build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          path: src
+
+      - uses: mamba-org/setup-micromamba@v1.8.0
+        with:
+          micromamba-version: '1.5.10-0'
+          environment-file: src/ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ( cd src && ./build0.sh )
+            export CXXFLAGS="-Werror"
+            cmake -S src -B builddir -GNinja \
+              -DCMAKE_BUILD_TYPE=RelWithDebInfo \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_KOKKOS=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build builddir  -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: ctest --output-on-failure
+        working-directory: builddir
+
+      - name: Test Moved Installation
+        shell: bash -e -l {0}
+        run: |
+          mv inst inst.moved
+          cp src/examples/expr2.f90 expr2.F90
+          rm -rf src
+          inst.moved/bin/lfortran expr2.F90 -o expr2
+          ./expr2
+          inst.moved/bin/lfortran --backend=c expr2.F90 -o expr2b
+          ./expr2b
+          inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
+          ./expr2c
+
