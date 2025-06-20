@@ -5506,6 +5506,7 @@ namespace LCompilers {
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
         llvm::Value* end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context),end_point_ptr);
+        std::string list_element_type_code = ASRUtils::get_type_code(list_element_type);
 
         llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(
                                     llvm::Type::getInt32Ty(context));
@@ -5513,10 +5514,9 @@ namespace LCompilers {
         llvm::Value* tmp = nullptr;
 
         // Get element to return
-        llvm::Value* item = read_item(list, llvm_utils->CreateLoad(pos_ptr),
+        llvm::Value* item = read_item_using_typecode(list_element_type_code, list, llvm_utils->CreateLoad(pos_ptr),
                                       true, module, LLVM::is_llvm_struct(list_element_type));
         if( LLVM::is_llvm_struct(list_element_type) ) {
-            std::string list_element_type_code = ASRUtils::get_type_code(list_element_type);
             LCOMPILERS_ASSERT(typecode2listtype.find(list_element_type_code) != typecode2listtype.end());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 std::get<2>(typecode2listtype[list_element_type_code]), nullptr,
@@ -5544,8 +5544,8 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(pos_ptr),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item(list, llvm_utils->CreateLoad(pos_ptr),
-                read_item(list, tmp, false, module, false), false, module);
+            write_item_using_typecode(list_element_type_code, list, llvm_utils->CreateLoad(pos_ptr),
+                read_item_using_typecode(list_element_type_code, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, pos_ptr);
         }
         builder->CreateBr(loophead);
