@@ -2868,6 +2868,7 @@ public:
                              std::string& remote_sym, std::string& local_sym,
                              std::queue<std::pair<std::string, std::string>>& to_be_imported_later,
                              const Location& loc) {
+        remote_sym = to_lower(remote_sym);
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);
         if (!t) {
             diag.add(diag::Diagnostic(
