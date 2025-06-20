@@ -7540,8 +7540,6 @@ public:
                         list_len, ASR::binopType::Add, neg_idx, int_type, nullptr));
                 }
             }
-            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], index,
-                                        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
 
             ASRUtils::create_intrinsic_function create_function =
                 ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("list.pop");

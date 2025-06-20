@@ -36,6 +36,10 @@ program lp_list_test_01
    test_list = _lfortran_concat(test_list, _lfortran_list_constant(1, 1, 1, 2))
    if (_lfortran_len(test_list) /= 11) error stop
 
+
+   if (_lfortran_pop(test_list, 0) /= -50) error stop
+   if (_lfortran_len(test_list) /= 10) error stop
+
    type(_lfortran_list(real(4))) :: test_list_r  = _lfortran_list_constant(1.0, 2.0, 3.0, 4.0)
    if (_lfortran_len(test_list_r) /= 4) error stop
    call _lfortran_list_append(test_list_r, 1.11)
