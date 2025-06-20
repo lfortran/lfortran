@@ -53,6 +53,7 @@ private:
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
+    // checks whether we've visited any `Var`, which isn't a global `Variable`
     bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
@@ -816,16 +817,17 @@ public:
     // nodes that have symbol in their fields:
 
     void visit_Var(const Var_t &x) {
-        non_global_symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
         ASR::symbol_t *s = x.m_v;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
-            non_global_symbol_visited = false;
-        }
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
+        }
+        if (is_a<ASR::Variable_t>(*s) && is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+            non_global_symbol_visited = false;
+        } else {
+            non_global_symbol_visited = true;
         }
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
