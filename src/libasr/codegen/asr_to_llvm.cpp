@@ -4072,6 +4072,7 @@ public:
         bool is_array_type = false;
         bool is_malloc_array_type = false;
         bool is_list = false;
+        bool is_dict = ASR::is_a<ASR::Dict_t>(*v->m_type);
         if (v->m_intent == intent_local ||
             v->m_intent == intent_return_var ||
             !v->m_intent) {
@@ -4093,7 +4094,7 @@ public:
                 std::uint32_t m_h = get_hash((ASR::asr_t*)_func);
                 ASR::abiType abi_type = ASRUtils::get_FunctionType(_func)->m_abi;
                 bool is_v_arg = is_argument(v, _func->m_args, _func->n_args);
-                if( is_array_type && !is_list ) {
+                if( is_array_type && !is_list && !is_dict) {
                     /* The first element in an array descriptor can be either of
                     * llvm::ArrayType or llvm::PointerType. However, a
                     * function only accepts llvm::PointerType for arrays. Hence,
@@ -4275,7 +4276,7 @@ public:
                     }
                 }
             }
-            if( init_expr != nullptr && !is_list) {
+            if( init_expr != nullptr && !is_list && !is_dict) {
                 target_var = ptr;
                 if(v->m_storage == ASR::storage_typeType::Save &&
                     ASR::is_a<ASR::Function_t>(
@@ -4313,6 +4314,12 @@ public:
                     ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(v->m_type);
                     std::string type_code = ASRUtils::get_type_code(asr_list->m_type);
                     list_api->list_init(type_code, ptr, module.get());
+                } else if (is_dict) {
+                    ASR::Dict_t* asr_list = ASR::down_cast<ASR::Dict_t>(v->m_type);
+                    std::string key_type_code = ASRUtils::get_type_code(asr_list->m_key_type);
+                    std::string value_type_code = ASRUtils::get_type_code(asr_list->m_value_type);
+                    /*list_api->list_init(type_code, ptr, module.get());*/
+                    dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
                 }
             }
         }
