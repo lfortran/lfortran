@@ -387,3 +387,37 @@ jobs:
             export PATH="$(pwd)/src/bin:$PATH"
             RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
 
+  upload_tarball:
+    name: Upload Tarball
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - name: Upload Tarball
+        shell: bash -e -l {0}
+        run: |
+          ./build0.sh
+          lfortran_version=$(<version)
+          pandoc --standalone --to man doc/man/lfortran.md -o doc/man/lfortran.1
+          ci/create_source_tarball.sh $lfortran_version
+          ci/upload_tarball.sh
+        env:
+          SSH_DEPLOY_KEY: ${{ secrets.SSH_DEPLOY_KEY }}
+
+      - name: Upload Tarball to Release
+        if: ${{ startsWith(github.ref, 'refs/tags/v') }}
+        shell: bash -e -l {0}
+        run: |
+          ci/upload_tarball_to_release.sh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
