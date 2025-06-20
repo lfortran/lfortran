@@ -1341,6 +1341,135 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     return found;
 }
 
+bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
+                            ASR::logicalbinopType op, std::string& intrinsic_op_name,
+                            SymbolTable* curr_scope, ASR::asr_t*& asr,
+                            Allocator& al, const Location& loc,
+                            SetChar& current_function_dependencies,
+                            SetChar& current_module_dependencies,
+                            const std::function<void(const std::string&, const Location&)> err) {
+    ASR::ttype_t* left_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(left));
+    ASR::ttype_t* right_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(right));
+    ASR::Struct_t* left_struct = nullptr;
+    if (ASR::is_a<ASR::StructType_t>(*left_type)) {
+        left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructType_t>(left_type)->m_derived_type));
+    }
+    bool found = false;
+    if (is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct)) {
+        ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
+        ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        if (left_struct != nullptr && orig_sym == nullptr) {
+            orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+        }
+        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+        for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
+            ASR::symbol_t* proc;
+            if (ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i])) {
+                proc = ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[i])->m_proc);
+            } else {
+                proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+            }
+            switch (proc->type) {
+                case ASR::symbolType::Function: {
+                    ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                    std::string matched_func_name = "";
+                    if (func->n_args == 2) {
+                        ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
+                        ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
+                        if ((left_arg_type->type == left_type->type
+                             && right_arg_type->type == right_type->type)
+                            || (ASRUtils::is_class_type(left_arg_type)
+                                && ASR::is_a<ASR::StructType_t>(*left_type))
+                            || (ASRUtils::is_class_type(right_arg_type)
+                                && ASR::is_a<ASR::StructType_t>(*right_type))
+                            || (ASR::is_a<ASR::StructType_t>(*left_arg_type)
+                                && ASRUtils::is_class_type(left_type))
+                            || (ASR::is_a<ASR::StructType_t>(*right_arg_type)
+                                && ASRUtils::is_class_type(right_type))) {
+                            if (ASR::is_a<ASR::StructType_t>(*left_type)
+                                && ASR::is_a<ASR::StructType_t>(*right_type)
+                                && ASR::is_a<ASR::StructType_t>(*left_arg_type)
+                                && ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                                ASR::Struct_t* left_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::StructType_t>(left_type)
+                                            ->m_derived_type));
+                                ASR::Struct_t* right_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::StructType_t>(right_type)
+                                            ->m_derived_type));
+                                ASR::Struct_t* left_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::StructType_t>(left_arg_type)
+                                            ->m_derived_type));
+                                ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
+                                    ASRUtils::symbol_get_past_external(
+                                        ASR::down_cast<ASR::StructType_t>(right_arg_type)
+                                            ->m_derived_type));
+                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                    break;
+                                }
+                            }
+                            found = true;
+                            Vec<ASR::call_arg_t> a_args;
+                            a_args.reserve(al, 2);
+                            a_args.push_back(al, ASR::call_arg_t{ left->base.loc, left });
+                            a_args.push_back(al, ASR::call_arg_t{ right->base.loc, right });
+                            std::string func_name = to_lower(func->m_name);
+                            if (curr_scope->resolve_symbol(func_name)) {
+                                matched_func_name = func_name;
+                            } else {
+                                matched_func_name = func_name + "@" + intrinsic_op_name;
+                            }
+                            ASR::symbol_t* a_name = curr_scope->resolve_symbol(matched_func_name);
+                            if (a_name == nullptr) {
+                                err("Unable to resolve matched function for overloaded logical operator: "
+                                        + matched_func_name,
+                                    loc);
+                            }
+                            ASR::ttype_t* return_type = nullptr;
+                            if (ASRUtils::get_FunctionType(func)->m_elemental && func->n_args >= 1
+                                && ASRUtils::is_array(ASRUtils::expr_type(a_args[0].m_value))) {
+                                ASR::dimension_t* array_dims;
+                                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                    ASRUtils::expr_type(a_args[0].m_value), array_dims);
+                                Vec<ASR::dimension_t> new_dims;
+                                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                                return_type = ASRUtils::duplicate_type(
+                                    al,
+                                    ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                    &new_dims);
+                            } else {
+                                return_type = ASRUtils::expr_type(func->m_return_var);
+                            }
+                            if (ASRUtils::symbol_parent_symtab(a_name)->get_counter()
+                                != curr_scope->get_counter()) {
+                                ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope,
+                                                               a_name,
+                                                               current_function_dependencies,
+                                                               s2c(al, matched_func_name));
+                            }
+                            ASRUtils::insert_module_dependency(
+                                a_name, al, current_module_dependencies);
+                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+                            asr = ASRUtils::make_FunctionCall_t_util(
+                                al, loc, a_name, sym, a_args.p, 2, return_type, nullptr, nullptr);
+                        }
+                    }
+                    break;
+                }
+                default: {
+                    err("Only functions can be used to overload logical binary operators",
+                        proc->base.loc);
+                }
+            }
+        }
+    }
+    return found;
+}
+
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
                       SymbolTable* curr_scope, ASR::Struct_t *left_struct) {
     bool result = true;
@@ -1385,6 +1514,58 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
     if( result && curr_scope->resolve_symbol(intrinsic_op_name) == nullptr ) {
         if ( left_struct != nullptr && left_struct->m_symtab->resolve_symbol(
                 intrinsic_op_name) != nullptr) {
+            result = true;
+        } else {
+            result = false;
+        }
+    }
+
+    return result;
+}
+
+bool is_op_overloaded(ASR::logicalbinopType op, std::string& intrinsic_op_name,
+                      SymbolTable* curr_scope, ASR::Struct_t* left_struct) {
+    bool result = true;
+    switch (op) {
+        case ASR::logicalbinopType::And: {
+            if (intrinsic_op_name != "~and") {
+                result = false;
+            }
+            break;
+        }
+        case ASR::logicalbinopType::Or: {
+            if (intrinsic_op_name != "~or") {
+                result = false;
+            }
+            break;
+        }
+        case ASR::logicalbinopType::Xor: {
+            if (intrinsic_op_name != "~xor") {
+                result = false;
+            }
+            break;
+        }
+        case ASR::logicalbinopType::NEqv: {
+            if (intrinsic_op_name != "~neqv") {
+                result = false;
+            }
+            break;
+        }
+        case ASR::logicalbinopType::Eqv: {
+            if (intrinsic_op_name != "~eqv") {
+                result = false;
+            }
+            break;
+        }
+        default: {
+            result = false;
+            break;
+        }
+    }
+
+    if (result && curr_scope->resolve_symbol(intrinsic_op_name) == nullptr) {
+        if (left_struct != nullptr
+            && left_struct->m_symtab->resolve_symbol(intrinsic_op_name) != nullptr) {
             result = true;
         } else {
             result = false;

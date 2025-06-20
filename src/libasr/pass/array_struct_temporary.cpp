@@ -2746,6 +2746,10 @@ class VerifySimplifierASROutput:
         check_if_linked_to_target(x.base, x.m_type);
     }
 
+    void visit_OverloadedBoolOp(const ASR::OverloadedBoolOp_t& x) {
+        check_if_linked_to_target(x.base, x.m_type);
+    }
+
     void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t& x) {
         check_if_linked_to_target(x.base, x.m_type);
     }

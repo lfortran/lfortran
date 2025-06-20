@@ -2385,6 +2385,17 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
 bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
                       SymbolTable* curr_scope, ASR::Struct_t *left_struct);
 
+bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
+                    ASR::logicalbinopType op, std::string& intrinsic_op_name,
+                    SymbolTable* curr_scope, ASR::asr_t*& asr,
+                    Allocator &al, const Location& loc,
+                    SetChar& current_function_dependencies,
+                    SetChar& current_module_dependencies,
+                    const std::function<void (const std::string &, const Location &)> err);
+
+bool is_op_overloaded(ASR::logicalbinopType op, std::string& intrinsic_op_name,
+                      SymbolTable* curr_scope, ASR::Struct_t* left_struct=nullptr);
+
 bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                                SymbolTable* curr_scope, ASR::asr_t*& asr,
                                Allocator &al, const Location& loc,
