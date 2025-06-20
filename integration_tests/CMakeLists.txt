@@ -2017,7 +2017,7 @@ RUN(NAME allocated_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocated_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME allocate_07 LABELS gfortran llvm
     EXTRA_ARGS --realloc-lhs)
-RUN(NAME allocate_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME allocate_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME allocate_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME dealloc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
