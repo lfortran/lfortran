@@ -26,6 +26,7 @@ integer, parameter :: c_double_complex = 8
 integer, parameter :: c_long_double_complex = -1
 integer, parameter :: c_bool = 1
 integer, parameter :: c_char = 1
+integer, parameter :: c_intptr_t = 8
 character(len=1), parameter :: c_null_char = char(0)
 type(c_ptr), parameter :: c_null_ptr = c_ptr(0)
 type(c_funptr), parameter :: c_null_funptr = c_funptr(0)

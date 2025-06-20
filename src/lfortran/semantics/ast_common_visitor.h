@@ -1125,15 +1125,23 @@ public:
 
     std::map<AST::intrinsicopType, std::string> intrinsic2str = {
         {AST::intrinsicopType::STAR, "~mul"},
+        {AST::intrinsicopType::AND, "~and"},
+        {AST::intrinsicopType::OR, "~or"},
+        {AST::intrinsicopType::XOR, "~xor"},
+        {AST::intrinsicopType::EQV, "~eqv"},
+        {AST::intrinsicopType::NEQV, "~neqv"},
         {AST::intrinsicopType::PLUS, "~add"},
+        {AST::intrinsicopType::MINUS, "~sub"},
+        {AST::intrinsicopType::STAR, "~mul"},
         {AST::intrinsicopType::DIV, "~div"},
+        {AST::intrinsicopType::POW, "~pow"},
+        {AST::intrinsicopType::NOT, "~not"},
         {AST::intrinsicopType::EQ, "~eq"},
         {AST::intrinsicopType::NOTEQ, "~noteq"},
         {AST::intrinsicopType::LT, "~lt"},
         {AST::intrinsicopType::LTE, "~lte"},
         {AST::intrinsicopType::GT, "~gt"},
         {AST::intrinsicopType::GTE, "~gte"},
-        {AST::intrinsicopType::MINUS, "~sub"},
         {AST::intrinsicopType::CONCAT, "~concat"}
     };
 
