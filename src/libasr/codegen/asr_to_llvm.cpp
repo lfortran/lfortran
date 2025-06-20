@@ -9923,7 +9923,7 @@ public:
     */
 
     // Serialize `type` using symbols above.
-    std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct){
+    std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct) {
         std::string res {};
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
@@ -9964,7 +9964,7 @@ public:
             res += "]";
         } else if (ASR::is_a<ASR::StructType_t>(*type) && !ASRUtils::is_class_type(type)) {
             res += "(";
-            res += serialize_structType_symbols(sym);
+            res += serialize_structType_symbols(ASRUtils::get_struct_sym_from_struct_expr(expr));
             res += ")";
         } else if (ASR::is_a<ASR::Logical_t>(*type)) {
             res += "L";

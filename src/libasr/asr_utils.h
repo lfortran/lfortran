@@ -882,8 +882,8 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
-            // return ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(t)->m_derived_type);
+            // TODO: StructType name
+            return "derived type";
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
@@ -2100,9 +2100,9 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            // TODO: StructType
+            // TODO: StructType name
             // ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t);
-            // return "struct " + std::string(symbol_name(d->m_derived_type));
+            return "derived type";
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);

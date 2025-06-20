@@ -669,10 +669,28 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::StructType) : {
-                if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                    type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);
+                if (type_declaration) {
+                    if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
+                        type = getStructType(
+                            ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);
+                    } else {
+                        type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true)
+                                   ->getPointerTo();
+                    }
                 } else {
-                    type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true)->getPointerTo();
+                    if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
+                        type = getStructType(
+                            ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
+                            module,
+                            true);
+                    } else {
+                        type
+                            = getClassType(ASR::down_cast<ASR::Struct_t>(
+                                               ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
+                                           true)
+                                  ->getPointerTo();
+                    }
                 }
                 break;
             }
@@ -1167,10 +1185,18 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::StructType) : {
-                if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                    llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, false);
+                if (type_declaration) {
+                    if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
+                        llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, false);
+                    } else {
+                        llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
+                    }
                 } else {
-                    llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
+                    if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
+                        llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), module, false);
+                    } else {
+                        llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), true);
+                    }
                 }
                 break;
             }
