@@ -41,7 +41,7 @@ contains
    end subroutine
 
    subroutine tests()
-      call f()
+      call test_dict()
    end subroutine
 
 end module
