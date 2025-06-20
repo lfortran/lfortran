@@ -53,14 +53,13 @@ private:
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
-    bool symbol_visited;
-    bool dimension_visited;
+    bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false}, dimension_visited{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -817,11 +816,12 @@ public:
     // nodes that have symbol in their fields:
 
     void visit_Var(const Var_t &x) {
-        symbol_visited = true;
+        non_global_symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
         ASR::symbol_t *s = x.m_v;
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v))
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
@@ -1078,13 +1078,9 @@ public:
 
     void visit_FunctionType(const FunctionType_t& x) {
 
-        // we use `dimension_visited` because we can have symbol present in
-        // dimension of ttype as well, which is a valid ASR, see:
-        // integration_tests/functions_40.f90
-        #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
-            dimension_visited = false; \
+        #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
-            require(symbol_visited == false || dimension_visited == true, \
+            require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 
@@ -1214,7 +1210,6 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
-        dimension_visited = true;
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
