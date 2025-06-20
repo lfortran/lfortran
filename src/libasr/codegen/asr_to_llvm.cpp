@@ -9609,7 +9609,7 @@ public:
         for(size_t i=0; i < StructSymbol->n_members; i++){
             ASR::symbol_t* StructMember = StructSymbol->m_symtab->
                                             get_symbol(StructSymbol->m_members[i]);
-            res += SerializeType(sym, ASRUtils::symbol_type(StructMember), true);
+            res += SerializeType(ASRUtils::get_expr_from_sym(al, StructMember), ASRUtils::symbol_type(StructMember), true);
             if(i < StructSymbol->n_members-1){
                 res += ",";
             }
@@ -9630,7 +9630,7 @@ public:
     */
 
     // Serialize `type` using symbols above.
-    std::string SerializeType(ASR::symbol_t* sym, ASR::ttype_t* type, bool in_struct) {
+    std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct) {
         std::string res {};
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
@@ -9658,11 +9658,11 @@ public:
                 throw CodeGenError("Can't print type variable with dynamic array member");
             }
             res += "[";
-            res += SerializeType(sym, ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
+            res += SerializeType(expr, ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
             res += "]";
         } else if (ASR::is_a<ASR::StructType_t>(*type) && !ASRUtils::is_class_type(type)) {
             res += "(";
-            res += serialize_structType_symbols(sym);
+            res += serialize_structType_symbols(ASRUtils::get_struct_sym_from_struct_expr(expr));
             res += ")";
         } else if (ASR::is_a<ASR::Logical_t>(*type)) {
             res += "L";
@@ -9678,7 +9678,7 @@ public:
     llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args){
         std::string serialization_res = "";
         for (size_t i=0; i<n_args; i++) {
-            serialization_res += SerializeType(ASRUtils::get_struct_sym_from_struct_expr(args[i]), ASRUtils::expr_type(args[i]), false);
+            serialization_res += SerializeType(args[i], ASRUtils::expr_type(args[i]), false);
             if(i != n_args-1){
                 serialization_res += ",";
             }

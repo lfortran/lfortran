@@ -231,13 +231,13 @@ public:
                         }
                     }
                 }
-                r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
+                r = get_type(arr_type->m_type, type_decl) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
-                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type) + ", allocatable";
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type, type_decl) + ", allocatable";
                 break;
             } case ASR::ttypeType::Pointer: {
-                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
+                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
                 std::string struct_name = ASRUtils::symbol_name(type_decl);
