@@ -188,3 +188,202 @@ jobs:
 #          pixi run integration_tests
 #          pixi run clean
 
+  test_llvm:
+    name: Test LLVM ${{ matrix.llvm-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # this is only run on ubuntu intentionally
+        os: ["ubuntu-latest"]
+        # Note: The LLVM 11 test is redundant, since it is already tested by
+        # most other tests (since LLVM 11 is our default version), but we have
+        # it here as well for consistency, and that way other tests can freely
+        # switch to other versions as needed. We test all versions here in
+        # exactly the same manner, to ensure that users can just change the
+        # `llvmdev` version in their conda environment and everything will just
+        # work.
+        llvm-version: ["10", "11", "12", "13", "14", "15", "16", "17", "18", "19", "20"]
+        python-version: ["3.10"]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '19')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.4
+            openmpi=5.0.6
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '10')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            nodejs=18.20.2
+            openmpi=5.0.6
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: contains(matrix.llvm-version, '12')
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.3
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '12'))}}
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux_llvm.yml
+          create-args: >-
+            python=${{ matrix.python-version }}
+            llvmdev=${{ matrix.llvm-version }}
+            bison=3.4
+            openblas=0.3.21
+            llvm-openmp=14.0.4
+            make=4.3
+            openmpi=5.0.6
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.llvm-version }}
+
+      - name: Install libunwind
+        if: matrix.llvm-version > 11
+        run: micromamba install -y -n lf libunwind=1.7.2
+
+      - name: Setup WASI SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o wasi-sdk.tar.gz -L https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-21/wasi-sdk-21.0-linux.tar.gz
+          tar -xvf wasi-sdk.tar.gz
+          export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+          echo $WASI_SDK_PATH
+          $WASI_SDK_PATH/bin/clang --version
+
+      - name: Install wasmtime
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o wasmtime.tar.gz -L https://github.com/bytecodealliance/wasmtime/releases/download/v19.0.2/wasmtime-v19.0.2-x86_64-linux.tar.xz
+          tar -xvf wasmtime.tar.gz
+          export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+          wasmtime --version
+
+      - name: Setup EMSCRIPTEN SDK
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+          cd $HOME
+          curl -o emsdk.tar.gz -L https://github.com/emscripten-core/emsdk/archive/refs/tags/3.1.59.tar.gz
+          tar -xvf emsdk.tar.gz
+          export EMSDK_PATH=$HOME/emsdk-3.1.59
+          echo $EMSDK_PATH
+          cd $EMSDK_PATH
+          ./emsdk install latest
+          ./emsdk activate latest
+
+      - name: Build Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DWITH_TARGET_WASM=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux ( WASM )
+        if: contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19')
+        shell: bash -e -l {0}
+        run: |
+            export WASI_SDK_PATH=$HOME/wasi-sdk-21.0
+            export EMSDK_PATH=$HOME/emsdk-3.1.59
+            export PATH=$HOME/wasmtime-v19.0.2-x86_64-linux:$PATH
+            export WASMTIME_NEW_CLI=0
+            cd integration_tests
+            ./run_tests.py -b llvm_wasm llvm_wasm_emcc
+
+      - name: Build Linux
+        if: ${{! (contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '19'))}}
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      # LLVM 10-19 all work in exactly the same way, so the test is identical
+      - name: Test Linux LLVM 10-16
+        if: ${{(contains(matrix.llvm-version, '10') || contains(matrix.llvm-version, '11') || contains(matrix.llvm-version, '12') || contains(matrix.llvm-version, '13') || contains(matrix.llvm-version, '14') || contains(matrix.llvm-version, '15') || contains(matrix.llvm-version, '16'))}}
+        shell: bash -e -l {0}
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm -sc
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f -nf16
+
+      - name: Test Linux LLVM 17-20
+        if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
+        shell: bash -e -l {0}
+        run: |
+            ctest --output-on-failure
+            cd integration_tests
+            ./run_tests.py -b llvm -sc
+            ./run_tests.py -b llvm llvmImplicit
+            ./run_tests.py -b llvm llvmImplicit -f
+
+      - name: Test third party codes
+        shell: bash -e -x -l {0}
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            RUNNER_OS="${{matrix.os}}" FC=lfortran ci/test_third_party_codes.sh
+
