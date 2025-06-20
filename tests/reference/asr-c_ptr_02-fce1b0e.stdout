@@ -194,6 +194,16 @@
                                     c_int8_t
                                     Public
                                 ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
                             c_loc:
                                 (ExternalSymbol
                                     2
