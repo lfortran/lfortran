@@ -3756,7 +3756,7 @@ namespace LCompilers {
     llvm::Value* LLVMDictOptimizedLinearProbing::resolve_collision_for_read_with_bound_check(
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
-        ASR::ttype_t* key_asr_type, ASR::ttype_t* /*value_asr_type*/) {
+        ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
 
         /**
          * C++ equivalent:
@@ -3784,12 +3784,15 @@ namespace LCompilers {
          * return value_list[pos];
          */
 
+
+        std::string key_type_code = ASRUtils::get_type_code(key_asr_type);
+        std::string value_type_code = ASRUtils::get_type_code(value_asr_type);
         llvm::Value* key_list = get_key_list(dict);
         llvm::Value* value_list = get_value_list(dict);
         llvm::Value* key_mask = llvm_utils->CreateLoad2(
             llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
         llvm::Value* capacity = llvm_utils->CreateLoad2(
-            llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+            llvm::Type::getInt32Ty(context), get_pointer_to_capacity_using_typecode(key_type_code, value_type_code, dict));
         pos_ptr = llvm_utils->CreateAlloca(llvm::Type::getInt32Ty(context));
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
@@ -3810,7 +3813,7 @@ namespace LCompilers {
             // which is not present in the dict. Instead we should return an error
             // which is done in the below code.
             llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
-                llvm_utils->list_api->read_item(key_list, key_hash, false, module,
+                llvm_utils->list_api->read_item_using_typecode(key_type_code, key_list, key_hash, false, module,
                     LLVM::is_llvm_struct(key_asr_type)), module, key_asr_type);
 
             llvm_utils->create_if_else(is_key_matching, [=]() {
@@ -3836,7 +3839,7 @@ namespace LCompilers {
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
         // Check if the actual key is present or not
         llvm::Value* is_key_matching = llvm_utils->is_equal_by_value(key,
-                llvm_utils->list_api->read_item(key_list, pos, false, module,
+                llvm_utils->list_api->read_item_using_typecode(key_type_code, key_list, pos, false, module,
                     LLVM::is_llvm_struct(key_asr_type)), module, key_asr_type);
 
         llvm_utils->create_if_else(is_key_matching, [&]() {
@@ -3850,7 +3853,7 @@ namespace LCompilers {
                     llvm::APInt(32, exit_code_int));
             exit(context, *module, *builder, exit_code);
         });
-        llvm::Value* item = llvm_utils->list_api->read_item(value_list, pos,
+        llvm::Value* item = llvm_utils->list_api->read_item_using_typecode(value_type_code, value_list, pos,
                                                         false, module, true);
         return item;
     }
@@ -4604,25 +4607,28 @@ namespace LCompilers {
          * occupancy -= 1;
          */
 
-        llvm::Value* current_capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
+        std::string key_type_code = ASRUtils::get_type_code(dict_type->m_key_type);
+        std::string value_type_code = ASRUtils::get_type_code(dict_type->m_value_type);
+        llvm::Value* current_capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context),
+                                                                get_pointer_to_capacity_using_typecode(
+                                                                    key_type_code, value_type_code, dict));
         llvm::Value* key_hash = get_key_hash(current_capacity, key, dict_type->m_key_type, module);
         llvm::Value* value_ptr = this->resolve_collision_for_read_with_bound_check(dict, key_hash, key, module,
                                                                   dict_type->m_key_type, dict_type->m_value_type);
         llvm::Value* pos = llvm_utils->CreateLoad(pos_ptr);
-        llvm::Value* key_mask = llvm_utils->CreateLoad(get_pointer_to_keymask(dict));
-        llvm::Value* key_mask_i = llvm_utils->create_ptr_gep(key_mask, pos);
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
+        llvm::Value* key_mask_i = llvm_utils->create_ptr_gep2(llvm::Type::getInt8Ty(context), key_mask, pos);
         llvm::Value* tombstone_marker = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context), llvm::APInt(8, 3));
         LLVM::CreateStore(*builder, tombstone_marker, key_mask_i);
 
         llvm::Value* occupancy_ptr = get_pointer_to_occupancy(dict);
-        llvm::Value* occupancy = llvm_utils->CreateLoad(occupancy_ptr);
+        llvm::Value* occupancy = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), occupancy_ptr);
         occupancy = builder->CreateSub(occupancy, llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, occupancy, occupancy_ptr);
 
         if( get_pointer ) {
-            std::string key_type_code = ASRUtils::get_type_code(dict_type->m_key_type);
-            std::string value_type_code = ASRUtils::get_type_code(dict_type->m_value_type);
             llvm::Type* llvm_value_type = std::get<2>(typecode2dicttype[std::make_pair(
                 key_type_code, value_type_code)]).second;
             llvm::Value* return_ptr = llvm_utils->CreateAlloca(llvm_value_type);
@@ -4630,7 +4636,8 @@ namespace LCompilers {
             return return_ptr;
         }
 
-        return llvm_utils->CreateLoad(value_ptr);
+        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(dict_type->m_value_type, llvm_utils->module);
+        return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
     llvm::Value* LLVMDictSeparateChaining::pop_item(
@@ -5506,6 +5513,7 @@ namespace LCompilers {
         llvm::Value* end_point_ptr = get_pointer_to_current_end_point(list);
         llvm::Value* end_point = llvm_utils->CreateLoad2(
             llvm::Type::getInt32Ty(context),end_point_ptr);
+        std::string list_element_type_code = ASRUtils::get_type_code(list_element_type);
 
         llvm::AllocaInst *pos_ptr = llvm_utils->CreateAlloca(
                                     llvm::Type::getInt32Ty(context));
@@ -5513,10 +5521,9 @@ namespace LCompilers {
         llvm::Value* tmp = nullptr;
 
         // Get element to return
-        llvm::Value* item = read_item(list, llvm_utils->CreateLoad(pos_ptr),
+        llvm::Value* item = read_item_using_typecode(list_element_type_code, list, llvm_utils->CreateLoad(pos_ptr),
                                       true, module, LLVM::is_llvm_struct(list_element_type));
         if( LLVM::is_llvm_struct(list_element_type) ) {
-            std::string list_element_type_code = ASRUtils::get_type_code(list_element_type);
             LCOMPILERS_ASSERT(typecode2listtype.find(list_element_type_code) != typecode2listtype.end());
             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                 std::get<2>(typecode2listtype[list_element_type_code]), nullptr,
@@ -5544,8 +5551,8 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(pos_ptr),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item(list, llvm_utils->CreateLoad(pos_ptr),
-                read_item(list, tmp, false, module, false), false, module);
+            write_item_using_typecode(list_element_type_code, list, llvm_utils->CreateLoad(pos_ptr),
+                read_item_using_typecode(list_element_type_code, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, pos_ptr);
         }
         builder->CreateBr(loophead);
