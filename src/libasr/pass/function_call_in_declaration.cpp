@@ -203,6 +203,10 @@ public:
         } else if (is_a<ASR::LogicalNot_t>(*arg)) {
             ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
             helper_get_arg_indices_used(not_expr->m_arg, indices);
+        } else if (is_a<ASR::LogicalBinOp_t>(*arg)) {
+            ASR::LogicalBinOp_t* logical_binop = ASR::down_cast<ASR::LogicalBinOp_t>(arg);
+            helper_get_arg_indices_used(logical_binop->m_left, indices);
+            helper_get_arg_indices_used(logical_binop->m_right, indices);
         }
     }
 
