@@ -974,8 +974,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
             cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
+            ./run_tests.py -b fortran -j2
+            ./run_tests.py -b fortran -f -j2
 
       - name: Test C/C++ Backend
         shell: bash -e -l {0}
