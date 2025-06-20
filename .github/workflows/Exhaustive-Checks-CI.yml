@@ -85,3 +85,67 @@ jobs:
           inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
 
+  release:
+    name: Check Release build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: mamba-org/setup-micromamba@v2.0.2
+        with:
+          micromamba-version: '2.0.4-0'
+          environment-file: ci/environment_linux.yml
+          create-args: >-
+            python=3.10
+
+      - uses: hendrikmuhs/ccache-action@main
+        with:
+          variant: sccache
+          key: ${{ github.job }}-${{ matrix.os }}
+
+      - name: Build Linux
+        shell: bash -e -l {0}
+        run: |
+            ./build0.sh
+            export CXXFLAGS="-Werror"
+            export CFLAGS="-Werror"
+            cmake . -GNinja \
+              -DCMAKE_BUILD_TYPE=Release \
+              -DWITH_LLVM=yes \
+              -DWITH_LSP=yes \
+              -DLFORTRAN_BUILD_ALL=yes \
+              -DWITH_STACKTRACE=no \
+              -DWITH_RUNTIME_STACKTRACE=yes \
+              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
+              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_BINDIR=bin/tastic \
+              -DCMAKE_INSTALL_LIBDIR=oh/my/sweet/lib \
+              -DCMAKE_INSTALL_INCLUDEDIR=incl/O/Matic \
+              -DCMAKE_INSTALL_MANDIR=man/O/man \
+              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
+              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
+
+            cmake --build . -j16 --target install
+
+      - name: Test Linux
+        shell: bash -e -l {0}
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f -nf16
+
+      - name: Test Installation
+        shell: bash -e -l {0}
+        run: |
+            test -x inst/bin/tastic/lfortran
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime_static.a
+            test -f inst/oh/my/sweet/lib/liblfortran_runtime.so
+            test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
+            test -f inst/man/O/man/man1/lfortran.1
+
