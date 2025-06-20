@@ -206,7 +206,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   export PATH="$(pwd)/../src/bin:$PATH"
 
   git checkout n-lf-15
-  git checkout f41b4af9cf23ad604b2297e98cee5dd481f96b04
+  git checkout be22847d0c0d337d698b3304edd9989e9ee52b07
   micromamba install -c conda-forge fypp
 
   git clean -fdx
