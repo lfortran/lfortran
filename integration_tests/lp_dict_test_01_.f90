@@ -4,7 +4,7 @@ module dict_test_01_mod
 
 contains
 
-   subroutine f()
+   subroutine test_dict()
       _lfortran_dict(integer, real) :: rollnumber2cpi
       integer :: i
       integer :: size
@@ -30,7 +30,7 @@ contains
    end subroutine
 
    subroutine tests()
-      call f()
+      call test_dict()
       call test_issue_1348()
    end subroutine
 
