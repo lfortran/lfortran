@@ -821,7 +821,9 @@ public:
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
         ASR::symbol_t *s = x.m_v;
-        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v))
+        if (ASR::is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+            non_global_symbol_visited = false;
+        }
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
         }
