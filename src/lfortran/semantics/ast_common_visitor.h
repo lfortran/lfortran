@@ -1124,6 +1124,9 @@ public:
     };
 
     std::map<AST::intrinsicopType, std::string> intrinsic2str = {
+        {AST::intrinsicopType::AND, "~and"},
+        {AST::intrinsicopType::OR, "~or"},
+        {AST::intrinsicopType::EQV, "~eqv"},
         {AST::intrinsicopType::STAR, "~mul"},
         {AST::intrinsicopType::PLUS, "~add"},
         {AST::intrinsicopType::DIV, "~div"},

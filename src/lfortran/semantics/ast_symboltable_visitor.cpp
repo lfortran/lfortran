@@ -2049,7 +2049,9 @@ public:
                 visit_interface_item(*x.m_items[i]);
             }
         } else if (AST::is_a<AST::InterfaceHeaderOperator_t>(*x.m_header)) {
-            std::string op = intrinsic2str[AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header)->m_op];
+            AST::InterfaceHeaderOperator_t* iho = AST::down_cast<AST::InterfaceHeaderOperator_t>(x.m_header);
+            std::string op = intrinsic2str[iho->m_op];
+            LCOMPILERS_ASSERT(op != "")
             std::vector<std::string> proc_names;
             fill_interface_proc_names(x, proc_names);
             // check if the operator is already defined, if yes, then a new defition means it is being overloaded
