@@ -7448,8 +7448,7 @@ public:
                     }));
                 throw SemanticAbort();
             }
-            /*return ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],*/
-            /*                            ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);*/
+
             return ASR::make_DictItem_t(al, x.base.base.loc, args[0], args[1], nullptr, dict_type->m_value_type, nullptr);
         } else if (ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(args[0]))) {
 
@@ -7498,6 +7497,79 @@ public:
             throw SemanticAbort();
         }
     }
+
+    ASR::asr_t* create_LFPop(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 2 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_pop expects exactly two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
+        }
+        
+        Vec<ASR::expr_t *> args;
+        args.reserve(al, 2);
+
+        for (int i=0;i<2;i++){
+            AST::expr_t* source = x.m_args[i].m_end;
+            this->visit_expr(*source);
+            args.push_back(al, ASRUtils::EXPR(tmp));
+        }   
+
+        if (ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(args[0]))) {
+
+            if (!ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(args[1]))) {
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                diag.add(Diagnostic("Index of a list must be an integer not '" + arg_type_str + "'",
+                                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+                throw SemanticAbort();
+            }
+
+            ASR::expr_t *index = ASRUtils::EXPR(tmp);
+            ASR::expr_t* val = ASRUtils::expr_value(index);
+            if (val && ASR::is_a<ASR::IntegerConstant_t>(*val)) {
+                if (ASR::down_cast<ASR::IntegerConstant_t>(val)->m_n < 0) {
+                    // Replace `x[-1]` to `x[len(x)+(-1)]`
+                    ASR::ttype_t *int_type = ASRUtils::TYPE(ASR::make_Integer_t(
+                                                    al, x.base.base.loc, 4));
+                    ASR::expr_t *list_len = ASRUtils::EXPR(ASR::make_ListLen_t(
+                                al, x.base.base.loc, args[0], int_type, nullptr));
+                    ASR::expr_t *neg_idx = ASRUtils::expr_value(index);
+                    index = ASRUtils::EXPR(ASR::make_IntegerBinOp_t(al, x.base.base.loc,
+                        list_len, ASR::binopType::Add, neg_idx, int_type, nullptr));
+                }
+            }
+            return ASR::make_ListItem_t(al, x.base.base.loc, args[0], index,
+                                        ASRUtils::get_contained_type(ASRUtils::expr_type(args[0])), nullptr);
+
+            ASRUtils::create_intrinsic_function create_function =
+                ASRUtils::IntrinsicElementalFunctionRegistry::get_create_function("list.pop");
+            return create_function(al, x.base.base.loc, args, diag);
+        } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
+            ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
+            ASR::ttype_t* key_type = dict_type->m_key_type;
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type)) {
+                std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type);
+                std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
+                diag.add(Diagnostic(
+                    "Type mismatch in '_lfortran_get_item', the key types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch (found '" + 
+                        arg_type_str + "', expected '" + contained_type_str +  "')",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+            }
+
+            return ASR::make_DictPop_t(al, x.base.base.loc, args[0], args[1], dict_type->m_value_type, nullptr);
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[0]));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_pop has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
 
     ASR::asr_t* create_LFConcat(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
@@ -8600,6 +8672,8 @@ public:
                     tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_get_item")
                     tmp = create_LFGetItem(x);
+                else if ( var_name == "_lfortran_pop")
+                    tmp = create_LFPop(x);
                 else if ( var_name == "_lfortran_concat")
                     tmp = create_LFConcat(x);
                 else if ( var_name == "_lfortran_list_constant")
