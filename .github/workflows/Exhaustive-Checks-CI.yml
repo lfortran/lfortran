@@ -149,3 +149,42 @@ jobs:
             test -f inst/incl/O/Matic/lfortran/impure/lfortran_intrinsics.h
             test -f inst/man/O/man/man1/lfortran.1
 
+# Commented out to save CI runners:
+#  test-pixi:
+#    name: Pixi Build (${{ matrix.os }})
+#    runs-on: ${{ matrix.os }}
+#    strategy:
+#      fail-fast: false
+#      matrix:
+#        os: ["ubuntu-latest"]
+#    steps:
+#      - uses: actions/checkout@v4
+#        with:
+#          fetch-depth: 0
+#      - uses: prefix-dev/setup-pixi@v0.8.1
+#        with:
+#          pixi-version: v0.37.0
+#          cache: true
+#      - name: LLVM 10
+#        run: |
+#          pixi run -e llvm10 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 11
+#        run: |
+#          pixi run -e llvm11 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run tests # Only run for LLVM 11
+#          pixi run integration_tests
+#          pixi run clean
+#      - name: LLVM 19
+#        run: |
+#          pixi run -e llvm19 build
+#          pixi run start --version
+#          pixi run ctest
+#          pixi run integration_tests
+#          pixi run clean
+
