@@ -32,5 +32,5 @@ program operator_overloading_12
   b = 5
   c = a .and. b
   print *, "The result of a .and. b is:", c
-  ! if ( c /= 10 ) error stop ! this fails with LFortran, need to introduce OverLoadedBoolOp
-end program
+  if ( c /= 10 ) error stop
+end program operator_overloading_12

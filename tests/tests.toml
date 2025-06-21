@@ -4691,3 +4691,7 @@ llvm = true
 filename = "codegen_function_polymorphic.f90"
 llvm = true
 options = "-c --generate-object-code"
+
+[[test]]
+filename = "../integration_tests/operator_overloading_12.f90"
+asr = true

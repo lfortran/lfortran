@@ -864,7 +864,9 @@ static inline ASR::expr_t* create_boolean_result_array(Allocator &al, Location l
 
 inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                                   ASR::expr_t *&left, ASR::expr_t *&right,
-                                  ASR::asr_t *&asr, diag::Diagnostics &diag) {
+                                  ASR::asr_t *&asr, diag::Diagnostics &diag, 
+                                  std::string& intrinsic_op_name, SymbolTable* curr_scope,
+                                  SetChar current_function_dependencies, SetChar current_module_dependencies) {
     ASR::logicalbinopType op;
     switch (x.m_op) {
         case (AST::And):
@@ -891,6 +893,18 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
                 Level::Error, Stage::Semantic, {
                 diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
+    }
+    ASR::expr_t* overloaded = nullptr;
+    if ( ASRUtils::use_overloaded(left, right, op,
+        intrinsic_op_name, curr_scope, asr, al,
+        x.base.base.loc, current_function_dependencies,
+        current_module_dependencies,
+        [&](const std::string &msg, const Location &loc)
+        {
+            diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }) ) {
+        overloaded = ASRUtils::EXPR(asr);
     }
 
     ASR::ttype_t *left_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(left));
@@ -966,6 +980,12 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
     if ( ASRUtils::is_array(right_type) ) {
         left_type = ASRUtils::duplicate_type(al, right_type);
+    }
+    if (overloaded != nullptr) {
+        ASR::ttype_t* return_type = ASRUtils::expr_type(overloaded);
+        asr = ASR::make_OverloadedBoolOp_t(
+            al, x.base.base.loc, left, op, right, return_type, nullptr, overloaded);
+        return;
     }
     asr = ASR::make_LogicalBinOp_t(al, x.base.base.loc, left, op, right, left_type, value);
 
@@ -1112,6 +1132,13 @@ public:
         {AST::operatorType::Add, "~add"},
         {AST::operatorType::Sub, "~sub"},
         {AST::operatorType::Div, "~div"},
+    };
+
+    std::map<AST::boolopType, std::string> boolop2str = {
+        { AST::boolopType::And, "~and" },
+        { AST::boolopType::Or, "~or" },
+        { AST::boolopType::Xor, "~xor" },
+        { AST::boolopType::Eqv, "~eqv" },
     };
 
     std::map<AST::cmpopType, std::string> cmpop2str = {
@@ -10475,7 +10502,7 @@ public:
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
-        CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag);
+        CommonVisitorMethods::visit_BoolOp(al, x, left, right, tmp, diag, boolop2str[x.m_op], current_scope, current_function_dependencies, current_module_dependencies);
     }
 
     void visit_StrOp(const AST::StrOp_t &x) {
