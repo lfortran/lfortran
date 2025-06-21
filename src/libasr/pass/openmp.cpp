@@ -2418,6 +2418,7 @@ class ParallelRegionVisitor :
             std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module(task_data_symbols, loc, "task_data_struct");
             // Create required modules (iso_c_binding and omp_lib)
             std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(loc);
+            ASR::expr_t* var = nullptr;
 
             // Create external symbol for the task data module
             ASR::symbol_t* task_data_ext_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
