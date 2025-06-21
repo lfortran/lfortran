@@ -2871,18 +2871,11 @@ public:
                 tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
                 tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
             } else {
-                llvm::Type* type = nullptr;
-#if LLVM_VERSION_MAJOR <= 16
-                type = tmp->getType()->getContainedType(0);
+                ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(x_m_v_type));
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x_m_v_type_, module.get());
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
-#else
-                if (auto* GV = llvm::dyn_cast<llvm::GlobalVariable>(tmp)) {
-                    type = GV->getValueType();
-                }
-                tmp = llvm_utils->CreateLoad2(
-                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
-#endif
             }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type->getPointerTo());
