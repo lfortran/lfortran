@@ -4691,3 +4691,7 @@ llvm = true
 filename = "codegen_function_polymorphic.f90"
 llvm = true
 options = "-c --generate-object-code"
+
+[[test]]
+filename = "errors/formatTesting.f90"
+run = true

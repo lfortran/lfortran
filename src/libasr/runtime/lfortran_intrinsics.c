@@ -1807,7 +1807,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     // check for decimal presence before passing, else leads to segmentation fault
                     // as FORTRAN seeks for E<width>.<number of digits>
                     if (strchr(value, '.') == NULL) {
-                        fprintf(stderr, "\033[1;31mError:\033[0m Invalid format descriptor E - Proper Format is E<width>\033[1;31m.<number of digits>\033[0m\n");
+                        fprintf(stderr, "Error: Invalid format descriptor E - Proper Format is E<width>.<number of digits>\n");
                         fprintf(stderr, "Period required in format specifier\n");   
                         exit(1);
                     }
