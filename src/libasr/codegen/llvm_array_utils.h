@@ -139,7 +139,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true) = 0;
 
                 virtual
-                void fill_array_details(
+                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data) = 0;
 
@@ -202,7 +202,7 @@ namespace LCompilers {
                 * Uses ASR type to get the corresponding LLVM type
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
+                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
 
                 /*
                 * Returns offset in the input
@@ -377,7 +377,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true);
 
                 virtual
-                void fill_array_details(
+                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data);
 
@@ -425,7 +425,7 @@ namespace LCompilers {
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
+                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
 
                 virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
