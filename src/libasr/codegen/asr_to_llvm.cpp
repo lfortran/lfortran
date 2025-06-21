@@ -2871,8 +2871,18 @@ public:
                 tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
                 tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
             } else {
+                llvm::Type* type = nullptr;
+#if LLVM_VERSION_MAJOR <= 16
+                type = tmp->getType()->getContainedType(0);
                 tmp = llvm_utils->CreateLoad2(
-                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
+                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+#else
+                if (auto* GV = llvm::dyn_cast<llvm::GlobalVariable>(tmp)) {
+                    type = GV->getValueType();
+                }
+                tmp = llvm_utils->CreateLoad2(
+                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
+#endif
             }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type->getPointerTo());
