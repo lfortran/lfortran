@@ -2874,8 +2874,11 @@ public:
                 tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
                 tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
             } else {
+                ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
+                    ASRUtils::type_get_past_pointer(x_m_v_type));
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x_m_v_type_, module.get());
                 tmp = llvm_utils->CreateLoad2(
-                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
+                    name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
             }
             if( current_select_type_block_type ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type->getPointerTo());
@@ -3176,18 +3179,16 @@ public:
                     llvm_symtab[h] = ptr;
                 }
             } else {
-                llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
                 llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
-                    void_ptr);
+                    type);
                 if (!external) {
                     if (init_value) {
                         module->getNamedGlobal(llvm_var_name)->setInitializer(
                                 init_value);
                     } else {
-                        module->getNamedGlobal(llvm_var_name)->setInitializer(
-                                llvm::ConstantPointerNull::get(
-                                    static_cast<llvm::PointerType*>(void_ptr))
-                                );
+                        module->getNamedGlobal(llvm_var_name)
+                            ->setInitializer(llvm::Constant::getNullValue(type));
                     }
                 }
                 llvm_symtab[h] = ptr;
@@ -11059,6 +11060,24 @@ public:
                     builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
                                         target_dt_data_ptr);
                     args.push_back(target_dt);
+                    std::string captured_global_name
+                        = "__lcompilers_created__nested_context__" + proc_sym_name + "_self";
+                    llvm::GlobalVariable* nested_global
+                        = module->getNamedGlobal(captured_global_name);
+                    if (nested_global) {
+                        llvm::Type* nested_global_type = nested_global->getValueType();
+                        llvm::Value* global_hash_ptr = llvm_utils->create_gep2(nested_global_type, nested_global, 0);
+                        llvm::Value* global_data_ptr = llvm_utils->create_gep2(nested_global_type, nested_global, 1);
+                        // Use the correct types for loading
+                        llvm::Type* target_dt_hash_type = llvm::Type::getInt64Ty(context);
+                        llvm::Type* target_dt_data_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
+                        llvm::Value* local_hash_val = llvm_utils->CreateLoad2(target_dt_hash_type,target_dt_hash_ptr);
+                        llvm::Value* local_data_val = llvm_utils->CreateLoad2(target_dt_data_type, target_dt_data_ptr);
+
+                        // Store the loaded values
+                        builder->CreateStore(local_hash_val, global_hash_ptr);
+                        builder->CreateStore(local_data_val, global_data_ptr);
+                    }
                 }
                 ASR::symbol_t* s_proc = ASRUtils::symbol_get_past_external(class_proc->m_proc);
                 uint32_t h = get_hash((ASR::asr_t*) s_proc);
