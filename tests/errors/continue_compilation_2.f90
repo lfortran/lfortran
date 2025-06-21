@@ -234,7 +234,6 @@ program continue_compilation_2
 
 
 
-
     ! c_f_pointer_01
     call c_f_pointer(queries_1, y_1, [2])
     ! c_f_pointer_02

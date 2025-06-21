@@ -1019,7 +1019,7 @@ def add_create_func_arg_type_src(func_name):
                 required_kind = list(arg_spec.values())[0]
                 src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[{arg_pos}]));\n"
                 src += 3 * indent + f"if(kind != {required_kind}) " + "{\n"
-                src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equals to {required_kind}", loc);\n'
+                src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equal to {required_kind}", loc);\n'
                 src += 4 * indent + f'return nullptr;\n'
                 src += 3 * indent + '}\n'
         char_len_validation_info = arg_info.get("char_len_validation", [])
