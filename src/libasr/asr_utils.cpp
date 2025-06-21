@@ -1,5 +1,3 @@
-#include "libasr/asr.h"
-#include "libasr/exception.h"
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -123,7 +121,7 @@ std::vector<std::string> determine_class_procedure_declaration_order(
     return ASRUtils::order_deps(func_dep_graph);
 }
 
-ASR::symbol_t* get_struct_symbol_from_expr(ASR::expr_t* expression)
+ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
 {
     // The idea behind this utility function is that every struct expression
     // must eventually resolve to either `Var` or `StructInstanceMember`.
