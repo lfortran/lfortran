@@ -3990,7 +3990,7 @@ public:
                     // list for an initialization like:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
-                    if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
+                    if (is_char_type && value && storage_type == ASR::storage_typeType::Parameter) {
                         ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                             ASRUtils::type_get_past_array(type));
                         ASR::String_t *rhs_type = ASR::down_cast<ASR::String_t>(
