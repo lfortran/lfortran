@@ -80,7 +80,7 @@ jobs:
 
       - uses: hendrikmuhs/ccache-action@main
         with:
-          key: ${{ github.job }}-${{ matrix.os }}
+          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
 
       - name: Setup Platform
         shell: bash -e -l {0}
