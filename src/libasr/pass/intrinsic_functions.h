@@ -948,14 +948,11 @@ namespace Scale {
 
 namespace Dprod {
     static ASR::expr_t *eval_Dprod(Allocator &al, const Location &loc,
-            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* return_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         double value_X = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double value_Y = ASR::down_cast<ASR::RealConstant_t>(args[1])->m_r;
-        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4 ||
-            ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) != 4) {
-            append_error(diag, "Arguments to dprod must be real(4)", loc);
-            return nullptr;
-        }
+        LCOMPILERS_ASSERT((ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4 &&
+            ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) == 4));
         double result = value_X * value_Y;
         ASRUtils::ASRBuilder b(al, loc);
         return b.f_t(result, return_type);
@@ -967,11 +964,8 @@ namespace Dprod {
         declare_basic_variables("_lcompilers_dprod_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         fill_func_arg("y", arg_types[1]);
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4 ||
-            ASRUtils::extract_kind_from_ttype_t(arg_types[1]) != 4) {
-            LCompilersException("Arguments to dprod must be default real");
-            return nullptr;
-        }
+        LCOMPILERS_ASSERT((ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4 &&
+            ASRUtils::extract_kind_from_ttype_t(expr_type(args[1])) == 4));
         auto result = declare(fn_name, return_type, ReturnVar);
         /*
         * r = dprod(x, y)
@@ -4971,6 +4965,7 @@ namespace Ichar {
     static ASR::expr_t *eval_Ichar(Allocator &al, const Location &loc,
             ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         char* str = ASR::down_cast<ASR::StringConstant_t>(args[0])->m_s;
+        LCOMPILERS_ASSERT((std::strlen(str)) == 1);
         char first_char = str[0];
         int result = (int)first_char;
         return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);

@@ -473,7 +473,7 @@ semantic error: Step expression (Increment) in DO loop cannot be zero
 319 |     do i_2 = 1, 5, 0
     |                    ^ 
 
-semantic error: Arguments to dprod must be real(4)
+semantic error: first argument of `dprod` must have kind equal to 4
    --> tests/errors/continue_compilation_2.f90:323:13
     |
 323 |     print*, dprod(4.23_8, 4.3_8)
@@ -515,7 +515,7 @@ semantic error: Argument 1 to Ichar must have length 1
 336 |     print*, ichar("okay")
     |             ^^^^^^^^^^^^^ 
 
-semantic error: first argument of `idint` must have kind equals to 8
+semantic error: first argument of `idint` must have kind equal to 8
    --> tests/errors/continue_compilation_2.f90:338:14
     |
 338 |     print *, idint(4.5)
@@ -755,13 +755,13 @@ semantic error: Unequal character lengths in MERGE intrinsic
 438 |     print*, merge("okay", "ok", .true.)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: first argument of `idint` must have kind equals to 8
+semantic error: first argument of `idint` must have kind equal to 8
    --> tests/errors/continue_compilation_2.f90:440:14
     |
 440 |     print *, idint(4.23)
     |              ^^^^^^^^^^^ 
 
-semantic error: first argument of `idint` must have kind equals to 8
+semantic error: first argument of `idint` must have kind equal to 8
    --> tests/errors/continue_compilation_2.f90:441:14
     |
 441 |     print *, idint(idint_kind_mismatch)
@@ -772,3 +772,9 @@ semantic error: Argument 1 to Ichar must have length 1
     |
 443 |     print *, ichar(ichar_runtime)
     |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `dprod` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:445:14
+    |
+445 |     print *, dprod(dprod_1, dprod_2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 
