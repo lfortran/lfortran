@@ -2627,6 +2627,9 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
+                if ( mfn->m_access == ASR::accessType::Private && !to_submodule ) {
+                    continue;
+                }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                     al, mfn->base.base.loc,
                     /* a_symtab */ current_scope,
