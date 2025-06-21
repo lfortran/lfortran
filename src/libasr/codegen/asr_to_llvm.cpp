@@ -2871,6 +2871,14 @@ public:
                 tmp = llvm_utils->create_gep2(x_mv_llvm_type, tmp, 1);
                 tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
             } else {
+                if (current_der_type_name.empty()) {
+                    ASR::ttype_t *dyn_type = ASRUtils::type_get_past_pointer(
+                        ASRUtils::type_get_past_allocatable(x_m_v_type));
+                    ASR::symbol_t *s_sym = ASR::down_cast<ASR::StructType_t>(
+                        ASRUtils::extract_type(dyn_type))->m_derived_type;
+                    current_der_type_name = ASRUtils::symbol_name(
+                        ASRUtils::symbol_get_past_external(s_sym));
+                }
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep(tmp, 1));
             }
@@ -3762,6 +3770,21 @@ public:
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
                 int idx = name2memidx[struct_type_name][item.first];
                 llvm::Type* type = name2dertype[struct_type_name];
+                llvm::Type* pointee_type = ptr->getType()->getPointerElementType();
+                if (pointee_type != type) {
+                    if (pointee_type->isStructTy() && pointee_type->getStructNumElements() == 2) {
+                        llvm::StructType* wrapper_type = llvm::cast<llvm::StructType>(pointee_type);
+                        if (wrapper_type->getElementType(1) == type) {
+                            // Correct wrapper structure, GEP into it
+                            ptr = llvm_utils->create_gep2(wrapper_type, ptr, 1);
+                        } else {
+                            return;
+                        }
+                    } else {
+                        return;
+                    }
+                }
+
                 llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
                 ASR::Variable_t* v = nullptr;
                 if( ASR::is_a<ASR::Variable_t>(*sym) ) {
