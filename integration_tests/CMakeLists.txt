@@ -1938,6 +1938,8 @@ RUN(NAME array_section_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStac
 
 RUN(NAME nested_vars_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 
+RUN(NAME pointer_to_data_array_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+
 RUN(NAME pass_array_by_data_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME pass_array_by_data_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME pass_array_by_data_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)

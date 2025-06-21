@@ -2696,6 +2696,31 @@ public:
                 tmp = target;
                 break;
             }
+            case ASR::array_physical_typeType::PointerToDataArray: {
+                ASR::dimension_t* m_dims = nullptr;
+                size_t n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, m_dims);
+                llvm::Value* llvm_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1));
+                llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x_m_array_type, module.get());
+                llvm::Value *target = llvm_utils->CreateAlloca(
+                    target_type, nullptr, "pointer_to_data_array");
+                int ptr_loads_copy = ptr_loads;
+                ptr_loads = 2;
+                for( size_t i = 0; i < n_dims; i++ ) {
+                    visit_expr_wrapper(m_dims[i].m_length, true);
+                    llvm_size = builder->CreateMul(tmp, llvm_size);
+                }
+                ptr_loads = ptr_loads_copy;
+                llvm::Value* target_ = llvm_utils->create_gep(target, 0);
+                llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(
+                    ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(x_m_array_type))), module.get());
+                llvm::DataLayout data_layout(module.get());
+                uint64_t data_size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm_size = builder->CreateMul(llvm_size,
+                    llvm::ConstantInt::get(context, llvm::APInt(32, data_size)));
+                builder->CreateMemCpy(target_, llvm::MaybeAlign(), array, llvm::MaybeAlign(), llvm_size);
+                tmp = target_;
+                break;
+            }
             default: {
                 LCOMPILERS_ASSERT(false);
             }
