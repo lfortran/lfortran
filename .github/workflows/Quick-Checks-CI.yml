@@ -68,7 +68,7 @@ jobs:
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         shell: bash -e -l {0}
         run: |
-          micromamba install bison=3.4
+          micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4 openmpi=5.0.6
           if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
             micromamba install zstd-static=1.5.5 zlib=1.2.13
           elif [[ "${{ matrix.llvm-version }}" == "20" ]]; then
@@ -314,6 +314,65 @@ jobs:
             micromamba activate scipy-dev
             python dev.py test -t scipy.integrate -v
 
+      - name: Check Third Party Code Compilation - Test third party codes
+        shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
+
+      # The below projects are tested with a higher CMake version, so replace the current installed version
+      - name: Check Third Party Code Compilation - Override cmake version to 3.31.2
+        if: contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf cmake=3.31.2
+
+      - name: Check Third Party Code Compilation - Test Examples/Project 1
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project1
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project1
+
+      - name: Check Third Party Code Compilation - Test Examples/Project 2
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project2
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./doconcurrent
+
+      - name: Check Third Party Code Compilation - Test Examples/Project 3
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
+        run: |
+            cd ./examples/project3
+            FC=../../src/bin/lfortran cmake .
+            cmake --build . -v
+            ./project3
+
+      - name: Check Third Party Code Compilation - Test Lapack
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            export PATH="$(pwd)/src/bin:$PATH"
+            git clone https://github.com/gxyd/lapack.git
+            cd lapack
+            git fetch origin lf_07
+            git checkout lf_07
+            git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
+            cd build
+            micromamba create -f environment_unix.yml
+            micromamba activate lapack
+            ./build_lf.sh
+
+      # restore the version of cmake
+      - name: Check Third Party Code Compilation - Restore cmake version to 3.29.1
+        if: contains(matrix.os, 'ubuntu')
+        run: micromamba install -y -n lf cmake=3.29.1
+
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
@@ -392,119 +451,6 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
-
-  third_party_code_compile:
-    name: Check Third Party Code Compilation - OS (${{ matrix.os }}), LLVM (${{ matrix.llvm-version }})
-    runs-on: ${{ matrix.os }}
-    strategy:
-      fail-fast: false
-      matrix:
-        os: ["macos-latest", "ubuntu-latest"]
-        llvm-version: ["11", "19"]
-        python-version: ["3.10"]
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux_llvm.yml
-          create-args: >-
-            python=${{ matrix.python-version }}
-            llvmdev=${{ matrix.llvm-version }}
-            bison=3.4
-            openblas=0.3.21
-            llvm-openmp=14.0.4
-            make=4.3
-            openmpi=5.0.6
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Install libunwind
-        if: contains(matrix.os, 'ubuntu') && (matrix.llvm-version != 11)
-        run: micromamba install -y -n lf libunwind=1.7.2
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Build MacOS
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'macos')
-        run: |
-            ./build0.sh
-            ./build1.sh
-
-      - name: Test third party codes
-        shell: bash -e -x -l {0}
-        run: |
-            export PATH="$(pwd)/src/bin:$PATH"
-            RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
-
-      # The below projects are tested with a higher CMake version, so replace the current installed version
-      - name: Override cmake version to 3.31.2
-        if: contains(matrix.os, 'ubuntu')
-        run: micromamba install -y -n lf cmake=3.31.2
-
-      - name: Test Examples/Project 1
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project1
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./project1
-
-      - name: Test Examples/Project 2
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project2
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./doconcurrent
-
-      - name: Test Examples/Project 3
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu')
-        run: |
-            cd ./examples/project3
-            FC=../../src/bin/lfortran cmake .
-            cmake --build . -v
-            ./project3
-
-      - name: Test Lapack
-        shell: bash -e -l {0}
-        run: |
-            export PATH="$(pwd)/src/bin:$PATH"
-            git clone https://github.com/gxyd/lapack.git
-            cd lapack
-            git fetch origin lf_07
-            git checkout lf_07
-            git checkout 9d9e48987ca109d46b92d515b59cb591fab9859a
-            cd build
-            micromamba create -f environment_unix.yml
-            micromamba activate lapack
-            ./build_lf.sh
 
   lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
     name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
