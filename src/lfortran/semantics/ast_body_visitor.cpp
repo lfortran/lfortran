@@ -256,7 +256,8 @@ public:
     }
 
     void visit_Open(const AST::Open_t& x) {
-        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr;
+        ASR::expr_t *a_newunit = nullptr, *a_filename = nullptr, *a_status = nullptr, *a_form = nullptr, 
+            *a_access = nullptr, *a_iostat = nullptr, *a_iomsg = nullptr, *a_action = nullptr;
         if( x.n_args > 1 ) {
             diag.add(Diagnostic(
                 "Number of arguments cannot be more than 1 in Open statement.",
@@ -503,8 +504,31 @@ public:
                 if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_iomsg))) {
                     a_iomsg = ASRUtils::cast_string_descriptor_to_pointer(al, a_iomsg);
                 }
+            } else if (m_arg_str == std::string("action")) {
+                if (a_action != nullptr) {
+                    diag.add(Diagnostic(
+                        R"""(Duplicate value of `action` found, it has already been specified via arguments or keyword arguments)""",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                this->visit_expr(*kwarg.m_value);
+                a_action = ASRUtils::EXPR(tmp);
+                ASR::ttype_t* a_action_type = ASRUtils::expr_type(a_action);
+                if (!ASRUtils::is_character(*a_action_type)) {
+                    diag.add(Diagnostic(
+                        "`action` must be of type, String or StringPointer",
+                        Level::Error, Stage::Semantic, {
+                            Label("",{x.base.base.loc})
+                        }));
+                    throw SemanticAbort();
+                }
+                if(ASRUtils::is_descriptorString(ASRUtils::expr_type(a_action))){
+                    a_action = ASRUtils::cast_string_descriptor_to_pointer(al, a_action);
+                }
             } else {
-                const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "action", "position", "pad"};
+                const std::unordered_set<std::string> unsupported_args {"err", "blank", "recl", "fileopt", "position", "pad"};
                 if (unsupported_args.find(m_arg_str) == unsupported_args.end()) {
                     diag.add(diag::Diagnostic("Invalid argument `" + m_arg_str + "` supplied",
                         diag::Level::Error, diag::Stage::Semantic, {
@@ -528,7 +552,7 @@ public:
             throw SemanticAbort();
         }
         tmp = ASR::make_FileOpen_t(
-            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg);
+            al, x.base.base.loc, x.m_label, a_newunit, a_filename, a_status, a_form, a_access, a_iostat, a_iomsg, a_action);
         tmp_vec.push_back(tmp);
         tmp = nullptr;
     }
