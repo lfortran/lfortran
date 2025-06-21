@@ -25,20 +25,22 @@ then:                                             ; preds = %.entry
   call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
   %7 = bitcast i8* %6 to %myint*
   store %myint* %7, %myint** %ins, align 8
+  %8 = load %myint*, %myint** %ins, align 8
+  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %8 = load %myint*, %myint** %ins, align 8
-  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
-  store i32 44, i32* %9, align 4
   %10 = load %myint*, %myint** %ins, align 8
   %11 = getelementptr %myint, %myint* %10, i32 0, i32 0
-  %12 = load i32, i32* %11, align 4
-  %13 = icmp ne i32 %12, 44
-  br i1 %13, label %then1, label %else2
+  store i32 44, i32* %11, align 4
+  %12 = load %myint*, %myint** %ins, align 8
+  %13 = getelementptr %myint, %myint* %12, i32 0, i32 0
+  %14 = load i32, i32* %13, align 4
+  %15 = icmp ne i32 %14, 44
+  br i1 %15, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
@@ -49,17 +51,17 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %14 = load %myint*, %myint** %ins, align 8
-  %15 = ptrtoint %myint* %14 to i64
-  %16 = icmp ne i64 %15, 0
-  br i1 %16, label %then4, label %else5
+  %16 = load %myint*, %myint** %ins, align 8
+  %17 = ptrtoint %myint* %16 to i64
+  %18 = icmp ne i64 %17, 0
+  br i1 %18, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
-  %17 = alloca i8*, align 8
-  %18 = bitcast %myint* %14 to i8*
-  store i8* %18, i8** %17, align 8
-  %19 = load i8*, i8** %17, align 8
-  call void @_lfortran_free(i8* %19)
+  %19 = alloca i8*, align 8
+  %20 = bitcast %myint* %16 to i8*
+  store i8* %20, i8** %19, align 8
+  %21 = load i8*, i8** %19, align 8
+  call void @_lfortran_free(i8* %21)
   store %myint* null, %myint** %ins, align 8
   br label %ifcont6
 
