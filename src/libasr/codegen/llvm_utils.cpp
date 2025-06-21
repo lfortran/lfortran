@@ -4446,7 +4446,7 @@ namespace LCompilers {
             return return_ptr;
         }
 
-        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(dict_type->m_value_type, llvm_utils->module);
+        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(dict_expr, dict_type->m_value_type, llvm_utils->module);
         return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 

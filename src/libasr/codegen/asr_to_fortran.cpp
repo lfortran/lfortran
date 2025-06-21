@@ -2182,9 +2182,9 @@ public:
     }
 
     /******************************* Ttype ********************************/
-    void visit_StructType(const ASR::StructType_t &x) {
+    void visit_StructType(const ASR::StructType_t &/*x*/) {
         std::string r = indent;
-        r += ASRUtils::symbol_name(x.m_derived_type);
+        // r += ASRUtils::symbol_name(x.m_derived_type);
         src = r;
     }
 };

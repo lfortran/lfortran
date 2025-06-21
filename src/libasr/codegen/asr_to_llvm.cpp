@@ -5752,17 +5752,16 @@ public:
             llvm::Value* target = tmp;
             ptr_loads = ptr_loads_copy;
 
-            llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_value_type, module.get());
+            llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, asr_value_type, module.get());
             llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
-            ASR::ttype_t* wrapped_value_struct_type = ASRUtils::TYPE(
-                        ASRUtils::make_StructType_t_util(al, asr_value_type->base.loc,
-                            ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(asr_value_type))->m_derived_type));
-            llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_value_struct_type, module.get());
+            ASR::ttype_t* wrapped_value_struct_type = ASRUtils::make_StructType_t_util(al, asr_value_type->base.loc,
+                            ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
+            llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, wrapped_value_struct_type, module.get());
 
             // bitcast to the current select type block's type
             value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
             value_class_ptr = builder->CreateBitCast(value_class_ptr, current_select_type_block_type->getPointerTo());
-            llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_target_type, module.get());
+            llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, asr_target_type, module.get());
             value_class_ptr = llvm_utils->CreateLoad2(target_llvm_type, value_class_ptr);
 
             builder->CreateStore(value_class_ptr, target);
