@@ -75,6 +75,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
 const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
+void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
@@ -5569,6 +5570,68 @@ static inline bool is_allocatable(ASR::expr_t* expr) {
 static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
 }
+
+static inline void import_struct_t(Allocator& al,
+    const Location& loc, ASR::ttype_t*& var_type,
+    ASR::intentType intent, SymbolTable* current_scope, ASR::expr_t* var) {
+    bool is_pointer = ASRUtils::is_pointer(var_type);
+    bool is_allocatable = ASRUtils::is_allocatable(var_type);
+    bool is_array = ASRUtils::is_array(var_type);
+    ASR::dimension_t* m_dims = nullptr;
+    size_t n_dims = ASRUtils::extract_dimensions_from_ttype(var_type, m_dims);
+    ASR::array_physical_typeType ptype = ASR::array_physical_typeType::DescriptorArray;
+    if( is_array ) {
+        ptype = ASRUtils::extract_physical_type(var_type);
+    }
+    ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
+        ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(var_type)));
+    if( var && ASR::is_a<ASR::StructType_t>(*var_type_unwrapped) && !ASRUtils::is_class_type(var_type_unwrapped) ) {
+        ASR::symbol_t* der_sym = ASRUtils::get_struct_sym_from_struct_expr(var);
+        if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
+            std::string sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym));
+            if( current_scope->resolve_symbol(sym_name) == nullptr ) {
+                std::string unique_name = current_scope->get_unique_name(sym_name);
+                der_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                    al, loc, current_scope, s2c(al, unique_name), ASRUtils::symbol_get_past_external(der_sym),
+                    ASRUtils::symbol_name(ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(der_sym))), nullptr, 0,
+                    ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym)), ASR::accessType::Public));
+                current_scope->add_symbol(unique_name, der_sym);
+            } else {
+                der_sym = current_scope->resolve_symbol(sym_name);
+            }
+            var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym);
+            if( is_array ) {
+                var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
+                    ASR::abiType::Source, false, ptype, true);
+            }
+            if( is_pointer ) {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+            } else if( is_allocatable ) {
+                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, var_type));
+            }
+        }
+    } else if( ASR::is_a<ASR::String_t>(*var_type_unwrapped) ) {
+        ASR::String_t* char_t = ASR::down_cast<ASR::String_t>(var_type_unwrapped);
+        if( char_t->m_len_kind == ASR::string_length_kindType::AssumedLength &&
+            intent == ASR::intentType::Local ) {
+            var_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, char_t->m_kind,
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::PointerString));
+            if( is_array ) {
+                var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
+                    ASR::abiType::Source, false, ptype, true);
+            }
+            if( is_pointer ) {
+                var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+            } else if( is_allocatable ) {
+                var_type = ASRUtils::TYPE(ASRUtils::make_Allocatable_t_util(al, loc, var_type));
+            }
+        }
+    }
+}
+
 
 
 static inline ASR::asr_t* make_ArrayPhysicalCast_t_util(Allocator &al, const Location &a_loc,

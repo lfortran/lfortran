@@ -156,9 +156,51 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return struct_constant->m_dt_sym;
         }
         default: {
-            return nullptr;
+            throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
+                                + std::to_string(expression->type));
         }
     }
+}
+
+void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym) {
+    // The idea behind this utility function is that every struct expression
+    // must eventually resolve to either `Var` or `StructInstanceMember`.
+    switch (expression->type) {
+        case ASR::exprType::Var: {
+            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expression);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*var->m_v));
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+            variable->m_type_declaration = struct_sym;
+        } 
+        case ASR::exprType::StructInstanceMember: {
+            ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
+            variable->m_type_declaration = struct_sym;
+        } 
+        case ASR::exprType::ArrayItem: {
+            ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
+            return set_struct_sym_to_struct_expr(array_item->m_v, struct_sym);
+        }
+        case ASR::exprType::ArraySection: {
+            ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
+            return set_struct_sym_to_struct_expr(array_section->m_v, struct_sym);
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
+            // `func_call->m_dt` will be non-null for Struct expressions
+            LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
+            return set_struct_sym_to_struct_expr(func_call->m_dt, struct_sym);
+        }
+        case ASR::exprType::StructConstant: {
+            ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
+            struct_constant->m_dt_sym = struct_sym;
+        }
+        default: {
+            throw LCompilersException("set_struct_sym_to_struct_expr() not implemented for "
+                                + std::to_string(expression->type));
+        }
+    }
+
 }
 
 // Recursively fetch `ASR::Function_t` from an `ASR::expr_t` if it has `FunctionType`.

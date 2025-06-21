@@ -26,17 +26,17 @@ namespace LCompilers {
         int get_rank(ASR::expr_t* x);
 
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, Vec<ASR::expr_t*>& idx_vars,
-            Allocator& al, bool perform_cast=false,
+            Allocator& al, SymbolTable* current_scope=nullptr, bool perform_cast=false,
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
         ASR::expr_t* create_array_ref(ASR::symbol_t* arr, Vec<ASR::expr_t*>& idx_vars, Allocator& al,
-            const Location& loc, ASR::ttype_t* _type,
+            const Location& loc, ASR::ttype_t* _type, SymbolTable* current_scope=nullptr,
             bool perform_cast=false, ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
         ASR::expr_t* create_array_ref(ASR::expr_t* arr_expr, ASR::expr_t* idx_var, Allocator& al,
-            bool perform_cast=false,
+            SymbolTable* current_scope=nullptr, bool perform_cast=false,
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
@@ -98,7 +98,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
-            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr);
+            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr, ASR::expr_t* var=nullptr);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -664,7 +664,7 @@ namespace LCompilers {
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type);
+                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, ASR::Local, nullptr, ASRUtils::EXPR(ASR::make_Var_t(replacer->al, x->base.base.loc, x->m_dt_sym)));
                 *replacer->current_expr = replacer->result_var;
             } else {
                 if( inside_symtab ) {
