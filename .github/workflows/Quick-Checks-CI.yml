@@ -70,7 +70,7 @@ jobs:
         run: |
           micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4 openmpi=5.0.6
           if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
-            micromamba install zstd-static=1.5.5 zlib=1.2.13
+            micromamba install zstd-static=1.5.5 zlib=1.2.13 nodejs=18.20.4 kokkos=4.4.01
           elif [[ "${{ matrix.llvm-version }}" == "20" ]]; then
             micromamba install zstd-static=1.5.7 zlib=1.3.1
           fi
@@ -373,6 +373,83 @@ jobs:
         if: contains(matrix.os, 'ubuntu')
         run: micromamba install -y -n lf cmake=3.29.1
 
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b gfortran
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Debug Build Linux
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            ctest
+            ./run_tests.py
+            ./run_tests.py -vh
+            cd integration_tests
+            ./run_tests.py -m
+            ./run_tests.py -b llvm
+            ./run_tests.py -b llvm -f -nf16
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b llvm_omp
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b fortran -j1
+            ./run_tests.py -b fortran -f -j1
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            mkdir build-kokkos
+            cd build-kokkos
+            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
+            tar xaf 3.1.01.tar.gz
+            cd kokkos-3.1.01
+            mkdir build
+            cd build
+            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
+            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
+            make
+            make install
+            cd ../../..
+
+            cd integration_tests
+            ./run_tests.py -b cpp c c_nopragma
+            ./run_tests.py -b cpp c c_nopragma -f
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test CPP
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            shell ci/test_cpp_version.sh
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Show Node Info
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+          set -ex
+          which node
+          node --version
+
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test WASM backend
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
+        run: |
+            cd integration_tests
+            ./run_tests.py -b wasm
+            ./run_tests.py -b wasm -f
+
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
     runs-on: "ubuntu-latest"
@@ -451,116 +528,3 @@ jobs:
             ci/upload_lfortran_wasm.sh
         env:
           SSH_PRIVATE_KEY_WASM_BUILDS: ${{ secrets.SSH_PRIVATE_KEY_WASM_BUILDS }}
-
-  lfortran_debug_build_backends_tarball_cpp_build_wasm_gfortran:
-    name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            llvm-openmp
-            nodejs=18.20.4
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Test integration_tests with GFortran
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b gfortran
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            export CXXFLAGS="-Werror"
-            export CFLAGS="-Werror"
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DWITH_RUNTIME_STACKTRACE=yes \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test Debug Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ctest
-            ./run_tests.py
-            ./run_tests.py -vh
-            cd integration_tests
-            ./run_tests.py -m
-            ./run_tests.py -b llvm
-            ./run_tests.py -b llvm -f -nf16
-
-      - name: Test OpenMP
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b llvm_omp
-
-      - name: Test Fortran Backend
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b fortran -j1
-            ./run_tests.py -b fortran -f -j1
-
-      - name: Test C/C++ Backend
-        shell: bash -e -l {0}
-        run: |
-            mkdir build-kokkos
-            cd build-kokkos
-            wget https://github.com/kokkos/kokkos/archive/3.1.01.tar.gz
-            tar xaf 3.1.01.tar.gz
-            cd kokkos-3.1.01
-            mkdir build
-            cd build
-            export LFORTRAN_KOKKOS_DIR=$HOME/ext/kokkos
-            cmake -DCMAKE_INSTALL_PREFIX=$LFORTRAN_KOKKOS_DIR -DKokkos_ENABLE_OPENMP=On -DKokkos_ARCH_HSW=On ..
-            make
-            make install
-            cd ../../..
-
-            cd integration_tests
-            ./run_tests.py -b cpp c c_nopragma
-            ./run_tests.py -b cpp c c_nopragma -f
-
-      - name: Test CPP
-        shell: bash -e -l {0}
-        run: |
-            shell ci/test_cpp_version.sh
-
-      - name: Show Node Info
-        shell: bash -e -l {0}
-        run: |
-          set -ex
-          which node
-          node --version
-
-      - name: Test WASM backend
-        shell: bash -e -l {0}
-        run: |
-            cd integration_tests
-            ./run_tests.py -b wasm
-            ./run_tests.py -b wasm -f
