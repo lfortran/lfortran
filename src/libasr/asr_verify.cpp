@@ -53,13 +53,14 @@ private:
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
-    bool symbol_visited;
+    // checks whether we've visited any `Var`, which isn't a global `Variable`
+    bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -816,13 +817,17 @@ public:
     // nodes that have symbol in their fields:
 
     void visit_Var(const Var_t &x) {
-        symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
         ASR::symbol_t *s = x.m_v;
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
+        }
+        if (is_a<ASR::Variable_t>(*s) && is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+            non_global_symbol_visited = false;
+        } else {
+            non_global_symbol_visited = true;
         }
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
@@ -1077,9 +1082,9 @@ public:
 
     void visit_FunctionType(const FunctionType_t& x) {
 
-        #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
+        #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
-            require(symbol_visited == false, \
+            require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 

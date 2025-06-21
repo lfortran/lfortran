@@ -1,0 +1,13 @@
+{
+    "basename": "run-formatTesting-889403a",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/errors/formatTesting.f90",
+    "infile_hash": "fcb5d75f1257b518b8fb71e979444738eba9931484ba15fd671cb0db",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-formatTesting-889403a.stderr",
+    "stderr_hash": "24057424695e00241a9c4cf96807eb8691d7e2e221931b4a7fef4d52",
+    "returncode": 1
+}

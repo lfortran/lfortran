@@ -199,6 +199,7 @@ program continue_compilation_2
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     real :: idint_kind_mismatch = 4.23
     character(5):: ichar_runtime = "Hello"
+    real(8) :: dprod_1, dprod_2
 
 
 
@@ -206,7 +207,6 @@ program continue_compilation_2
 
 
     
-
 
 
 
@@ -441,6 +441,8 @@ program continue_compilation_2
     print *, idint(idint_kind_mismatch)
     !ichar_runtime
     print *, ichar(ichar_runtime)
+    !dprod_runtime
+    print *, dprod(dprod_1, dprod_2)
 
     contains
     logical function f(x)

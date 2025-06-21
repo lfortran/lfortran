@@ -4695,3 +4695,7 @@ options = "-c --generate-object-code"
 [[test]]
 filename = "../integration_tests/operator_overloading_12.f90"
 asr = true
+
+[[test]]
+filename = "errors/formatTesting.f90"
+run = true
