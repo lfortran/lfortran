@@ -1804,6 +1804,13 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, const c
                     double val = *(double*)s_info.current_arg_info.current_arg;
                     handle_decimal(value, double_val, scale, &result, "D", is_SP_specifier);
                 } else if (tolower(value[0]) == 'e') {
+                    // check for decimal presence before passing, else leads to segmentation fault
+                    // as FORTRAN seeks for E<width>.<number of digits>
+                    if (strchr(value, '.') == NULL) {
+                        fprintf(stderr, "\033[1;31mError:\033[0m Invalid format descriptor E - Proper Format is E<width>\033[1;31m.<number of digits>\033[0m\n");
+                        fprintf(stderr, "Period required in format specifier\n");   
+                        exit(1);
+                    }
                     // Check if the next character is 'N' for EN format
                     char format_type = tolower(value[1]);
                     if (format_type == 'n') {
