@@ -3261,7 +3261,7 @@ public:
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
             if (struct_t->m_is_cstruct) {
-                if( ASRUtils::is_c_ptr(x.m_type_declaration) ) {
+                if( x.m_type_declaration && ASRUtils::is_c_ptr(x.m_type_declaration) ) {
                     llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
                     llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name,
                         void_ptr);

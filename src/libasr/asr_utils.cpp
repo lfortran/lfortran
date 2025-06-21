@@ -128,14 +128,15 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
     switch (expression->type) {
         case ASR::exprType::Var: {
             // The symbol m_v has to be `Variable` for a Struct expression.
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASR::down_cast<ASR::Var_t>(expression)->m_v));
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::Var_t>(expression)->m_v);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v)));
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
             return var->m_type_declaration;
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
-            return var->m_type_declaration;
+            return get_struct_sym_from_struct_expr(struct_instance_member->m_v);
+            // ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
+            // return var->m_type_declaration;
         } 
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
@@ -148,16 +149,37 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
             // `func_call->m_dt` will be non-null for Struct expressions
-            LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
-            return get_struct_sym_from_struct_expr(func_call->m_dt);
+            // LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
+            if ( func_call->m_dt != nullptr ){
+                // If `func_call->m_dt` is not null, it means that the function call
+                // is returning a struct type.
+                return get_struct_sym_from_struct_expr(func_call->m_dt);
+            }
+            // return get_struct_sym_from_struct_expr(func_call->m_dt);
+            for (size_t i = 0; i < func_call->n_args; i++) {
+                ASR::expr_t* arg = func_call->m_args[i].m_value;
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
         }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
             return struct_constant->m_dt_sym;
         }
+        case ASR::exprType::ArrayPhysicalCast: {
+            ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression);
+            // `array_physical_cast->m_arg` will be non-null for Struct expressions
+            LCOMPILERS_ASSERT(array_physical_cast->m_arg != nullptr);
+            return get_struct_sym_from_struct_expr(array_physical_cast->m_arg);
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
+            return nullptr;
         }
     }
 }
@@ -215,11 +237,21 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
     switch (expr->type) {
         case ASR::exprType::Var: {
             ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expr);
-            ASR::symbol_t* sym = var->m_v;
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(var->m_v);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 return ASR::down_cast<ASR::Function_t>(sym);
+            } else if ( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                // case: procedure variables
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(var_sym->m_type_declaration);
+                if (type_decl != nullptr && 
+                    ASR::is_a<ASR::Function_t>(*type_decl)) {
+                    return ASR::down_cast<ASR::Function_t>(type_decl);
+                } else {
+                    throw LCompilersException("`ASR::Var_t` symbol is a `ASR::Variable_t` without type declared");
+                }
             } else {
-                throw LCompilersException("`ASR::Var_t` symbol is not `ASR::Function_t`.");
+                throw LCompilersException("`ASR::Var_t` symbol is not `ASR::Function_t`, rather: " + std::to_string(sym->type));
             }
         }
         case ASR::exprType::StructInstanceMember: {

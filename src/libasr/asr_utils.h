@@ -1963,7 +1963,8 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             // } else {
             //     res = symbol_name(d->m_derived_type);
             // }
-            // break;
+            res = "StructType";
+            break;
         }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);

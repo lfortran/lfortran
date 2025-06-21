@@ -674,12 +674,16 @@ public:
                             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                                     ASRUtils::symbol_get_past_external(ext_sym));
                             // Import the Struct as an `ExternalSymbol` into `Program`
+                            std::string sym_name = "";
+                            if (var->m_type_declaration != nullptr) {
+                                sym_name = ASRUtils::symbol_name(var->m_type_declaration);
+                            }
                             ASR::symbol_t* st_sym = ASR::down_cast<ASR::symbol_t>(
                                                     ASR::make_ExternalSymbol_t(
                                                         al,
                                                         var->base.base.loc,
                                                         current_scope,
-                                                        ASRUtils::symbol_name(var->m_type_declaration),
+                                                        s2c(al, sym_name),
                                                         var->m_type_declaration,
                                                         ASR::down_cast<ASR::ExternalSymbol_t>(
                                                             ext_sym)->m_module_name,
