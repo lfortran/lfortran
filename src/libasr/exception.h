@@ -170,6 +170,10 @@ static inline T TRY(Result<T> result) {
     }
 }
 
+class RuntimeException
+{
+};
+
 
 } // namespace LCompilers
 

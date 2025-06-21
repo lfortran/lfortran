@@ -19,7 +19,7 @@ using ASRUtils::EXPR;
  *
  */
 void pass_wrap_global_stmts(Allocator &al,
-            ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options) {
+            ASR::TranslationUnit_t &unit, const LCompilers::PassOptions& pass_options, diag::Diagnostics& /*diagnostics*/) {
     if (unit.n_items == 0) {
         return ;
     }

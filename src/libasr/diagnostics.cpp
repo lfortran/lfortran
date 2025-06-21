@@ -390,6 +390,9 @@ std::tuple<std::string, std::string, std::string> diag_level_to_str(
                 case (Stage::CodeGen):
                     message_type = "code generation error";
                     break;
+                case (Stage::Runtime):
+                    message_type = "runtime error";
+                    break;
             }
             break;
         case (Level::Warning):

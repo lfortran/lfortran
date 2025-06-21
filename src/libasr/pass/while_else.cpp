@@ -114,7 +114,7 @@ public:
 };
 
 void pass_while_else(Allocator &al, ASR::TranslationUnit_t &unit,
-                           const LCompilers::PassOptions& /*pass_options*/) {
+                           const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     WhileLoopVisitor v(al);
     ExitVisitor e(al);
     v.visit_TranslationUnit(unit);

@@ -215,7 +215,7 @@ class InitExprVisitor : public ASR::CallReplacerOnExpressionsVisitor<InitExprVis
 
 void pass_replace_init_expr(Allocator &al,
     ASR::TranslationUnit_t &unit,
-    const LCompilers::PassOptions& /*pass_options*/) {
+    const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics& /*diagnostics*/) {
     InitExprVisitor v(al);
     v.visit_TranslationUnit(unit);
     PassUtils::UpdateDependenciesVisitor w(al);

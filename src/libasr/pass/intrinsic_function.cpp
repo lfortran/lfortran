@@ -12,6 +12,7 @@
 
 
 namespace LCompilers {
+diag::Diagnostics* global_diagnostics = nullptr;
 
 /*
 
@@ -71,9 +72,19 @@ class ReplaceIntrinsicFunctions: public ASR::BaseExprReplacer<ReplaceIntrinsicFu
         }
         ASR::ttype_t* type = nullptr;
         type = ASRUtils::extract_type(x->m_type);
-        ASR::expr_t* current_expr_ = instantiate_function(al, x->base.base.loc,
+        ASR::expr_t* current_expr_ = nullptr;
+         try {
+            current_expr_ = instantiate_function(al, x->base.base.loc,
             global_scope, arg_types, type, new_args, x->m_overload_id);
-        *current_expr = current_expr_;
+            *current_expr = current_expr_;
+        } catch (const LCompilersException& e) {
+            global_diagnostics->add(diag::Diagnostic(
+                std::string(e.what()),
+                diag::Level::Error, diag::Stage::Runtime, {
+                diag::Label("", {x->base.base.loc})
+            }));
+            throw RuntimeException();
+        }
     }
 
     void replace_IntrinsicArrayFunction(ASR::IntrinsicArrayFunction_t* x) {
@@ -348,8 +359,9 @@ class ReplaceFunctionCallReturningArrayVisitor : public ASR::CallReplacerOnExpre
 };
 
 void pass_replace_intrinsic_function(Allocator &al, ASR::TranslationUnit_t &unit,
-                            const LCompilers::PassOptions& /*pass_options*/) {
+                            const LCompilers::PassOptions& /*pass_options*/, diag::Diagnostics &diagnostics) {
     std::map<ASR::symbol_t*, ASRUtils::IntrinsicArrayFunctions> func2intrinsicid;
+    global_diagnostics = &diagnostics;
     ReplaceIntrinsicFunctionsVisitor v(al, unit.m_symtab, func2intrinsicid);
     v.visit_TranslationUnit(unit);
     ReplaceFunctionCallReturningArrayVisitor u(al, func2intrinsicid);
