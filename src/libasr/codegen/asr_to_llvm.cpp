@@ -1425,14 +1425,24 @@ public:
                     }
                     if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                         // If it is a class type, we need to get the pointer to the struct
-                        tmp = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(
+                        llvm::Type* class_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(cur_type)),
-                            module.get()), tmp, 1);
+                            module.get());
+                        llvm::Value* class_ptr = tmp;
+
                         ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(cur_type))->m_derived_type);
                         ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym);
+                        llvm::Value* class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                            llvm::APInt(64, get_class_hash(struct_sym)));
+
+                        // Store back the original hash
+                        llvm::Value* t = llvm_utils->create_gep2(class_type, class_ptr, 0);
+                        builder->CreateStore(class_hash, t);
+
+                        t = llvm_utils->create_gep2(class_type, class_ptr, 1);
                         llvm_data_type = get_llvm_struct_data_type(st, false);
-                        tmp_ = tmp;
-                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), tmp);
+                        tmp_ = t;
+                        tmp = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), t);
                     } else {
                         llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::type_get_past_array(
