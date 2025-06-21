@@ -9541,14 +9541,13 @@ public:
                     args.push_back(builder->CreateMul(kind_val, tmp));
                 } else {
                     args.push_back(kind_val);
-                    if (ASRUtils::is_value_constant(m_values[i])) {
-                        this->visit_expr_wrapper(m_values[i], true);
-                        llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_values[i]), module.get());
-                        llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
-                        builder->CreateStore(tmp, llvm_arg);
-                        args.push_back(llvm_arg);
-                        continue;
-                    }
+                    this->visit_expr_wrapper(m_values[i], true);
+                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_values[i]), module.get());
+                    llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
+                    builder->CreateStore(tmp, llvm_arg);
+                    args.push_back(llvm_arg);
+                    continue;
+                    
                 }
             }
             compute_fmt_specifier_and_arg(fmt, args, m_values[i],

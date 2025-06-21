@@ -4884,6 +4884,10 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
             void* ptr = va_arg(args, void*);
 
             data[count].ptr = ptr;
+            if (data[count].ptr == NULL) {
+                printf("Error: NULL pointer passed to _lfortran_file_write.\n");
+                exit(1);
+            }
             data[count].len = len;
             total_size += len;
             count++;
