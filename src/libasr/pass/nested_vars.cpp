@@ -420,7 +420,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
-                    ASR::intentType::Unspecified);
+                    ASR::intentType::Unspecified, nullptr, ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, it2)));
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
