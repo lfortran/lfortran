@@ -223,45 +223,14 @@ jobs:
             set -e
             exit $EXIT_CODE
 
-  scipy:
-    name: Check SciPy Build and Test Run
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - uses: mamba-org/setup-micromamba@v2.0.2
-        with:
-          micromamba-version: '2.0.4-0'
-          environment-file: ci/environment_linux.yml
-          create-args: >-
-            python=3.10
-
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          variant: sccache
-          key: ${{ github.job }}-${{ matrix.os }}
-
-      - name: Build Linux
-        shell: bash -e -l {0}
-        run: |
-            ./build0.sh
-            cmake . -GNinja \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DWITH_LLVM=yes \
-              -DWITH_LSP=yes \
-              -DLFORTRAN_BUILD_ALL=yes \
-              -DWITH_STACKTRACE=no \
-              -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
-              -DCMAKE_C_COMPILER_LAUNCHER=sccache \
-              -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
-
-            cmake --build . -j16 --target install
-
-      - name: Test SciPy
+      # we used to build LFortran with the below options earlier, but not anymore
+      # -DLFORTRAN_BUILD_ALL=yes (will this have any impact?)
+      # -DWITH_STACKTRACE=no (this anyways by default is "no"), so probably fine
+      # -DCMAKE_C_COMPILER_LAUNCHER=sccache (just for caching, so fine I think)
+      # -DCMAKE_CXX_COMPILER_LAUNCHER=sccache (just for caching, so fine I think)
+      - name: Check SciPy Build and Test Run - Test SciPy
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             git clone https://github.com/scipy/scipy.git
             cd scipy
@@ -293,8 +262,9 @@ jobs:
             cd ..
             rm -rf scipy/
 
-      - name: Build SciPy
+      - name: Check SciPy Build and Test Run - Build SciPy
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             git clone https://github.com/scipy/scipy
             cd scipy
@@ -317,29 +287,33 @@ jobs:
             cd ../
             python dev.py build
 
-      - name: Test SciPy Special (Specfun, Amos, Mach and Cdflib)
+      - name: Check SciPy Build and Test Run - Test SciPy Special (Specfun, Amos, Mach and Cdflib)
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd scipy/
             micromamba activate scipy-dev
             python dev.py test -t scipy.special -v
 
-      - name: Test SciPy Minpack & Minpack2
+      - name: Check SciPy Build and Test Run - Test SciPy Minpack & Minpack2
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd scipy/
             micromamba activate scipy-dev
             python dev.py test -t scipy.optimize -v
 
-      - name: Test SciPy Fitpack
+      - name: Check SciPy Build and Test Run - Test SciPy Fitpack
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd scipy/
             micromamba activate scipy-dev
             python dev.py test -t scipy.interpolate -v
 
-      - name: Test SciPy Mach & Quadpack (Integrate)
+      - name: Check SciPy Build and Test Run - Test SciPy Mach & Quadpack (Integrate)
         shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd scipy/
             micromamba activate scipy-dev
