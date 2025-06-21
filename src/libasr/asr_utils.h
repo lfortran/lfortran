@@ -6077,7 +6077,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
 
     for( size_t i = 0; i < n_args; i++ ) {
-        if( a_args[i].m_value == nullptr ) {
+        if( i + is_method >= func_type->n_arg_types || a_args[i].m_value == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i].m_value;
