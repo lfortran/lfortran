@@ -1,3 +1,5 @@
+/* Flag to track if we are inside an array constructor */
+int in_array_constructor = 0;
 %require "3.0"
 %define api.pure
 %define api.value.type {LCompilers::LFortran::YYSTYPE}
@@ -2376,6 +2378,14 @@ expr_list
     | expr { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
+array_constructor
+    : '{' expr_list '}' {
+        in_array_constructor = 1;
+        $$ = create_array_constructor($2);
+        in_array_constructor = 0;
+    }
+    ;
+
 rbracket
     : "]"
     | "/)"
@@ -2419,18 +2429,47 @@ expr
     | "(" expr ")" { $$ = PAREN($2, @$); }
     | "(" expr "," expr ")" { $$ = COMPLEX($2, $4, @$); }
     | "(" expr "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP1($2, $4, $6, $8, @$); }
-    | "(" expr "," expr "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP2($2, $4, $6, $8, $10, @$); }
-    | "(" expr "," expr "," expr_list "," id "=" expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP3($2, $4, $6, $8, $10, $12, @$); }
-    | "(" expr "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP4($2, $4, $6, $8, $10, @$); }
-    | "(" expr "," expr "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$); }
-    | "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
-            $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$); }
-
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP1($2, $4, $6, $8, @$);
+    }
+}
+| "(" expr "," expr "," id "=" expr "," expr ")" {
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP2($2, $4, $6, $8, $10, @$);
+    }
+}
+| "(" expr "," expr "," expr_list "," id "=" expr "," expr ")" {
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP3($2, $4, $6, $8, $10, $12, @$);
+    }
+}
+| "(" expr "," id "=" expr "," expr "," expr ")" {
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP4($2, $4, $6, $8, $10, @$);
+    }
+}
+| "(" expr "," expr "," id "=" expr "," expr "," expr ")" {
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP5($2, $4, $6, $8, $10, $12, @$);
+    }
+}
+| "(" expr "," expr "," expr_list "," id "=" expr "," expr "," expr ")" {
+    if (!in_array_constructor) {
+        yyerror("Error: Implied DO loops must be wrapped in an array constructor (/ ... /).");
+    } else {
+        $$ = IMPLIED_DO_LOOP6($2, $4, $6, $8, $10, $12, $14, @$);
+    }
+}
 // ### level-1
     | TK_DEF_OP expr { $$ = UNARY_DEFOP($1, $2, @$); }
 
