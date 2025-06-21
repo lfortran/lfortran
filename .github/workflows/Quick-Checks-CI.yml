@@ -26,23 +26,6 @@ env:
   MACOSX_DEPLOYMENT_TARGET: 14.0
 
 jobs:
-  Print_Github_Concurrent_Group_and_Check_for_Added_Binary_Files:
-    name: Check for Added Binary Files
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Print github concurrent group name
-        run: |
-          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
-          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
-
-      - name: Check for Added Binary Files
-        run: |
-          python3 check_binary_file_in_git_history.py
-
   Build:
     name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }}, ${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
@@ -106,6 +89,21 @@ jobs:
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
             echo "ENABLE_RUNTIME_STACKTRACE=yes" >> $GITHUB_ENV
+
+      # we need to run this only once for debugging purpose
+      - name: Print github concurrent group name
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
+        run: |
+          echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
+          echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
+
+      # we need to run this only once
+      - name: Check for Added Binary Files
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
+        run: |
+          python3 check_binary_file_in_git_history.py
 
       - name: Build (Linux / macOS)
         shell: bash -e -l {0}
