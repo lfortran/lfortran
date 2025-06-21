@@ -223,11 +223,6 @@ jobs:
             set -e
             exit $EXIT_CODE
 
-      # we used to build LFortran with the below options earlier, but not anymore
-      # -DLFORTRAN_BUILD_ALL=yes (will this have any impact?)
-      # -DWITH_STACKTRACE=no (this anyways by default is "no"), so probably fine
-      # -DCMAKE_C_COMPILER_LAUNCHER=sccache (just for caching, so fine I think)
-      # -DCMAKE_CXX_COMPILER_LAUNCHER=sccache (just for caching, so fine I think)
       - name: Check SciPy Build and Test Run - Test SciPy
         shell: bash -e -x -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
