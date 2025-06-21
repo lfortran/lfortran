@@ -7681,6 +7681,10 @@ public:
         this->visit_expr(*x.m_overloaded);
     }
 
+    void visit_OverloadedBoolOp(const ASR::OverloadedBoolOp_t& x) {
+        this->visit_expr(*x.m_overloaded);
+    }
+
     void visit_OverloadedUnaryMinus(const ASR::OverloadedUnaryMinus_t &x) {
         this->visit_expr(*x.m_overloaded);
     }
