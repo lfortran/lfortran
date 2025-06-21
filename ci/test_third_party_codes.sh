@@ -213,7 +213,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop --skip-pass=unused_functions -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -372,7 +372,7 @@ time_section "🧪 Testing PRIMA" '
   fi
 
   print_subsection "Building PRIMA"
-  FC="$FC --cpp" cmake -S . -B build \
+  FC="$FC --cpp --skip-pass=unused_functions" cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
     -DCMAKE_Fortran_FLAGS="" \
     -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
