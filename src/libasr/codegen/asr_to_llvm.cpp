@@ -10646,7 +10646,7 @@ public:
         } else if (ASR::is_a<ASR::ClassProcedure_t>(*proc_sym)) {
             ASR::ClassProcedure_t *clss_proc = ASR::down_cast<
                 ASR::ClassProcedure_t>(proc_sym);
-            s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
+            s = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(clss_proc->m_proc));
             self_argument = clss_proc->m_self_argument;
             proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
@@ -10808,10 +10808,14 @@ public:
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
-        } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
+        } else if ( llvm_symtab_fn.find(h) == llvm_symtab_fn.end() ) {
+            if (proc_sym->type == ASR::symbolType::ExternalSymbol) {
+
+            } else {
             throw CodeGenError("Subroutine code not generated for '"
                 + std::string(s->m_name) + "'");
             return;
+            }
         } else {
             llvm::Function *fn = llvm_symtab_fn[h];
             std::string m_name = ASRUtils::symbol_name(x.m_name);

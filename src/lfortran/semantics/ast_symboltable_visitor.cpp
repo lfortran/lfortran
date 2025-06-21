@@ -2576,7 +2576,7 @@ public:
                         throw SemanticAbort();
                     }
                 }
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc_sym);
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(proc_sym));
                 // FIXME: pname.second["procedure"].name is set to the UseSymbol remote_sym if there is no interface.
                 //        If the UseSymbol remote_sym is declared in an interface and defined in another submodule, this throws on valid code
                 // if (!is_deferred &&

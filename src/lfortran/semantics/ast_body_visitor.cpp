@@ -4305,7 +4305,7 @@ public:
                     final_sym = original_sym;
                     original_sym = nullptr;
                     ASR::symbol_t* f4 = class_proc->m_proc;
-                    if (!ASR::is_a<ASR::Function_t>(*f4)) {
+                    if (!ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(f4))) {
                         diag.add(Diagnostic(
                             std::string(class_proc->m_proc_name) + " is not a subroutine.",
                             Level::Error, Stage::Semantic, {
@@ -4313,7 +4313,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    f = ASR::down_cast<ASR::Function_t>(f4);
+                    f = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(f4));
                 } else if (ASR::is_a<ASR::Variable_t>(*final_sym)) {
                     nopass = true;
                     final_sym = original_sym;
