@@ -236,7 +236,7 @@ LFORTRAN_API int32_t _lfortran_values(int32_t n);
 LFORTRAN_API float _lfortran_sp_rand_num();
 LFORTRAN_API double _lfortran_dp_rand_num();
 LFORTRAN_API int64_t _lpython_open(char *path, char *flags);
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char* form, char* access, int32_t *iostat, char **iomsg);
+LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status, char* form, char* access, int32_t *iostat, char **iomsg, char* action);
 LFORTRAN_API void _lfortran_flush(int32_t unit_num);
 LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num, bool *opened, int32_t *size, int32_t *pos);
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, char* fmt, int32_t no_of_args, ...);
