@@ -521,7 +521,7 @@ semantic error: first argument of `idint` must have kind equal to 8
 338 |     print *, idint(4.5)
     |              ^^^^^^^^^^ 
 
-semantic error: first argument of `ifix` must have kind equals to 4
+semantic error: first argument of `ifix` must have kind equal to 4
    --> tests/errors/continue_compilation_2.f90:340:14
     |
 340 |     print *, ifix(4.23_8)
@@ -778,3 +778,33 @@ semantic error: first argument of `dprod` must have kind equal to 4
     |
 445 |     print *, dprod(dprod_1, dprod_2)
     |              ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `dprod` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:446:14
+    |
+446 |     print *, dprod(dprod_3, dprod_2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `idnint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:448:14
+    |
+448 |     print *, idnint(3.5)
+    |              ^^^^^^^^^^^ 
+
+semantic error: first argument of `idnint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:449:14
+    |
+449 |     print *, idnint(idnint_runtime)
+    |              ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `ifix` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:451:14
+    |
+451 |     print *, ifix(4.23_8)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: first argument of `ifix` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:452:14
+    |
+452 |     print *, ifix(ifix_runtime)
+    |              ^^^^^^^^^^^^^^^^^^ 
