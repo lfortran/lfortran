@@ -670,6 +670,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
+                    type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         type = getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);

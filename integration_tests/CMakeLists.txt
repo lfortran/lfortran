@@ -551,7 +551,7 @@ RUN(NAME arrays_op_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArr
      EXTRA_ARGS --realloc-lhs fortran)
 RUN(NAME arrays_op_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_op_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm fortran)
-# RUN(NAME arrays_op_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
+RUN(NAME arrays_op_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_op_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray
@@ -590,8 +590,8 @@ RUN(NAME arrays_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray)
 RUN(NAME arrays_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray wasm)
 RUN(NAME arrays_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
-# RUN(NAME arrays_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
-# RUN(NAME arrays_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray) # maxloc, minloc
 RUN(NAME arrays_29 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
@@ -601,7 +601,7 @@ RUN(NAME arrays_32 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray 
 RUN(NAME arrays_33 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_34 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-# RUN(NAME arrays_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_36 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_37 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_38 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME arrays_39 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -643,7 +643,7 @@ RUN(NAME arrays_73 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_74 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_75 LABELS gfortran llvm)
 RUN(NAME arrays_76 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-# RUN(NAME arrays_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_77 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_78 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_79 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_80 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -739,7 +739,7 @@ RUN(NAME format_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME format_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -989,7 +989,7 @@ RUN(NAME intrinsics_207 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # double 
 RUN(NAME intrinsics_208 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # bit_size
 RUN(NAME intrinsics_209 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atand
 RUN(NAME intrinsics_210 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES lcompilers_test_module.f90) # bessel_jn
-# RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_yn
+RUN(NAME intrinsics_211 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # bessel_yn
 RUN(NAME intrinsics_212 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # specific type intrinsics
 RUN(NAME intrinsics_213 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # cpu_time
 RUN(NAME intrinsics_214 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sind

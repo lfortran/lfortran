@@ -318,7 +318,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
             }
         }
         result_var = PassUtils::create_var(result_counter, "_array_constructor_",
-                        loc, result_type_, al, current_scope);
+                        loc, result_type_, al, current_scope, result_var);
         result_counter += 1;
         *current_expr = result_var;
 

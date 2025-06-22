@@ -165,6 +165,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                     }
                 }
             }
+            return nullptr; // If no struct symbol found in arguments
         }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
@@ -190,14 +191,16 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
     switch (expression->type) {
         case ASR::exprType::Var: {
             ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(expression);
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*var->m_v));
-            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(var->m_v);
+            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(var->m_v)));
+            ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(var->m_v));
             variable->m_type_declaration = struct_sym;
+            return;
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
             ASR::Variable_t* variable = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
             variable->m_type_declaration = struct_sym;
+            return;
         } 
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
@@ -216,6 +219,7 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
             struct_constant->m_dt_sym = struct_sym;
+            return;
         }
         default: {
             throw LCompilersException("set_struct_sym_to_struct_expr() not implemented for "

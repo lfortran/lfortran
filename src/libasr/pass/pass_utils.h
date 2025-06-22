@@ -55,7 +55,7 @@ namespace LCompilers {
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope);
+                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var = nullptr);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
