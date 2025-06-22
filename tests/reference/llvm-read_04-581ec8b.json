@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-read_04-581ec8b",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/read_04.f90",
+    "infile_hash": "e3112294cb78167222af1cf1ad72098582588c70d71ea7eb4b57e08b",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-read_04-581ec8b.stdout",
+    "stdout_hash": "6857bf5fdf13d53a97b6716ec917041af48effbbbf71c356dc5e3ced",
+    "stderr": "llvm-read_04-581ec8b.stderr",
+    "stderr_hash": "4ea1777d08fe777fd56be57b6a2539ea313addefcd762b4d306f6efb",
+    "returncode": 1
+}

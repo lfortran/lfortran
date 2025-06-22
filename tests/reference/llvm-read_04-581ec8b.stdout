@@ -1,0 +1,107 @@
+; ModuleID = 'LFortran'
+source_filename = "LFortran"
+
+@0 = private unnamed_addr constant [17 x i8] c"read_04_data.txt\00", align 1
+@1 = private unnamed_addr constant [4 x i8] c"old\00", align 1
+@2 = private unnamed_addr constant [12 x i8] c"unformatted\00", align 1
+@3 = private unnamed_addr constant [7 x i8] c"stream\00", align 1
+@4 = private unnamed_addr constant [4 x i8] c"yes\00", align 1
+
+define i32 @_lcompilers_merge_i32(i32* %tsource, i32* %fsource, i1* %mask) {
+.entry:
+  %merge = alloca i32, align 4
+  %0 = load i1, i1* %mask, align 1
+  br i1 %0, label %then, label %else
+
+then:                                             ; preds = %.entry
+  %1 = load i32, i32* %tsource, align 4
+  store i32 %1, i32* %merge, align 4
+  br label %ifcont
+
+else:                                             ; preds = %.entry
+  %2 = load i32, i32* %fsource, align 4
+  store i32 %2, i32* %merge, align 4
+  br label %ifcont
+
+ifcont:                                           ; preds = %else, %then
+  br label %return
+
+return:                                           ; preds = %ifcont
+  %3 = load i32, i32* %merge, align 4
+  ret i32 %3
+}
+
+define i32 @main(i32 %0, i8** %1) {
+.entry:
+  %call_arg_value7 = alloca i1, align 1
+  %call_arg_value6 = alloca i32, align 4
+  %call_arg_value5 = alloca i32, align 4
+  %call_arg_value4 = alloca i1, align 1
+  %call_arg_value3 = alloca i32, align 4
+  %call_arg_value = alloca i32, align 4
+  %major = alloca i32, align 4
+  %stat = alloca i32, align 4
+  call void @_lpython_call_initial_functions(i32 %0, i8** %1)
+  %buf = alloca i8*, align 8
+  %2 = call i8* @_lfortran_malloc(i32 21)
+  call void @_lfortran_string_init(i64 21, i8* %2)
+  store i8* %2, i8** %buf, align 8
+  %3 = load i8*, i8** %buf, align 8
+  %major1 = alloca i32, align 4
+  %stat2 = alloca i32, align 4
+  %4 = call i64 @_lfortran_open(i32 10, i8* getelementptr inbounds ([17 x i8], [17 x i8]* @0, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @3, i32 0, i32 0), i32* null, i8** null)
+  store i32 2, i32* %major1, align 4
+  %5 = alloca i32, align 4
+  %6 = load i8*, i8** %buf, align 8
+  store i32 4, i32* %call_arg_value, align 4
+  store i32 2, i32* %call_arg_value3, align 4
+  %7 = load i32, i32* %major1, align 4
+  %8 = icmp sgt i32 %7, 1
+  store i1 %8, i1* %call_arg_value4, align 1
+  %9 = call i32 @_lcompilers_merge_i32(i32* %call_arg_value, i32* %call_arg_value3, i1* %call_arg_value4)
+  %10 = call i8* @_lfortran_str_slice(i8* %6, i32 0, i32 %9, i32 1, i1 true, i1 true)
+  %11 = load i8*, i8** %buf, align 8
+  store i32 4, i32* %call_arg_value5, align 4
+  store i32 2, i32* %call_arg_value6, align 4
+  %12 = load i32, i32* %major1, align 4
+  %13 = icmp sgt i32 %12, 1
+  store i1 %13, i1* %call_arg_value7, align 1
+  %14 = call i32 @_lcompilers_merge_i32(i32* %call_arg_value5, i32* %call_arg_value6, i1* %call_arg_value7)
+  %15 = call i8* @_lfortran_str_slice(i8* %11, i32 0, i32 %14, i32 1, i1 true, i1 true)
+  %16 = alloca i8*, align 8
+  store i8* %15, i8** %16, align 8
+  %17 = call i32 @_lfortran_str_len(i8** %16)
+  call void (i8**, i32, ...) @_lfortran_read_char(i8* %10, i32 10, i32 %17)
+  call void @_lfortran_empty_read(i32 10, i32* %stat2)
+  call void @_lfortran_close(i32 10, i8* null)
+  call void @_lpython_free_argv()
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret i32 0
+}
+
+declare void @_lpython_call_initial_functions(i32, i8**)
+
+declare i8* @_lfortran_malloc(i32)
+
+declare void @_lfortran_string_init(i64, i8*)
+
+declare i64 @_lfortran_open(i32, i8*, i8*, i8*, i8*, i32*, i8**)
+
+declare i8* @_lfortran_str_slice(i8*, i32, i32, i32, i1, i1)
+
+declare void @_lfortran_read_char(i8**, i32, ...)
+
+declare i32 @_lfortran_str_len(i8**)
+
+declare void @_lfortran_empty_read(i32, i32*)
+
+declare void @_lfortran_close(i32, i8*)
+
+declare void @_lpython_free_argv()
+asr_to_llvm: module failed verification. Error:
+Call parameter type does not match function signature!
+  %10 = call i8* @_lfortran_str_slice(i8* %6, i32 0, i32 %9, i32 1, i1 true, i1 true)
+ i8**  call void (i8**, i32, ...) @_lfortran_read_char(i8* %10, i32 10, i32 %17)
+

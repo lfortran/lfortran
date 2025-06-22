@@ -4699,3 +4699,7 @@ asr = true
 [[test]]
 filename = "errors/formatTesting.f90"
 run = true
+
+[[test]]
+filename = "../integration_tests/read_04.f90"
+llvm = true

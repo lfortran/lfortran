@@ -1,0 +1,5 @@
+code generation error: asr_to_llvm: module failed verification. Error:
+Call parameter type does not match function signature!
+  %10 = call i8* @_lfortran_str_slice(i8* %6, i32 0, i32 %9, i32 1, i1 true, i1 true)
+ i8**  call void (i8**, i32, ...) @_lfortran_read_char(i8* %10, i32 10, i32 %17)
+
