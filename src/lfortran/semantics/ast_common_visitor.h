@@ -6729,7 +6729,7 @@ public:
             ASR::symbol_t* parent=nullptr) {
         ASR::symbol_t* v = nullptr;
         ASR::Struct_t* der_type = nullptr;
-        ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(scope->resolve_symbol(dt_name));
+        ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(scope->resolve_symbol(dt_name)));
         if( dt_type ) {
             dt_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable(dt_type));

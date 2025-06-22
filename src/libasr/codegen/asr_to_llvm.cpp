@@ -11164,7 +11164,7 @@ public:
             llvm::Value* fn = llvm_symtab[h];
             fn = llvm_utils->CreateLoad(fn);
             ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(proc_sym);
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(v->m_type_declaration), module.get());
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration)), module.get());
             std::string m_name = ASRUtils::symbol_name(x.m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
