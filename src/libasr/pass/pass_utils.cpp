@@ -119,7 +119,18 @@ namespace LCompilers {
             args.push_back(al, ai);
             ASR::ttype_t* array_ref_type = ASRUtils::duplicate_type_without_dims(
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
-            fix_struct_type_scope()
+            // fix_struct_type_scope()
+            if ( arr_expr != nullptr ) {
+                ASR::symbol_t* m_derived_type = ASRUtils::get_struct_sym_from_struct_expr(arr_expr);
+                if (m_derived_type != nullptr && current_scope != nullptr &&
+                    current_scope->get_counter() != ASRUtils::symbol_parent_symtab(m_derived_type)->get_counter()) {
+                    ASR::symbol_t* new_derived_type = current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(m_derived_type));
+                    if (new_derived_type) {
+                        ASRUtils::set_struct_sym_to_struct_expr(arr_expr, new_derived_type);
+                    }
+                }
+            }
             ASR::expr_t* array_ref = ASRUtils::EXPR(ASRUtils::make_ArrayItem_t_util(al,
                                         arr_expr->base.loc, arr_expr,
                                         args.p, args.size(),
@@ -316,7 +327,7 @@ namespace LCompilers {
             return false;
         }
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                            ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope) {
+                            ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var) {
             ASR::dimension_t* m_dims = nullptr;
             int ndims = 0;
             PassUtils::get_dim_rank(var_type, m_dims, ndims);
@@ -335,10 +346,14 @@ namespace LCompilers {
                     ASRUtils::symbol_type(current_scope->get_symbol(str_name)),
                     var_type, true
                 ) ) {
+                ASR::symbol_t* type_decl = nullptr;
+                if ( var != nullptr ) {
+                    type_decl = ASRUtils::get_struct_sym_from_struct_expr(var);
+                }
                 str_name = current_scope->get_unique_name(str_name);
                 ASR::asr_t* idx_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, str_name), nullptr, 0,
                                                         ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                        var_type, nullptr, ASR::abiType::Source, ASR::accessType::Public,
+                                                        var_type, type_decl, ASR::abiType::Source, ASR::accessType::Public,
                                                         ASR::presenceType::Required, false);
                 current_scope->add_symbol(str_name, ASR::down_cast<ASR::symbol_t>(idx_sym));
                 idx_var = ASRUtils::EXPR(ASR::make_Var_t(al, loc, ASR::down_cast<ASR::symbol_t>(idx_sym)));

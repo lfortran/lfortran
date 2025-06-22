@@ -4882,6 +4882,7 @@ public:
                 current_scope = parent_scope;
             }
             // this is class variable declaration
+            type_declaration = v;
             type = ASRUtils::make_StructType_t_util(al, loc, v, false);
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -6594,7 +6595,7 @@ public:
         }
         if( parent == nullptr ) {
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
-                der_type = ASR::down_cast<ASR::Struct_t>(dt_variable->m_type_declaration);
+                der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(dt_variable->m_type_declaration));
             } else {
                 diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
