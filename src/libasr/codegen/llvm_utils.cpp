@@ -684,8 +684,7 @@ namespace LCompilers {
                         type = getStructType(
                             ASR::down_cast<ASR::Struct_t>(type_declaration), module, true);
                     } else {
-                        type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true)
-                                   ->getPointerTo();
+                        type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
                     }
                 } else {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
@@ -698,8 +697,7 @@ namespace LCompilers {
                         type
                             = getClassType(ASR::down_cast<ASR::Struct_t>(
                                                ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
-                                           true)
-                                  ->getPointerTo();
+                                           true);
                     }
                 }
                 break;
