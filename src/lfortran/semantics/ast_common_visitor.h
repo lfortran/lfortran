@@ -4943,6 +4943,8 @@ public:
             // this is class variable declaration
             type_declaration = v;
             type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+            // set the variable's type declaration to the derived type
+            type_declaration = v;
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {

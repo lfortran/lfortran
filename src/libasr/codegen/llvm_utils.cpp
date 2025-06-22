@@ -300,6 +300,16 @@ namespace LCompilers {
         llvm::StructType* der_type_llvm = nullptr;
         if( name2dertype.find(der_type_name) != name2dertype.end() ) {
             der_type_llvm = name2dertype[der_type_name];
+        } else {
+            std::vector<llvm::Type*> member_types;
+            member_types.push_back(getIntType(8));
+            if( der_type_name == "~unlimited_polymorphic_type" ) {
+                member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
+            } else {
+                member_types.push_back(getStructType(der_type, module, is_pointer));
+            }
+            der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
+            name2dertype[der_type_name] = der_type_llvm;
         }
         LCOMPILERS_ASSERT(der_type_llvm != nullptr);
         if( is_pointer ) {
