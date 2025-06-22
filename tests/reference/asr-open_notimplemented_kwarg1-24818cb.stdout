@@ -26,6 +26,10 @@
                         ()
                         ()
                         ()
+                        (StringConstant
+                            "read"
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
                     )]
                 )
         })
