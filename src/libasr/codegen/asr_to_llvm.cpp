@@ -1031,7 +1031,7 @@ public:
     }
 
     template <typename T>
-    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc) {
+    void visit_AllocateUtil(const T& x, ASR::expr_t* m_stat, bool realloc, ASR::expr_t* m_source = nullptr) {
         for( size_t i = 0; i < x.n_args; i++ ) {
             ASR::alloc_arg_t curr_arg = x.m_args[i];
             ASR::expr_t* tmp_expr = x.m_args[i].m_a;
@@ -1082,6 +1082,8 @@ public:
                     builder->CreateStore(builder->CreateBitCast(
                         malloc_ptr, llvm_arg_type->getPointerTo()), x_arr);
                 } else if (ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type)) {
+                    // TODO: Implement source argument when m_source is class
+                    bool m_source_is_class = m_source && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)));
                     if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
@@ -1094,10 +1096,24 @@ public:
 
                         x_arr = llvm_utils->CreateLoad2(llvm_arg_type->getPointerTo(), x_arr);
                         allocate_array_members_of_struct(x_arr, curr_arg_m_a_type);
+                        if (m_source && !m_source_is_class) {
+                            int64_t ptr_loads_copy = ptr_loads;
+                            if (ASRUtils::is_allocatable(m_source)) {
+                                ptr_loads = 1;
+                            } else {
+                                ptr_loads = 0;
+                            }
+                            this->visit_expr(*m_source);
+                            ptr_loads = ptr_loads_copy;
+
+                            llvm_utils->deepcopy(tmp, x_arr, curr_arg_m_a_type, module.get(), name2memidx);
+                        }
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
-                        // If no type specified then use curr_arg_m_a_type as default
-                        if (dest_asr_type == nullptr) {
+                        if (m_source && !m_source_is_class) {
+                            dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
+                        } else if (dest_asr_type == nullptr) {
+                            // If no type specified then use curr_arg_m_a_type as default
                             dest_asr_type = ASRUtils::TYPE(
                                     ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc,
                                         ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_derived_type));
@@ -1129,6 +1145,18 @@ public:
                         x_arr = llvm_utils->CreateLoad2(src_struct_type, x_arr);
                         x_arr = builder->CreateBitCast(x_arr, dest_type->getPointerTo());
                         allocate_array_members_of_struct(x_arr, dest_asr_type);
+                        if (m_source && !m_source_is_class) {
+                            int64_t ptr_loads_copy = ptr_loads;
+                            if (ASRUtils::is_allocatable(m_source)) {
+                                ptr_loads = 1;
+                            } else {
+                                ptr_loads = 0;
+                            }
+                            this->visit_expr(*m_source);
+                            ptr_loads = ptr_loads_copy;
+
+                            llvm_utils->deepcopy(tmp, x_arr, dest_asr_type, module.get(), name2memidx);
+                        }
                     }
                 }
             } else {
@@ -1197,7 +1225,7 @@ public:
     }
 
     void visit_Allocate(const ASR::Allocate_t& x) {
-        visit_AllocateUtil(x, x.m_stat, false);
+        visit_AllocateUtil(x, x.m_stat, false, x.m_source);
     }
 
     void visit_ReAlloc(const ASR::ReAlloc_t& x) {
