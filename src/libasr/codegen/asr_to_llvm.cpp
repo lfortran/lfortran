@@ -3952,7 +3952,8 @@ public:
                         allocate_array_members_of_struct_arrays(expr, ptr_member, symbol_type);
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
-                    allocate_array_members_of_struct(expr, ptr_member, symbol_type);
+                    ASR::expr_t* member_expr = ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
+                    allocate_array_members_of_struct(member_expr, ptr_member, symbol_type);
                 } else if( ASR::is_a<ASR::String_t>(*symbol_type) &&
                     ASR::down_cast<ASR::String_t>(symbol_type)->m_physical_type ==
                         ASR::string_physical_typeType::PointerString) { // FixedSize Strings
@@ -4415,7 +4416,7 @@ public:
             }
 
             if( ASR::is_a<ASR::StructType_t>(*v->m_type) && !ASRUtils::is_class_type(v->m_type) ) {
-                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
+                ASR::Struct_t* struct_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v->m_type_declaration));
                 int64_t alignment_value = -1;
                 if( ASRUtils::extract_value(struct_type->m_alignment, alignment_value) ) {
                     llvm::Align align(alignment_value);
@@ -8413,7 +8414,7 @@ public:
                 break;
             }
             case ASR::ttypeType::StructType: {
-                ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(x->m_type_declaration);
+                ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x->m_type_declaration));
                 current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {

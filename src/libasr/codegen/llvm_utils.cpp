@@ -1186,6 +1186,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::StructType) : {
                 if (type_declaration) {
+                    type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
                         llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, false);
                     } else {
@@ -1943,9 +1944,7 @@ namespace LCompilers {
                 break ;
             }
             case ASR::ttypeType::StructType: {
-                ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-                    ASRUtils::get_struct_sym_from_struct_expr(src_expr));
-                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(v->m_type_declaration);
+                ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(src_expr));
                 std::string der_type_name = std::string(struct_sym->m_name);
                 Allocator al(1024);
                 while( struct_sym != nullptr ) {
@@ -1988,7 +1987,7 @@ namespace LCompilers {
                                 llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)));
                         }
                         create_if_else(is_allocated, [&]() {
-                            deepcopy(src_expr, src_member, dest_member,
+                            deepcopy(ASRUtils::EXPR(ASR::make_Var_t(al, mem_sym->base.loc, mem_sym)), src_member, dest_member,
                             ASRUtils::symbol_type(mem_sym),
                             module, name2memidx);
                         }, [=]() {});

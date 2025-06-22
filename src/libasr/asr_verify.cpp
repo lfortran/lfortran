@@ -545,6 +545,13 @@ public:
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
+            if ( ASR::is_a<ASR::Variable_t>(*a.second) ) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(a.second);
+                if ( var->m_type_declaration ) {
+                    struct_dependencies.push_back(
+                        std::string(ASRUtils::symbol_name(var->m_type_declaration)));
+                }
+            }
             // TODO: Uncomment the following line
             // ASR::ttype_t* var_type = ASRUtils::extract_type(ASRUtils::symbol_type(a.second));
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));

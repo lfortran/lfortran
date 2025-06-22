@@ -2580,7 +2580,7 @@ public:
             ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol);
             std::string struct_var_name = base_struct_instance_name + common_block_name;
             ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
-                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, current_scope->get_symbol(common_block_name),
                                         ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
             current_scope->add_symbol(struct_var_name, struct_var_sym);
 
