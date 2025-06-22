@@ -8288,15 +8288,6 @@ public:
         return ASRUtils::expr_type(expr);
     }
 
-    void extract_kinds(const ASR::Cast_t& x,
-                       int& arg_kind, int& dest_kind)
-    {
-        dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-        LCOMPILERS_ASSERT(curr_type != nullptr)
-        arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-    }
-
     template <typename T>
     void handle_arr_for_complex_im_re(const T& t) {
         int64_t ptr_loads_copy = ptr_loads;
@@ -8560,10 +8551,7 @@ public:
             }
             case (ASR::cast_kindType::IntegerToLogical) :
             case (ASR::cast_kindType::UnsignedIntegerToLogical) : {
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                switch (a_kind) {
+                switch (arg_kind) {
                     case 1:
                         tmp = builder->CreateICmpNE(tmp, builder->getInt8(0));
                         break;
@@ -8581,10 +8569,7 @@ public:
             }
             case (ASR::cast_kindType::RealToLogical) : {
                 llvm::Value *zero;
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                if (a_kind == 4) {
+                if (arg_kind == 4) {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat((float)0.0));
                 } else {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
@@ -8607,10 +8592,7 @@ public:
             case (ASR::cast_kindType::ComplexToLogical) : {
                 // !(c.real == 0.0 && c.imag == 0.0)
                 llvm::Value *zero;
-                ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(curr_type != nullptr)
-                int a_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
-                if (a_kind == 4) {
+                if (arg_kind == 4) {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat((float)0.0));
                 } else {
                     zero = llvm::ConstantFP::get(context, llvm::APFloat(0.0));
@@ -8629,8 +8611,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::RealToReal) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
@@ -8647,8 +8628,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::IntegerToInteger) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
@@ -8661,8 +8641,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::UnsignedIntegerToUnsignedInteger) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
                 {
@@ -8675,8 +8654,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::IntegerToUnsignedInteger) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 LCOMPILERS_ASSERT(arg_kind != -1 && dest_kind != -1)
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
@@ -8690,8 +8668,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::UnsignedIntegerToInteger) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 LCOMPILERS_ASSERT(arg_kind != -1 && dest_kind != -1)
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
@@ -8714,8 +8691,7 @@ public:
             }
             case (ASR::cast_kindType::ComplexToComplex) : {
                 llvm::Type *target_type;
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 llvm::Value *re, *im;
                 if( arg_kind > 0 && dest_kind > 0 &&
                     arg_kind != dest_kind )
@@ -8744,8 +8720,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::ComplexToReal) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 llvm::Value *re;
                 if( arg_kind > 0 && dest_kind > 0)
                 {
@@ -8776,8 +8751,7 @@ public:
                 break;
             }
             case (ASR::cast_kindType::ComplexToInteger) : {
-                int arg_kind = -1, dest_kind = -1;
-                extract_kinds(x, arg_kind, dest_kind);
+                int dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
                 llvm::Value *re;
                 if (arg_kind > 0 && dest_kind > 0)
                 {
@@ -8803,17 +8777,11 @@ public:
              }
             case (ASR::cast_kindType::RealToString) : {
                 llvm::Value *arg = tmp;
-                ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(arg_type != nullptr)
-                int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                 tmp = lfortran_type_to_str(arg, llvm_utils->getFPType(arg_kind), "float", arg_kind);
                 break;
             }
             case (ASR::cast_kindType::IntegerToString) : {
                 llvm::Value *arg = tmp;
-                ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
-                LCOMPILERS_ASSERT(arg_type != nullptr)
-                int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
                 tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind);
                 break;
             }
