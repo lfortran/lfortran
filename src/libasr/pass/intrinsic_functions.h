@@ -3103,7 +3103,9 @@ namespace Ifix {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_ifix_" + type_to_str_python(arg_types[0]));
-        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4);
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
+            LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4);
+        }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, b.r2i_t(args[0], int32)));
