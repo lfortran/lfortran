@@ -30,19 +30,24 @@ contains
         integer, intent(out) :: y
         integer :: val1
         real :: val2
+        doubleprecision :: dbval
         character(len=:), allocatable :: val3
         type(structType) :: val4
 
         select type(x)
         type is (integer)
             val1 = x
+            dbval = x
             print *, val1
             if (val1 /= 42) error stop
+            if (dbval /= 42.0d0) error stop
             y = 1
         type is (real)
             val2 = x
+            dbval = x
             print *, val2
             if (val2 /= 3.14) error stop
+            if (dbval /= 3.14) error stop
             y = 2
         type is (character(*))
             call check_char(x, y)
