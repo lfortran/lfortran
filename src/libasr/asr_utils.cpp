@@ -137,7 +137,25 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return get_struct_sym_from_struct_expr(struct_instance_member->m_v);
             // ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
             // return var->m_type_declaration;
-        } 
+        }
+        case ASR::exprType::ArrayConstructor: {
+            ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expression);
+            for (size_t i = 0; i < array_constructor->n_args; i++) {
+                ASR::expr_t* arg = array_constructor->m_args[i];
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            if (array_constructor->m_value != nullptr) {
+                // If `m_value` is not null, it means that the array constructor
+                // is returning a struct type.
+                return get_struct_sym_from_struct_expr(array_constructor->m_value);
+            }
+            return nullptr; // If no struct symbol found in arguments or value
+        }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
             return get_struct_sym_from_struct_expr(array_item->m_v);
@@ -167,6 +185,32 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             }
             return nullptr; // If no struct symbol found in arguments
         }
+        case ASR::exprType::IntrinsicElementalFunction: {
+            ASR::IntrinsicElementalFunction_t* intrinsic_elemental_func = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expression);
+            for (size_t i = 0; i < intrinsic_elemental_func->n_args; i++) {
+                ASR::expr_t* arg = intrinsic_elemental_func->m_args[i];
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            return nullptr; // If no struct symbol found in arguments
+        }
+        case ASR::exprType::IntrinsicArrayFunction: {
+            ASR::IntrinsicArrayFunction_t* intrinsic_array_func = ASR::down_cast<ASR::IntrinsicArrayFunction_t>(expression);
+            for (size_t i = 0; i < intrinsic_array_func->n_args; i++) {
+                ASR::expr_t* arg = intrinsic_array_func->m_args[i];
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            return nullptr; // If no struct symbol found in arguments
+        }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
             return struct_constant->m_dt_sym;
@@ -176,6 +220,91 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             // `array_physical_cast->m_arg` will be non-null for Struct expressions
             LCOMPILERS_ASSERT(array_physical_cast->m_arg != nullptr);
             return get_struct_sym_from_struct_expr(array_physical_cast->m_arg);
+        }
+        case ASR::exprType::IntegerCompare: {
+            ASR::IntegerCompare_t* int_compare = ASR::down_cast<ASR::IntegerCompare_t>(expression);
+            // Check if the left operand is a struct expression
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(int_compare->m_left);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            }
+            // Check if the right operand is a struct expression
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(int_compare->m_right);
+            if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            }
+            // If neither operand is a struct expression, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::RealCompare: {
+            ASR::RealCompare_t* real_compare = ASR::down_cast<ASR::RealCompare_t>(expression);
+            // Check if the left operand is a struct expression
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(real_compare->m_left);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            }
+            // Check if the right operand is a struct expression
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(real_compare->m_right);
+            if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            }
+            // If neither operand is a struct expression, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::ComplexCompare: {
+            ASR::ComplexCompare_t* complex_compare = ASR::down_cast<ASR::ComplexCompare_t>(expression);
+            // Check if the left operand is a struct expression
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(complex_compare->m_left);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            }
+            // Check if the right operand is a struct expression
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(complex_compare->m_right);
+            if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            }
+            // If neither operand is a struct expression, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::RealBinOp: {
+            ASR::RealBinOp_t* real_bin_op = ASR::down_cast<ASR::RealBinOp_t>(expression);
+            // Check if the left operand is a struct expression
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(real_bin_op->m_left);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            }
+            // Check if the right operand is a struct expression
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(real_bin_op->m_right);
+            if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            }
+            // If neither operand is a struct expression, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::IntegerBinOp: {
+            ASR::IntegerBinOp_t* int_bin_op = ASR::down_cast<ASR::IntegerBinOp_t>(expression);
+            // Check if the left operand is a struct expression
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(int_bin_op->m_left);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            }
+            // Check if the right operand is a struct expression
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(int_bin_op->m_right);
+            if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            }
+            // If neither operand is a struct expression, return nullptr
+            return nullptr;
+        }
+        case ASR::exprType::PointerNullConstant:
+        case ASR::exprType::IntegerConstant:
+        case ASR::exprType::UnsignedIntegerConstant:
+        case ASR::exprType::LogicalConstant:
+        case ASR::exprType::ComplexConstant:
+        case ASR::exprType::ArrayConstant:
+        case ASR::exprType::StringConstant:
+        case ASR::exprType::RealConstant: {
+            return nullptr;
         }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
