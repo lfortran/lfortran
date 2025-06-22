@@ -2614,9 +2614,7 @@ namespace Idnint {
 
     static ASR::expr_t *eval_Idnint(Allocator &al, const Location &loc,
             ASR::ttype_t* arg_type, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 8 ) {
-            diag.semantic_error_label("`idnint` takes argument of kind 8", {loc}, "");
-        }
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 8);
         double rv = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
         double near_integer = std::round(rv);
 
@@ -2635,10 +2633,7 @@ namespace Idnint {
         declare_basic_variables("_lcompilers_idnint_" + type_to_str_python(arg_types[0]));
         fill_func_arg("x", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 8) {
-            throw LCompilersException("argument of `idnint` must have kind equals to 8");
-            return nullptr;
-        }
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 8);
         /*
         * r = idnint(x)
         * r = int(anint(x))
@@ -3098,12 +3093,9 @@ namespace Sngl {
 namespace Ifix {
 
     static ASR::expr_t *eval_Ifix(Allocator &al, const Location &loc,
-            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
         int val = ASR::down_cast<ASR::RealConstant_t>(expr_value(args[0]))->m_r;
-        if (ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) != 4) {
-            append_error(diag, "first argument of `ifix` must have kind equals to 4", loc);
-            return nullptr;
-        }
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(expr_type(args[0])) == 4);
         return make_ConstantWithType(make_IntegerConstant_t, val, int32, loc);
     }
 
@@ -3111,9 +3103,8 @@ namespace Ifix {
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_ifix_" + type_to_str_python(arg_types[0]));
-        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != 4) {
-            throw LCompilersException("first argument of `ifix` must have kind equals to 4");
-            return nullptr;
+        if (ASRUtils::extract_kind_from_ttype_t(arg_types[0])) {
+            LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == 4);
         }
         fill_func_arg("a", arg_types[0]);
         auto result = declare(fn_name, return_type, ReturnVar);

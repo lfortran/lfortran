@@ -311,7 +311,8 @@ intrinsic_funcs_args = {
     "Idnint": [
         {
             "args": [("real",)],
-            "return": "int32"
+            "return": "int32",
+            "kind_validation": [{"first":{0: 8}}]
         }
     ],
     "Anint": [
@@ -494,7 +495,8 @@ intrinsic_funcs_args = {
     "Ifix": [
         {
             "args": [("real",)],
-            "return": "int32"
+            "return": "int32",
+            "kind_validation": [{"first":{0: 4}}]
         }
     ],
     "Idint": [
