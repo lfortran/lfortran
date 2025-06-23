@@ -9275,7 +9275,7 @@ public:
     }
 
     void visit_FileInquire(const ASR::FileInquire_t &x) {
-        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr,
+        llvm::Value *exist_val = nullptr, *f_name = nullptr, *unit = nullptr, *opened_val = nullptr, *size_val = nullptr, *write = nullptr,
         *pos_val = nullptr;
 
         if (x.m_file) {
@@ -9335,6 +9335,13 @@ public:
                             llvm::Type::getInt32Ty(context));
         }
 
+        if (x.m_write) {
+            this->visit_expr_wrapper(x.m_write, true);
+            write = tmp;
+        } else {
+            write = llvm::Constant::getNullValue(character_type);
+        }
+
         std::string runtime_func_name = "_lfortran_inquire";
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
@@ -9346,11 +9353,12 @@ public:
                         llvm::Type::getInt1Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
                         llvm::Type::getInt32Ty(context)->getPointerTo(),
+                        character_type,
                     }, false);
             fn = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, runtime_func_name, *module);
         }
-        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val, pos_val});
+        tmp = builder->CreateCall(fn, {f_name, exist_val, unit, opened_val, size_val, pos_val, write});
     }
 
     void visit_Flush(const ASR::Flush_t& x) {
