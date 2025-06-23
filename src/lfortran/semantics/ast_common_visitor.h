@@ -5808,6 +5808,7 @@ public:
                 ASR::symbol_t *es_s = current_scope->resolve_symbol(
                     ASRUtils::symbol_name(sym));
                 if (es_s == nullptr) {
+                    sym = ASRUtils::symbol_get_past_external(sym);
                     ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(sym);
                     ASR::Module_t* sym_module = ASRUtils::get_sym_module(sym);
                     LCOMPILERS_ASSERT(sym_module != nullptr);

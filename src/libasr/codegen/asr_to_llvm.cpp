@@ -8182,7 +8182,8 @@ public:
                     case ASR::ttypeType::CPtr:{
                         if( t2->type == ASR::ttypeType::StructType ) {
                             ASR::StructType_t* d = ASR::down_cast<ASR::StructType_t>(t2);
-                            current_der_type_name = ASRUtils::symbol_name(d->m_derived_type);
+                            current_der_type_name = ASRUtils::symbol_name(
+                                ASRUtils::symbol_get_past_external(d->m_derived_type));
                         }
                         fetch_ptr(x);
                         break;
