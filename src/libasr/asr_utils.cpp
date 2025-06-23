@@ -125,6 +125,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
 {
     // The idea behind this utility function is that every struct expression
     // must eventually resolve to either `Var` or `StructInstanceMember`.
+    std::cout<<"expression->type: "<<expression->type<<std::endl;
     switch (expression->type) {
         case ASR::exprType::Var: {
             // The symbol m_v has to be `Variable` for a Struct expression.
@@ -398,6 +399,24 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::StringSection: {
             ASR::StringSection_t* string_section = ASR::down_cast<ASR::StringSection_t>(expression);
             return get_struct_sym_from_struct_expr(string_section->m_arg);
+        }
+        case ASR::exprType::ArrayBroadcast: {
+            ASR::ArrayBroadcast_t* array_broadcast = ASR::down_cast<ASR::ArrayBroadcast_t>(expression);
+            // `array_broadcast->m_v` will be non-null for Struct expressions
+            return get_struct_sym_from_struct_expr(array_broadcast->m_array);
+        }
+        case ASR::exprType::StructConstructor: {
+            ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(expression);
+            for (size_t i = 0; i < struct_constructor->n_args; i++) {
+                ASR::expr_t* arg = struct_constructor->m_args[i].m_value;
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            return nullptr; // If no struct symbol found in arguments
         }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
@@ -984,7 +1003,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             // Check for compile time value in StructConstant
             ASR::Variable_t *v_variable_s = ASR::down_cast<ASR::Variable_t>(v);
             if (v_variable_s->m_value != nullptr && ASR::is_a<ASR::StructConstant_t>(*v_variable_s->m_value)) {
-                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(v_variable_s->m_type_declaration);
+                ASR::Struct_t *struct_s = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(v_variable_s->m_type_declaration));
                 std::string mem_name = ASRUtils::symbol_name(member);
                 // Find the index i of the member in the Struct symbol and set value to ith argument of StructConstant
                 size_t i = 0;

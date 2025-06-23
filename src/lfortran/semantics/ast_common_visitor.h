@@ -4834,10 +4834,20 @@ public:
                             al, loc, current_scope, s2c(al, derived_type_name),
                             nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                             ASR::accessType::Private));
+                    // set the variable's type declaration to the derived type
+                    type_declaration = v;
+                    type = ASRUtils::TYPE(ASR::make_StructType_t(al,
+                            loc,
+                            nullptr,
+                            0,
+                            nullptr,
+                            0,
+                            true));
+                } else {
+                    // set the variable's type declaration to the derived type
+                    type_declaration = v;
+                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
-                // set the variable's type declaration to the derived type
-                type_declaration = v;
-                type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
                 if (is_pointer) {
