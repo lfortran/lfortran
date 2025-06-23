@@ -345,6 +345,21 @@ static inline void set_kind_to_ttype_t(ASR::ttype_t* type, int kind) {
     }
 }
 
+static inline ASR::Variable_t* expr_to_variable_or_null(ASR::expr_t* expr) {
+    if (!expr || !ASR::is_a<ASR::Var_t>(*expr)) {
+        return nullptr;
+    }
+
+    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+        ASR::down_cast<ASR::Var_t>(expr)->m_v);
+
+    if (!ASR::is_a<ASR::Variable_t>(*sym)) {
+        return nullptr;
+    }
+
+    return ASR::down_cast<ASR::Variable_t>(sym);
+}
+
 static inline ASR::Variable_t* EXPR2VAR(const ASR::expr_t *f)
 {
     return ASR::down_cast<ASR::Variable_t>(symbol_get_past_external(
