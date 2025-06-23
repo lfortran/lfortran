@@ -563,6 +563,11 @@ jobs:
           variant: sccache
           key: ${{ github.job }}-${{ matrix.os }}
 
+      - name: List Installed Packages
+        shell: bash -e -l {0}
+        run:
+          micromamba list
+
       - name: Test integration_tests with GFortran
         shell: bash -e -l {0}
         run: |
