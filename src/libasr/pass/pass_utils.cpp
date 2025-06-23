@@ -1017,9 +1017,13 @@ namespace LCompilers {
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
             ASR::intentType var_intent, ASR::symbol_t* var_decl, ASR::expr_t* var) {
             ASRUtils::import_struct_t(al, loc, var_type, var_intent, current_scope, var);
+            if ( var_decl == nullptr && var != nullptr ) {
+                var_decl = ASRUtils::get_struct_sym_from_struct_expr(var);
+            }
             ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, name), nullptr, 0,
                                                     var_intent, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                    var_type, var_decl, ASR::abiType::Source, ASR::accessType::Public,
+                                                    var_type, var_decl,
+                                                    ASR::abiType::Source, ASR::accessType::Public,
                                                     ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
                 current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
