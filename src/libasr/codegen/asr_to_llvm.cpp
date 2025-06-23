@@ -2424,7 +2424,7 @@ public:
         llvm::Value *pos = tmp;
 
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, llvm_utils->module); 
-        tmp = tuple_api->read_item_using_typecode(el_type, ptuple, pos, LLVM::is_llvm_struct(x.m_type));
+        tmp = tuple_api->read_item(el_type, ptuple, ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_a)), pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_TupleConcat(const ASR::TupleConcat_t& x) {
@@ -5604,11 +5604,12 @@ public:
                 this->visit_expr(*x.m_value);
                 llvm::Value* value_tuple = tmp;
                 ASR::TupleConstant_t* const_tuple = ASR::down_cast<ASR::TupleConstant_t>(x.m_target);
+                ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(const_tuple->m_type);
                 for( size_t i = 0; i < const_tuple->n_elements; i++ ) {
                     ptr_loads = 0;
                     visit_expr(*const_tuple->m_elements[i]);
                     llvm::Value* target_ptr = tmp;
-                    llvm::Value* item = tuple_api->read_item(value_tuple, i, false);
+                    llvm::Value* item = tuple_api->read_item(value_tuple, tuple_type, i, false);
                     builder->CreateStore(item, target_ptr);
                 }
                 ptr_loads = ptr_loads_copy;

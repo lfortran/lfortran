@@ -4187,7 +4187,7 @@ namespace LCompilers {
                 llvm::Value* tuple_hash = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
                 ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(key_asr_type);
                 for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
-                    llvm::Value* llvm_tuple_i = llvm_utils->tuple_api->read_item(key, i,
+                    llvm::Value* llvm_tuple_i = llvm_utils->tuple_api->read_item(key, asr_tuple, i,
                                                     LLVM::is_llvm_struct(asr_tuple->m_type[i]));
                     tuple_hash = builder->CreateAdd(tuple_hash, get_key_hash(capacity, llvm_tuple_i,
                                                                              asr_tuple->m_type[i], module));
@@ -5854,34 +5854,27 @@ namespace LCompilers {
         return llvm_tuple_type;
     }
 
-    llvm::Value* LLVMTuple::read_item(llvm::Value* llvm_tuple, llvm::Value* pos,
-                                      bool get_pointer) {
-        llvm::Value* item = llvm_utils->create_gep(llvm_tuple, pos);
-        if( get_pointer ) {
-            return item;
-        }
-        return llvm_utils->CreateLoad(item);
-    }
-
-    llvm::Value* LLVMTuple::read_item(llvm::Value* llvm_tuple, size_t pos,
-                                      bool get_pointer) {
+    llvm::Value* LLVMTuple::read_item(llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type,
+                                      size_t pos, bool get_pointer) {
         llvm::Value* llvm_pos = llvm::ConstantInt::get(context, llvm::APInt(32, pos));
-        return read_item(llvm_tuple, llvm_pos, get_pointer);
+        llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[pos], llvm_utils->module);
+        return read_item(el_type, llvm_tuple, tuple_type, llvm_pos, get_pointer);
     }
 
-    llvm::Value* LLVMTuple::read_item_using_typecode(llvm::Type* el_type, llvm::Value* llvm_tuple, llvm::Value* pos,
+    llvm::Value* LLVMTuple::read_item(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, llvm::Value* pos,
                                       bool get_pointer) {
-        llvm::Value* item = llvm_utils->create_gep(llvm_tuple, pos);
+        llvm::Type* llvm_tuple_type = llvm_utils->get_type_from_ttype_t_util((ASR::ttype_t*)tuple_type, llvm_utils->module);
+        llvm::Value* item = llvm_utils->create_gep2(llvm_tuple_type, llvm_tuple, pos);
         if( get_pointer ) {
             return item;
         }
         return llvm_utils->CreateLoad2(el_type, item);
     }
 
-    llvm::Value* LLVMTuple::read_item_using_typecode(llvm::Type* el_type, llvm::Value* llvm_tuple, size_t pos,
+    llvm::Value* LLVMTuple::read_item(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, size_t pos,
                                       bool get_pointer) {
         llvm::Value* llvm_pos = llvm::ConstantInt::get(context, llvm::APInt(32, pos));
-        return read_item_using_typecode(el_type, llvm_tuple, llvm_pos, get_pointer);
+        return read_item(el_type, llvm_tuple, tuple_type, llvm_pos, get_pointer);
     }
 
     void LLVMTuple::tuple_init(llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
@@ -5889,7 +5882,7 @@ namespace LCompilers {
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         for( size_t i = 0; i < values.size(); i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
-            llvm::Value* item_ptr = read_item_using_typecode(el_type, llvm_tuple, i, true);
+            llvm::Value* item_ptr = read_item(el_type, llvm_tuple, tuple_type, i, true);
             llvm_utils->deepcopy(values[i], item_ptr,
                                  tuple_type->m_type[i], module,
                                  name2memidx);
@@ -5902,9 +5895,9 @@ namespace LCompilers {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(tuple_type->m_type[i], module); 
-            llvm::Value* src_item = read_item_using_typecode(el_type, src, i, LLVM::is_llvm_struct(
+            llvm::Value* src_item = read_item(el_type, src, tuple_type, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
-            llvm::Value* dest_item_ptr = read_item_using_typecode(el_type, dest, i, true);
+            llvm::Value* dest_item_ptr = read_item(el_type, dest, tuple_type, i, true);
             llvm_utils->deepcopy(src_item, dest_item_ptr,
                                  tuple_type->m_type[i], module,
                                  name2memidx);
@@ -5918,9 +5911,9 @@ namespace LCompilers {
                                                  llvm::Module* module) {
         llvm::Value* is_equal = llvm::ConstantInt::get(context, llvm::APInt(1, 1));
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
-            llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, i, LLVM::is_llvm_struct(
+            llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, tuple_type, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
-            llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, i, LLVM::is_llvm_struct(
+            llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, tuple_type, i, LLVM::is_llvm_struct(
                                               tuple_type->m_type[i]));
             llvm::Value* is_t1_eq_t2 = llvm_utils->is_equal_by_value(t1i, t2i, module,
                                         tuple_type->m_type[i]);
@@ -5964,9 +5957,9 @@ namespace LCompilers {
 
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
             llvm_utils->create_if_else(llvm_utils->CreateLoad(equality_holds), [&]() {
-                llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, i, LLVM::is_llvm_struct(
+                llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, tuple_type, i, LLVM::is_llvm_struct(
                                                 tuple_type->m_type[i]));
-                llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, i, LLVM::is_llvm_struct(
+                llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, tuple_type, i, LLVM::is_llvm_struct(
                                                 tuple_type->m_type[i]));
                 llvm::Value* res = llvm_utils->is_ineq_by_value(t1i, t2i, module,
                                                 tuple_type->m_type[i], overload_id);
@@ -5987,11 +5980,11 @@ namespace LCompilers {
                            std::map<std::string, std::map<std::string, int>>& name2memidx) {
         std::vector<llvm::Value*> values;
         for( size_t i = 0; i < tuple_type_1->n_type; i++ ) {
-            values.push_back(llvm_utils->tuple_api->read_item(t1, i,
+            values.push_back(llvm_utils->tuple_api->read_item(t1, tuple_type_1, i,
                 LLVM::is_llvm_struct(tuple_type_1->m_type[i])));
         }
         for( size_t i = 0; i < tuple_type_2->n_type; i++ ) {
-            values.push_back(llvm_utils->tuple_api->read_item(t2, i,
+            values.push_back(llvm_utils->tuple_api->read_item(t2, tuple_type_2, i,
                 LLVM::is_llvm_struct(tuple_type_2->m_type[i])));
         }
         tuple_init(concat_tuple, values, concat_tuple_type,
@@ -6302,7 +6295,7 @@ namespace LCompilers {
                 llvm::Value* tuple_hash = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0));
                 ASR::Tuple_t* asr_tuple = ASR::down_cast<ASR::Tuple_t>(el_asr_type);
                 for( size_t i = 0; i < asr_tuple->n_type; i++ ) {
-                    llvm::Value* llvm_tuple_i = llvm_utils->tuple_api->read_item(el, i,
+                    llvm::Value* llvm_tuple_i = llvm_utils->tuple_api->read_item(el, asr_tuple, i,
                                                     LLVM::is_llvm_struct(asr_tuple->m_type[i]));
                     tuple_hash = builder->CreateAdd(tuple_hash, get_el_hash(capacity, llvm_tuple_i,
                                                                              asr_tuple->m_type[i], module));
