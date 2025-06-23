@@ -1242,7 +1242,7 @@ RUN(NAME modules_30 LABELS gfortran EXTRAFILES
         modules_30_module3.f90 modules_30_module4.f90)
 RUN(NAME modules_31 LABELS gfortran EXTRAFILES
         modules_31_module1.f90 modules_31_module2.f90)
-# RUN(NAME modules_32 LABELS gfortran llvm)
+RUN(NAME modules_32 LABELS gfortran llvm)
 RUN(NAME modules_33 LABELS gfortran EXTRAFILES
         modules_33_module1.f90 modules_33_module2.f90
         modules_33_module3.f90)
@@ -1692,7 +1692,7 @@ RUN(NAME nested_vars1 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nested_vars2 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c)
 RUN(NAME nested_vars3 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 
-# RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME nbody LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME intent_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intent_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1821,7 +1821,7 @@ RUN(NAME class_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
-# RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME test_iso_c_binding LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME test_iso_c_binding_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
@@ -1848,7 +1848,7 @@ RUN(NAME bits_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #bgt, #b
 RUN(NAME bits_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) #ibits
 RUN(NAME bits_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME cpu_time_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME cpu_time_02_wasm LABELS wasm)
+RUN(NAME cpu_time_02_wasm LABELS wasm)
 RUN(NAME system_clock_01 LABELS gfortran llvm)
 RUN(NAME boz_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME cmd_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
