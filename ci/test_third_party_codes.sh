@@ -146,6 +146,18 @@ time_section "🧪 Testing jonquil" '
   cd ..
 '
 
+time_section "🧪 Testing M_CLI2" '
+  git clone https://github.com/jinangshah21/M_CLI2.git
+  cd M_CLI2
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-2
+  micromamba install -c conda-forge fpm
+  git checkout c34cfdde5e1f82918668c5d06c3faa315489b1c0
+  fpm --compiler=$FC build
+  print_success "Done with M_CLI2"
+  cd ..
+'
+
 time_section "🧪 Testing fortran_mpi" '
   git clone https://github.com/lfortran/fortran_mpi.git
   cd fortran_mpi
