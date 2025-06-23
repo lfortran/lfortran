@@ -133,7 +133,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 return ASRUtils::symbol_get_past_external(var->m_type_declaration);
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
-                if (func->m_return_var != nullptr) {
+                if (func->m_return_var != nullptr && get_struct_sym_from_struct_expr(func->m_return_var)) {
                    return get_struct_sym_from_struct_expr(func->m_return_var);
                 } else {
                     for (size_t i = 0; i < func->n_args; i++) {
@@ -148,7 +148,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                     return nullptr;
                 }
             } else {
-                return nullptr;
+                throw LCompilersException("Expected Var to be either Variable or Function type, but found: " +
+                                    std::to_string(ASR::down_cast<ASR::Var_t>(expression)->m_v->type));
             }
         } 
         case ASR::exprType::StructInstanceMember: {
@@ -436,6 +437,20 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             }
             return nullptr; // If no struct symbol found in arguments
         }
+        case ASR::exprType::OverloadedBinOp: {
+            ASR::OverloadedBinOp_t* overloaded_bin_op = ASR::down_cast<ASR::OverloadedBinOp_t>(expression);
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(overloaded_bin_op->m_left);
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(overloaded_bin_op->m_right);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            } else if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            } else if ( overloaded_bin_op->m_value != nullptr ) {
+                return get_struct_sym_from_struct_expr(overloaded_bin_op->m_value);
+            } else {
+                return nullptr; // If no struct symbol found in either side
+            }
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
@@ -535,7 +550,7 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
         }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
-                                + ASRUtils::type_to_str_fortran(ASRUtils::expr_type(expr)));
+                                + std::to_string(expr->type));
     }
 }
 

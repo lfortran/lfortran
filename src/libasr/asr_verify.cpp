@@ -740,6 +740,10 @@ public:
                 "Variable " + std::string(x.m_name) + " depends on " +
                 std::string(variable_dependencies[i]) + " but isn't found in its dependency list.");
         }
+        if ( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) ) {
+            require(x.m_type_declaration != nullptr,
+                "Variable " + std::string(x.m_name) + " of type StructType must have a type declaration.");
+        }
         current_name = current_name_copy;
     }
 
