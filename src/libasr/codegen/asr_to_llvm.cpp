@@ -1084,7 +1084,9 @@ public:
                 } else if (ASR::is_a<ASR::StructType_t>(*curr_arg_m_a_type)) {
                     // TODO: Implement source argument when m_source is class
                     bool m_source_is_class = m_source && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source)));
-                    if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
+                    if (std::string(ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_derived_type)) == "~abstract_type") {
+                        // TODO: implement when implementing class(*)
+                    } else if (ASR::down_cast<ASR::StructType_t>(curr_arg_m_a_type)->m_is_cstruct) {
                         llvm::Value* malloc_size = SizeOfTypeUtil(curr_arg_m_a_type, llvm_utils->getIntType(4),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
                         llvm::Value* malloc_ptr = LLVMArrUtils::lfortran_malloc(

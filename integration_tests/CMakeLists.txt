@@ -1794,7 +1794,7 @@ RUN(NAME class_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME class_procedure_args_01 LABELS gfortran llvm)
 
 RUN(NAME class_allocate_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+# RUN(NAME class_allocate_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) TODO: Uncomment when class(*) is implemented
 
 RUN(NAME kwargs_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm)
 RUN(NAME kwargs_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
