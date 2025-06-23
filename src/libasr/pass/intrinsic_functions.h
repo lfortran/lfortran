@@ -4183,12 +4183,8 @@ namespace Mergebits {
         auto mask = declare("m", arg_types[0], Local);
         auto numberofbits = declare("n", arg_types[0], Local);
 
-        if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != ASRUtils::extract_kind_from_ttype_t(arg_types[1])){
-            throw LCompilersException("The second argument of 'merge_bits' intrinsic must be the same type and kind as first argument");
-        }
-        if(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) != ASRUtils::extract_kind_from_ttype_t(arg_types[2])){
-            throw LCompilersException("The third argument of 'merge_bits' intrinsic must be the same type and kind as first argument");
-        }
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == ASRUtils::extract_kind_from_ttype_t(arg_types[1]));
+        LCOMPILERS_ASSERT(ASRUtils::extract_kind_from_ttype_t(arg_types[0]) == ASRUtils::extract_kind_from_ttype_t(arg_types[2]));
 
         body.push_back(al, b.Assignment(result, b.i_t(0, arg_types[0])));
         body.push_back(al, b.Assignment(itr, b.i_t(0, arg_types[0])));
