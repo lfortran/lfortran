@@ -548,6 +548,11 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
             ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(expr);
             return ASR::down_cast<ASR::Function_t>(fc->m_name);
         }
+        case ASR::exprType::PointerNullConstant: {
+            // PointerNullConstant is a special case where it does not have a function
+            // associated with it, so we return nullptr.
+            return nullptr;
+        }
         default:
             throw LCompilersException("get_function_from_expr() not implemented for "
                                 + std::to_string(expr->type));
