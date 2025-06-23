@@ -1721,7 +1721,7 @@ public:
                     std::string source_type_str = ASRUtils::type_to_str_fortran(source_type);
                     std::string var_type_str = ASRUtils::type_to_str_fortran(var_type);
                     diag.add(Diagnostic(
-                        "Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable."
+                        "Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.\n"
                         "Expected type: " + var_type_str + ", but got: " + source_type_str + ".",
                         Level::Error, Stage::Semantic, {
                             Label("incompatible types in `allocate` statement", {alloc_args_vec.p[i].m_a->base.loc, source->base.loc})
@@ -2472,7 +2472,7 @@ public:
                     }
                     ASR::asr_t* var_asr = ASRUtils::make_Variable_t_util(al, master_function_arg->base.loc,
                                             entry_function->m_symtab, s2c(al,sym_name), nullptr, 0, ASR::intentType::Local,
-                                            nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, ASR::abiType::Source,
+                                            nullptr, nullptr, ASR::storage_typeType::Default, type, ASRUtils::get_struct_sym_from_struct_expr(master_function_arg), ASR::abiType::Source,
                                             ASR::accessType::Public, ASR::presenceType::Required, false);
                     ASR::symbol_t* var_sym = ASR::down_cast<ASR::symbol_t>(var_asr);
                     entry_function->m_symtab->add_or_overwrite_symbol(sym_name, var_sym);
@@ -2992,7 +2992,7 @@ public:
                 current_scope, s2c(al, arg_name),
                 variable_dependencies_vec.p, variable_dependencies_vec.size(),
                 ASRUtils::intent_in, nullptr, nullptr,
-                ASR::storage_typeType::Default, ASRUtils::expr_type(end), nullptr,
+                ASR::storage_typeType::Default, ASRUtils::expr_type(end), ASRUtils::get_struct_sym_from_struct_expr(end),
                 ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
                 false);
             if (compiler_options.implicit_typing) {
@@ -3033,7 +3033,7 @@ public:
             current_scope, s2c(al, return_var_name),
             variable_dependencies_vec.p, variable_dependencies_vec.size(),
             ASRUtils::intent_return_var, nullptr, nullptr,
-            ASR::storage_typeType::Default, type, nullptr,
+            ASR::storage_typeType::Default, type, sym,
             ASR::abiType::Source, ASR::Public, ASR::presenceType::Required,
             false);
         current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));

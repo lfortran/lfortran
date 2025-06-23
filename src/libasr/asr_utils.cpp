@@ -125,13 +125,31 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
 {
     // The idea behind this utility function is that every struct expression
     // must eventually resolve to either `Var` or `StructInstanceMember`.
-    std::cout<<"expression->type: "<<expression->type<<std::endl;
     switch (expression->type) {
         case ASR::exprType::Var: {
-            // The symbol m_v has to be `Variable` for a Struct expression.
-            LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v)));
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
-            return ASRUtils::symbol_get_past_external(var->m_type_declaration);
+            // The symbol m_v has to be `Variable` or 'Function' for a Struct expression.
+            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+                return ASRUtils::symbol_get_past_external(var->m_type_declaration);
+            } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+                if (func->m_return_var != nullptr) {
+                   return get_struct_sym_from_struct_expr(func->m_return_var);
+                } else {
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        ASR::expr_t* arg = func->m_args[i];
+                        if (arg != nullptr) {
+                            ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
+                            if (struct_sym != nullptr) {
+                                return struct_sym;
+                            }
+                        }
+                    }
+                    return nullptr;
+                }
+            } else {
+                return nullptr;
+            }
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);

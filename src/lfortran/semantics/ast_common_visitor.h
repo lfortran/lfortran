@@ -1597,10 +1597,12 @@ public:
     ASR::symbol_t* declare_implicit_variable2(const Location &loc,
             const std::string &var_name, ASR::intentType intent,
             ASR::ttype_t *type, ASR::expr_t* value = nullptr) {
+        ASR::symbol_t* type_decl = nullptr;
         if ( value != nullptr ) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *value_type = ASRUtils::expr_type(value);
             value = b.t2t(value, value_type, type);
+            type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
         }
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
@@ -1608,7 +1610,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, value, value != nullptr ? ASRUtils::expr_value(value) : value,
-            ASR::storage_typeType::Default, type, nullptr,
+            ASR::storage_typeType::Default, type, type_decl,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);

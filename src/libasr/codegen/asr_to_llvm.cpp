@@ -4149,7 +4149,7 @@ public:
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(var_sym);
                 ASR::ttype_t* v_type = ASRUtils::extract_type(v->m_type);
                 if (ASR::is_a<ASR::StructType_t>(*v_type)) {
-                    variable_type_names.insert(ASRUtils::symbol_name(v->m_type_declaration));
+                    variable_type_names.insert(ASRUtils::symbol_name(var_sym));
                 }
             } else if (ASR::is_a<ASR::Struct_t>(
                         *ASRUtils::symbol_get_past_external(var_sym))) {
