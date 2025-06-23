@@ -1576,10 +1576,12 @@ public:
             // it is a real
             type = ASRUtils::TYPE(ASR::make_Real_t(al, loc, 4));
         }
+        ASR::symbol_t* type_decl = nullptr;
         if ( value != nullptr ) {
             ASRUtils::ASRBuilder b(al, loc);
             ASR::ttype_t *value_type = ASRUtils::expr_type(value);
             value = b.t2t(value, value_type, type);
+            type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
         }
         SetChar variable_dependencies_vec;
         variable_dependencies_vec.reserve(al, 1);
@@ -1587,7 +1589,7 @@ public:
         ASR::symbol_t *v = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc,
             current_scope, s2c(al, var_name), variable_dependencies_vec.p,
             variable_dependencies_vec.size(), intent, value, value != nullptr ? ASRUtils::expr_value(value) : value,
-            ASR::storage_typeType::Default, type, nullptr,
+            ASR::storage_typeType::Default, type, type_decl,
             current_procedure_abi_type, ASR::Public,
             ASR::presenceType::Required, false));
         current_scope->add_symbol(var_name, v);
@@ -8986,7 +8988,7 @@ public:
                     ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                     current_scope, s2c(al, arg_name), variable_dependencies_vec.p,
                     variable_dependencies_vec.size(), ASRUtils::intent_unspecified,
-                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr,
+                    nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(var_expr),
                     ASR::abiType::BindC, ASR::Public, ASR::presenceType::Required,
                     false));
                 current_scope->add_or_overwrite_symbol(arg_name, v);
@@ -10362,7 +10364,7 @@ public:
                     ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al, loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        return_type, nullptr, ASR::abiType::Source,
+                        return_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
                         ASR::accessType::Private, ASR::presenceType::Required, false);
                     current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
                     ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc,

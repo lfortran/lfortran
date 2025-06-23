@@ -1002,7 +1002,7 @@ namespace LCompilers {
             ASR::asr_t* expr_sym = ASRUtils::make_Variable_t_util(al, expr->base.loc, current_scope, s2c(al, name), nullptr, 0,
                                                     ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default,
                                                     ASRUtils::duplicate_type(al, ASRUtils::extract_type(ASRUtils::expr_type(expr))),
-                                                    nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
+                                                    ASRUtils::get_struct_sym_from_struct_expr(expr), ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false);
             if( current_scope->get_symbol(name) == nullptr ) {
                 current_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(expr_sym));
             } else {

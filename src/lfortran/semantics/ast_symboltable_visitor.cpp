@@ -708,7 +708,7 @@ public:
             ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
                                                 loc, current_scope, s2c(al, function_name), nullptr, 0,
                                                 ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                return_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                                                return_type, parent_func_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                 false));
             current_scope->add_symbol(function_name, return_var_sym);
             return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_sym));
@@ -3970,7 +3970,7 @@ public:
                     ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        return_type, nullptr, ASR::abiType::Source,
+                        return_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
                         ASR::accessType::Private, ASR::presenceType::Required, false);
                     current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
                     ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
