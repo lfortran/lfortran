@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <ISO_Fortran_binding.h>
 char f_string01_c( char *str ){
     printf("C Side : f_string01_c called with input argument [ %s ]\n", str);
     str[1] = 'X';

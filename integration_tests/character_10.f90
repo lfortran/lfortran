@@ -1,5 +1,5 @@
 
-module mm
+module module_10_mod
     use iso_c_binding
     implicit none
 
@@ -87,10 +87,10 @@ module mm
     end function
 
 
-end module mm
+end module 
 
-program pp
- use mm
+program module_10
+ use module_10_mod
  integer :: dummy
     dummy = f_string00_c_caller()
     dummy = f_string01_c_caller()

@@ -2,15 +2,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <memory.h>
-
-typedef struct {
-    void *base_addr;  // Pointer to data
-    size_t elem_len; 
-    // int rank;
-    // CFI_type_t type;
-    // int attribute;
-    // CFI_dim_t dim[CFI_MAX_RANK];
-} CFI_cdesc_t;
+#include <ISO_Fortran_binding.h>
 
 char f_string00_fortran(char *s);
 char f_string01_fortran(char s);
