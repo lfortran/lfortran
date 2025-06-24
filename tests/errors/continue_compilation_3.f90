@@ -62,8 +62,8 @@ program continue_compilation_3
         integer :: xx
     end type
     type(t) :: y
-
-
+    integer :: merge_i = 4, merge_j = 5
+    integer(8) :: merge_k = 8
 
 
 
@@ -172,6 +172,9 @@ program continue_compilation_3
     do i_incorrect_pragma = 1, 10
         print *, i_incorrect_pragma
     end do
+    !merge_bits
+    print *, merge_bits(1, 2, 3_8)
+    print *, merge_bits(merge_i,merge_j,merge_k)
 
     contains 
     subroutine bpe()
