@@ -808,3 +808,27 @@ semantic error: first argument of `ifix` must have kind equal to 4
     |
 452 |     print *, ifix(ifix_runtime)
     |              ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:454:14
+    |
+454 |     print *, min(.true., .false.)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:455:14
+    |
+455 |     print *, min(min_max, min_max)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:457:14
+    |
+457 |     print *, max(.true., .false.)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:458:14
+    |
+458 |     print *, max(min_max, min_max)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
