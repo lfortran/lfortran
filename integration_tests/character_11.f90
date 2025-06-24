@@ -77,8 +77,8 @@ subroutine f_string03_test()
     character(len=4) :: s
     character(len=2) :: r
     s = "Bye" // c_null_char
-! TODO : Fix this
-    ! r = f_string03_c(s, 100000) ! Array's size is irrelevant
+    
+    r = f_string03_c(s, 100000) ! Array's size is irrelevant
 
     print "( '[', a, ']' )", r
     if(r /= "B ") error stop
@@ -131,6 +131,7 @@ end module
 
 
 program character_11
+    use character_11_mod
     call f_string01_test()
     call f_string02_test()
     call f_string03_test()
