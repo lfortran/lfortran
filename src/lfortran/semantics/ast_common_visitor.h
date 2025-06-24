@@ -7649,6 +7649,32 @@ public:
             }   
 
             return (ASR::asr_t*)left;
+        } else if (ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(left))) {
+            ASR::ttype_t* left_type = ASRUtils::expr_type(left), *right_type;
+            for (size_t i=1;i<x.n_args;i++){
+                source = x.m_args[i].m_end;
+                this->visit_expr(*source);
+                right = ASRUtils::EXPR(tmp);
+                right_type = ASRUtils::expr_type(right);
+
+                Vec<ASR::ttype_t*> tuple_type_vec;
+                ASR::Tuple_t* tuple_type_left = ASR::down_cast<ASR::Tuple_t>(left_type);
+                ASR::Tuple_t* tuple_type_right = ASR::down_cast<ASR::Tuple_t>(right_type);
+                tuple_type_vec.reserve(al, tuple_type_left->n_type + tuple_type_right->n_type);
+
+                for (size_t j=0; j<tuple_type_left->n_type; j++) 
+                    tuple_type_vec.push_back(al, tuple_type_left->m_type[j]);
+                
+                for (size_t j=0; j<tuple_type_right->n_type; j++) 
+                    tuple_type_vec.push_back(al, tuple_type_right->m_type[j]);
+                
+                ASR::ttype_t *tuple_type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc,
+                                            tuple_type_vec.p, tuple_type_vec.n));
+                left = ASRUtils::EXPR(ASR::make_TupleConcat_t(al, x.base.base.loc, left, right, tuple_type, nullptr));
+                left_type = tuple_type;
+            }   
+
+            return (ASR::asr_t*)left;
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
