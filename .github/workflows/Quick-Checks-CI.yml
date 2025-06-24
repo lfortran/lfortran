@@ -583,7 +583,7 @@ jobs:
               -DWITH_STACKTRACE=no \
               -DWITH_RUNTIME_STACKTRACE=yes \
               -DCMAKE_PREFIX_PATH="$CONDA_PREFIX" \
-              -DCMAKE_INSTALL_PREFIX=`pwd`/inst \
+              -DCMAKE_INSTALL_PREFIX="$CONDA_PREFIX" \
               -DCMAKE_C_COMPILER_LAUNCHER=sccache \
               -DCMAKE_CXX_COMPILER_LAUNCHER=sccache
 
@@ -609,6 +609,7 @@ jobs:
       - name: Test Fortran Backend
         shell: bash -e -l {0}
         run: |
+            ${CONDA_PREFIX}/bin/lfortran integration_tests/format_08.f90 --show-fortran
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
