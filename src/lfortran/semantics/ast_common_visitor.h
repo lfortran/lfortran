@@ -7649,6 +7649,32 @@ public:
             }   
 
             return (ASR::asr_t*)left;
+        } else if (ASR::is_a<ASR::Tuple_t>(*ASRUtils::expr_type(left))) {
+            ASR::ttype_t* left_type = ASRUtils::expr_type(left), *right_type;
+            for (size_t i=1;i<x.n_args;i++){
+                source = x.m_args[i].m_end;
+                this->visit_expr(*source);
+                right = ASRUtils::EXPR(tmp);
+                right_type = ASRUtils::expr_type(right);
+
+                Vec<ASR::ttype_t*> tuple_type_vec;
+                ASR::Tuple_t* tuple_type_left = ASR::down_cast<ASR::Tuple_t>(left_type);
+                ASR::Tuple_t* tuple_type_right = ASR::down_cast<ASR::Tuple_t>(right_type);
+                tuple_type_vec.reserve(al, tuple_type_left->n_type + tuple_type_right->n_type);
+
+                for (size_t j=0; j<tuple_type_left->n_type; j++) 
+                    tuple_type_vec.push_back(al, tuple_type_left->m_type[j]);
+                
+                for (size_t j=0; j<tuple_type_right->n_type; j++) 
+                    tuple_type_vec.push_back(al, tuple_type_right->m_type[j]);
+                
+                ASR::ttype_t *tuple_type = ASRUtils::TYPE(ASR::make_Tuple_t(al, x.base.base.loc,
+                                            tuple_type_vec.p, tuple_type_vec.n));
+                left = ASRUtils::EXPR(ASR::make_TupleConcat_t(al, x.base.base.loc, left, right, tuple_type, nullptr));
+                left_type = tuple_type;
+            }   
+
+            return (ASR::asr_t*)left;
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
             diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
@@ -7656,6 +7682,54 @@ public:
             throw SemanticAbort();
         }
     }
+
+    ASR::asr_t* create_LFEq(const AST::FuncCallOrArray_t& x) {
+        if (x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_eq expects no keyword arguments",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+
+        if (x.n_args != 2) {
+            diag.add(Diagnostic("_lfortran_eq expects exactly two arguments, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        }
+         
+        ASR::expr_t* left = nullptr, *right = nullptr;
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        left = ASRUtils::EXPR(tmp);
+        source = x.m_args[1].m_end;
+        this->visit_expr(*source);
+        right = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* left_type = ASRUtils::expr_type(left), *right_type = ASRUtils::expr_type(right);
+
+
+        if (!ASRUtils::check_equal_type(left_type, right_type)){
+                std::string left_type_str = ASRUtils::type_to_str_python(left_type);
+                std::string right_type_str = ASRUtils::type_to_str_python(right_type);
+                diag.add(Diagnostic(
+                    "Type mismatch in _lfortran_eq, the types must be compatible",
+                    Level::Error, Stage::Semantic, {
+                        Label("Types mismatch '" + 
+                    left_type_str + "' and '" + right_type_str +  "'",{x.base.base.loc})
+                    }));
+                throw SemanticAbort();
+        }
+
+        if (ASR::is_a<ASR::Tuple_t>(*left_type))
+            return ASR::make_TupleCompare_t(al, x.base.base.loc, left, ASR::cmpopType::Eq, right,
+                                            ASRUtils::TYPE(ASR::make_Logical_t(al, x.base.base.loc, 4)), nullptr);
+        else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(left_type);
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_get_item has not been implemented yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+    }
+
     ASR::asr_t* create_ListConstant(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_list_constant expects no keyword arguments",
@@ -8710,6 +8784,8 @@ public:
                     tmp = create_LFPop(x);
                 else if ( var_name == "_lfortran_concat")
                     tmp = create_LFConcat(x);
+                else if ( var_name == "_lfortran_eq")
+                    tmp = create_LFEq(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
                 else if ( var_name == "_lfortran_list_count")
