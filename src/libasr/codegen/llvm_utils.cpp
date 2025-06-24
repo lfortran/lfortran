@@ -5956,22 +5956,22 @@ namespace LCompilers {
                           inequality_holds);
 
         for( size_t i = 0; i < tuple_type->n_type; i++ ) {
-            llvm_utils->create_if_else(llvm_utils->CreateLoad(equality_holds), [&]() {
+            llvm_utils->create_if_else(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds), [&]() {
                 llvm::Value* t1i = llvm_utils->tuple_api->read_item(t1, tuple_type, i, LLVM::is_llvm_struct(
                                                 tuple_type->m_type[i]));
                 llvm::Value* t2i = llvm_utils->tuple_api->read_item(t2, tuple_type, i, LLVM::is_llvm_struct(
                                                 tuple_type->m_type[i]));
                 llvm::Value* res = llvm_utils->is_ineq_by_value(t1i, t2i, module,
                                                 tuple_type->m_type[i], overload_id);
-                res = builder->CreateOr(llvm_utils->CreateLoad(inequality_holds), res);
+                res = builder->CreateOr(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), inequality_holds), res);
                 LLVM::CreateStore(*builder, res, inequality_holds);
                 res = llvm_utils->is_equal_by_value(t1i, t2i, module, tuple_type->m_type[i]);
-                res = builder->CreateAnd(llvm_utils->CreateLoad(equality_holds), res);
+                res = builder->CreateAnd(llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), equality_holds), res);
                 LLVM::CreateStore(*builder, res, equality_holds);
             }, [](){});
         }
 
-        return llvm_utils->CreateLoad(inequality_holds);
+        return llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), inequality_holds);
     }
 
     void LLVMTuple::concat(llvm::Value* t1, llvm::Value* t2, ASR::Tuple_t* tuple_type_1,
