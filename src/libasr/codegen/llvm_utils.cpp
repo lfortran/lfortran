@@ -5620,8 +5620,11 @@ namespace LCompilers {
                                                  llvm::Module* module) {
         llvm::AllocaInst *is_equal = llvm_utils->CreateAlloca(llvm::Type::getInt1Ty(context));
         LLVM::CreateStore(*builder, llvm::ConstantInt::get(context, llvm::APInt(1, 1)), is_equal);
-        llvm::Value *a_len = llvm_utils->list_api->len(l1);
-        llvm::Value *b_len = llvm_utils->list_api->len(l2);
+
+        std::string type_code = ASRUtils::get_type_code(item_type);
+        llvm::Type* list_type = get_list_type(nullptr, type_code, 0);
+        llvm::Value *a_len = llvm_utils->list_api->len_using_typecode(list_type, l1);
+        llvm::Value *b_len = llvm_utils->list_api->len_using_typecode(list_type, l2);
         llvm::Value *cond = builder->CreateICmpEQ(a_len, b_len);
         llvm::Function *fn = builder->GetInsertBlock()->getParent();
         llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
@@ -5648,9 +5651,9 @@ namespace LCompilers {
             llvm_utils->start_new_block(loopbody);
             {
                 llvm::Value* i = llvm_utils->CreateLoad(idx);
-                llvm::Value* left_arg = llvm_utils->list_api->read_item(l1, i,
+                llvm::Value* left_arg = llvm_utils->list_api->read_item_using_typecode(type_code, l1, i,
                         false, module, LLVM::is_llvm_struct(item_type));
-                llvm::Value* right_arg = llvm_utils->list_api->read_item(l2, i,
+                llvm::Value* right_arg = llvm_utils->list_api->read_item_using_typecode(type_code, l2, i,
                         false, module, LLVM::is_llvm_struct(item_type));
                 llvm::Value* res = llvm_utils->is_equal_by_value(left_arg, right_arg, module,
                                         item_type);
