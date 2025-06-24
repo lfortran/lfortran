@@ -6170,6 +6170,17 @@ namespace Max {
             }
         }
 
+        for(size_t i=1; i<args.size(); i++) {
+            ASR::ttype_t *arg_type_idx = ASRUtils::expr_type(args[i]);
+            arg_type_idx = ASRUtils::extract_type(arg_type_idx);
+            if (!ASR::is_a<ASR::Integer_t>(*arg_type_idx) 
+                && !ASR::is_a<ASR::Real_t>(*arg_type_idx) 
+                && !ASR::is_a<ASR::String_t>(*arg_type_idx)) { 
+                append_error(diag, "Arguments to min0 must be of real, integer or character type", loc);
+                return nullptr;
+            }
+        }
+
         if (!all_args_same_kind){
             promote_arguments_kinds(al, loc, args, diag);
         }
@@ -6201,6 +6212,11 @@ namespace Max {
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_max0_" + type_to_str_python(arg_types[0]));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
+
+        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*arg_types[0]) || 
+                ASR::is_a<ASR::Real_t>(*arg_types[0]) ||
+                ASR::is_a<ASR::Integer_t>(*arg_types[0])));
+
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
@@ -6220,8 +6236,6 @@ namespace Max {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
-        } else {
-            throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
         return_type = ASRUtils::extract_type(return_type);
         auto result = declare(fn_name, return_type, ReturnVar);
