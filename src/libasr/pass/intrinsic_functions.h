@@ -6238,6 +6238,9 @@ namespace Max {
             }
         }
         return_type = ASRUtils::extract_type(return_type);
+        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*return_type) || 
+                ASR::is_a<ASR::Real_t>(*return_type) ||
+                ASR::is_a<ASR::Integer_t>(*return_type)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -6262,8 +6265,6 @@ namespace Max {
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
-        } else {
-            throw LCompilersException("Arguments to max0 must be of real, integer or character type");
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -6418,6 +6419,9 @@ namespace Min {
             }
         }
         return_type = ASRUtils::extract_type(return_type);
+        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*return_type) || 
+                ASR::is_a<ASR::Real_t>(*return_type) ||
+                ASR::is_a<ASR::Integer_t>(*return_type)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -6442,8 +6446,6 @@ namespace Min {
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
-        } else {
-            throw LCompilersException("Arguments to min0 must be of real, integer or character type");
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
