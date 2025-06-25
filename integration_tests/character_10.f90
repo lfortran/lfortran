@@ -53,9 +53,15 @@ module module_10_mod
         integer(c_int), value :: n
         character(len=1, kind=c_char) :: s(n)
         character(len=1, kind=c_char) :: r
+        character(len=:, kind=c_char), allocatable :: local_str
         print "('Fortran Side : `f_string02_fortran` called with s =', '[', a, ']' )", s(1)
         if(s(1) /= "A") error stop
-        r = s(1)
+
+        local_str = s(1) // "?????????????"
+        if(local_str /= "A?????????????") error stop
+        if(len(local_str) /= 14) error stop
+        
+        r = local_str
         s(1) = '2'
     end function
 
