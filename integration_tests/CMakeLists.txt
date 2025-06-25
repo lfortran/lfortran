@@ -719,9 +719,7 @@ RUN(NAME format_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-# we might eventually need to remove "gfortran" label from format_08, once
-# we start using GFortran version 15
-RUN(NAME format_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_08 LABELS llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_08s LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
