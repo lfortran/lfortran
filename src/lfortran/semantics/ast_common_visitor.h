@@ -3485,6 +3485,7 @@ public:
                 bool value_attr = false;
                 char *bindc_name = nullptr;
                 bool is_volatile = false;
+                bool is_protected = false;
                 AST::AttrType_t *sym_type = nullptr;
 
                 if (AST::is_a<AST::AttrType_t>(*x.m_vartype))
@@ -3669,6 +3670,8 @@ public:
                                 ::AttrNoPass) {
                             } else if (sa->m_attr == AST::simple_attributeType::AttrVolatile) {
                                 is_volatile = true;
+                            } else if (sa->m_attr == AST::simple_attributeType::AttrProtected) {
+                                is_protected = true;
                             } else {
                                 diag.add(Diagnostic(
                                     "Attribute type not implemented yet " + std::to_string(sa->m_attr),
@@ -3831,7 +3834,8 @@ public:
                                 s2c(al, to_lower(s.m_name)), variable_dependencies_vec.p,
                                 variable_dependencies_vec.size(), s_intent, init_expr, value,
                                 storage_type, type, type_declaration, s_abi, s_access, s_presence,
-                                value_attr, target_attr, contig_attr, bindc_name, is_volatile
+                                value_attr, target_attr, contig_attr, bindc_name, is_volatile,
+                                is_protected
                             );
                             current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(v));
                             variable_added_to_symtab = ASR::down_cast<ASR::Variable_t>(ASR::down_cast<ASR::symbol_t>(v));
