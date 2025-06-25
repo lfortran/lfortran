@@ -447,8 +447,7 @@ namespace GetCommandArgument {
         std::string first_param_c_func_name = ASRUtils::is_integer(*arg_types[1]) ? c_func_name_2 : c_func_name_1;
 
         if (arg_types.size() > 1) { // TODO : Correct this as it assumes `arg[1]` to be the `value` (this function has all parameters as optional)
-            ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            ASR::ttype_t* String_type = character(-1);
             fill_func_arg_sub("value", arg_types[1], InOut);
             Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
             SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
@@ -458,7 +457,7 @@ namespace GetCommandArgument {
             SetChar dep_1; dep_1.reserve(al, 1);
             Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
             ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, first_param_c_func_name,
-                ASRUtils::is_character(*arg_types[1])? CString_type : ASRUtils::extract_type(arg_types[1]),
+                ASRUtils::is_character(*arg_types[1])? String_type : ASRUtils::extract_type(arg_types[1]),
                 ASRUtils::intent_return_var, ASR::abiType::BindC, false);
             ASR::symbol_t *s_1 = make_ASR_Function_t(first_param_c_func_name, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, first_param_c_func_name));
@@ -469,8 +468,7 @@ namespace GetCommandArgument {
             call_args1.push_back(al, args[0]);
             body.push_back(al, b.Assignment(args[1], 
                 ASRUtils::is_character(*arg_types[1])?
-                    ASRUtils::create_string_physical_cast(al, b.Call(s_1, call_args1, CString_type),
-                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)
+                    b.Call(s_1, call_args1, String_type)
                     :b.Call(s_1, call_args1, arg_types[1])));
         }
         if (arg_types.size() > 2 && !ASRUtils::is_integer(*arg_types[1])) {
@@ -735,8 +733,8 @@ namespace GetEnvironmentVariable {
         fill_func_arg_sub("name", arg_types[0], InOut);
         if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {
             // this is the case where args[1] is `value`
-            ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            ASR::ttype_t* CString_type = b.String(b.i32(1), ASR::ExpressionLength, ASR::CChar);
+            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
             fill_func_arg_sub("value", arg_types[1], InOut);
             ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
                 CString_type);
@@ -747,7 +745,6 @@ namespace GetEnvironmentVariable {
             body.push_back(al, b.Assignment(args[1],
                     ASRUtils::create_string_physical_cast(al, b.Call(s, call_args, CString_type),
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)));
-
             if (arg_types.size() >= 3) {
                 std::string c_func_name = "_lfortran_get_length_of_environment_variable";
                 fill_func_arg_sub("length", arg_types[2], InOut);
@@ -770,7 +767,7 @@ namespace GetEnvironmentVariable {
             c_func_name = "_lfortran_get_length_of_environment_variable";
             fill_func_arg_sub("length", arg_types[1], InOut);
             ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
+            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
             ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
                 arg_types[1]);
             fn_symtab->add_symbol(c_func_name, s);
@@ -820,7 +817,7 @@ namespace ExecuteCommandLine {
         std::string new_name = "_lcompilers_execute_command_line_";
         ASR::symbol_t* s = scope->get_symbol(new_name);
         ASR::ttype_t* ret_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::PointerString));
+        ASR::ttype_t* str_type = ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString));
         if (s) {
             ASRBuilder b(al, loc);
             return b.SubroutineCall(s, new_args);
