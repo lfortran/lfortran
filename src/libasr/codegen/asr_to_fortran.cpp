@@ -195,6 +195,8 @@ public:
                         case ASR::string_length_kindType::DeferredLength:
                             r += ":";
                             break;
+                        case ASR::ImplicitLength:
+                            throw LCompilersException("Shouldn't be visited (Can't deduce its length, It's not a variable).");
                     }
                 }
                 r += ", kind=";
