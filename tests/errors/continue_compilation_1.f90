@@ -4,6 +4,8 @@
 module continue_compilation_1_mod
     type :: MyClass
         integer :: value
+
+
     contains
         procedure :: display
     end type MyClass
@@ -12,8 +14,28 @@ module continue_compilation_1_mod
     contains
         private
         procedure, public, pass(self) :: add_log_file
+
+
     
     end type logger_type
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 contains
 
     subroutine my_func(x, y)
