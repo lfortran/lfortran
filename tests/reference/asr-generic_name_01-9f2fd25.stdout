@@ -39,6 +39,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             integer_add_subrout:
                                                 (ClassProcedure
@@ -69,6 +70,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             real_add_subrout:
@@ -140,6 +142,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -159,6 +162,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             sum:
@@ -185,6 +189,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -209,6 +214,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -355,6 +361,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -374,6 +381,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             sum:
@@ -400,6 +408,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -424,6 +433,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -601,6 +611,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -625,6 +636,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             complextype:
@@ -656,6 +668,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             fptwo:
                                 (Variable
@@ -675,6 +688,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             fpzero:
@@ -696,6 +710,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ione:
                                 (Variable
@@ -715,6 +730,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             izero:
@@ -736,6 +752,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             negfpone:
                                 (Variable
@@ -755,6 +772,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

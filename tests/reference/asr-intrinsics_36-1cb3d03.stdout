@@ -41,6 +41,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             empty:
                                 (Variable
@@ -75,6 +76,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             simple:
@@ -111,6 +113,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             space_at_end:
                                 (Variable
@@ -145,6 +148,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             space_at_start:
@@ -181,6 +185,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             space_in_between:
                                 (Variable
@@ -216,6 +221,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             spaces_with_symbols:
                                 (Variable
@@ -250,6 +256,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

@@ -28,6 +28,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             file_scope_flag:
                                 (ExternalSymbol
@@ -78,6 +79,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             os_valid:
                                 (Variable
@@ -97,6 +99,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             profile_config_t:
@@ -130,6 +133,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             profiles:
                                 (Variable
@@ -162,6 +166,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             profindex:
                                 (Variable
@@ -181,6 +186,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -276,6 +282,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             compiler_name:
                                                 (Variable
@@ -297,6 +304,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             cxx_flags:
@@ -320,6 +328,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             err_message:
                                                 (Variable
@@ -341,6 +350,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_flags:
@@ -364,6 +374,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             file_name:
                                                 (Variable
@@ -385,6 +396,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -418,6 +430,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -440,6 +453,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ifile:
                                                 (Variable
@@ -459,6 +473,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ikey:
@@ -480,6 +495,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_valid:
                                                 (Variable
@@ -499,6 +515,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             key_name:
@@ -522,6 +539,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -544,6 +562,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -564,6 +583,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_valid:
                                                 (Variable
@@ -583,6 +603,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile_name:
@@ -605,6 +626,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             profiles:
@@ -638,6 +660,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             profindex:
                                                 (Variable
@@ -658,6 +681,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -677,6 +701,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -876,6 +901,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -896,6 +922,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -915,6 +942,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -946,6 +974,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -965,6 +994,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_built_in:
@@ -986,6 +1016,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             link_time_flags:
                                                 (Variable
@@ -1006,6 +1037,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1025,6 +1057,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile:
@@ -1051,6 +1084,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             profile_name:
                                                 (Variable
@@ -1070,6 +1104,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1154,6 +1189,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             compiler:
                                                 (Variable
@@ -1176,6 +1212,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             cxx_flags:
                                                 (Variable
@@ -1197,6 +1234,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             file_scope_flags:
@@ -1230,6 +1268,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             flags:
                                                 (Variable
@@ -1252,6 +1291,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_built_in:
                                                 (Variable
@@ -1271,6 +1311,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             link_time_flags:
@@ -1294,6 +1335,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             os_type:
                                                 (Variable
@@ -1313,6 +1355,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             profile_name:
@@ -1335,6 +1378,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
