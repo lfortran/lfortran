@@ -3628,7 +3628,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num, char *f_name, char *status
         *(end + 1) = '\0';
     }
 
-    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL, NULL);
+    _lfortran_inquire(f_name, file_exists, -1, NULL, NULL, NULL, NULL, NULL, NULL);
     char *access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3853,7 +3853,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
 }
 
 LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num,
-                                    bool *opened, int32_t *size, int32_t *pos, char *write) {
+                                    bool *opened, int32_t *size, int32_t *pos, char *write, char* read, char* readwrite) {
     if (f_name && unit_num != -1) {
         printf("File name and file unit number cannot be specified together.\n");
         exit(1);
@@ -3878,9 +3878,21 @@ LFORTRAN_API void _lfortran_inquire(char *f_name, bool *exists, int32_t unit_num
         FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, &read_access, &write_access);
         if (write != NULL) {
             if (write_access) {
-                strcpy(write, "Yes");
+                strcpy(write, "YES");
             } else {
-                strcpy(write, "No");
+                strcpy(write, "NO");
+            }
+        } if (read != NULL) {
+            if (read_access) {
+                strcpy(read, "YES");
+            } else {
+                strcpy(read, "NO");
+            }
+        } if (readwrite != NULL) {
+            if (read_access && write_access) {
+                strcpy(readwrite, "YES");
+            } else {
+                strcpy(readwrite, "NO");
             }
         }
         *opened = (fp != NULL);
