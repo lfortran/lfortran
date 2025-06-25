@@ -739,3 +739,9 @@ semantic error: The argument `mask` must be of rank 2, an array with rank 1 was 
     |
 338 |     print *, pack(arr2, mask1)
     |                         ^^^^^ 
+
+semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot appear in LHS of assignment
+   --> tests/errors/continue_compilation_1.f90:341:5
+    |
+341 |     protected_module_my_class_obj%value = 42
+    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

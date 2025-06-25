@@ -1669,6 +1669,9 @@ static inline ASR::Variable_t* extract_ExternalSymbol_Variable(ASR::expr_t* a_ex
     } else if (ASR::is_a<ASR::ArraySection_t>(*a_expr)) {
         ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(a_expr);
         variable_expr = array_section->m_v;
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*a_expr)) {
+        ASR::StructInstanceMember_t* struct_instance_mem = ASR::down_cast<ASR::StructInstanceMember_t>(a_expr);
+        variable_expr = struct_instance_mem->m_v;
     }
 
     if (variable_expr && ASR::is_a<ASR::Var_t>(*variable_expr)) {

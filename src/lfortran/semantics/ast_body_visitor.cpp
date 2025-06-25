@@ -3188,7 +3188,7 @@ public:
                 diag.add(Diagnostic(
                     "Variable " + std::string(v->m_name) + " is PROTECTED and cannot appear in LHS of assignment",
                     Level::Error, Stage::Semantic, {
-                        Label("", {v->base.base.loc})
+                        Label("", {target->base.loc})
                     }
                 ));
                 throw SemanticAbort();

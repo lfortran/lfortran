@@ -19,7 +19,7 @@ module continue_compilation_1_mod
     
     end type logger_type
 
-
+    type(MyClass), PROTECTED :: protected_module_my_class_obj
 
 
 
@@ -336,4 +336,7 @@ program continue_compilation_1
     print *, ["aa", string(x+1:x+2), "aaa"]
 
     print *, pack(arr2, mask1)
+
+    ! assigning to a *PROTECTED* struct instance member, not allowed
+    protected_module_my_class_obj%value = 42
 end program
