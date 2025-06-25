@@ -106,8 +106,8 @@ program continue_compilation_1
     character(:), allocatable :: x(2)
     integer, dimension(:,:), allocatable :: arr_size
     logical :: mask_size(size(arr_size))
-
-
+    integer, protected :: protected_attr_var
+    integer, parameter, protected :: protected_parameter_var
 
 
 

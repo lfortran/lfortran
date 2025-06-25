@@ -3710,6 +3710,24 @@ public:
                         }
                     }
 
+                    if (is_protected && !in_module) {
+                        diag.add((Diagnostic(
+                            "`protected` attribute is only allowed in specification part of a module",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
+                    if (is_protected && storage_type == ASR::storage_typeType::Parameter) {
+                        diag.add((Diagnostic(
+                            "`parameter` attribute conflicts with `protected` attribute",
+                            Level::Error, Stage::Semantic, {
+                                Label("",{x.base.base.loc})
+                            }
+                        )));
+                        throw SemanticAbort();
+                    }
 
                     if (is_allocatable && storage_type == ASR::storage_typeType::Parameter) {
                         diag.add((Diagnostic(
