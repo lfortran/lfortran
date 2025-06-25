@@ -3186,7 +3186,7 @@ public:
         if (auto* v = ASRUtils::extract_ExternalSymbol_Variable(target)) {
             if (v->m_is_protected) {
                 diag.add(Diagnostic(
-                    "Variable " + std::string(v->m_name) + " is PROTECTED and cannot appear in a variable definition",
+                    "Variable " + std::string(v->m_name) + " is PROTECTED and cannot appear in LHS of assignment",
                     Level::Error, Stage::Semantic, {
                         Label("", {v->base.base.loc})
                     }
