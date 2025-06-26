@@ -2920,7 +2920,7 @@ class ParallelRegionVisitor :
                                     ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
             
             // Constants for GOMP_task call
-            ASR::expr_t* data_size = b.i64(32);
+            ASR::expr_t* data_size = b.i64(compute_task_data_size(task_data_module.second));
             ASR::expr_t* data_align = b.i64(8);
             ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))); // Always create task
             ASR::expr_t* flags = b.i32(0);      // No special flags
@@ -2955,6 +2955,36 @@ class ParallelRegionVisitor :
             clauses_heirarchial[nesting_lvl].clear();
         }
 
+        int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
+            int64_t total_size = 0;
+            ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
+            SymbolTable* m_symtab = task_data_struct->m_symtab;
+            for (size_t i=0;i< task_data_struct->n_members; i++) {
+                ASR::symbol_t* sym = m_symtab->resolve_symbol(task_data_struct->m_members[i]);
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::ttype_t* type = var->m_type;
+                if (ASR::is_a<ASR::CPtr_t>(*type)) {
+                    // CPtr is typically 8 bytes on 64-bit systems
+                    total_size += 8;
+                } else if (ASR::is_a<ASR::Integer_t>(*type)) {
+                    // Integer (c_int) is 4 bytes
+                    total_size += 4;
+                } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                    // Real (c_float or c_double) depends on kind, assume 4 or 8
+                    ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
+                    total_size += (real_type->m_kind == 4 ? 4 : 8);
+                } else if (ASR::is_a<ASR::Array_t>(*type)) {
+                    // Arrays are stored as CPtr (8 bytes) plus bounds
+                    total_size += 8;
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type)));
+                    total_size += 8 * array_type->n_dims; // 4 bytes each for lbound and ubound per dimension
+                } else {
+                    // Fallback for unsupported types, assume 8 bytes
+                    total_size += 8;
+                }
+            }
+            return total_size;
+        }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
                     const std::string &thread_data_module_name,
