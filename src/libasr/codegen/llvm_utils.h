@@ -759,12 +759,6 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
-
-            virtual
             llvm::Value* len(llvm::Value* dict) = 0;
 
             virtual
@@ -866,11 +860,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
 
             void dict_deepcopy(llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx);
-
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
@@ -1021,11 +1010,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
 
             void dict_deepcopy(llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx);
-
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 

@@ -5761,7 +5761,7 @@ public:
 
             std::string key_type_code = ASRUtils::get_type_code(value_dict_type->m_key_type);
             std::string value_type_code = ASRUtils::get_type_code(value_dict_type->m_value_type);
-            llvm_utils->dict_api->dict_deepcopy_using_typecode(key_type_code, value_type_code, value_dict, target_dict,
+            llvm_utils->dict_api->dict_deepcopy(value_dict, target_dict,
                                     value_dict_type, module.get(), name2memidx);
             return ;
         } else if( is_target_set && is_value_set ) {
