@@ -1785,9 +1785,8 @@ public:
             ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(left);
             ASR::symbol_t* end_sym = end_var->m_v;
             SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
-                (symbol_scope->counter != current_scope->counter && is_argument &&
-                ASRUtils::expr_value(end) == nullptr) ) {
+            if ((ASRUtils::expr_value(end) == nullptr) && (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument)) ) {
                 left = get_transformed_function_call(end_sym);
             }
             if (ASR::is_a<ASR::IntegerBinOp_t>(*right)) {
@@ -1803,9 +1802,8 @@ public:
             ASR::Var_t* end_var = ASR::down_cast<ASR::Var_t>(right);
             ASR::symbol_t* end_sym = end_var->m_v;
             SymbolTable* symbol_scope = ASRUtils::symbol_parent_symtab(end_sym);
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
-                (symbol_scope->counter != current_scope->counter && is_argument &&
-                ASRUtils::expr_value(end) == nullptr) ) {
+            if ((ASRUtils::expr_value(end) == nullptr) && (ASR::is_a<ASR::ExternalSymbol_t>(*end_sym) ||
+                (symbol_scope->counter != current_scope->counter && is_argument)) ) {
                 right = get_transformed_function_call(end_sym);
             }
             if (ASR::is_a<ASR::IntegerBinOp_t>(*left)) {
@@ -1818,14 +1816,12 @@ public:
             ASR::symbol_t* second_end_sym = ASR::down_cast<ASR::Var_t>(right)->m_v;
             SymbolTable* first_symbol_scope = ASRUtils::symbol_parent_symtab(first_end_sym);
             SymbolTable* second_symbol_scope = ASRUtils::symbol_parent_symtab(second_end_sym);
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*first_end_sym) ||
-                (first_symbol_scope->counter != current_scope->counter && is_argument &&
-                ASRUtils::expr_value(end) == nullptr) ) {
+            if ((ASRUtils::expr_value(end) == nullptr) && (ASR::is_a<ASR::ExternalSymbol_t>(*first_end_sym) ||
+                (first_symbol_scope->counter != current_scope->counter && is_argument)) ) {
                 left = get_transformed_function_call(first_end_sym);
             }
-            if (ASR::is_a<ASR::ExternalSymbol_t>(*second_end_sym) ||
-                (second_symbol_scope->counter != current_scope->counter && is_argument &&
-                ASRUtils::expr_value(end) == nullptr) ) {
+            if ((ASRUtils::expr_value(end) == nullptr) && (ASR::is_a<ASR::ExternalSymbol_t>(*second_end_sym) ||
+                (second_symbol_scope->counter != current_scope->counter && is_argument)) ) {
                 right = get_transformed_function_call(second_end_sym);
             }
         } else {
