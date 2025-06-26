@@ -33,4 +33,5 @@ program bindc5
     ptr_i2=3
 
     print*, i,ptr_i2,ptr_i
+    if(i/=ptr_i2 .and. i/=ptr_i) error stop
 end program bindc5
