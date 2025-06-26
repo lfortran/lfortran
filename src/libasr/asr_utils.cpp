@@ -1279,7 +1279,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::Struct_t *right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
                                     right_arg_type)->m_derived_type));
-                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
+                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
                                     break;
                                 }
                             }
