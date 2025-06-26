@@ -4429,9 +4429,9 @@ public:
                     llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get());
 
                     if (ASRUtils::is_character(*asr_dict->m_key_type))
-                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 1);
+                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
                     else
-                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 1);
+                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
 
                 }
             }

@@ -4666,16 +4666,14 @@ namespace LCompilers {
         occupancy = builder->CreateSub(occupancy, llvm::ConstantInt::get(
                         llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
         LLVM::CreateStore(*builder, occupancy, occupancy_ptr);
-
+        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(dict_type->m_value_type, module);
+        
         if( get_pointer ) {
-            llvm::Type* llvm_value_type = std::get<2>(typecode2dicttype[std::make_pair(
-                key_type_code, value_type_code)]).second;
-            llvm::Value* return_ptr = llvm_utils->CreateAlloca(llvm_value_type);
-            LLVM::CreateStore(*builder, llvm_utils->CreateLoad(value_ptr), return_ptr);
+            llvm::Value* return_ptr = llvm_utils->CreateAlloca(value_type);
+            LLVM::CreateStore(*builder, llvm_utils->CreateLoad2(value_type, value_ptr), return_ptr);
             return return_ptr;
         }
 
-        llvm::Type* value_type = llvm_utils->get_type_from_ttype_t_util(dict_type->m_value_type, module);
         return llvm_utils->CreateLoad2(value_type, value_ptr);
     }
 
