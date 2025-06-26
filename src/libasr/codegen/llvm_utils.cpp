@@ -5435,28 +5435,14 @@ namespace LCompilers {
         llvm::Value* cond = builder->CreateICmpEQ(num_elements, llvm::ConstantInt::get(
                                                    context, llvm::APInt(32, 1)));
 
-<<<<<<< gep_refactor
-        // body
-        llvm_utils->start_new_block(loopbody);
-        {
-            tmp = builder->CreateAdd(
-                        llvm_utils->CreateLoad(pos_ptr),
-                        llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item_using_ttype(list_element_type, list, llvm_utils->CreateLoad(pos_ptr),
-                read_item_using_ttype(list_element_type, list, tmp, false, module, false), false, module);
-            LLVM::CreateStore(*builder, tmp, pos_ptr);
-        }
-        builder->CreateBr(loophead);
-=======
         llvm_utils->create_if_else(cond, [&](){}, [&](){
-            llvm::Value *dest_ptr = read_item_using_typecode(list_element_type_code,
+            llvm::Value *dest_ptr = read_item_using_ttype(list_element_type,
                                                              list, pos, true, module, true);
-            llvm::Value *src_ptr = read_item_using_typecode(list_element_type_code, list, 
+            llvm::Value *src_ptr = read_item_using_ttype(list_element_type, list, 
                 builder->CreateAdd(pos, llvm::ConstantInt::get(context, llvm::APInt(32, 1))),
                 true, module, true);
             int32_t type_size = std::get<1>(typecode2listtype[list_element_type_code]);
             llvm::Value* llvm_type_size = llvm::ConstantInt::get(context, llvm::APInt(32, type_size));
->>>>>>> main
 
         llvm::Value* bytes_to_move = builder->CreateMul(llvm_type_size, num_elements_shift);
             builder->CreateMemMove(dest_ptr, llvm::MaybeAlign(), src_ptr, llvm::MaybeAlign(), bytes_to_move);
