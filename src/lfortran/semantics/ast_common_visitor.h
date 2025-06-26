@@ -10456,6 +10456,107 @@ public:
         }
     }
 
+    void visit_DefUnaryOp(const AST::DefUnaryOp_t &x) {
+        this->visit_expr(*x.m_operand);
+        ASR::expr_t* operand = ASRUtils::EXPR(tmp);
+
+        ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
+        ASR::symbol_t* op_sym = current_scope->resolve_symbol(x.m_op);
+        ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
+
+        if (operator_sym == nullptr) {
+            diag.add(Diagnostic(
+                "`" + std::string(x.m_op) + "` is not defined or imported",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}
+            ));
+            throw SemanticAbort();
+        }
+
+        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(operator_sym);
+        ASR::symbol_t* proc = nullptr;
+        if (ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[0])) {
+            proc = ASRUtils::symbol_get_past_external(
+                ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[0])->m_proc
+            );
+        } else {
+            proc = gen_proc->m_procs[0];
+        }
+
+        switch (proc->type) {
+            case ASR::symbolType::Function: {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                std::string matched_func_name = "";
+                if (func->n_args == 1) {
+                    ASR::ttype_t* declared_arg_type = ASRUtils::expr_type(func->m_args[0]);
+                    if (ASRUtils::check_equal_type(declared_arg_type, operand_type)) {
+                        Vec<ASR::call_arg_t> a_args;
+                        a_args.reserve(al, 1);
+                        ASR::call_arg_t call_arg;
+
+                        call_arg.loc = operand->base.loc;
+                        call_arg.m_value = operand;
+                        a_args.push_back(al, call_arg);
+
+                        std::string func_name = to_lower(func->m_name);
+                        if (current_scope->resolve_symbol(func_name)) {
+                            matched_func_name = func_name;
+                        } else {
+                            std::string mangled_name = func_name + "@" + std::string(x.m_op);
+                            matched_func_name = mangled_name;
+                        }
+
+                        ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
+                        if (a_name == nullptr) {
+                            diag.add(Diagnostic("Unable to resolve matched function: `"
+                                + matched_func_name + "` for defined unary operation",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                            throw SemanticAbort();
+                        }
+                        ASR::ttype_t* return_type = nullptr;
+                        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+                        if (first_array_arg) {
+                            ASR::dimension_t* array_dims;
+                            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                                ASRUtils::expr_type(first_array_arg), array_dims
+                            );
+                            Vec<ASR::dimension_t> new_dims;
+                            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                            return_type = ASRUtils::duplicate_type(
+                                al, ASRUtils::get_FunctionType(func)->m_return_var_type,
+                                &new_dims
+                            );
+                        } else {
+                            return_type = ASRUtils::expr_type(func->m_return_var);
+                        }
+
+                        if (op_sym != nullptr && ASRUtils::symbol_parent_symtab(op_sym)->get_counter() != current_scope->get_counter()) {
+                            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, op_sym, current_function_dependencies, s2c(al, matched_func_name));
+                        }
+                        ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+                        ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+                        tmp = ASRUtils::make_FunctionCall_t_util(
+                            al, x.base.base.loc, a_name, op_sym, a_args.p, 1,
+                            return_type, nullptr, nullptr
+                        );
+                    } else {
+                        diag.add(Diagnostic(
+                            "Arguements type and Parameters type does not match",
+                            Level::Error, Stage::Semantic, {Label("", {proc->base.loc})}
+                        ));
+                        throw SemanticAbort();
+                    }
+                }
+                break;
+            }
+            default: {
+                diag.add(Diagnostic("Only function can be used in the defined unary operators",
+                    Level::Error, Stage::Semantic, {Label("", {proc->base.loc})}
+                ));
+                throw SemanticAbort();
+            }
+        }
+    }
+
     void visit_DefBinOp(const AST::DefBinOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
