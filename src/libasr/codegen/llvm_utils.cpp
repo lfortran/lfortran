@@ -1197,15 +1197,25 @@ namespace LCompilers {
                 if (type_declaration) {
                     type_declaration = ASRUtils::symbol_get_past_external(type_declaration);
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                        llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration), module, false);
+                        llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(type_declaration),
+                                                  module,
+                                                  LLVM::is_llvm_pointer(*asr_type));
                     } else {
-                        llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration), true);
+                        llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(type_declaration),
+                                                 LLVM::is_llvm_pointer(*asr_type));
                     }
                 } else {
                     if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                        llvm_type = getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), module, false);
+                        llvm_type = getStructType(
+                            ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
+                            module,
+                            LLVM::is_llvm_pointer(*asr_type));
                     } else {
-                        llvm_type = getClassType(ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)), true);
+                        llvm_type
+                            = getClassType(ASR::down_cast<ASR::Struct_t>(
+                                               ASRUtils::get_struct_sym_from_struct_expr(arg_expr)),
+                                           LLVM::is_llvm_pointer(*asr_type));
                     }
                 }
                 break;

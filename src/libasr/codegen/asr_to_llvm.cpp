@@ -10903,7 +10903,8 @@ public:
                 }
                 llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
                     llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::get_struct_sym_from_struct_expr(s_m_args0)), true));
+                            ASRUtils::get_struct_sym_from_struct_expr(s_m_args0)),
+                            LLVM::is_llvm_pointer(*s_m_args0_type)));
                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
                 llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
                 llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
