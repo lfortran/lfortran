@@ -532,7 +532,7 @@ namespace LCompilers {
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
-            void write_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+            void write_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 

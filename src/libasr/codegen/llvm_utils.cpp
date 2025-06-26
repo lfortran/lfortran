@@ -3004,12 +3004,14 @@ namespace LCompilers {
         LLVM::CreateStore(*builder, item, element_ptr);
     }
 
-    void LLVMList::write_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+    void LLVMList::write_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                               llvm::Value* item, bool enable_bounds_checking,
                               llvm::Module* module) {
         if( enable_bounds_checking ) {
             check_index_within_bounds(list, pos, module);
         }
+        
+        std::string type_code = ASRUtils::get_type_code(el_asr_type);
         llvm::Type* list_element_type = std::get<2>(typecode2listtype[type_code]);
         llvm::Value* list_data = llvm_utils->CreateLoad2(list_element_type->getPointerTo(),
                                                          get_pointer_to_list_data(list));
@@ -5028,7 +5030,7 @@ namespace LCompilers {
                             llvm_utils->CreateLoad(pos_ptr),
                             llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
             tmp = read_item_using_ttype(asr_type, list, next_index, false, module, false);
-            write_item_using_typecode(type_code, list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
+            write_item_using_ttype(asr_type, list, next_index, llvm_utils->CreateLoad(tmp_ptr), false, module);
             LLVM::CreateStore(*builder, tmp, tmp_ptr);
 
             tmp = builder->CreateAdd(
@@ -5119,11 +5121,11 @@ namespace LCompilers {
         {
             tmp = read_item_using_ttype(el_asr_type, list, llvm_utils->CreateLoad(i),
                 false, module, false);    // tmp = list[i]
-            write_item_using_typecode(type_code, list, llvm_utils->CreateLoad(i),
+            write_item_using_ttype(el_asr_type, list, llvm_utils->CreateLoad(i),
                         read_item_using_ttype(el_asr_type, list, llvm_utils->CreateLoad(j),
                         false, module, false),
                         false, module);    // list[i] = list[j]
-            write_item_using_typecode(type_code, list, llvm_utils->CreateLoad(j),
+            write_item_using_ttype(el_asr_type, list, llvm_utils->CreateLoad(j),
                         tmp, false, module);    // list[j] = tmp
 
             tmp = builder->CreateAdd(
@@ -5344,7 +5346,7 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(item_pos),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item_using_typecode(type_code, list, llvm_utils->CreateLoad(item_pos),
+            write_item_using_ttype(item_type, list, llvm_utils->CreateLoad(item_pos),
                 read_item_using_ttype(item_type, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, item_pos);
         }
@@ -5448,7 +5450,7 @@ namespace LCompilers {
             tmp = builder->CreateAdd(
                         llvm_utils->CreateLoad(pos_ptr),
                         llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
-            write_item_using_typecode(list_element_type_code, list, llvm_utils->CreateLoad(pos_ptr),
+            write_item_using_ttype(list_element_type, list, llvm_utils->CreateLoad(pos_ptr),
                 read_item_using_ttype(list_element_type, list, tmp, false, module, false), false, module);
             LLVM::CreateStore(*builder, tmp, pos_ptr);
         }
