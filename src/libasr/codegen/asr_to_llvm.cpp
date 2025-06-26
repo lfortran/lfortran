@@ -5172,7 +5172,11 @@ public:
             ptr_loads = 1 - reduce_loads;
             this->visit_expr(*cptr);
             llvm::Value* llvm_cptr = tmp;
-            if (ASR::is_a<ASR::ArrayItem_t>(*cptr)) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
+                // Load the actual pointer value for type(c_ptr) members
+                llvm::Type* cptr_llvm_type = llvm::Type::getInt8Ty(context)->getPointerTo(); // void*
+                llvm_cptr = llvm_utils->CreateLoad2(cptr_llvm_type, llvm_cptr);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*cptr)) {
                 llvm::Type* cptr_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(cptr), module.get());
                 llvm_cptr = llvm_utils->CreateLoad2(cptr_llvm_type, llvm_cptr);
             }
