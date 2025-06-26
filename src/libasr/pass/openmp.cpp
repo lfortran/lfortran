@@ -2534,6 +2534,10 @@ class ParallelRegionVisitor :
                 visit_OMPBarrier(x);
                 break;
 
+                case ASR::omp_region_typeType::Taskwait:
+                visit_OMPTaskwait(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -3215,6 +3219,20 @@ class ParallelRegionVisitor :
             barrier_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                 current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPTaskwait(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Generate gomp_taskwait call
+            Vec<ASR::call_arg_t> taskwait_args;
+            taskwait_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
