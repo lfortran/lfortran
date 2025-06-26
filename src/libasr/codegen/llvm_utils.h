@@ -512,10 +512,6 @@ namespace LCompilers {
                 ASR::ttype_t* element_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* read_item(llvm::Value* list, llvm::Value* pos,
-                                   bool enable_bounds_checking,
-                                   llvm::Module* module, bool get_pointer=false);
-
             llvm::Value* read_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
                                                    bool enable_bounds_checking,
                                                    llvm::Module* module, bool get_pointer=false);
@@ -589,7 +585,7 @@ namespace LCompilers {
                 llvm::IRBuilder<>* builder, llvm::Module* module,
                 int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
 
-            void list_repeat_copy(llvm::Value* repeat_list, llvm::Value* init_list,
+            void list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
                                   llvm::Value* num_times, llvm::Value* init_list_len,
                                   llvm::Module* module);
     };

@@ -2410,7 +2410,7 @@ public:
         list_api->list_init(type_code, repeat_list, module.get(), capacity, capacity);
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1;
-        list_api->list_repeat_copy(repeat_list, left, right, left_len, module.get());
+        list_api->list_repeat_copy(list_type, repeat_list, left, right, left_len, module.get());
         ptr_loads = ptr_loads_copy;
         tmp = repeat_list;
     }
