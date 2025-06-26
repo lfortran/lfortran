@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             lhs:
                                                 (Variable
@@ -51,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -70,6 +72,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -147,6 +150,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             and@~and:
                                 (ExternalSymbol
@@ -177,6 +181,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             c:
                                 (Variable
@@ -196,6 +201,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             ~and:

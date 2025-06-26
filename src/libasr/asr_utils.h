@@ -1659,6 +1659,30 @@ static inline bool all_args_evaluated(const Vec<ASR::array_index_t> &args) {
     return true;
 }
 
+static inline ASR::Variable_t* extract_ExternalSymbol_Variable(ASR::expr_t* a_expr) {
+    ASR::expr_t* variable_expr = nullptr;
+    if (ASR::is_a<ASR::ArrayItem_t>(*a_expr)) {
+        ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(a_expr);
+        variable_expr = array_item->m_v;
+    } else if (ASR::is_a<ASR::Var_t>(*a_expr)) {
+        variable_expr = a_expr;
+    } else if (ASR::is_a<ASR::ArraySection_t>(*a_expr)) {
+        ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(a_expr);
+        variable_expr = array_section->m_v;
+    } else if (ASR::is_a<ASR::StructInstanceMember_t>(*a_expr)) {
+        ASR::StructInstanceMember_t* struct_instance_mem = ASR::down_cast<ASR::StructInstanceMember_t>(a_expr);
+        variable_expr = struct_instance_mem->m_v;
+    }
+
+    if (variable_expr && ASR::is_a<ASR::Var_t>(*variable_expr)) {
+        bool is_external_sym = ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::Var_t>(variable_expr)->m_v);
+        if (is_external_sym) {
+            return ASRUtils::EXPR2VAR(variable_expr);
+        }
+    }
+    return nullptr;
+}
+
 static inline bool extract_value(ASR::expr_t* value_expr,
     std::complex<double>& value) {
     if ( ASR::is_a<ASR::ComplexConstructor_t>(*value_expr) ) {
@@ -2881,13 +2905,13 @@ inline ASR::asr_t* make_Variable_t_util(Allocator &al, const Location &a_loc,
     SymbolTable* a_parent_symtab, char* a_name, char** a_dependencies, size_t n_dependencies,
     ASR::intentType a_intent, ASR::expr_t* a_symbolic_value, ASR::expr_t* a_value, ASR::storage_typeType a_storage,
     ASR::ttype_t* a_type, ASR::symbol_t* a_type_declaration, ASR::abiType a_abi, ASR::accessType a_access, ASR::presenceType a_presence,
-    bool a_value_attr, bool a_target_attr = false, bool contiguous_attr = false,
-    char* a_bindc_name=nullptr, bool a_is_volatile = false
+    bool a_value_attr, bool a_target_attr = false, bool a_contiguous_attr = false,
+    char* a_bindc_name=nullptr, bool a_is_volatile = false, bool a_is_protected = false
 ) {
     return ASR::make_Variable_t(al, a_loc, a_parent_symtab, a_name, a_dependencies,
-        n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage,  a_type,
+        n_dependencies, a_intent, a_symbolic_value,  a_value,  a_storage, a_type,
         a_type_declaration,  a_abi, a_access, a_presence, a_value_attr,
-        a_target_attr,contiguous_attr, a_bindc_name, a_is_volatile
+        a_target_attr, a_contiguous_attr, a_bindc_name, a_is_volatile, a_is_protected
     );
 }
 
@@ -4774,7 +4798,10 @@ class SymbolDuplicator {
                 variable->m_name, variable->m_dependencies, variable->n_dependencies,
                 variable->m_intent, m_symbolic_value, m_value, variable->m_storage,
                 m_type, variable->m_type_declaration, variable->m_abi, variable->m_access,
-                variable->m_presence, variable->m_value_attr));
+                variable->m_presence, variable->m_value_attr, variable->m_target_attr,
+                variable->m_contiguous_attr, variable->m_bindc_name, variable->m_is_volatile,
+                variable->m_is_protected
+            ));
     }
 
     ASR::symbol_t* duplicate_ExternalSymbol(ASR::ExternalSymbol_t* external_symbol,

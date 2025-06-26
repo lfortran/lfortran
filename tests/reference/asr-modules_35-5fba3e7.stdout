@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             strings:
                                                 (Variable
@@ -58,6 +59,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             strings_a:
                                                 (Variable
@@ -84,6 +86,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -315,6 +318,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

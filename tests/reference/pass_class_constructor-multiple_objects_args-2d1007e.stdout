@@ -47,6 +47,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
@@ -100,6 +101,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -124,6 +126,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -215,6 +218,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             temp_struct_var__1:
                                 (Variable
@@ -239,6 +243,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             was_called:
@@ -265,6 +270,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

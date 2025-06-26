@@ -41,6 +41,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             tokenizer_ptr:
                                 (Variable
@@ -67,6 +68,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             toml_table:
@@ -157,6 +159,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -183,6 +186,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -263,6 +267,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
@@ -325,6 +330,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

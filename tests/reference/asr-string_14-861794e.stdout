@@ -42,6 +42,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -62,6 +63,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -81,6 +83,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             line:
@@ -103,6 +106,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             string:
@@ -129,6 +133,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -148,6 +153,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             v_list:
@@ -173,6 +179,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -246,6 +253,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     string_type
@@ -284,6 +292,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iostat:
                                                 (Variable
@@ -304,6 +313,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -323,6 +333,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             string:
@@ -349,6 +360,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -368,6 +380,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             v_list:
@@ -393,6 +406,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

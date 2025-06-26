@@ -52,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             fill_stack:
                                                 (Function
@@ -81,6 +82,7 @@
                                                                     .true.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             stack:
@@ -114,6 +116,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             top:
                                                                 (Variable
@@ -133,6 +136,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -235,6 +239,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             stack:
                                                                 (Variable
@@ -266,6 +271,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -356,6 +362,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             toml_key:
                                 (Struct
@@ -382,6 +389,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

@@ -111,6 +111,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             rectangle:
                                 (ExternalSymbol
@@ -155,6 +156,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -360,6 +362,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -379,6 +382,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             sh:
@@ -405,6 +409,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -425,6 +430,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -444,6 +450,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -551,6 +558,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             width:
                                                 (Variable
@@ -570,6 +578,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -610,6 +619,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -629,6 +639,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             initialize:
@@ -661,6 +672,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -680,6 +692,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

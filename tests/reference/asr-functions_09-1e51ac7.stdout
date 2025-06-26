@@ -41,6 +41,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     stdlib_quadrature
@@ -119,6 +120,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -143,6 +145,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -208,6 +211,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
