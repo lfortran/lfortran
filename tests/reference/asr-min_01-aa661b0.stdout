@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             int_inp2:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_amin0:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_amin1:
                                 (Variable
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_dmin1:
@@ -106,6 +110,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_min:
                                 (Variable
@@ -125,6 +130,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_min0:
@@ -146,6 +152,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_min1:
                                 (Variable
@@ -165,6 +172,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_min_different_kinds:
@@ -186,6 +194,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp1:
                                 (Variable
@@ -205,6 +214,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             real_inp2:
@@ -226,6 +236,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp3:
                                 (Variable
@@ -245,6 +256,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             real_inp4:
@@ -266,6 +278,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp5:
                                 (Variable
@@ -286,6 +299,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp6:
                                 (Variable
@@ -305,6 +319,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

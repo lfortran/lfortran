@@ -2654,7 +2654,7 @@ class ParallelRegionVisitor :
                                         local_var->m_storage, ptr_type, local_var->m_type_declaration,
                                         local_var->m_abi, local_var->m_access, local_var->m_presence,
                                         local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
-                                        local_var->m_bindc_name, local_var->m_is_volatile)
+                                        local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected)
                                         );
                 ASR::Variable_t* tmp_var = ASR::down_cast<ASR::Variable_t>(tmp_sym);
                 current_scope->add_symbol(tmp_var->m_name, tmp_sym);

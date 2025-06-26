@@ -3183,6 +3183,17 @@ public:
         }
         this->visit_expr(*x.m_target);
         ASR::expr_t *target = ASRUtils::EXPR(tmp);
+        if (auto* v = ASRUtils::extract_ExternalSymbol_Variable(target)) {
+            if (v->m_is_protected) {
+                diag.add(Diagnostic(
+                    "Variable " + std::string(v->m_name) + " is PROTECTED and cannot appear in LHS of assignment",
+                    Level::Error, Stage::Semantic, {
+                        Label("", {target->base.loc})
+                    }
+                ));
+                throw SemanticAbort();
+            }
+        }
         try {
             this->visit_expr(*x.m_value);
         } catch (const SemanticAbort &e) {
