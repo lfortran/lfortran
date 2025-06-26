@@ -3409,7 +3409,6 @@ public:
                     std::vector<llvm::Constant*> elements = { re, im };
                     llvm::Constant* complex_init = llvm::ConstantStruct::get(static_cast<llvm::StructType*>(type), elements);
                     module->getNamedGlobal(llvm_var_name)->setInitializer(complex_init);
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
                 }
             }
             llvm_symtab[h] = ptr;
