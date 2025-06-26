@@ -1,5 +1,5 @@
 program subroutines_20
-     type :: regex_token
+    type :: regex_token
         character(len=:), allocatable :: ccl
     end type regex_token
 

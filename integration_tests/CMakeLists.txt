@@ -719,7 +719,8 @@ RUN(NAME format_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME format_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
-RUN(NAME format_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME format_08 LABELS llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME format_08s LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME format_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2336,6 +2337,9 @@ RUN(NAME openmp_48 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_49 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_50 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_51 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_52 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_53 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_54 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
@@ -2393,7 +2397,8 @@ RUN(NAME separate_compilation_10 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_11 LABELS gfortran llvm EXTRAFILES separate_compilation_11a.f90)
 RUN(NAME separate_compilation_12 LABELS gfortran llvm EXTRAFILES separate_compilation_12a.f90)
 RUN(NAME separate_compilation_13 LABELS gfortran llvm EXTRAFILES separate_compilation_13a.f90)
-
+RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
+RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compilation_15a.f90)
 
 
 

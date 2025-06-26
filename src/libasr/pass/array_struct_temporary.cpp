@@ -1216,11 +1216,11 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
            in reverse order. */
         for( size_t i = 0; i < x_n_args; i++ ) {
             if (orig_args &&
-                ASR::is_a<ASR::Var_t>(*orig_args[i]) &&
-                ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(orig_args[i])->m_v)) &&
                 (x_m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(x_m_args[i].m_value)))) {
-                ASR::intentType orig_intent = ASRUtils::EXPR2VAR(orig_args[i])->m_intent;
-                if (orig_intent == ASRUtils::intent_out || orig_intent == ASRUtils::intent_inout) {
+                ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (orig_variable &&
+                    (orig_variable->m_intent == ASRUtils::intent_out ||
+                     orig_variable->m_intent == ASRUtils::intent_inout)) {
                     x_m_args_vec.push_back(al, x_m_args[i]);
                     continue;
                 }
@@ -2588,11 +2588,11 @@ class VerifySimplifierASROutput:
     void traverse_call_args(ASR::call_arg_t* m_args, size_t n_args, ASR::expr_t **orig_args = nullptr) {
         for( size_t i = 0; i < n_args; i++ ) {
             if (orig_args &&
-                ASR::is_a<ASR::Var_t>(*orig_args[i]) &&
-                ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(orig_args[i])->m_v)) &&
                 (m_args[i].m_value && !ASR::is_a<ASR::ArraySection_t>(*ASRUtils::get_past_array_physical_cast(m_args[i].m_value)))) {
-                ASR::intentType orig_intent = ASRUtils::EXPR2VAR(orig_args[i])->m_intent;
-                if (orig_intent == ASRUtils::intent_out || orig_intent == ASRUtils::intent_inout) {
+                ASR::Variable_t* orig_variable = ASRUtils::expr_to_variable_or_null(orig_args[i]);
+                if (orig_variable &&
+                    (orig_variable->m_intent == ASRUtils::intent_out ||
+                     orig_variable->m_intent == ASRUtils::intent_inout)) {
                     continue;
                 }
             }

@@ -203,7 +203,7 @@ program continue_compilation_2
     real(4) :: dprod_3 = 4.23
     real(4) ::idnint_runtime = 3.5
     real(8) :: ifix_runtime = 4.23
-
+    logical :: min_max = .true.
 
 
     
@@ -450,7 +450,12 @@ program continue_compilation_2
     !ifix
     print *, ifix(4.23_8)
     print *, ifix(ifix_runtime)
-
+    !min
+    print *, min(.true., .false.)
+    print *, min(min_max, min_max)
+    !max
+    print *, max(.true., .false.)
+    print *, max(min_max, min_max)
     contains
     logical function f(x)
         integer, intent(in), optional :: x
