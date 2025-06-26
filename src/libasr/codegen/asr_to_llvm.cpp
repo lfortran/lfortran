@@ -1794,8 +1794,7 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
 
-        std::string type_code = ASRUtils::get_type_code(el_type);
-        tmp = list_api->read_item_using_typecode(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -2065,8 +2064,7 @@ public:
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
 
-        std::string type_code = ASRUtils::get_type_code(asr_el_type);
-        list_api->reverse(type_code, plist, module.get());
+        list_api->reverse(asr_el_type, plist, module.get());
     }
 
     void generate_ListPop_0(ASR::expr_t* m_arg) {
@@ -5990,8 +5988,7 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                std::string type_code = ASRUtils::get_type_code(asr_target0->m_type);
-                target = list_api->read_item_using_typecode(type_code, list, pos, compiler_options.enable_bounds_checking,
+                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.enable_bounds_checking,
                                              module.get(), true);
             }
         } else {

@@ -512,7 +512,7 @@ namespace LCompilers {
                 ASR::ttype_t* element_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* read_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+            llvm::Value* read_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                                                    bool enable_bounds_checking,
                                                    llvm::Module* module, bool get_pointer=false);
 
@@ -559,7 +559,7 @@ namespace LCompilers {
 
             void list_clear(llvm::Value* list);
 
-            void reverse(std::string& type_code, llvm::Value* list, llvm::Module* module);
+            void reverse(ASR::ttype_t* el_type, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* find_item_position(llvm::Value* list,
                 llvm::Value* item, ASR::ttype_t* item_type,
