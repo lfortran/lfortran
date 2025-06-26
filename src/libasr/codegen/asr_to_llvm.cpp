@@ -4420,11 +4420,19 @@ public:
                     std::string type_code = ASRUtils::get_type_code(asr_list->m_type);
                     list_api->list_init(type_code, ptr, module.get());
                 } else if (is_dict) {
-                    ASR::Dict_t* asr_list = ASR::down_cast<ASR::Dict_t>(v->m_type);
-                    std::string key_type_code = ASRUtils::get_type_code(asr_list->m_key_type);
-                    std::string value_type_code = ASRUtils::get_type_code(asr_list->m_value_type);
-                    /*list_api->list_init(type_code, ptr, module.get());*/
-                    dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                    ASR::Dict_t* asr_dict = ASR::down_cast<ASR::Dict_t>(v->m_type);
+                    std::string key_type_code = ASRUtils::get_type_code(asr_dict->m_key_type);
+                    std::string value_type_code = ASRUtils::get_type_code(asr_dict->m_value_type);
+
+                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::TYPE(ASR::make_List_t(al, asr_dict->base.base.loc, asr_dict->m_key_type)), module.get());
+                    llvm_utils->get_type_from_ttype_t_util(ASRUtils::TYPE(ASR::make_List_t(al, asr_dict->base.base.loc, asr_dict->m_value_type)), module.get());
+                    llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get());
+
+                    if (ASRUtils::is_character(*asr_dict->m_key_type))
+                        dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+                    else
+                        dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
+
                 }
             }
         }

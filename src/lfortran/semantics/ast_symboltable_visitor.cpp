@@ -1377,7 +1377,21 @@ public:
             if(x.m_decl[i]->type == AST::unit_decl2Type::Declaration) {
                 AST::Declaration_t decl = (const AST::Declaration_t &)*x.m_decl[i];
                 if(decl.m_vartype) {
-                    AST::AttrType_t* type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    AST::AttrType_t* type = nullptr;
+                    if (AST::is_a<AST::AttrType_t>(*decl.m_vartype)) {
+                        type = AST::down_cast<AST::AttrType_t>(decl.m_vartype);
+                    } else if  (AST::is_a<AST::AttrTypeList_t>(*decl.m_vartype)){
+                        type = AST::down_cast<AST::AttrType_t>(
+                                AST::down_cast<AST::decl_attribute_t>(
+                                    AST::make_AttrType_t(
+                                    al, decl.m_vartype->base.loc, 
+                                    AST::decl_typeType::TypeType,
+                                    nullptr, 0, decl.m_vartype, 
+                                    nullptr, AST::symbolType::None)));
+                        
+                    } 
+
+                    LCOMPILERS_ASSERT(type);
                     if(type && type->m_type == AST::decl_typeType::TypeProcedure &&
                            type->m_name == sym_name) {
                         procedure_decl_indices.push_back(al, i);
