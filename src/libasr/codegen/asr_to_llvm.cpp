@@ -1859,7 +1859,7 @@ public:
             std::string type_code = ASRUtils::get_type_code(
                 ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg)));
             llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
-            tmp = list_api->len_using_typecode(list_type, plist);
+            tmp = list_api->len_using_type(list_type, plist);
         }
     }
 
@@ -2462,7 +2462,7 @@ public:
         llvm::Value *pos = tmp;
 
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, llvm_utils->module); 
-        tmp = tuple_api->read_item(el_type, ptuple, ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_a)), pos, LLVM::is_llvm_struct(x.m_type));
+        tmp = tuple_api->read_item_using_pos_value(el_type, ptuple, ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_a)), pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_TupleConcat(const ASR::TupleConcat_t& x) {
