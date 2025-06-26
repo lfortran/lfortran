@@ -10456,18 +10456,34 @@ public:
         }
     }
 
-    void visit_DefUnaryOp(const AST::DefUnaryOp_t &x) {
-        this->visit_expr(*x.m_operand);
-        ASR::expr_t* operand = ASRUtils::EXPR(tmp);
-
-        ASR::ttype_t* operand_type = ASRUtils::expr_type(operand);
-        ASR::symbol_t* op_sym = current_scope->resolve_symbol(x.m_op);
+    void visit_DefTOp(ASR::expr_t* first_operand, ASR::expr_t* second_operand, const std::string op, const Location loc) {
+        bool is_binary = (second_operand != nullptr);
+        ASR::symbol_t* op_sym = current_scope->resolve_symbol(op);
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
+
+        ASR::Struct_t *first_struct = nullptr;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(first_operand))) {
+            first_struct = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::symbol_get_past_external(
+                    ASR::down_cast<ASR::StructType_t>(ASRUtils::expr_type(first_operand))->m_derived_type
+                )
+            );
+        }
+
+        if (first_struct != nullptr && operator_sym == nullptr) {
+            operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
+            if (operator_sym == nullptr) {
+                diag.add(Diagnostic("`" + op
+                    + "` is not defined in the Struct: `" + first_struct->m_name
+                    + "`", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                throw SemanticAbort();
+            }
+        }
 
         if (operator_sym == nullptr) {
             diag.add(Diagnostic(
-                "`" + std::string(x.m_op) + "` is not defined or imported",
-                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}
+                "`" + op + "` is not defined or imported",
+                Level::Error, Stage::Semantic, {Label("", {loc})}
             ));
             throw SemanticAbort();
         }
@@ -10486,22 +10502,44 @@ public:
             case ASR::symbolType::Function: {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
                 std::string matched_func_name = "";
-                if (func->n_args == 1) {
-                    ASR::ttype_t* declared_arg_type = ASRUtils::expr_type(func->m_args[0]);
-                    if (ASRUtils::check_equal_type(declared_arg_type, operand_type)) {
+                if ((func->n_args == 1 && !is_binary) ||
+                    (func->n_args == 2 && is_binary)
+                ) {
+                    bool are_arg_types_equal = ASRUtils::check_equal_type(
+                        ASRUtils::expr_type(func->m_args[0]), ASRUtils::expr_type(first_operand)
+                    );
+                    if (is_binary) {
+                        are_arg_types_equal = (are_arg_types_equal &&
+                            ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[1]), ASRUtils::expr_type(second_operand))
+                        );
+                    }
+                    if (are_arg_types_equal) {
                         Vec<ASR::call_arg_t> a_args;
-                        a_args.reserve(al, 1);
-                        ASR::call_arg_t call_arg;
+                        if (is_binary) {
+                            a_args.reserve(al, 2);
+                            ASR::call_arg_t first_call_arg, second_call_arg;
 
-                        call_arg.loc = operand->base.loc;
-                        call_arg.m_value = operand;
-                        a_args.push_back(al, call_arg);
+                            first_call_arg.loc = first_operand->base.loc;
+                            first_call_arg.m_value = first_operand;
+                            a_args.push_back(al, first_call_arg);
+
+                            second_call_arg.loc = second_operand->base.loc;
+                            second_call_arg.m_value = second_operand;
+                            a_args.push_back(al, second_call_arg);
+                        } else {
+                            a_args.reserve(al, 1);
+                            ASR::call_arg_t call_arg;
+
+                            call_arg.loc = first_operand->base.loc;
+                            call_arg.m_value = first_operand;
+                            a_args.push_back(al, call_arg);
+                        }
 
                         std::string func_name = to_lower(func->m_name);
                         if (current_scope->resolve_symbol(func_name)) {
                             matched_func_name = func_name;
                         } else {
-                            std::string mangled_name = func_name + "@" + std::string(x.m_op);
+                            std::string mangled_name = func_name + "@" + op;
                             matched_func_name = mangled_name;
                         }
 
@@ -10509,7 +10547,7 @@ public:
                         if (a_name == nullptr) {
                             diag.add(Diagnostic("Unable to resolve matched function: `"
                                 + matched_func_name + "` for defined unary operation",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+                                Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
                         }
                         ASR::ttype_t* return_type = nullptr;
@@ -10535,7 +10573,7 @@ public:
                         ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                         ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
                         tmp = ASRUtils::make_FunctionCall_t_util(
-                            al, x.base.base.loc, a_name, op_sym, a_args.p, 1,
+                            al, loc, a_name, op_sym, a_args.p, a_args.size(),
                             return_type, nullptr, nullptr
                         );
                     } else {
@@ -10557,122 +10595,22 @@ public:
         }
     }
 
+    void visit_DefUnaryOp(const AST::DefUnaryOp_t &x) {
+        this->visit_expr(*x.m_operand);
+        ASR::expr_t* operand = ASRUtils::EXPR(tmp);
+
+        const std::string op = std::string(x.m_op);
+        visit_DefTOp(operand, nullptr, op, x.base.base.loc);
+    }
+
     void visit_DefBinOp(const AST::DefBinOp_t &x) {
         this->visit_expr(*x.m_left);
         ASR::expr_t *left = ASRUtils::EXPR(tmp);
         this->visit_expr(*x.m_right);
         ASR::expr_t *right = ASRUtils::EXPR(tmp);
 
-        ASR::ttype_t *left_type = ASRUtils::expr_type(left);
-        ASR::ttype_t *right_type = ASRUtils::expr_type(right);
-
-        ASR::Struct_t *left_struct = nullptr;
-        if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
-            left_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
-                left_type)->m_derived_type));
-        }
-
-        ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);
-        ASR::symbol_t *op_sym = ASRUtils::symbol_get_past_external(sym);
-        if ( left_struct != nullptr && op_sym == nullptr) {
-            op_sym = left_struct->m_symtab->resolve_symbol(
-                "~def_op~" + std::string(x.m_op));
-            if (op_sym == nullptr) {
-                diag.add(Diagnostic("`" + std::string(x.m_op)
-                    + "` is not defined in the Struct: `" + left_struct->m_name
-                    + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-        if (op_sym == nullptr) {
-            diag.add(Diagnostic("`" + std::string(x.m_op)
-                + "` is not defined or imported", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
-        }
-
-        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(op_sym);
-        LCOMPILERS_ASSERT(gen_proc->n_procs == 1)
-        ASR::symbol_t* proc;
-        if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[0]) ) {
-            proc =  ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::ClassProcedure_t>(
-                gen_proc->m_procs[0])->m_proc);
-        } else {
-            proc = gen_proc->m_procs[0];
-        }
-        switch(proc->type) {
-            case ASR::symbolType::Function: {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
-                std::string matched_func_name = "";
-                if( func->n_args == 2 ) {
-                    ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
-                    ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                    if( ASRUtils::check_equal_type(left_arg_type, left_type) &&
-                        ASRUtils::check_equal_type(right_arg_type, right_type) ) {
-                        Vec<ASR::call_arg_t> a_args;
-                        a_args.reserve(al, 2);
-                        ASR::call_arg_t left_call_arg, right_call_arg;
-
-                        left_call_arg.loc = left->base.loc;
-                        left_call_arg.m_value = left;
-                        a_args.push_back(al, left_call_arg);
-
-                        right_call_arg.loc = right->base.loc;
-                        right_call_arg.m_value = right;
-                        a_args.push_back(al, right_call_arg);
-
-                        std::string func_name = to_lower(func->m_name);
-                        if( current_scope->resolve_symbol(func_name) ) {
-                            matched_func_name = func_name;
-                        } else {
-                            std::string mangled_name = func_name + "@" + std::string(x.m_op);
-                            matched_func_name = mangled_name;
-                        }
-                        ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
-                        if( a_name == nullptr ) {
-                            diag.add(Diagnostic("Unable to resolve matched function: `"
-                                + matched_func_name + "` for defined binary operation",
-                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                            throw SemanticAbort();
-                        }
-                        ASR::ttype_t *return_type = nullptr;
-                        ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
-                        if (first_array_arg) {
-                            ASR::dimension_t* array_dims;
-                            size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                                ASRUtils::expr_type(first_array_arg), array_dims
-                            );
-                            Vec<ASR::dimension_t> new_dims;
-                            new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-                            return_type = ASRUtils::duplicate_type(al,
-                                            ASRUtils::get_FunctionType(func)->m_return_var_type,
-                                            &new_dims);
-                        } else {
-                            return_type = ASRUtils::expr_type(func->m_return_var);
-                        }
-                        if (sym != nullptr && ASRUtils::symbol_parent_symtab(sym)->get_counter() != current_scope->get_counter()) {
-                            ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope, sym, current_function_dependencies, s2c(al, matched_func_name));
-                        }
-                        ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-                        ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
-                        tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc,
-                            a_name, sym, a_args.p, 2, return_type,
-                            nullptr, nullptr);
-                    } else {
-                        diag.add(Diagnostic("Arguements type and Parameters type "
-                            "does not match", Level::Error, Stage::Semantic, {Label("", {proc->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                }
-                break;
-            }
-            default: {
-                diag.add(Diagnostic("Only function can be used in the "
-                    "defined binary operators", Level::Error, Stage::Semantic, {Label("", {proc->base.loc})}));
-                throw SemanticAbort();
-            }
-        }
+        std::string op = std::string(x.m_op);
+        visit_DefTOp(left, right, op, x.base.base.loc);
     }
 
     void visit_BoolOp(const AST::BoolOp_t &x) {
