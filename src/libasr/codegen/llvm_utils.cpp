@@ -3990,11 +3990,14 @@ namespace LCompilers {
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
-        llvm::Value* capacity = llvm_utils->CreateLoad(get_pointer_to_capacity(dict));
-        llvm::Value* key_value_pairs = llvm_utils->CreateLoad(get_pointer_to_key_value_pairs(dict));
-        llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep(key_value_pairs, key_hash);
-        llvm::Value* key_mask = llvm_utils->CreateLoad(get_pointer_to_keymask(dict));
         llvm::Type* kv_struct_type = get_key_value_pair_type(key_asr_type, value_asr_type);
+        llvm::Value* capacity = llvm_utils->CreateLoad2(llvm::Type::getInt32Ty(context), get_pointer_to_capacity(dict));
+        llvm::Value* key_value_pairs = llvm_utils->CreateLoad2(kv_struct_type->getPointerTo(), get_pointer_to_key_value_pairs(dict));
+        llvm::Value* key_value_pair_linked_list = llvm_utils->create_ptr_gep2(
+            kv_struct_type, key_value_pairs, key_hash);
+        llvm::Value* key_mask = llvm_utils->CreateLoad2(
+            llvm::Type::getInt8Ty(context)->getPointerTo(), get_pointer_to_keymask(dict));
+
         this->resolve_collision(capacity, key_hash, key, key_value_pair_linked_list,
                                 kv_struct_type, key_mask, module, key_asr_type);
         std::pair<std::string, std::string> llvm_key = std::make_pair(
@@ -4005,7 +4008,7 @@ namespace LCompilers {
         tmp_value_ptr = llvm_utils->CreateAlloca(value_type);
         llvm::Value* kv_struct_i8 = llvm_utils->CreateLoad(chain_itr);
         llvm::Value* kv_struct = builder->CreateBitCast(kv_struct_i8, kv_struct_type->getPointerTo());
-        llvm::Value* value = llvm_utils->CreateLoad(llvm_utils->create_gep(kv_struct, 1));
+        llvm::Value* value = llvm_utils->CreateLoad2(value_type, llvm_utils->create_gep2(kv_struct_type, kv_struct, 1));
         LLVM::CreateStore(*builder, value, tmp_value_ptr);
         return tmp_value_ptr;
     }
