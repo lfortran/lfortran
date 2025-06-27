@@ -498,11 +498,11 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_current_capacity(llvm::Value* list);
 
 
-            llvm::Value* get_pointer_to_list_data_using_typecode(llvm::Type* list_type, llvm::Value* list);
+            llvm::Value* get_pointer_to_list_data_using_type(llvm::Type* list_type, llvm::Value* list);
 
-            llvm::Value* get_pointer_to_current_end_point_using_typecode(llvm::Type* list_type, llvm::Value* list);
+            llvm::Value* get_pointer_to_current_end_point_using_type(llvm::Type* list_type, llvm::Value* list);
 
-            llvm::Value* get_pointer_to_current_capacity_using_typecode(llvm::Type* list_type, llvm::Value* list);
+            llvm::Value* get_pointer_to_current_capacity_using_type(llvm::Type* list_type, llvm::Value* list);
 
             void list_deepcopy(llvm::Value* src, llvm::Value* dest,
                 ASR::List_t* list_type, llvm::Module* module,
@@ -512,17 +512,13 @@ namespace LCompilers {
                 ASR::ttype_t* element_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* read_item(llvm::Value* list, llvm::Value* pos,
-                                   bool enable_bounds_checking,
-                                   llvm::Module* module, bool get_pointer=false);
-
-            llvm::Value* read_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+            llvm::Value* read_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                                                    bool enable_bounds_checking,
                                                    llvm::Module* module, bool get_pointer=false);
 
             llvm::Value* len(llvm::Value* list);
 
-            llvm::Value* len_using_typecode(llvm::Type* list_type, llvm::Value* list);
+            llvm::Value* len_using_type(llvm::Type* list_type, llvm::Value* list);
 
             void check_index_within_bounds(llvm::Value* list, llvm::Value* pos,
                                            llvm::Module* module);
@@ -536,7 +532,7 @@ namespace LCompilers {
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
-            void write_item_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* pos,
+            void write_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                             llvm::Value* item, bool enable_bounds_checking,
                             llvm::Module* module);
 
@@ -563,7 +559,7 @@ namespace LCompilers {
 
             void list_clear(llvm::Value* list);
 
-            void reverse(std::string& type_code, llvm::Value* list, llvm::Module* module);
+            void reverse(ASR::ttype_t* el_type, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* find_item_position(llvm::Value* list,
                 llvm::Value* item, ASR::ttype_t* item_type,
@@ -579,7 +575,7 @@ namespace LCompilers {
 
             void free_data(llvm::Value* list, llvm::Module* module);
 
-            void free_data_using_typecode(std::string& type_code, llvm::Value* list, llvm::Module* module);
+            void free_data_using_type(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
             llvm::Value* check_list_equality(llvm::Value* l1, llvm::Value* l2, ASR::ttype_t *item_type,
                 llvm::LLVMContext& context, llvm::IRBuilder<>* builder, llvm::Module* module);
@@ -589,7 +585,7 @@ namespace LCompilers {
                 llvm::IRBuilder<>* builder, llvm::Module* module,
                 int8_t overload_id, ASR::ttype_t* int32_type=nullptr);
 
-            void list_repeat_copy(llvm::Value* repeat_list, llvm::Value* init_list,
+            void list_repeat_copy(ASR::List_t* list_type, llvm::Value* repeat_list, llvm::Value* init_list,
                                   llvm::Value* num_times, llvm::Value* init_list_len,
                                   llvm::Module* module);
     };
@@ -619,10 +615,10 @@ namespace LCompilers {
             llvm::Value* read_item(llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type,
                                    size_t pos, bool get_pointer=false);
 
-            llvm::Value* read_item(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, llvm::Value* pos,
+            llvm::Value* read_item_using_pos_value(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, llvm::Value* pos,
                                    bool get_pointer=false);
 
-            llvm::Value* read_item(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, size_t pos,
+            llvm::Value* read_item_using_pos(llvm::Type* el_type, llvm::Value* llvm_tuple, ASR::Tuple_t* tuple_type, size_t pos,
                                    bool get_pointer=false);
 
             void tuple_deepcopy(llvm::Value* src, llvm::Value* dest,
@@ -763,12 +759,6 @@ namespace LCompilers {
                 std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
 
             virtual
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx) = 0;
-
-            virtual
             llvm::Value* len(llvm::Value* dict) = 0;
 
             virtual
@@ -813,7 +803,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
             
-            llvm::Value* get_pointer_to_occupancy_using_typecode(llvm::Type* dict_type, llvm::Value* dict);
+            llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* dict_type, llvm::Value* dict);
 
             virtual
             void resolve_collision(llvm::Value* capacity, llvm::Value* key_hash,
@@ -870,11 +860,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_keymask(llvm::Value* dict);
 
             void dict_deepcopy(llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx);
-
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
@@ -1028,11 +1013,6 @@ namespace LCompilers {
                 ASR::Dict_t* dict_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            void dict_deepcopy_using_typecode(std::string& key_type_code, std::string& value_type_code,
-                llvm::Value* src, llvm::Value* dest,
-                ASR::Dict_t* dict_type, llvm::Module* module,
-                std::map<std::string, std::map<std::string, int>>& name2memidx);
-
             llvm::Value* len(llvm::Value* dict);
 
             void get_elements_list(llvm::Value* dict,
@@ -1089,7 +1069,7 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_capacity(llvm::Value* set) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_occupancy_using_typecode(llvm::Type* set_type, llvm::Value* set) = 0;
+            llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& type_code, llvm::Value* set) = 0;
@@ -1172,7 +1152,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_occupancy_using_typecode(llvm::Type* set_type, llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& type_code, llvm::Value* set);
 
@@ -1264,7 +1244,7 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
 
 
-            llvm::Value* get_pointer_to_occupancy_using_typecode(llvm::Type* set_type, llvm::Value* set);
+            llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& type_code, llvm::Value* set);
 

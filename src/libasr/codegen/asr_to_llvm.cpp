@@ -1794,8 +1794,7 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Value *pos = tmp;
 
-        std::string type_code = ASRUtils::get_type_code(el_type);
-        tmp = list_api->read_item_using_typecode(type_code, plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -1860,7 +1859,7 @@ public:
             std::string type_code = ASRUtils::get_type_code(
                 ASRUtils::get_contained_type(ASRUtils::expr_type(x.m_arg)));
             llvm::Type* list_type = list_api->get_list_type(nullptr, type_code, 0);
-            tmp = list_api->len_using_typecode(list_type, plist);
+            tmp = list_api->len_using_type(list_type, plist);
         }
     }
 
@@ -2065,8 +2064,7 @@ public:
         ptr_loads = !LLVM::is_llvm_struct(asr_el_type);
         ptr_loads = ptr_loads_copy;
 
-        std::string type_code = ASRUtils::get_type_code(asr_el_type);
-        list_api->reverse(type_code, plist, module.get());
+        list_api->reverse(asr_el_type, plist, module.get());
     }
 
     void generate_ListPop_0(ASR::expr_t* m_arg) {
@@ -2410,7 +2408,7 @@ public:
         list_api->list_init(type_code, repeat_list, module.get(), capacity, capacity);
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 1;
-        list_api->list_repeat_copy(repeat_list, left, right, left_len, module.get());
+        list_api->list_repeat_copy(list_type, repeat_list, left, right, left_len, module.get());
         ptr_loads = ptr_loads_copy;
         tmp = repeat_list;
     }
@@ -2464,7 +2462,7 @@ public:
         llvm::Value *pos = tmp;
 
         llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(x.m_type, llvm_utils->module); 
-        tmp = tuple_api->read_item(el_type, ptuple, ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_a)), pos, LLVM::is_llvm_struct(x.m_type));
+        tmp = tuple_api->read_item_using_pos_value(el_type, ptuple, ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_a)), pos, LLVM::is_llvm_struct(x.m_type));
     }
 
     void visit_TupleConcat(const ASR::TupleConcat_t& x) {
@@ -5771,7 +5769,7 @@ public:
 
             std::string key_type_code = ASRUtils::get_type_code(value_dict_type->m_key_type);
             std::string value_type_code = ASRUtils::get_type_code(value_dict_type->m_value_type);
-            llvm_utils->dict_api->dict_deepcopy_using_typecode(key_type_code, value_type_code, value_dict, target_dict,
+            llvm_utils->dict_api->dict_deepcopy(value_dict, target_dict,
                                     value_dict_type, module.get(), name2memidx);
             return ;
         } else if( is_target_set && is_value_set ) {
@@ -5998,8 +5996,7 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                std::string type_code = ASRUtils::get_type_code(asr_target0->m_type);
-                target = list_api->read_item_using_typecode(type_code, list, pos, compiler_options.enable_bounds_checking,
+                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.enable_bounds_checking,
                                              module.get(), true);
             }
         } else {
