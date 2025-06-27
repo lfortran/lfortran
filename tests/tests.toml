@@ -4680,6 +4680,10 @@ filename = "errors/protected_01.f90"
 asr = true
 
 [[test]]
+filename = "errors/interface_01.f90"
+asr = true
+
+[[test]]
 filename = "../integration_tests/intrinsics_334.f90"
 asr = true
 
