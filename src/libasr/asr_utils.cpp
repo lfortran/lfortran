@@ -1220,13 +1220,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     SetChar& current_function_dependencies,
                     SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(left));
-    ASR::ttype_t *right_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(right));
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     ASR::Struct_t *left_struct = nullptr;
-    if ( ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(left_type)) ) {
+    if ( ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable_pointer(left_type)) ) {
         left_struct = ASR::down_cast<ASR::Struct_t>(
             ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::StructType_t>(
-            ASRUtils::type_get_past_allocatable(left_type))->m_derived_type));
+            ASRUtils::type_get_past_allocatable_pointer(left_type))->m_derived_type));
     }
     bool found = false;
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {
@@ -1252,17 +1252,21 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( (left_arg_type->type == left_type->type &&
-                            right_arg_type->type == right_type->type)
-                        || (ASRUtils::is_class_type(left_arg_type) &&
-                            ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(left_type)))
-                        || (ASRUtils::is_class_type(right_arg_type) &&
-                            ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(right_type)))
-                        || (ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
-                            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(left_type)))
-                        || (ASR::is_a<ASR::StructType_t>(*right_arg_type) &&
-                            ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(right_type))) ) {
+                        bool not_matching = (!ASRUtils::is_allocatable(left_type) && ASRUtils::is_allocatable(left_arg_type)) ||
+                                            (!ASRUtils::is_allocatable(right_type) && ASRUtils::is_allocatable(right_arg_type)) ||
+                                            (!ASRUtils::is_pointer(left_type) && ASRUtils::is_pointer(left_arg_type)) ||
+                                            (!ASRUtils::is_pointer(right_type) && ASRUtils::is_pointer(right_arg_type));
+                        left_type = ASRUtils::type_get_past_allocatable_pointer(left_type);
+                        left_arg_type = ASRUtils::type_get_past_allocatable_pointer(left_arg_type);
+                        right_type = ASRUtils::type_get_past_allocatable_pointer(right_type);
+                        right_arg_type = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
+                        if( !not_matching && (left_arg_type->type == left_type->type &&
+                                                right_arg_type->type == right_type->type) ) {
                             // If all are StructTypes then the Struct symbols should match
+                            left_type = ASRUtils::type_get_past_array(left_type);
+                            left_arg_type = ASRUtils::type_get_past_array(left_arg_type);
+                            right_type = ASRUtils::type_get_past_array(right_type);
+                            right_arg_type = ASRUtils::type_get_past_array(right_arg_type);
                             if (ASR::is_a<ASR::StructType_t>(*left_type) &&
                                 ASR::is_a<ASR::StructType_t>(*right_type) &&
                                 ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
