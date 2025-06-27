@@ -1678,7 +1678,7 @@ public:
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
                     if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature)) {
                         diag.add(diag::Diagnostic(
-                            "Arguments or return var mismatch in interface and implementation",
+                            "Argument(s) or return type mismatch in interface and implementation",
                             diag::Level::Error, diag::Stage::Semantic, {
                                 diag::Label("", {tmp->loc})}));
                         throw SemanticAbort();
