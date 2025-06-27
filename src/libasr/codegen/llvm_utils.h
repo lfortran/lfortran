@@ -463,15 +463,9 @@ namespace LCompilers {
 
             std::map<std::string, std::tuple<llvm::Type*, int32_t, llvm::Type*>> typecode2listtype;
 
-            void resize_if_needed(llvm::Value* list, llvm::Value* n,
-                                  llvm::Value* capacity, int32_t type_size,
-                                  llvm::Type* el_type, llvm::Module* module);
-
             void resize_if_needed_using_typecode(std::string& type_code, llvm::Value* list, llvm::Value* n,
                                                   llvm::Value* capacity, int32_t type_size,
                                                   llvm::Type* el_type, llvm::Module* module);
-
-            void shift_end_point_by_one(llvm::Value* list);
 
             void shift_end_point_by_one_using_typecode(std::string& type_code, llvm::Value* list);
 
@@ -491,13 +485,6 @@ namespace LCompilers {
                             llvm::Module* module, int32_t initial_capacity=1,
                             int32_t n=0);
 
-            llvm::Value* get_pointer_to_list_data(llvm::Value* list);
-
-            llvm::Value* get_pointer_to_current_end_point(llvm::Value* list);
-
-            llvm::Value* get_pointer_to_current_capacity(llvm::Value* list);
-
-
             llvm::Value* get_pointer_to_list_data_using_type(llvm::Type* list_type, llvm::Value* list);
 
             llvm::Value* get_pointer_to_current_end_point_using_type(llvm::Type* list_type, llvm::Value* list);
@@ -516,21 +503,16 @@ namespace LCompilers {
                                                    bool enable_bounds_checking,
                                                    llvm::Module* module, bool get_pointer=false);
 
-            llvm::Value* len(llvm::Value* list);
 
             llvm::Value* len_using_type(llvm::Type* list_type, llvm::Value* list);
 
-            void check_index_within_bounds(llvm::Value* list, llvm::Value* pos,
+            void check_index_within_bounds_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Value* pos,
                                            llvm::Module* module);
 
             void write_item(llvm::Value* list, llvm::Value* pos,
                 llvm::Value* item, ASR::ttype_t* asr_type,
                 bool enable_bounds_checking, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
-
-            void write_item(llvm::Value* list, llvm::Value* pos,
-                            llvm::Value* item, bool enable_bounds_checking,
-                            llvm::Module* module);
 
             void write_item_using_ttype(ASR::ttype_t* el_asr_type, llvm::Value* list, llvm::Value* pos,
                             llvm::Value* item, bool enable_bounds_checking,
@@ -555,9 +537,9 @@ namespace LCompilers {
                                       ASR::ttype_t* list_type, llvm::Module* module,
                                       std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            llvm::Value* pop_last(llvm::Value* list, ASR::ttype_t* list_type, llvm::Module* module);
+            llvm::Value* pop_last(llvm::Value* list, ASR::ttype_t* list_asr_type, llvm::Module* module);
 
-            void list_clear(llvm::Value* list);
+            void list_clear_using_type(llvm::Type* list_type, llvm::Value* list);
 
             void reverse(ASR::ttype_t* el_type, llvm::Value* list, llvm::Module* module);
 
@@ -573,7 +555,7 @@ namespace LCompilers {
             llvm::Value* count(llvm::Value* list, llvm::Value* item,
                                 ASR::ttype_t* item_type, llvm::Module* module);
 
-            void free_data(llvm::Value* list, llvm::Module* module);
+            void free_data_using_type(llvm::Type* list_type, llvm::Value* list, llvm::Module* module);
 
             void free_data_using_type(std::string& type_code, llvm::Value* list, llvm::Module* module);
 
@@ -687,9 +669,6 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_capacity(llvm::Value* dict) = 0;
-
-            virtual
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, 
                                                   llvm::Value* dict) = 0;
 
@@ -798,8 +777,6 @@ namespace LCompilers {
             llvm::Value* get_value_list(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* dict);
-
-            llvm::Value* get_pointer_to_capacity(llvm::Value* dict);
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
             
@@ -1066,7 +1043,7 @@ namespace LCompilers {
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set) = 0;
 
             virtual
-            llvm::Value* get_pointer_to_capacity(llvm::Value* set) = 0;
+            llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set) = 0;
 
             virtual
             llvm::Value* get_pointer_to_occupancy_using_type(llvm::Type* set_type, llvm::Value* set) = 0;
@@ -1148,7 +1125,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_capacity(llvm::Value* set);
+            llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
 
@@ -1239,7 +1216,7 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_occupancy(llvm::Value* set);
 
-            llvm::Value* get_pointer_to_capacity(llvm::Value* set);
+            llvm::Value* get_pointer_to_capacity_using_type(llvm::Type* el_list_type, llvm::Value* set);
 
             llvm::Value* get_pointer_to_mask(llvm::Value* set);
 

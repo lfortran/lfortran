@@ -2371,8 +2371,8 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
         ptr_loads = ptr_loads_copy;
-
-        list_api->list_clear(plist);
+        llvm::Type* list_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_a), module.get());
+        list_api->list_clear_using_type(list_type, plist);
     }
 
     void visit_ListRepeat(const ASR::ListRepeat_t& x) {
@@ -2403,7 +2403,7 @@ public:
         }
         llvm::Type* repeat_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* repeat_list = llvm_utils->CreateAlloca(*builder, repeat_list_type, nullptr, "repeat_list");
-        llvm::Value* left_len = list_api->len(left);
+        llvm::Value* left_len = list_api->len_using_type(repeat_list_type, left);
         llvm::Value* capacity = builder->CreateMul(left_len, right);
         list_api->list_init(type_code, repeat_list, module.get(), capacity, capacity);
         int64_t ptr_loads_copy = ptr_loads;
@@ -6031,7 +6031,8 @@ public:
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
-                    llvm::Value* size = list_api->len(plist);
+                    llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_target_type, module.get());
+                    llvm::Value* size = list_api->len_using_type(list_llvm_type, plist);
                     llvm::Type* el_type = llvm_utils->get_type_from_ttype_t_util(
                         ASRUtils::extract_type(ASRUtils::expr_type(x.m_value)), module.get());
                     llvm::DataLayout data_layout(module->getDataLayout());
@@ -8908,7 +8909,8 @@ public:
                 ptr_loads = 0;
                 this->visit_expr(*x.m_arg);
                 ptr_loads = ptr_loads_copy;
-                tmp = llvm_utils->CreateLoad(list_api->get_pointer_to_list_data(tmp));
+                llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_arg), module.get());
+                tmp = llvm_utils->CreateLoad(list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
                 break;
             }
             default : throw CodeGenError("Cast kind not implemented");
