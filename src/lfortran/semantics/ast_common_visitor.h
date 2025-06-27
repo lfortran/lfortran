@@ -4534,7 +4534,7 @@ public:
 
     }
 
-    void visit_LFUnionType(const AST::LFUnionType_t &/*x*/) {
+    void visit_LFUnion(const AST::LFUnion_t &/*x*/) {
 
     }
 
