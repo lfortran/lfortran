@@ -1617,6 +1617,56 @@ public:
             sym_name = sym_name + "~genericprocedure";
         }
 
+        bool is_pure = false, is_module = false, is_elemental = false;
+        for(size_t i = 0; i < x.n_attributes; i++) {
+            switch( x.m_attributes[i]->type ) {
+                case AST::decl_attributeType::SimpleAttribute: {
+                    AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(
+                        x.m_attributes[i]);
+                    if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
+                        is_pure = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrModule ) {
+                        is_module = true;
+                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
+                        is_elemental = true;
+                    }
+                    break;
+                }
+                default: {
+                    // pass
+                    break;
+                }
+            }
+        }
+
+        SetChar func_deps;
+        func_deps.reserve(al, current_function_dependencies.size());
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
+
+        tmp = ASRUtils::make_Function_t_util(
+            /* al */ al, /* loc */ x.base.base.loc,
+            /* m_symtab */ current_scope, /* m_name */ s2c(al, to_lower(sym_name)),
+            /* m_dependencies  */ func_deps.p, /* n_dependencies */ func_deps.size(),
+            /* a_args */ args.p, /* n_args */ args.size(),
+            /* m_body */ nullptr, /* n_body */ 0,
+            /* m_return_var */ ASRUtils::EXPR(return_var_ref),
+            /* m_abi */ current_procedure_abi_type,
+            /* m_access */ s_access, /* m_deftype */ deftype,
+            /* m_bindc_name */ bindc_name, /* m_elemental */ is_elemental,
+            /* m_pure */ is_pure, /* m_module */ is_module,
+            /* m_inline */ false, /* m_static */ false,
+            /* m_restrictions */ nullptr, /* n_restrictions */ 0,
+            /* m_is_restriction */ is_requirement, /* m_deterministic */ false,
+            /* m_side_effects_free */ false, /* m_c_header */ nullptr,
+            /* m_start_name */ x.m_start_name ? x.m_start_name : nullptr,
+            /* m_end_name */ x.m_end_name ? x.m_end_name : nullptr
+        );
+
+        ASR::symbol_t* func_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(func_sym);
+
         if (parent_scope->get_symbol(sym_name) != nullptr) {
             ASR::symbol_t *f1 = parent_scope->get_symbol(sym_name);
             if (ASR::is_a<ASR::ExternalSymbol_t>(*f1) && in_submodule) {
@@ -1626,6 +1676,13 @@ public:
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
+                    if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature)) {
+                        diag.add(diag::Diagnostic(
+                            "Arguments or return var mismatch in interface and implementation",
+                            diag::Level::Error, diag::Stage::Semantic, {
+                                diag::Label("", {tmp->loc})}));
+                        throw SemanticAbort();
+                    }
                     // Previous declaration will be shadowed
                     parent_scope->erase_symbol(sym_name);
                 } else {
@@ -1647,46 +1704,6 @@ public:
             }
         }
 
-        bool is_elemental = false;
-        bool is_pure = false;
-        for(size_t i = 0; i < x.n_attributes; i++) {
-            switch( x.m_attributes[i]->type ) {
-                case AST::decl_attributeType::SimpleAttribute: {
-                    AST::SimpleAttribute_t* simple_attr = AST::down_cast<AST::SimpleAttribute_t>(
-                        x.m_attributes[i]);
-                    if( simple_attr->m_attr == AST::simple_attributeType::AttrPure ) {
-                        is_pure = true;
-                    } else if( simple_attr->m_attr == AST::simple_attributeType::AttrElemental ) {
-                        is_elemental = true;
-                    }
-                    break;
-                }
-                default: {
-                    // pass
-                    break;
-                }
-            }
-        }
-
-        SetChar func_deps;
-        func_deps.reserve(al, current_function_dependencies.size());
-        for( auto& itr: current_function_dependencies ) {
-            func_deps.push_back(al, s2c(al, itr));
-        }
-        tmp = ASRUtils::make_Function_t_util(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, to_lower(sym_name)),
-            func_deps.p, func_deps.size(),
-            /* a_args */ args.p,
-            /* n_args */ args.size(),
-            /* a_body */ nullptr,
-            /* n_body */ 0,
-            /* a_return_var */ ASRUtils::EXPR(return_var_ref),
-            current_procedure_abi_type, s_access, deftype,
-            bindc_name, is_elemental, is_pure, false, false, false,
-            nullptr, 0, is_requirement, false, false, nullptr, x.m_start_name ? x.m_start_name : nullptr,
-            x.m_end_name ? x.m_end_name : nullptr);
         handle_save();
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
 
