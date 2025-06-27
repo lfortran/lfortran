@@ -1966,10 +1966,7 @@ class ParallelRegionVisitor :
             return true;
         }
 
-        std::pair<std::string, ASR::symbol_t*> create_thread_data_module_omp(
-            InvolvedSymbolsCollector* c,
-            const Location& loc, 
-            std::string data_struct_name = "thread_data") {
+        std::pair<std::string, ASR::symbol_t*> create_thread_data_module_omp(InvolvedSymbolsCollector* c, const Location& loc, std::string data_struct_name = "thread_data") {
             
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
@@ -2052,13 +2049,7 @@ class ParallelRegionVisitor :
             return {thread_data_module_name, thread_data_struct};
         }
 
-        void unpack_data_from_thread_data_omp(
-            const LCompilers::Location &loc, 
-            std::string thread_data_module_name, 
-            ASR::expr_t* tdata_expr, 
-            Vec<ASR::stmt_t*> &body, 
-            InvolvedSymbolsCollector* c,
-            std::string data_root_name="thread_data") {
+        void unpack_data_from_thread_data_omp(const LCompilers::Location &loc, std::string thread_data_module_name, ASR::expr_t* tdata_expr, Vec<ASR::stmt_t*> &body, InvolvedSymbolsCollector* c, std::string data_root_name="thread_data") {
             
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol(data_root_name + thread_data_module_name.substr(data_root_name.size() + 7));
             ASR::symbol_t* thread_data_ext_sym = ASRUtils::symbol_get_past_external(thread_data_sym);
@@ -2144,14 +2135,7 @@ class ParallelRegionVisitor :
             }
         }
 
-        void pack_data_to_thread_data_omp(
-            const LCompilers::Location &loc, 
-            // std::map<std::pair<std::string, bool>, ASR::ttype_t*>& involved_symbols, 
-            SymbolTable* current_scope,  
-            std::pair<std::string, ASR::symbol_t*> thread_data_module, 
-            ASR::expr_t* data_expr, 
-            std::vector<std::string>& array_variables,
-            InvolvedSymbolsCollector* c) {
+        void pack_data_to_thread_data_omp(const LCompilers::Location &loc, SymbolTable* current_scope, std::pair<std::string, ASR::symbol_t*> thread_data_module, ASR::expr_t* data_expr, std::vector<std::string>& array_variables,  InvolvedSymbolsCollector* c) {
 
             ASRUtils::ASRBuilder b(al, loc);
             std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
@@ -2258,6 +2242,18 @@ class ParallelRegionVisitor :
                     }
                 } else if (is_shared) {
                     // Handle shared non-array variables using pointer approach
+
+                    // Handle if the Parent OMPRegion have the variable as shared, if yes then it's already a pointer
+                    if(involved_symbols_collector_map[current_scope] && involved_symbols_collector_map[current_scope]->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared) {
+                        nested_lowered_body.push_back(b.Assignment(
+                            ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
+                            sym, ASRUtils::symbol_type(sym), nullptr)),
+                            b.PointerToCPtr(
+                                    b.Var(current_scope->get_symbol(it.first)),
+                                ASRUtils::symbol_type(sym))
+                        ));
+                        continue;
+                    }
                     nested_lowered_body.push_back(b.Assignment(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
@@ -2280,10 +2276,10 @@ class ParallelRegionVisitor :
             if (array_variables.size() > 0) {
                 std::map<int, std::map<std::string, std::vector<ASR::symbol_t*>>> scoped_array_variable_map;
                 std::string func_name = "";
-                if (ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
+                if (current_scope->asr_owner != nullptr && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner)) {
                     func_name = ASRUtils::symbol_name(ASR::down_cast<ASR::symbol_t>(current_scope->asr_owner));
+                    recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true, func_name);
                 }
-                recursive_function_call_resolver(current_scope, array_variables, scoped_array_variable_map, true, func_name);
             }
         }
 
@@ -2538,6 +2534,10 @@ class ParallelRegionVisitor :
                 visit_OMPBarrier(x);
                 break;
 
+                case ASR::omp_region_typeType::Taskwait:
+                visit_OMPTaskwait(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -2560,6 +2560,11 @@ class ParallelRegionVisitor :
                 c.variable_accessibility[it.first] = is_shared_or_default_variable(it.first, x) && !(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate)?
                     ASR::omp_clauseType::OMPShared :
                     ASR::omp_clauseType::OMPPrivate;
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
+                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
+                if(local_var->m_intent == ASR::intentType::In || local_var->m_storage == ASR::storage_typeType::Parameter) {
+                    c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
+                }
             }
 
             // create thread data module
@@ -2850,49 +2855,24 @@ class ParallelRegionVisitor :
             InvolvedSymbolsCollector c(task_involved_symbols);
             c.visit_OMPRegion(x);
             
-            // Process clauses to get PRIVATE and FIRSTPRIVATE variables
-            std::vector<std::string> private_vars, firstprivate_vars, shared_vars;
-            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
-            stmt_visitor.current_expr = nullptr;
-            
-            for (size_t i = 0; i < x.n_clauses; i++) {
-                stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
-                clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
-                
-                if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPPrivate) {
-                    ASR::OMPPrivate_t* private_clause = ASR::down_cast<ASR::OMPPrivate_t>(x.m_clauses[i]);
-                    for (size_t j = 0; j < private_clause->n_vars; j++) {
-                        private_vars.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(private_clause->m_vars[j])->m_v));
+            for(auto it: task_involved_symbols) {
+                c.variable_accessibility[it.first] = is_shared_or_default_variable(it.first, x) && !(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate)?
+                    ASR::omp_clauseType::OMPShared :
+                    ASR::omp_clauseType::OMPPrivate;
+
+                for (size_t i = 0; i < x.n_clauses; i++) {
+                    if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPFirstPrivate) {
+                        ASR::OMPFirstPrivate_t* firstprivate_clause = ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
+                        for (size_t j = 0; j < firstprivate_clause->n_vars; j++) {
+                            if (ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(firstprivate_clause->m_vars[j])->m_v) == it.first) {
+                                c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPFirstPrivate;
+                            }
+                        }
                     }
-                } else if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPFirstPrivate) {
-                    ASR::OMPFirstPrivate_t* firstprivate_clause = ASR::down_cast<ASR::OMPFirstPrivate_t>(x.m_clauses[i]);
-                    for (size_t j = 0; j < firstprivate_clause->n_vars; j++) {
-                        firstprivate_vars.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(firstprivate_clause->m_vars[j])->m_v));
-                    }
-                } else if(x.m_clauses[i]->type == ASR::omp_clauseType::OMPShared) {
-                    ASR::OMPShared_t* shared_clause = ASR::down_cast<ASR::OMPShared_t>(x.m_clauses[i]);
-                    for (size_t j = 0; j < shared_clause->n_vars; j++) {
-                        shared_vars.push_back(ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(shared_clause->m_vars[j])->m_v));
-                    }
-                }   
-            }
-            
-            // Filter task_involved_symbols based on clauses
-            std::map<std::string, ASR::ttype_t*> task_data_symbols;
-            for (auto& sym_pair : task_involved_symbols) {
-                // Include FIRSTPRIVATE variables in task data
-                if (std::find(firstprivate_vars.begin(), firstprivate_vars.end(), sym_pair.first) != firstprivate_vars.end() || 
-                    std::find(shared_vars.begin(), shared_vars.end(), sym_pair.first) != shared_vars.end()) {
-                    task_data_symbols[sym_pair.first] = sym_pair.second;
-                }
-                // Include variables that are not PRIVATE (shared by default)
-                else if (std::find(private_vars.begin(), private_vars.end(), sym_pair.first) == private_vars.end()) {
-                    task_data_symbols[sym_pair.first] = sym_pair.second;
                 }
             }
-            
             // Create thread data module for task
-            std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module(task_data_symbols, loc, "task_data_struct");
+            std::pair<std::string, ASR::symbol_t*> task_data_module = create_thread_data_module_omp(&c, loc, "task_data_struct");
             // Create required modules (iso_c_binding and omp_lib)
             std::vector<ASR::symbol_t*> module_symbols = create_modules_for_lcompilers_function(loc);
 
@@ -2911,9 +2891,9 @@ class ParallelRegionVisitor :
             ASR::expr_t* task_ptr_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data_ptr"), 
                 ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Local);
             
-            // Pack data for FIRSTPRIVATE and shared variables
+            // Pack data
             std::vector<std::string> array_variables;
-            pack_data_to_thread_data(loc, task_data_symbols, current_scope, task_data_module, task_data_expr, array_variables);
+            pack_data_to_thread_data_omp(loc, current_scope, task_data_module, task_data_expr, array_variables, &c);
             
             // task_ptr = c_loc(task_data)
             nested_lowered_body.push_back(b.Assignment(
@@ -2925,9 +2905,7 @@ class ParallelRegionVisitor :
             ));
             
             // Create task function
-            ASR::symbol_t* task_function = create_lcompilers_function_for_task(loc, x, task_data_symbols, 
-                                                                            task_data_module.first, module_symbols,
-                                                                            private_vars, firstprivate_vars);
+            ASR::symbol_t* task_function = create_lcompilers_function_for_task(loc, x, task_data_module.first, module_symbols,&c);
             
             // Create interface for task function
             ASR::Function_t* task_func = ASR::down_cast<ASR::Function_t>(task_function);
@@ -2942,8 +2920,8 @@ class ParallelRegionVisitor :
                                     ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), nullptr));
             
             // Constants for GOMP_task call
-            ASR::expr_t* data_size = b.i64(0);  // Let GOMP determine size
-            ASR::expr_t* data_align = b.i64(0); // Default alignment
+            ASR::expr_t* data_size = b.i64(compute_task_data_size(task_data_module.second));
+            ASR::expr_t* data_align = b.i64(8);
             ASR::expr_t* if_clause = b.bool_t(true, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4))); // Always create task
             ASR::expr_t* flags = b.i32(0);      // No special flags
             Vec<ASR::call_arg_t> task_call_args; 
@@ -2977,11 +2955,40 @@ class ParallelRegionVisitor :
             clauses_heirarchial[nesting_lvl].clear();
         }
 
+        int64_t compute_task_data_size(const ASR::symbol_t* task_data_struct_sym) {
+            int64_t total_size = 0;
+            ASR::Struct_t* task_data_struct = ASR::down_cast<ASR::Struct_t>(task_data_struct_sym);
+            SymbolTable* m_symtab = task_data_struct->m_symtab;
+            for (size_t i=0;i< task_data_struct->n_members; i++) {
+                ASR::symbol_t* sym = m_symtab->resolve_symbol(task_data_struct->m_members[i]);
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::ttype_t* type = var->m_type;
+                if (ASR::is_a<ASR::CPtr_t>(*type)) {
+                    // CPtr is typically 8 bytes on 64-bit systems
+                    total_size += 8;
+                } else if (ASR::is_a<ASR::Integer_t>(*type)) {
+                    // Integer (c_int) is 4 bytes
+                    total_size += 4;
+                } else if (ASR::is_a<ASR::Real_t>(*type)) {
+                    // Real (c_float or c_double) depends on kind, assume 4 or 8
+                    ASR::Real_t* real_type = ASR::down_cast<ASR::Real_t>(type);
+                    total_size += (real_type->m_kind == 4 ? 4 : 8);
+                } else if (ASR::is_a<ASR::Array_t>(*type)) {
+                    // Arrays are stored as CPtr (8 bytes) plus bounds
+                    total_size += 8;
+                    ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(type)));
+                    total_size += 8 * array_type->n_dims; // 4 bytes each for lbound and ubound per dimension
+                } else {
+                    // Fallback for unsupported types, assume 8 bytes
+                    total_size += 8;
+                }
+            }
+            return total_size;
+        }
         // Add this helper function to create task functions
         ASR::symbol_t* create_lcompilers_function_for_task(const Location &loc, const ASR::OMPRegion_t &x,
-                    std::map<std::string, ASR::ttype_t*> &involved_symbols, const std::string &thread_data_module_name,
-                    std::vector<ASR::symbol_t*> &module_symbols, std::vector<std::string> &private_vars,
-                    std::vector<std::string> &firstprivate_vars) {
+                    const std::string &thread_data_module_name,
+                    std::vector<ASR::symbol_t*> &module_symbols, InvolvedSymbolsCollector* c) {
             
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
@@ -2990,6 +2997,8 @@ class ParallelRegionVisitor :
             
             // Create function scope
             current_scope = al.make_new<SymbolTable>(current_scope);
+            involved_symbols_collector_map[current_scope] = c;
+            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
             
             // Load required modules
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
@@ -3021,42 +3030,20 @@ class ParallelRegionVisitor :
             fn_args.reserve(al, 1);
             fn_args.push_back(al, data_expr);
             
-            /*
-                This needs to be refactored , will have to figure out way to implement FIRSTPRIVATE and SHARED Variables
-                Current Implementation's is not the correct one.
-            */
-            // Declare FIRSTPRIVATE variables first (these will get values from task data)
-            for (const std::string& var_name : firstprivate_vars) {
-                ASR::symbol_t* orig_sym = current_scope_copy->resolve_symbol(var_name);
-                if (orig_sym) {
-                    LCOMPILERS_ASSERT(b.Variable(current_scope, var_name, ASRUtils::symbol_type(orig_sym), ASR::intentType::Local, ASR::abiType::BindC));
+
+            for (auto it : involved_symbols) {
+                bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
+                ASR::ttype_t* var_type = it.second;
+                
+                // For task constructs, shared variables should use pointer approach similar to parallel
+                if (is_shared && !ASRUtils::is_array(var_type)) {
+                    // Declare as pointer for shared non-array variables
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASR::abiType::BindC) != nullptr);
             }
             
-            // Declare PRIVATE variables (local to this task, no initialization from task data)
-            for (const std::string& var_name : private_vars) {
-                // Skip if it's already declared as firstprivate
-                if (std::find(firstprivate_vars.begin(), firstprivate_vars.end(), var_name) != firstprivate_vars.end()) {
-                    continue;
-                }
-                ASR::symbol_t* orig_sym = current_scope_copy->resolve_symbol(var_name);
-                if (orig_sym) {
-                    LCOMPILERS_ASSERT(b.Variable(current_scope, var_name, ASRUtils::symbol_type(orig_sym), ASR::intentType::Local, ASR::abiType::BindC));
-                }
-            }
-            
-            // Declare other involved variables (shared variables)
-            for (auto it: involved_symbols) {
-                // Skip if already declared as private or firstprivate
-                if (std::find(private_vars.begin(), private_vars.end(), it.first) != private_vars.end() ||
-                    std::find(firstprivate_vars.begin(), firstprivate_vars.end(), it.first) != firstprivate_vars.end()) {
-                    continue;
-                }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local, ASR::abiType::BindC));
-            }
-            
-            // Unpack FIRSTPRIVATE and shared data from thread_data
-            unpack_data_from_thread_data(loc, involved_symbols, thread_data_module_name, tdata_expr, fn_body, "task_data_struct");
+            unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
 
             // Process task body
             DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
@@ -3262,6 +3249,20 @@ class ParallelRegionVisitor :
             barrier_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                 current_scope->get_symbol("gomp_barrier"), nullptr, barrier_args.p, barrier_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPTaskwait(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Generate gomp_taskwait call
+            Vec<ASR::call_arg_t> taskwait_args;
+            taskwait_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
