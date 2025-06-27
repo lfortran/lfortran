@@ -4535,6 +4535,10 @@ public:
 
     }
 
+    void visit_LFUnion(const AST::LFUnion_t &/*x*/) {
+
+    }
+
     ASR::ttype_t* determine_type(const Location &loc, std::string& sym,
         AST::decl_attribute_t* decl_attribute, bool is_pointer,
         bool is_allocatable, Vec<ASR::dimension_t>& dims,
@@ -4864,6 +4868,8 @@ public:
                 );
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
+            } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
+                type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
             } else {
                 if (!v) {
                     if (is_template) {

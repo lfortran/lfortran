@@ -531,6 +531,9 @@ int Tokenizer::lex(Allocator &al, YYSTYPE &yylval, Location &loc, diag::Diagnost
             '_lfortran_set' { KW(LF_SET) }
             '_lfortran_dict' { KW(LF_DICT) }
             '_lfortran_tuple' { KW(LF_TUPLE) }
+            '_lfortran_union_type' { KW(LF_UNION_TYPE) }
+
+            'end' whitespace '_lfortran_union_type' { KW(LF_END_UNION_TYPE) }
 
             // Tokens
             newline {

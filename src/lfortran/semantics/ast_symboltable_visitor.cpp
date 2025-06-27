@@ -1930,6 +1930,63 @@ public:
         is_derived_type = false;
     }
 
+    void visit_LFUnion(const AST::LFUnion_t&x) {
+        dt_name = to_lower(x.m_name);
+        SymbolTable *parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+        data_member_names.reserve(al, 0);
+        is_derived_type = true;
+        for (size_t i=0; i<x.n_items; i++) {
+            this->visit_unit_decl2(*x.m_items[i]);
+        }
+
+        std::string sym_name = to_lower(x.m_name);
+        if (current_scope->get_symbol(sym_name) != nullptr) {
+            diag.add(diag::Diagnostic(
+                "DerivedType already defined",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+        ASR::symbol_t* parent_sym = nullptr;
+        SetChar union_dependencies;
+        union_dependencies.reserve(al, 1);
+        for( auto& item: current_scope->get_scope() ) {
+            // ExternalSymbol means that current module/program
+            // already depends on the module of ExternalSymbol
+            // present inside Struct's scope. So the order
+            // is already established and hence no need to store
+            // this ExternalSymbol as a dependency.
+            if( ASR::is_a<ASR::ExternalSymbol_t>(*item.second) ) {
+                continue;
+            }
+            char* aggregate_type_name = nullptr;
+            if (item.first != "~abstract_type") {
+                ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
+                if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                }
+            }
+            if( aggregate_type_name ) {
+                union_dependencies.push_back(al, aggregate_type_name);
+            }
+        }
+        tmp = ASR::make_Union_t(al, x.base.base.loc, current_scope, s2c(al, to_lower(x.m_name)), 
+                                union_dependencies.p, union_dependencies.size(), data_member_names.p, data_member_names.size(), 
+                                ASR::abiType::Source, dflt_access, nullptr, 0, parent_sym);
+
+        ASR::symbol_t* union_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        if (compiler_options.implicit_typing) {
+            parent_scope->add_or_overwrite_symbol(sym_name, union_type_sym);
+        } else {
+            parent_scope->add_symbol(sym_name, union_type_sym);
+        }
+
+        current_scope = parent_scope;
+        is_derived_type = false;
+    }
+
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {
         bool old_is_interface = is_interface;
         is_interface = true;
