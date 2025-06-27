@@ -71,10 +71,10 @@ jobs:
           elif [[ "${{ matrix.llvm-version }}" == "20" ]]; then
             micromamba install zstd-static=1.5.7
           fi
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" && "${{ matrix.llvm-version }}" != "11" ]]; then
+          if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" != "11" ]]; then
             micromamba install libunwind=1.7.2
           fi
-          if [[ "${{ matrix.os }}" == "ubuntu-latest" && "${{ matrix.llvm-version }}" == "11" ]]; then
+          if [[ "${{ matrix.os }}" == *ubuntu* && "${{ matrix.llvm-version }}" == "11" ]]; then
             micromamba install pandoc=3.1.13
           fi
 
