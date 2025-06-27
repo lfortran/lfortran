@@ -754,9 +754,8 @@ derived_type_decl
 
 
 lf_union_type_decl
-    : KW_LF_UNION_TYPE var_modifiers id sep var_decl_star
-        derived_type_contains_opt lf_end_union_type sep {
-            $$ = DERIVED_TYPE($2, $3, TRIVIA($4, $8, @$), $5, $6, @$); }
+    : KW_LF_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
+            $$ = LF_UNION_TYPE($2, $3, TRIVIA($4, $7, @$), $5, @$); }
     ;
 
 template_decl
