@@ -73,7 +73,7 @@ unit_decl2
     | Requirement(identifier name, identifier* namelist, unit_decl2* decl,
         program_unit* funcs)
     | Require(unit_require* reqs)
-    | LFUnion(identifier name, trivia? trivia, decl_attribute* attrtype, unit_decl2* items)
+    | Union(identifier name, trivia? trivia, decl_attribute* attrtype, unit_decl2* items)
 
 interface_header
     = InterfaceHeader()

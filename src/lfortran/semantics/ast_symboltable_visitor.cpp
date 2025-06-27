@@ -1947,7 +1947,7 @@ public:
         is_derived_type = false;
     }
 
-    void visit_LFUnion(const AST::LFUnion_t&x) {
+    void visit_Union(const AST::Union_t&x) {
         dt_name = to_lower(x.m_name);
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);

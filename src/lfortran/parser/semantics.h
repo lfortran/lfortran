@@ -2535,7 +2535,7 @@ return make_Submodule_t(al, a_loc,
         TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
 
 
-#define LF_UNION_TYPE(attr, name, trivia, decl, l) make_LFUnion_t(p.m_a, l, \
+#define LF_UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
         name2char(name), \
         trivia_cast(trivia), \
         VEC_CAST(attr, decl_attribute), attr.size(), \
