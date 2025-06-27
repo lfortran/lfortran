@@ -806,6 +806,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
         asr = ASR::make_StringCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     }
     if (overloaded != nullptr) {
+        type = ASRUtils::expr_type(overloaded);
         asr = ASR::make_OverloadedCompare_t(al, x.base.base.loc, left, asr_op, right, type,
             value, overloaded);
     }
