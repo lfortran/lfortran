@@ -20,6 +20,9 @@ subroutine GOMP_task(fn, data, cpyfn, arg_size, arg_align, if_clause, flags, dep
       integer(c_int), value :: flags
 end subroutine
 
+subroutine GOMP_taskwait() bind(C, name="GOMP_taskwait")
+end subroutine
+
 integer(c_int) function GOMP_sections_start(count) bind(C, name="GOMP_sections_start")
     import :: c_int
     integer(c_int), value :: count
