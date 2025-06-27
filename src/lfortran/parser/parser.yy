@@ -370,7 +370,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_LF_END_UNION_TYPE
 
 %type <vec_ast> intrinsic_type_spec_list
-%type <ast> lf_union_type_decl
+%type <ast> union_type_decl
 
 // Nonterminal tokens
 
@@ -629,7 +629,7 @@ script_unit
     | implicit_statement
     | var_decl           %dprec 9
     | derived_type_decl
-    | lf_union_type_decl 
+    | union_type_decl 
     | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
@@ -753,7 +753,7 @@ derived_type_decl
     ;
 
 
-lf_union_type_decl
+union_type_decl
     : KW_LF_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
             $$ = LF_UNION_TYPE($2, $3, TRIVIA($4, $7, @$), $5, @$); }
     ;
@@ -1092,7 +1092,7 @@ temp_decl
     : var_decl
     | interface_decl
     | derived_type_decl
-    | lf_union_type_decl
+    | union_type_decl
     | template_decl
     | require_decl
     | instantiate
@@ -1107,7 +1107,7 @@ decl
     : var_decl
     | interface_decl
     | derived_type_decl
-    | lf_union_type_decl
+    | union_type_decl
     | template_decl
     | requirement_decl
     | enum_decl
@@ -1696,7 +1696,7 @@ decl_statement
     : var_decl
     | interface_decl
     | derived_type_decl
-    | lf_union_type_decl
+    | union_type_decl
     | enum_decl
     | statement
     | template_decl
