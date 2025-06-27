@@ -386,8 +386,6 @@ namespace LCompilers {
                 ASR::storage_typeType m_storage, bool arg_m_value_attr, int& n_dims,
                 int& a_kind, bool& is_array_type, ASR::intentType arg_intent, llvm::Module* module,
                 bool get_pointer=true);
-                        
-            int get_kind_from_llvm_val(llvm::Value* val);
 
             void set_dict_api(ASR::Dict_t* dict_type);
 
