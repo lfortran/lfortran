@@ -27,26 +27,21 @@ env:
 
 jobs:
   Build:
-    name: LFortran CI (${{ matrix.python-version }}, ${{ matrix.os }}, ${{ matrix.llvm-version }})
+    name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
           - os: macos-latest
-            python-version: "3.10"
             llvm-version: "11"
           - os: macos-latest
-            python-version: "3.10"
             llvm-version: "20"
           - os: ubuntu-latest
-            python-version: "3.10"
             llvm-version: "11"
           - os: ubuntu-latest
-            python-version: "3.10"
             llvm-version: "20"
           - os: windows-2025
-            python-version: "3.10"
             llvm-version: "11"
     steps:
       - uses: actions/checkout@v4
@@ -58,7 +53,6 @@ jobs:
           micromamba-version: '2.0.4-0'
           environment-file: ci/environment.yml
           create-args: >-
-            python=${{ matrix.python-version }}
             llvmdev=${{ matrix.llvm-version }}
 
       - name: Install Windows Packages
