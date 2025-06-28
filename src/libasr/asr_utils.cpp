@@ -1232,7 +1232,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
+        bool is_class_procedure = false;
         if ( left_struct != nullptr && orig_sym == nullptr ) {
+            is_class_procedure = true;
             orig_sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
         }
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
@@ -1297,7 +1299,16 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
-                            if( curr_scope->resolve_symbol(func_name) ) {
+                            if (is_class_procedure) {
+                                matched_func_name = "1_" + std::string(left_struct->m_name) + "_" + func_name;
+                                if (!curr_scope->resolve_symbol(matched_func_name)) {
+                                    ASR::symbol_t* mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
+                                        loc, curr_scope, s2c(al, matched_func_name), proc,
+                                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
+                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
+                                    curr_scope->add_symbol(matched_func_name, mem_es);
+                                }
+                            } else if( curr_scope->resolve_symbol(func_name) ) {
                                 matched_func_name = func_name;
                             } else {
                                 std::string mangled_name = func_name + "@" + intrinsic_op_name;
