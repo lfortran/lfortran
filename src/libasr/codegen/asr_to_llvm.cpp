@@ -6072,7 +6072,8 @@ public:
         value = tmp;
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
-                value = llvm_utils->CreateLoad(value);
+                llvm::Type* st_type = llvm_utils->get_type_from_ttype_t_util(target_type, module.get());
+                value = llvm_utils->CreateLoad2(st_type, value);
             }
         }
         if ( ASRUtils::is_character(*(ASRUtils::expr_type(x.m_value))) ) {
@@ -10717,7 +10718,7 @@ public:
                     llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
                     llvm::Value* polymorphic_addr = llvm_utils->create_gep(abstract_, 1);
                     builder->CreateStore(
-                        builder->CreateBitCast(llvm_utils->CreateLoad(llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
+                        builder->CreateBitCast(llvm_utils->CreateLoad2(llvm_utils->getStructType(arg_type, module.get())->getPointerTo(), llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
                         polymorphic_addr);
                     llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
                     if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
