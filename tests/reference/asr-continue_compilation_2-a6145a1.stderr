@@ -832,3 +832,9 @@ semantic error: Arguments to min0 must be of real, integer or character type
     |
 458 |     print *, max(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: `Spacing` intrinsic is not yet implemented for runtime values
+   --> tests/errors/continue_compilation_2.f90:460:14
+    |
+460 |     print *, spacing(spacing_runtime)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^ 
