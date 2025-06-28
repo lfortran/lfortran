@@ -1978,7 +1978,15 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 // Otherwise this should not be nullptr
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = v->m_type;
-                if (!types_equal(arg1, arg2, !ASRUtils::get_FunctionType(sub)->m_elemental)) {
+                ASR::symbol_t* s1 = get_struct_sym_from_struct_expr(args[i].m_value);
+                ASR::symbol_t* s2 = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])) {
+                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(sub.m_args[i]);
+                    s2 = var->m_type_declaration;
+                }
+                if (s1 && s2) {
+                    if (s1 != s2) return false;
+                } else if (!types_equal(arg1, arg2, !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {

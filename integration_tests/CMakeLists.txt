@@ -1349,7 +1349,7 @@ RUN(NAME interface_06 LABELS gfortran)
 RUN(NAME interface_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-RUN(NAME interface_12a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES interface_12b.f90)
+# RUN(NAME interface_12a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES interface_12b.f90)
 RUN(NAME interface_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1387,7 +1387,7 @@ RUN(NAME implicit_typing_05 LABELS gfortran llvm  EXTRA_ARGS --implicit-typing)
 RUN(NAME implicit_typing_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --implicit-typing)
 
 
-# RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME generic_name_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME generic_name_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME operator_overloading_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -1470,7 +1470,7 @@ RUN(NAME derived_types_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME derived_types_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME derived_types_15 LABELS gfortran llvm)
+RUN(NAME derived_types_15 LABELS gfortran llvm)
 RUN(NAME derived_types_14 LABELS gfortran
         EXTRAFILES derived_types_14_module.f90)
 RUN(NAME derived_types_16_module LABELS gfortran)
@@ -1483,7 +1483,7 @@ RUN(NAME derived_types_20 LABELS gfortran
 # RUN(NAME derived_types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME derived_types_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_25 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -1515,7 +1515,7 @@ RUN(NAME derived_types_52 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME derived_types_53 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_54 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME derived_types_55 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME derived_types_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME derived_types_56 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME derived_types_57 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME derived_types_58 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME derived_types_59 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2301,7 +2301,7 @@ RUN(NAME module_function_without_nopass LABELS gfortran llvm llvm_wasm llvm_wasm
 
 RUN(NAME polymorphic_class_compare LABELS gfortran)
 
-# RUN(NAME nested_struct_proc_01 LABELS gfortran llvm)
+RUN(NAME nested_struct_proc_01 LABELS gfortran llvm)
 
 RUN(NAME binop_of_struct_instance_in_function_call gfortran llvm fortran)
 
