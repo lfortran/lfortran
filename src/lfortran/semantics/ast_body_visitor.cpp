@@ -4103,7 +4103,7 @@ public:
                 x.m_member[x.n_member - 1].m_name, x.base.base.loc);
             v_expr = ASRUtils::EXPR(tmp);
             original_sym = resolve_deriv_type_proc(x.base.base.loc, sub_name,
-                            to_lower(x.m_member[x.n_member - 1].m_name),
+                            to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
             original_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                 original_sym, current_scope);
@@ -4243,7 +4243,7 @@ public:
                         ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
                     for (size_t i = 0; i < p->n_procs; i++) {
                         final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
-                                        to_lower(x.m_member[x.n_member - 1].m_name),
+                                        to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
                         final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                             final_sym, current_scope);

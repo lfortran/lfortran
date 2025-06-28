@@ -1143,7 +1143,9 @@ public:
 
                         // Store and bitcast allocated memory into polymorphic struct's struct pointer
                         ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
-                        llvm::Type* src_struct_type = get_llvm_struct_data_type(src_struct_sym, true);
+                        llvm::Type* src_struct_type = get_llvm_struct_data_type(
+                            src_struct_sym,
+                            LLVM::is_llvm_pointer(*dest_asr_type));
                         x_arr = llvm_utils->create_gep2(src_class_type, x_arr, 1);
                         builder->CreateStore(builder->CreateBitCast(
                                         malloc_ptr, src_struct_type), x_arr);
@@ -1154,7 +1156,7 @@ public:
                         x_arr = builder->CreateBitCast(x_arr, dest_type->getPointerTo());
 
                         if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
-                            allocate_array_members_of_struct(curr_arg.m_a, x_arr, dest_asr_type);
+                            allocate_array_members_of_struct(tmp_expr, x_arr, dest_asr_type);
                         }
 
                         if (m_source && !m_source_is_class) {
@@ -3861,7 +3863,7 @@ public:
                 builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),\
                 llvm_utils->create_gep2(string_descriptor, ptr, 2));\
             } else if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) { \
-                ASR::symbol_t* struct_sym = v->m_type_declaration; \
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration); \
                 ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym); \
                 llvm::Type* wrapper_struct_llvm_type = get_llvm_struct_data_type(st, false); \
                 llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), \
@@ -3949,11 +3951,10 @@ public:
                         ptr_type[ptr_member] = llvm_utils->get_type_from_ttype_t_util(
                             symbol_type, module.get());
 #endif
-                        allocate_array_members_of_struct_arrays(expr, ptr_member, symbol_type);
+                        allocate_array_members_of_struct_arrays(ASRUtils::get_expr_from_sym(al, sym), ptr_member, symbol_type);
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
-                    ASR::expr_t* member_expr = ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
-                    allocate_array_members_of_struct(member_expr, ptr_member, symbol_type);
+                    allocate_array_members_of_struct(ASRUtils::get_expr_from_sym(al, sym), ptr_member, symbol_type);
                 } else if( ASR::is_a<ASR::String_t>(*symbol_type) &&
                     ASR::down_cast<ASR::String_t>(symbol_type)->m_physical_type ==
                         ASR::string_physical_typeType::PointerString) { // FixedSize Strings

@@ -6742,18 +6742,18 @@ public:
     }
 
     ASR::symbol_t* resolve_deriv_type_proc(const Location &loc, const std::string &var_name,
-            const std::string dt_name, ASR::ttype_t* dt_type, SymbolTable*& scope,
+            const std::string dt_name, ASR::expr_t* dt_expr, ASR::ttype_t* dt_type, SymbolTable*& scope,
             ASR::symbol_t* parent=nullptr) {
         ASR::symbol_t* v = nullptr;
         ASR::Struct_t* der_type = nullptr;
-        ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(scope->resolve_symbol(dt_name)));
         if( dt_type ) {
             dt_type = ASRUtils::type_get_past_array(
                 ASRUtils::type_get_past_allocatable(dt_type));
         }
         if( parent == nullptr ) {
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
-                der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(dt_variable->m_type_declaration));
+                der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(dt_expr)));
             } else {
                 diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -6767,7 +6767,7 @@ public:
         if( member != nullptr ) {
             scope = der_type->m_symtab;
         } else if( der_type->m_parent != nullptr ) {
-            member = resolve_deriv_type_proc(loc, var_name, "", nullptr, scope, der_type->m_parent);
+            member = resolve_deriv_type_proc(loc, var_name, "", nullptr, nullptr, scope, der_type->m_parent);
         } else {
             diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -9412,7 +9412,7 @@ public:
             }
             v_expr = ASRUtils::EXPR(tmp);
             v = resolve_deriv_type_proc(x.base.base.loc, var_name,
-                    to_lower(x.m_member[x.n_member - 1].m_name),
+                    to_lower(x.m_member[x.n_member - 1].m_name), v_expr,
                     ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
             v = ASRUtils::import_class_procedure(al, x.base.base.loc, v, current_scope);
         } else {
