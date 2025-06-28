@@ -8432,7 +8432,12 @@ public:
                        int& arg_kind, int& dest_kind)
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
-        ASR::ttype_t* curr_type = extract_ttype_t_from_expr(x.m_arg);
+        ASR::ttype_t* curr_type = nullptr;
+        if (ASRUtils::is_abstract_class_type(ASRUtils::expr_type(x.m_arg))) {
+            curr_type = current_select_type_block_type_asr;
+        } else {
+            curr_type = extract_ttype_t_from_expr(x.m_arg);
+        }
         LCOMPILERS_ASSERT(curr_type != nullptr)
         arg_kind = ASRUtils::extract_kind_from_ttype_t(curr_type);
     }
