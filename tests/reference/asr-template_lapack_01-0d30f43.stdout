@@ -37,56 +37,6 @@
                                     gemm_r
                                     Public
                                 ),
-                            my_cast_to_double:
-                                (ExternalSymbol
-                                    23
-                                    my_cast_to_double
-                                    2 my_cast_to_double
-                                    template_lapack_01_m
-                                    []
-                                    my_cast_to_double
-                                    Public
-                                ),
-                            my_cast_to_real:
-                                (ExternalSymbol
-                                    23
-                                    my_cast_to_real
-                                    2 my_cast_to_real
-                                    template_lapack_01_m
-                                    []
-                                    my_cast_to_real
-                                    Public
-                                ),
-                            my_external_matmul:
-                                (ExternalSymbol
-                                    23
-                                    my_external_matmul
-                                    2 my_external_matmul
-                                    template_lapack_01_m
-                                    []
-                                    my_external_matmul
-                                    Public
-                                ),
-                            my_gemm_double:
-                                (ExternalSymbol
-                                    23
-                                    my_gemm_double
-                                    2 my_gemm_double
-                                    template_lapack_01_m
-                                    []
-                                    my_gemm_double
-                                    Public
-                                ),
-                            my_gemm_real:
-                                (ExternalSymbol
-                                    23
-                                    my_gemm_real
-                                    2 my_gemm_real
-                                    template_lapack_01_m
-                                    []
-                                    my_gemm_real
-                                    Public
-                                ),
                             simple_external_matmul:
                                 (ExternalSymbol
                                     23

@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            next_token:
-                                (ExternalSymbol
-                                    2
-                                    next_token
-                                    4 next_token
-                                    tomlf_de_character
-                                    []
-                                    next_token
-                                    Public
-                                ),
-                            parse_select:
-                                (ExternalSymbol
-                                    2
-                                    parse_select
-                                    8 parse_select
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    parse_select
-                                    Public
-                                ),
                             toml_character_tokenizer:
                                 (ExternalSymbol
                                     2
@@ -165,16 +145,6 @@
                                     .false.
                                     .false.
                                     ()
-                                ),
-                            parse_select:
-                                (ExternalSymbol
-                                    4
-                                    parse_select
-                                    8 parse_select
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    parse_select
-                                    Public
                                 ),
                             toml_character_tokenizer:
                                 (Struct

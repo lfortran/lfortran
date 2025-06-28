@@ -1,7 +1,7 @@
 module template_add_01c_m
     implicit none
     private
-    public :: add_t
+    public :: add_t, test_template
 
     requirement R(T, F)
         type, deferred :: T
