@@ -180,7 +180,6 @@ public:
     llvm::Type* current_select_type_block_type;
     ASR::ttype_t* current_select_type_block_type_asr;
     std::string current_select_type_block_der_type;
-    std::string current_selector_var_name;
 
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
@@ -6792,7 +6791,6 @@ public:
             }
         }
         start_new_block(mergeBB);
-        current_selector_var_name.clear();
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -8614,16 +8612,6 @@ public:
             return;
         }
         this->visit_expr_wrapper(x.m_arg, true);
-
-        int arg_kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(x.m_arg));
-        if (ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_arg))) &&
-            ASRUtils::EXPR2VAR(x.m_arg)->m_name == current_selector_var_name) {
-            tmp = get_current_select_type(ASRUtils::expr_type(x.m_arg),
-                        tmp, module.get(), current_select_type_block_type);
-            tmp = llvm_utils->CreateLoad2(current_select_type_block_type, tmp);
-            arg_kind = llvm_utils->get_kind_from_llvm_val(tmp);
-        }
-            
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
@@ -10705,20 +10693,6 @@ public:
             type2vtabid[class_sym] = type2vtabid.size();
         }
         return type2vtabid[class_sym];
-    }
-
-    llvm::Value* get_current_select_type( ASR::ttype_t* t, llvm::Value* value,
-        llvm::Module* module, llvm::Type* current_type) {
-        llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(t, module);
-        llvm::Value* select_value = llvm_utils->create_gep2(llvm_type, value, 1);
-        // bitcast to the current select type block's type
-        ASR::ttype_t* wrapped_value_struct_type = ASRUtils::TYPE(
-                        ASRUtils::make_StructType_t_util(al, t->base.loc,
-                            ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(t))->m_derived_type));
-        llvm::Type* wrapper_value_llvm_type = llvm_utils->get_type_from_ttype_t_util(wrapped_value_struct_type, module);
-        select_value = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), select_value);
-        select_value = builder->CreateBitCast(select_value, current_type->getPointerTo());
-        return select_value;
     }
 
     llvm::Value* convert_to_polymorphic_arg(llvm::Value* dt,
