@@ -154,9 +154,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         } 
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
-            return get_struct_sym_from_struct_expr(struct_instance_member->m_v);
-            // ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(struct_instance_member->m_m);
-            // return var->m_type_declaration;
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
+            return var->m_type_declaration;
         }
         case ASR::exprType::ArrayConstructor: {
             ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expression);
