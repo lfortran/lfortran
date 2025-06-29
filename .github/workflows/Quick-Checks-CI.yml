@@ -78,10 +78,6 @@ jobs:
             micromamba install pandoc=3.1.13
           fi
 
-      - uses: hendrikmuhs/ccache-action@main
-        with:
-          key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
-
       - name: Setup Platform
         shell: bash -e -l {0}
         run: |
