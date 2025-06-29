@@ -5985,7 +5985,8 @@ public:
 
     ASR::asr_t* create_ClassProcedure(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
-                    ASR::symbol_t *v,
+                AST::keyword_t* m_kwargs, size_t n_kwargs,
+                 size_t n_member, ASR::symbol_t *v,
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
@@ -6023,6 +6024,17 @@ public:
         if (!v_class_proc->m_is_nopass) {
             args = {};
             visit_expr_list(m_args, n_args, args);
+        }
+        if (n_kwargs > 0) {
+            diag::Diagnostics diags;
+            visit_kwargs(args, m_kwargs, n_kwargs,
+                            func->m_args, func->n_args, loc, func,
+                            diags, n_member, v_class_proc->m_is_nopass);
+            if( diags.has_error() ) {
+                diag.diagnostics.insert(diag.diagnostics.end(),
+                    diags.diagnostics.begin(), diags.diagnostics.end());
+                throw SemanticAbort();
+            }
         }
         ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
@@ -9797,7 +9809,9 @@ public:
                 break;
             }
             case(ASR::symbolType::ClassProcedure):
-                tmp = create_ClassProcedure(x.base.base.loc, x.m_args, x.n_args, v, v_expr); break;
+                tmp = create_ClassProcedure(x.base.base.loc, x.m_args, x.n_args,
+                                x.m_keywords, x.n_keywords, x.n_member, v, v_expr);
+                break;
             default: {
                 diag.add(Diagnostic("Symbol '" + var_name
                             + "' is not a function or an array",
