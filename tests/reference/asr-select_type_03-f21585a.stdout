@@ -121,6 +121,7 @@
                         })
                     class_default_select_type
                     []
+                    ()
                     .true.
                     .false.
                 ),
@@ -604,6 +605,7 @@
                         })
                     class_default_select_type_user
                     [class_default_select_type]
+                    ()
                     .false.
                     .false.
                 )

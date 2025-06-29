@@ -329,6 +329,7 @@
                         })
                     bindc_06_mod
                     [iso_c_binding]
+                    ()
                     .false.
                     .false.
                 ),

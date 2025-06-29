@@ -548,6 +548,7 @@
                         })
                     subroutines_06_bitset
                     []
+                    ()
                     .false.
                     .false.
                 )

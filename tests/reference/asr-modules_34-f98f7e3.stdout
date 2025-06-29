@@ -20,6 +20,7 @@
                         })
                     fpm_cmd_install_modules_34
                     [fpm_modules_34]
+                    ()
                     .false.
                     .false.
                 ),
@@ -41,6 +42,7 @@
                         })
                     fpm_manifest_modules_34
                     [fpm_manifest_package_modules_34]
+                    ()
                     .true.
                     .false.
                 ),
@@ -130,6 +132,7 @@
                         })
                     fpm_manifest_package_modules_34
                     [fpm_versioning_modules_34]
+                    ()
                     .true.
                     .false.
                 ),
@@ -359,6 +362,7 @@
                     fpm_modules_34
                     [fpm_manifest_modules_34
                     fpm_versioning_modules_34]
+                    ()
                     .true.
                     .false.
                 ),
@@ -623,6 +627,7 @@
                         })
                     fpm_versioning_modules_34
                     [fpm_versioning_modules_34]
+                    ()
                     .true.
                     .false.
                 ),

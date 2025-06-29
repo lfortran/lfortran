@@ -241,6 +241,7 @@
                         })
                     fpm_git
                     []
+                    ()
                     .true.
                     .false.
                 ),
@@ -791,6 +792,7 @@
                         })
                     fpm_manifest_dependency
                     [fpm_git]
+                    ()
                     .true.
                     .false.
                 ),
