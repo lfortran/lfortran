@@ -1,7 +1,7 @@
 module reverse_m
     implicit none
     private
-    public :: reverse_tmpl
+    public :: reverse_tmpl, test_reverse
 
     requirement default_behavior(t)
         type, deferred :: t

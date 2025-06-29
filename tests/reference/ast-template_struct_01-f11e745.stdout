@@ -30,6 +30,13 @@
             ()
             ()
             None
+            ())
+            (test_template
+            []
+            []
+            ()
+            ()
+            None
             ())]
             (TriviaNode
                 []
