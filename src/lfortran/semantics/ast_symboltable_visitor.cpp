@@ -299,13 +299,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
-        ASR::asr_t *tmp0 = ASR::make_Module_t(al, x.base.base.loc,
-                                            /* a_symtab */ current_scope,
-                                            /* a_name */ s2c(al, to_lower(x.m_name)),
-                                            nullptr,
-                                            0,
-                                            false, false);
-        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
+        ASR::asr_t *tmp0 = nullptr;
         if( x.class_type == AST::modType::Submodule ) {
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
@@ -316,12 +310,28 @@ public:
                                                             diag::Label("", {loc})}));
                                                     throw SemanticAbort();}, lm, compiler_options.generate_object_code
                                                 ));
+            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                /* a_symtab */ current_scope,
+                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                nullptr,
+                                                0,
+                                                submod_parent,
+                                                false, false);
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
+        } else {
+            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                /* a_symtab */ current_scope,
+                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                nullptr,
+                                                0,
+                                                nullptr,
+                                                false, false);
         }
+        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_use; i++) {
             try {
                 visit_unit_decl1(*x.m_use[i]);
