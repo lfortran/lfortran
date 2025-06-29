@@ -88,6 +88,7 @@
                     tomlf_build
                     [tomlf_build_array
                     tomlf_build_keyval]
+                    ()
                     .false.
                     .false.
                 ),
@@ -540,6 +541,7 @@
                         })
                     tomlf_build_array
                     [tomlf_build_keyval]
+                    ()
                     .true.
                     .false.
                 ),
@@ -774,6 +776,7 @@
                         })
                     tomlf_build_keyval
                     []
+                    ()
                     .true.
                     .false.
                 )

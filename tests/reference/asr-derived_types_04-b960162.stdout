@@ -153,6 +153,7 @@
                         })
                     derived_types_04_bitset
                     []
+                    ()
                     .false.
                     .false.
                 )

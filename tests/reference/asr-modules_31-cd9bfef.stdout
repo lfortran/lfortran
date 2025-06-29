@@ -477,6 +477,7 @@
                         })
                     fpm_cmd_update_modules_31
                     [fpm_dependency_modules_31]
+                    ()
                     .true.
                     .false.
                 ),
@@ -1019,6 +1020,7 @@
                         })
                     fpm_dependency_modules_31
                     []
+                    ()
                     .true.
                     .false.
                 ),

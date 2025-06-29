@@ -140,6 +140,7 @@
                         })
                     uppercase1
                     []
+                    ()
                     .false.
                     .false.
                 )

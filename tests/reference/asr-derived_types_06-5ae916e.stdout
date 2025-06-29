@@ -90,6 +90,7 @@
                         })
                     abstract_type
                     []
+                    ()
                     .false.
                     .false.
                 ),
