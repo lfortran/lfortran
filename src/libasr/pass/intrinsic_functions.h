@@ -3761,8 +3761,7 @@ namespace Spacing {
             result = abs(nextafter(x, infinity) - x)
         end function
         */
-       throw LCompilersException("`Spacing` intrinsic is not yet implemented for runtime values");
-
+        LCOMPILERS_ASSERT(false);
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
@@ -6213,10 +6212,6 @@ namespace Max {
         declare_basic_variables("_lcompilers_max0_" + type_to_str_python(arg_types[0]));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
 
-        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*arg_types[0]) || 
-                ASR::is_a<ASR::Real_t>(*arg_types[0]) ||
-                ASR::is_a<ASR::Integer_t>(*arg_types[0])));
-
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_String_t(al, loc, 1,
@@ -6236,11 +6231,10 @@ namespace Max {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
-        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*return_type) || 
-                ASR::is_a<ASR::Real_t>(*return_type) ||
-                ASR::is_a<ASR::Integer_t>(*return_type)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -6265,6 +6259,8 @@ namespace Max {
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -6394,9 +6390,6 @@ namespace Min {
         Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_min0_" + type_to_str_python(arg_types[0]));
         int64_t kind = extract_kind_from_ttype_t(arg_types[0]);
-        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*arg_types[0]) || 
-                ASR::is_a<ASR::Real_t>(*arg_types[0]) ||
-                ASR::is_a<ASR::Integer_t>(*arg_types[0])));
 
         if (ASR::is_a<ASR::String_t>(*arg_types[0])) {
             for (size_t i = 0; i < new_args.size(); i++) {
@@ -6417,11 +6410,10 @@ namespace Min {
             for (size_t i = 0; i < new_args.size(); i++) {
                 fill_func_arg("x" + std::to_string(i), ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind)));
             }
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
         return_type = ASRUtils::extract_type(return_type);
-        LCOMPILERS_ASSERT((ASR::is_a<ASR::String_t>(*return_type) || 
-                ASR::is_a<ASR::Real_t>(*return_type) ||
-                ASR::is_a<ASR::Integer_t>(*return_type)));
         auto result = declare(fn_name, return_type, ReturnVar);
         body.push_back(al, b.Assignment(result, args[0]));
         if (ASR::is_a<ASR::Integer_t>(*return_type)) {
@@ -6446,6 +6438,8 @@ namespace Min {
                 EXPR(ASR::make_StringLen_t(al, loc, new_args[0].m_value, int32, nullptr)),
                 ASR::string_length_kindType::ExpressionLength,
                 ASR::string_physical_typeType::PointerString));
+        } else {
+            LCOMPILERS_ASSERT(false);
         }
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
