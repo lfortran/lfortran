@@ -4889,7 +4889,11 @@ public:
                             ASR::accessType::Private));
                 }
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
-                type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, v));
+                if (ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
+                    type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                } else {
+                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, v));
+                }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
                 if (is_pointer) {

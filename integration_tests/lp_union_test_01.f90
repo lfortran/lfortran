@@ -1,5 +1,16 @@
-program lp_union_test_01
+module lp_union_test_01_mod
+    implicit none
     
+    _lfortran_union_type :: test_type4 
+        integer :: x
+        real    :: i
+    end _lfortran_union_type
+end module
+
+
+program lp_union_test_01
+    use lp_union_test_01_mod
+    implicit none 
     type:: test_type
         integer :: x
         real    :: y
@@ -12,13 +23,13 @@ program lp_union_test_01
     end _lfortran_union_type
     
     
-    _lfortran_union_type :: test_type2 ! this is a test comment
+    _lfortran_union_type :: test_type2 
         integer :: x
         real    :: i
         type(test_type1) :: y
     end _lfortran_union_type
     
-    type :: test_type3 ! this is a test comment
+    type :: test_type3 
         integer :: x
         real    :: i
         type(test_type) :: y
@@ -29,6 +40,8 @@ program lp_union_test_01
     type(test_type) :: t_ty
     type(test_type1) :: t_ty1
     type(test_type2) :: t_ty2
+    type(test_type3) :: t_ty3
+    type(test_type4) :: t_ty4
 
 end program
 
