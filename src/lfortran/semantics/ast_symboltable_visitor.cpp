@@ -2830,6 +2830,22 @@ public:
                     dflt_access
                 );
                 current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            }  else if( ASR::is_a<ASR::Union_t>(*item.second) ) {
+                ASR::Union_t *mv = ASR::down_cast<ASR::Union_t>(item.second);
+                // `mv` is the Variable in a module. Now we construct
+                // an ExternalSymbol that points to it.
+                Str name;
+                name.from_str(al, item.first);
+                char *cname = name.c_str(al);
+                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                    al, mv->base.base.loc,
+                    /* a_symtab */ current_scope,
+                    /* a_name */ cname,
+                    (ASR::symbol_t*)mv,
+                    m->m_name, nullptr, 0, mv->m_name,
+                    dflt_access
+                    );
+                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
             } else {
                 return item.first;
             }
