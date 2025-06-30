@@ -4889,7 +4889,7 @@ public:
                             ASR::accessType::Private));
                 }
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
-                if (ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
+                if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
                 } else {
                     type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, v));
