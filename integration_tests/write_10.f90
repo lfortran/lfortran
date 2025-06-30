@@ -1,4 +1,4 @@
-module write_09_m
+module write_10_m
     type :: mytype
         character(len=:), allocatable :: raw
     end type
@@ -33,10 +33,10 @@ contains
         allocate(character(len=l) :: x%raw)
     end subroutine
 
-end module
+end module write_10_m
 
-program write_09
-    use write_09_m
+program write_10
+    use write_10_m
     implicit none
     type(mytype) :: x, y
     integer :: u, iostat
@@ -53,5 +53,5 @@ program write_09
     print *, len(y%raw)
     if (len(y%raw) /= 5) error stop
     close(u)
-end program write_09
+end program write_10
 
