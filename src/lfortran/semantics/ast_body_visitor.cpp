@@ -3309,7 +3309,8 @@ public:
             target->type != ASR::exprType::ArraySection &&
             target->type != ASR::exprType::StringSection &&
             target->type != ASR::exprType::StringItem &&
-            target->type != ASR::exprType::StructInstanceMember )
+            target->type != ASR::exprType::StructInstanceMember &&
+            target->type != ASR::exprType::UnionInstanceMember)
         {
             diag.add(Diagnostic(
                 "The LHS of assignment can only be a variable or an array reference",
@@ -3336,7 +3337,8 @@ public:
             if ((target->type == ASR::exprType::Var ||
                 target->type == ASR::exprType::ArrayItem ||
                 target->type == ASR::exprType::ArraySection ||
-                target->type == ASR::exprType::StructInstanceMember) &&
+                target->type == ASR::exprType::StructInstanceMember ||
+                target->type == ASR::exprType::UnionInstanceMember) &&
                 !ASRUtils::check_equal_type(target_type, value_type)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
