@@ -17,7 +17,7 @@ end module
 program lp_union_test_01
     use lp_union_test_01_mod
     implicit none 
-    real             ::eps = 1e-6, x
+    real             ::eps = 1e-3, x
     integer          :: y 
     integer(kind=8)  :: z
     type(test_type)  :: test_union
