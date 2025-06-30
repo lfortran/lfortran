@@ -98,13 +98,6 @@ jobs:
           echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
-      # we need to run this only once
-      - name: Check for Added Binary Files
-        shell: bash -e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
-        run: |
-          python3 check_binary_file_in_git_history.py
-
       - name: Build (Linux / macOS)
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
@@ -449,6 +442,12 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
+      # Run last. Script checks out to first commit in PR history
+      - name: Check for Added Binary Files
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
+        run: |
+          python3 check_binary_file_in_git_history.py
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload

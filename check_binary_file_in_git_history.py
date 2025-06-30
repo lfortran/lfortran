@@ -57,8 +57,16 @@ def run_test() :
 
         print("OK --- no binary file found")
         print("\n--------------------------------------------------\n")
+
+
     
     print("CLEAN : No binary file found in any commit in this PR")
+    print("\n--------------------------------------------------\n")
+    print("==> Checking out to latest commit in the PR branch")
+    print("==> Commit hash :", commit_hashes_list[0])
+    subprocess.run(["git","checkout",commit_hashes_list[0]], 
+            stdout=subprocess.PIPE, stderr=subprocess.PIPE,text=True)
+    print("\n--------------------------------------------------\n")
     print("DONE")
 
 
