@@ -281,6 +281,13 @@ public:
             }
             s.append("]");
             s.append(",\n" + indtd);
+            s.append("\"parent_module\": ");
+            if (x.m_parent_module) {
+                visit_symbol(*x.m_parent_module);
+            } else {
+                s.append("[]");
+            }
+            s.append(",\n" + indtd);
             s.append("\"loaded_from_mod\": ");
             if (x.m_loaded_from_mod) {
                 s.append("true");

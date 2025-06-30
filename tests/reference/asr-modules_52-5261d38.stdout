@@ -178,6 +178,7 @@
                     module_52_fpm_cmd_new
                     [module_52_tomlf_de
                     module_52_tomlf_type]
+                    ()
                     .false.
                     .false.
                 ),
@@ -478,6 +479,7 @@
                     module_52_tomlf_de
                     [module_52_tomlf_error
                     module_52_tomlf_type]
+                    ()
                     .true.
                     .false.
                 ),
@@ -552,6 +554,7 @@
                         })
                     module_52_tomlf_error
                     []
+                    ()
                     .true.
                     .false.
                 ),
@@ -636,6 +639,7 @@
                         })
                     module_52_tomlf_type
                     []
+                    ()
                     .true.
                     .false.
                 )

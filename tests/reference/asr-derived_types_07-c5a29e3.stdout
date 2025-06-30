@@ -651,6 +651,7 @@
                         })
                     tomlf_structure_vector
                     [tomlf_type_value]
+                    ()
                     .false.
                     .false.
                 ),
@@ -898,6 +899,7 @@
                         })
                     tomlf_type_keyval
                     [tomlf_type_value]
+                    ()
                     .false.
                     .false.
                 ),
@@ -1230,6 +1232,7 @@
                         })
                     tomlf_type_value
                     []
+                    ()
                     .false.
                     .false.
                 )

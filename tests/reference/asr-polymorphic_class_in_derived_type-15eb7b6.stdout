@@ -104,6 +104,7 @@
                         })
                     fortuno_types
                     []
+                    ()
                     .false.
                     .false.
                 )

@@ -318,6 +318,7 @@
                         })
                     operator_overloading_04_stdlib_string_type
                     []
+                    ()
                     .false.
                     .false.
                 ),
@@ -472,6 +473,7 @@
                         })
                     operator_overloading_stdlib_string_use
                     [operator_overloading_04_stdlib_string_type]
+                    ()
                     .false.
                     .false.
                 ),
