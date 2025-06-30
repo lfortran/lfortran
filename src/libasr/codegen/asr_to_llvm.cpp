@@ -3950,11 +3950,23 @@ public:
                             builder->CreateStore(tmp, llvm_utils->create_gep2(array_desc_type, pointer_array, 0));
                         } else if(ASR::is_a<ASR::String_t>(*expr_type(v->m_symbolic_value))) {
                             lfortran_str_copy(ptr_member, tmp, ASRUtils::is_descriptorString(v->m_type));
-                        } else if ((ASRUtils::is_array(v->m_type) ||
-                            (ASRUtils::is_pointer(v->m_type) &&
+                        } else if (ASRUtils::is_array(v->m_type)) {
+                            ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(ASRUtils::expr_value(v->m_symbolic_value));
+                            llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(arr_const->m_type, module.get());
+                            llvm::Value* arg_size = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                            llvm::APInt(32, ASRUtils::get_fixed_size_of_array(arr_const->m_type)));
+                            llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(
+                                ASRUtils::type_get_past_array(ASRUtils::expr_type(v->m_symbolic_value)), module.get());
+                            llvm::DataLayout data_layout(module->getDataLayout());
+                            size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
+                            arg_size = builder->CreateMul(llvm::ConstantInt::get(
+                                llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
+                            builder->CreateMemCpy(llvm_utils->create_gep2(array_type,ptr_member, 0),
+                                llvm::MaybeAlign(), tmp, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
+                        } else if ((ASRUtils::is_pointer(v->m_type) &&
                                 !ASR::is_a<ASR::PointerNullConstant_t>(
                                     *v->m_symbolic_value))        ||
-                            ASRUtils::is_allocatable(v->m_type))) { // Any non primitve
+                            ASRUtils::is_allocatable(v->m_type)) { // Any non primitve
                             throw LCompilersException("Not implemented");
                         } else {
                             LLVM::CreateStore(*builder, tmp, ptr_member);
