@@ -137,6 +137,20 @@ class ASRBuilder {
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
     }
 
+    ASR::ttype_t* UnboundedArray(ASR::ttype_t* type, int32_t n_dims){
+        Vec<ASR::dimension_t> arr_dimensions; arr_dimensions.reserve(al, 1);
+        for(int i = 0; i < n_dims; i++) {
+            arr_dimensions.push_back(al, ASR::dimension_t{loc, nullptr, nullptr});
+        }
+        ASR::ttype_t* array_type = ASRUtils::TYPE(
+            ASR::make_Array_t(
+                al, loc,
+                type,
+                arr_dimensions.p, arr_dimensions.n,
+                ASR::UnboundedPointerToDataArray));
+        return array_type;
+    }
+
     ASR::ttype_t* CPtr() {
         return TYPE(ASR::make_CPtr_t(al, loc));
     }
@@ -144,6 +158,12 @@ class ASRBuilder {
     // Expressions -------------------------------------------------------------
     ASR::expr_t* Var(ASR::symbol_t* sym) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
+    ASR::ttype_t* String(ASR::expr_t* len,
+        ASR::string_length_kindType len_kind, 
+        ASR::string_physical_typeType physical_type = ASR::PointerString){
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len, len_kind, physical_type));
     }
 
     ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
@@ -963,7 +983,7 @@ class ASRBuilder {
             nullptr, nullptr, nullptr));
     }
 
-    ASR::stmt_t *Allocate(ASR::expr_t *m_a, ASR::dimension_t* m_dims, size_t n_dims) {
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, ASR::dimension_t* m_dims, size_t n_dims, ASR::expr_t* len_expr = nullptr) {
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
         alloc_arg.loc = loc;
@@ -971,12 +991,22 @@ class ASRBuilder {
         alloc_arg.m_dims = m_dims;
         alloc_arg.n_dims = n_dims;
         alloc_arg.m_type = nullptr;
-        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_len_expr = len_expr;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
     }
-
+    ASR::ttype_t* allocatable(ASR::ttype_t* type){
+        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, type));
+    }
+    ASR::stmt_t* Deallocate(ASR::expr_t* m_a){
+        Vec<ASR::expr_t*> m_a_vec; m_a_vec.reserve(al, 1);
+        m_a_vec.push_back(al, m_a);
+        return Deallocate(m_a_vec);
+    }
+    ASR::stmt_t* Deallocate(Vec<ASR::expr_t*> &m_a){
+        return ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, m_a.p, m_a.n));
+    }
 
     #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
     #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
@@ -1185,6 +1215,25 @@ class ASRBuilder {
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+    /*
+        Creates c-bind subroutine interface
+        e.g. -> `subroutine(arg1, arg2) bind(c)`
+    */
+    ASR::symbol_t* create_c_subroutine_interface(std::string &c_func_name, SymbolTable* fn_symtab,
+        Vec<ASR::ttype_t*> &parameter_types, const std::vector<std::string> &parameter_names){
+        SymbolTable* symTable = al.make_new<SymbolTable>(fn_symtab /*parent*/);
+        Vec<ASR::expr_t*> parameters; parameters.reserve(al, parameter_types.size());
+        for (size_t i = 0; i < parameter_types.size(); i++) {
+            parameters.push_back(al, Variable(symTable,
+                parameter_names[i] + std::to_string(i), parameter_types[i],
+                ASR::intentType::InOut, ASR::abiType::BindC, false));
+        }
+        SetChar dep; dep.reserve(al, 1);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, symTable, dep, parameters,
+            body, nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         return s;
     }
 

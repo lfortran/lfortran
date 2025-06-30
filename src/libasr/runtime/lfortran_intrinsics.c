@@ -3265,13 +3265,8 @@ LFORTRAN_API double _lfortran_i64r64sys_clock_count_rate() {
 #endif
 }
 
-LFORTRAN_API char* _lfortran_zone() {
-    char* result = (char*)malloc(12 * sizeof(char)); // "(+|-)hhmm\0" = 5 + 1
-
-    if (result == NULL) {
-        return NULL;
-    }
-
+// result format is -> "(+|-)hhmm\0" = 5 + 1
+LFORTRAN_API void _lfortran_zone(char** result) {
 #if defined(_WIN32)
     // Windows doesn't provide timezone offset directly, so we calculate it
     TIME_ZONE_INFORMATION tzinfo;
@@ -3307,64 +3302,50 @@ LFORTRAN_API char* _lfortran_zone() {
     char sign = offset_minutes >= 0 ? '+' : '-';
     int offset_hours = abs(offset_minutes / 60);
     int remaining_minutes = abs(offset_minutes % 60);
-    snprintf(result, 12, "%c%02d%02d", sign, offset_hours, remaining_minutes);
-    return result;
+    snprintf(*result, 12, "%c%02d%02d", sign, offset_hours, remaining_minutes);
 }
 
-LFORTRAN_API char* _lfortran_time() {
-    char* result = (char*)malloc(13 * sizeof(char)); // "hhmmss.sss\0" = 12 + 1
-
-    if (result == NULL) {
-        return NULL;
-    }
-
+// Result Format Is -> "hhmmss.sss\0" = 12 + 1
+LFORTRAN_API void _lfortran_time(char** result) {
 #if defined(_WIN32)
     SYSTEMTIME st;
     GetLocalTime(&st); // Gets the current local time
-    sprintf(result, "%02d%02d%02d.%03d", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
+    sprintf(*result, "%02d%02d%02d.%03d", st.wHour, st.wMinute, st.wSecond, st.wMilliseconds);
 #elif defined(__APPLE__) && !defined(__aarch64__)
     // For non-ARM-based Apple platforms, use current time functions
     struct timeval tv;
     gettimeofday(&tv, NULL);
     struct tm* ptm = localtime(&tv.tv_sec);
     int milliseconds = tv.tv_usec / 1000;
-    sprintf(result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
+    sprintf(*result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
 #else
     // For Linux and other platforms
     struct timespec ts;
     clock_gettime(CLOCK_REALTIME, &ts);
     struct tm* ptm = localtime(&ts.tv_sec);
     int milliseconds = ts.tv_nsec / 1000000;
-    sprintf(result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
+    sprintf(*result, "%02d%02d%02d.%03d", ptm->tm_hour, ptm->tm_min, ptm->tm_sec, milliseconds);
 #endif
-    return result;
 }
 
-LFORTRAN_API char* _lfortran_date() {
+//Result Format Is -> "ccyymmdd\0" = 8 + 1
+LFORTRAN_API void _lfortran_date(char** result) {
     // Allocate memory for the output string (8 characters minimum)
-    char* result = (char*)malloc(32 * sizeof(char)); // "ccyymmdd\0" = 8 + 1
-
-    if (result == NULL) {
-        return NULL; // Handle memory allocation failure
-    }
-
 #if defined(_WIN32)
     SYSTEMTIME st;
     GetLocalTime(&st); // Get the current local date
-    sprintf(result, "%04d%02d%02d", st.wYear, st.wMonth, st.wDay);
+    sprintf(*result, "%04d%02d%02d", st.wYear, st.wMonth, st.wDay);
 #elif defined(__APPLE__) && !defined(__aarch64__)
     // For non-ARM-based Apple platforms
     time_t t = time(NULL);
     struct tm* ptm = localtime(&t);
-    sprintf(result, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
+    sprintf(*result, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
 #else
     // For Linux and other platforms
     time_t t = time(NULL);
     struct tm* ptm = localtime(&t);
-    snprintf(result, 32, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
+    snprintf(*result, 32, "%04d%02d%02d", ptm->tm_year + 1900, ptm->tm_mon + 1, ptm->tm_mday);
 #endif
-
-    return result; // Return the formatted date string
 }
 
 LFORTRAN_API int32_t _lfortran_values(int32_t n)
@@ -5237,23 +5218,31 @@ LFORTRAN_API int32_t _lfortran_get_command_argument_status() {
 }
 
 // get_command
-LFORTRAN_API char *_lfortran_get_command_command() {
-    char* out;
+#define sep_space " "
+
+LFORTRAN_API void _lfortran_get_command_command(char** receiver /* TODO : Use `char*` */) {
+    int32_t receiver_idx = 0; // Current index to start writing into
     for(int i=0; i<_argc; i++) {
-        if(i == 0) {
-            out = strdup(_argv[i]);
-        } else {
-            out = realloc(out, strlen(out) + strlen(_argv[i]) + 1);
-            strcat(out, " ");
-            strcat(out, _argv[i]);
-        }
+
+        int32_t arg_len = strlen(_argv[i]); 
+        memcpy((*receiver)+receiver_idx, _argv[i], arg_len);
+        receiver_idx += arg_len;
+
+        if( i == _argc - 1) break; // Don't add a separator
+
+        memcpy((*receiver) + receiver_idx, sep_space, strlen(sep_space));
+        receiver_idx += strlen(sep_space);
     }
-    return out;
+    (*receiver)[receiver_idx] = '\0';
 }
 
 LFORTRAN_API int32_t _lfortran_get_command_length() {
-    char* out = _lfortran_get_command_command();
-    return strlen(out);
+    int32_t total_length = 0;
+    for(int i=0; i<_argc; i++){
+        total_length += strlen(_argv[i]);
+    }
+    total_length += (strlen(sep_space) * (_argc - 1));
+    return total_length;
 }
 
 LFORTRAN_API int32_t _lfortran_get_command_status() {
@@ -5562,23 +5551,24 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 
 // << Runtime Stacktrace << ----------------------------------------------------
 
-LFORTRAN_API char *_lfortran_get_environment_variable(char *name) {
+LFORTRAN_API void _lfortran_get_environment_variable(char **name, char** receiver) {
     // temporary solution, the below function _lfortran_get_env_variable should be used
-    if (name == NULL) {
-        return NULL;
-    } else {
-        // if the name is not found, return empty string
-        char* empty_string = "";
-        return getenv(name) ? getenv(name) : empty_string;
-    }
+    if (*name == NULL || ! getenv(*name)) {
+        memcpy(*receiver, " ", 1);
+        (*receiver)[1] = '\0';
+        return;
+    } 
+    int32_t len = strlen(getenv(*name));
+    memcpy(*receiver, getenv(*name), len);
+    (*receiver)[len] = '\0';
 }
 
-LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char *name) {
+LFORTRAN_API int32_t _lfortran_get_length_of_environment_variable(char **name) {
     // temporary solution, the below function _lfortran_get_env_variable should be used
-    if (name == NULL) {
+    if (*name == NULL) {
         return 0;
     } else {
-        char *value = getenv(name);
+        char *value = getenv(*name);
         if (value == NULL) {
             return 0; // If the environment variable is not found, return 0
         } else {

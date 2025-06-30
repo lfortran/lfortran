@@ -229,9 +229,9 @@ LFORTRAN_API void _lfortran_i64sys_clock(
         uint64_t *count, int64_t *rate, int64_t *max);
 LFORTRAN_API void _lfortran_i64r64sys_clock(
         uint64_t *count, double *rate, int64_t *max);
-LFORTRAN_API char* _lfortran_date();
-LFORTRAN_API char* _lfortran_time();
-LFORTRAN_API char* _lfortran_zone();
+LFORTRAN_API void _lfortran_date(char** result);
+LFORTRAN_API void _lfortran_time(char** result);
+LFORTRAN_API void _lfortran_zone(char** result);
 LFORTRAN_API int32_t _lfortran_values(int32_t n);
 LFORTRAN_API float _lfortran_sp_rand_num();
 LFORTRAN_API double _lfortran_dp_rand_num();
@@ -278,8 +278,10 @@ LFORTRAN_API char *_lpython_get_argv(int32_t index);
 LFORTRAN_API void _lpython_call_initial_functions(int32_t argc_1, char *argv_1[]);
 LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors);
 LFORTRAN_API char *_lfortran_get_env_variable(char *name);
-LFORTRAN_API char *_lfortran_get_environment_variable(char *name);
+LFORTRAN_API void _lfortran_get_environment_variable(char **name, char** receiver);
 LFORTRAN_API int _lfortran_exec_command(char *cmd);
+LFORTRAN_API void _lfortran_get_command_command(char** receiver /* TODO : Use `char*` */);
+LFORTRAN_API int32_t _lfortran_get_command_length();
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format,const char* serialization_string, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
 
