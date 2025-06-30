@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <unordered_set>
 #include <map>
 #include <libasr/asr_utils.h>
@@ -155,7 +156,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
-            return var->m_type_declaration;
+            return ASRUtils::symbol_get_past_external(var->m_type_declaration);
         }
         case ASR::exprType::ArrayConstructor: {
             ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expression);
@@ -186,27 +187,18 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
             // `func_call->m_dt` will be non-null for Struct expressions
-            // LCOMPILERS_ASSERT(func_call->m_dt != nullptr);
             if ( func_call->m_dt != nullptr ){
                 // If `func_call->m_dt` is not null, it means that the function call
                 // is returning a struct type.
                 return get_struct_sym_from_struct_expr(func_call->m_dt);
+            } else {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_call->m_name));
+                return ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var);
             }
-            // return get_struct_sym_from_struct_expr(func_call->m_dt);
-            for (size_t i = 0; i < func_call->n_args; i++) {
-                ASR::expr_t* arg = func_call->m_args[i].m_value;
-                if (arg != nullptr) {
-                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
-                    if (struct_sym != nullptr) {
-                        return struct_sym;
-                    }
-                }
-            }
-            return nullptr; // If no struct symbol found in arguments
         }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
-            return struct_constant->m_dt_sym;
+            return ASRUtils::symbol_get_past_external(struct_constant->m_dt_sym);
         }
         case ASR::exprType::ArrayPhysicalCast: {
             ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression);
@@ -269,7 +261,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 if (arg != nullptr) {
                     ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
                     if (struct_sym != nullptr) {
-                        return struct_sym;
+                        return ASRUtils::symbol_get_past_external(struct_sym);
                     }
                 }
             }
@@ -425,16 +417,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(expression);
-            for (size_t i = 0; i < struct_constructor->n_args; i++) {
-                ASR::expr_t* arg = struct_constructor->m_args[i].m_value;
-                if (arg != nullptr) {
-                    ASR::symbol_t* struct_sym = get_struct_sym_from_struct_expr(arg);
-                    if (struct_sym != nullptr) {
-                        return struct_sym;
-                    }
-                }
-            }
-            return nullptr; // If no struct symbol found in arguments
+            return ASRUtils::symbol_get_past_external(struct_constructor->m_dt_sym);
         }
         case ASR::exprType::OverloadedBinOp: {
             ASR::OverloadedBinOp_t* overloaded_bin_op = ASR::down_cast<ASR::OverloadedBinOp_t>(expression);
