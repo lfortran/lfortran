@@ -5876,9 +5876,7 @@ public:
         } else if (ASR::is_a<ASR::Allocatable_t>(*asr_target_type) &&
                    ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_target_type)) &&
                    is_value_struct) {
-            if (x.m_realloc_lhs) {
-                check_and_allocate(x.m_target, asr_value_type);
-            }
+            check_and_allocate_scalar(x.m_target, asr_value_type);
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
             this->visit_expr(*x.m_value);
@@ -5930,12 +5928,11 @@ public:
 
         // When assigning to a StructInstanceMember, whose instance is allocatable
         // Check if the underlying struct instance is allocated, if not allocate
-        if (x.m_realloc_lhs &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
+        if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) &&
             !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
-            if (ASRUtils::is_allocatable(sim->m_v)) {
-                check_and_allocate(sim->m_v, asr_value_type);
+            if (ASRUtils::is_allocatable(sim->m_v) && !ASRUtils::is_array(ASRUtils::expr_type(sim->m_v))) {
+                check_and_allocate_scalar(sim->m_v, asr_value_type);
             }
         }
 
@@ -6281,16 +6278,14 @@ public:
                                 dict_type->m_key_type,
                                 dict_type->m_value_type, name2memidx);
         } else if (ASRUtils::is_allocatable(target_type)) {
-            if (x.m_realloc_lhs) {
-                ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
-                    ASRUtils::type_get_past_allocatable(
-                    ASRUtils::expr_type(x.m_target)));
-                if (ASR::is_a<ASR::Integer_t>(*asr_type) ||
-                    ASR::is_a<ASR::Real_t>(*asr_type) ||
-                    ASR::is_a<ASR::Complex_t>(*asr_type) ||
-                    ASR::is_a<ASR::Logical_t>(*asr_type)) {
-                    check_and_allocate(x.m_target);
-                }
+            ASR::ttype_t* asr_type = ASRUtils::type_get_past_pointer(
+                ASRUtils::type_get_past_allocatable(
+                ASRUtils::expr_type(x.m_target)));
+            if (ASR::is_a<ASR::Integer_t>(*asr_type) ||
+                ASR::is_a<ASR::Real_t>(*asr_type) ||
+                ASR::is_a<ASR::Complex_t>(*asr_type) ||
+                ASR::is_a<ASR::Logical_t>(*asr_type)) {
+                check_and_allocate_scalar(x.m_target);
             }
 
             target = llvm_utils->CreateLoad(target);
@@ -6301,12 +6296,13 @@ public:
     }
 
     // Checks if target_expr is allocated and if not then allocate
-    // Used for compiler_options.po.realloc_lhs
-    void check_and_allocate(ASR::expr_t *target_expr, ASR::ttype_t *value_struct_type = nullptr) {
-        LCOMPILERS_ASSERT(compiler_options.po.realloc_lhs);
+    void check_and_allocate_scalar(ASR::expr_t *target_expr, ASR::ttype_t *value_struct_type = nullptr) {
         ASR::ttype_t *asr_ttype =ASRUtils::expr_type(target_expr);
         ASR::ttype_t *asr_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(asr_ttype));
+        if (ASRUtils::is_array(asr_ttype)) {
+            throw CodeGenError("Target is an array, it should be scalar");
+        }
         int64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         this->visit_expr_wrapper(target_expr, false);
@@ -10479,8 +10475,8 @@ public:
                                             ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
                                         value = convert_class_to_type(x.m_args[i].m_value, orig_arg->m_type, value);
                                     } else {
-                                        if (compiler_options.po.realloc_lhs) {
-                                            check_and_allocate(x.m_args[i].m_value);
+                                        if (!ASRUtils::is_array(ASRUtils::expr_type(x.m_args[i].m_value))) {
+                                            check_and_allocate_scalar(x.m_args[i].m_value);
                                         }
                                         value = llvm_utils->CreateLoad(value);
                                     }
@@ -10534,8 +10530,8 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
         LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(arg_type)) &&
                           !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(dest_type)));
-        if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
-            check_and_allocate(arg, dest_type);
+        if (ASRUtils::is_allocatable(arg_type)) {
+            check_and_allocate_scalar(arg, dest_type);
         }
         ASR::ttype_t* struct_type = ASRUtils::TYPE(
                                         ASRUtils::make_StructType_t_util(
