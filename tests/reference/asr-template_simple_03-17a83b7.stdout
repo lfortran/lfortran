@@ -7,16 +7,6 @@
                     (SymbolTable
                         21
                         {
-                            cast_integer:
-                                (ExternalSymbol
-                                    21
-                                    cast_integer
-                                    2 cast_integer
-                                    template_simple_03_m
-                                    []
-                                    cast_integer
-                                    Public
-                                ),
                             cast_r:
                                 (ExternalSymbol
                                     21
@@ -25,36 +15,6 @@
                                     template_simple_03_m
                                     []
                                     cast_r
-                                    Public
-                                ),
-                            cast_real:
-                                (ExternalSymbol
-                                    21
-                                    cast_real
-                                    2 cast_real
-                                    template_simple_03_m
-                                    []
-                                    cast_real
-                                    Public
-                                ),
-                            div_integer:
-                                (ExternalSymbol
-                                    21
-                                    div_integer
-                                    2 div_integer
-                                    template_simple_03_m
-                                    []
-                                    div_integer
-                                    Public
-                                ),
-                            div_real:
-                                (ExternalSymbol
-                                    21
-                                    div_real
-                                    2 div_real
-                                    template_simple_03_m
-                                    []
-                                    div_real
                                     Public
                                 ),
                             generic_avg:
@@ -3265,7 +3225,7 @@
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()

@@ -35,7 +35,7 @@
                                                     (Logical 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -61,7 +61,7 @@
                                                     )
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -95,7 +95,7 @@
                                     [(Var 4 self)]
                                     []
                                     (Var 4 all)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()

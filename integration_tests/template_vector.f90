@@ -1,7 +1,7 @@
 module template_vector_m
     implicit none
     private
-    public :: vector_t
+    public :: vector_t, main
 
     template vector_t(T)
         type, deferred :: T
