@@ -1,6 +1,7 @@
 #ifndef LFORTRAN_LLVM_UTILS_H
 #define LFORTRAN_LLVM_UTILS_H
 
+#include "libasr/asr_utils.h"
 #include <llvm/IR/Value.h>
 #include <llvm/IR/Module.h>
 #include <llvm/IR/IRBuilder.h>

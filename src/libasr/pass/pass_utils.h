@@ -664,7 +664,8 @@ namespace LCompilers {
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, ASR::Local, nullptr, ASRUtils::EXPR(ASR::make_Var_t(replacer->al, x->base.base.loc, x->m_dt_sym)));
+                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, 
+                                    ASR::Local, x->m_dt_sym, nullptr);
                 *replacer->current_expr = replacer->result_var;
             } else {
                 if( inside_symtab ) {

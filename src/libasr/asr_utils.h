@@ -3787,12 +3787,6 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
     if( a == nullptr && b == nullptr ) {
         return true;
     }
-    // a = ASRUtils::type_get_past_const(
-    //         ASRUtils::type_get_past_allocatable(
-    //             ASRUtils::type_get_past_pointer(a)));
-    // b = ASRUtils::type_get_past_const(
-    //         ASRUtils::type_get_past_allocatable(
-    //             ASRUtils::type_get_past_pointer(b)));
     a = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(a));
     b = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(b));
     if( !check_for_dimensions ) {
@@ -3884,13 +3878,6 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 if (st1->n_data_member_types != st2->n_data_member_types) return false;
                 for (size_t i = 0; i < st1->n_data_member_types; i++) {
                     if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
-                }
-
-                if (st1->n_member_function_types != st2->n_member_function_types) return false;
-                for (size_t i = 0; i < st1->n_member_function_types; i++) {
-                    if (!types_equal(st1->m_member_function_types[i], st2->m_member_function_types[i])) {
                         return false;
                     }
                 }

@@ -1145,13 +1145,14 @@ public:
                         ASR::Struct_t* src_struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a));
                         llvm::Type* src_struct_type = get_llvm_struct_data_type(
                             src_struct_sym,
-                            LLVM::is_llvm_pointer(*dest_asr_type));
+                            true);
                         x_arr = llvm_utils->create_gep2(src_class_type, x_arr, 1);
                         builder->CreateStore(builder->CreateBitCast(
                                         malloc_ptr, src_struct_type), x_arr);
 
                         // Initialize members
                         llvm::Type* dest_type = llvm_utils->get_type_from_ttype_t_util(curr_arg.m_a, dest_asr_type, module.get());
+                        // print_util(dest_type);
                         x_arr = llvm_utils->CreateLoad2(src_struct_type, x_arr);
                         x_arr = builder->CreateBitCast(x_arr, dest_type->getPointerTo());
 
@@ -3902,6 +3903,10 @@ public:
                 ASR::ttype_t* symbol_type = ASRUtils::symbol_type(sym);
                 int idx = name2memidx[struct_type_name][item.first];
                 llvm::Type* type = name2dertype[struct_type_name];
+                // std::string buf;
+                // llvm::raw_string_ostream rso(buf);
+                // module->print(rso, nullptr);
+                // std::cout << rso.str() << std::endl;
                 llvm::Value* ptr_member = llvm_utils->create_gep2(type, ptr, idx);
                 ASR::Variable_t* v = nullptr;
                 // Don't reinitialize arrays where the type's intent is out because array descriptor is allocated on the stack
@@ -10932,7 +10937,7 @@ public:
 
                 llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
                 llvm_utils->getClassType(ASR::down_cast<ASR::Struct_t>(
-                            ASRUtils::get_struct_sym_from_struct_expr(s_m_args0)), true));
+                            ASRUtils::get_struct_sym_from_struct_expr(s_m_args0)), LLVM::is_llvm_pointer(*s_m_args0_type)));
                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
                 llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
                 llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));

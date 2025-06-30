@@ -306,7 +306,7 @@ namespace LCompilers {
             if( der_type_name == "~unlimited_polymorphic_type" ) {
                 member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
             } else {
-                member_types.push_back(getStructType(der_type, module, is_pointer));
+                member_types.push_back(getStructType(der_type, module, true));
             }
             der_type_llvm = llvm::StructType::create(context, member_types, der_type_name);
             name2dertype[der_type_name] = der_type_llvm;
