@@ -1,7 +1,7 @@
 module template_struct_01_m
   implicit none
   private
-  public :: struct_t
+  public :: struct_t, test_template
 
   requirement r(t)
       type, deferred :: t
