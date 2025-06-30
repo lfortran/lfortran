@@ -1498,30 +1498,6 @@ namespace LCompilers {
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
 
-    int LLVMUtils::get_kind_from_llvm_val(llvm::Value* val) {
-        llvm::Type* type = val->getType();
-        int bitWidth = 0;
-
-        switch (type->getTypeID()) {
-            case llvm::Type::IntegerTyID:
-                bitWidth = type->getIntegerBitWidth();
-                break;
-            case llvm::Type::FloatTyID:
-                bitWidth = 32;
-                break;
-            case llvm::Type::DoubleTyID:
-                bitWidth = 64;
-                break;
-            case llvm::Type::HalfTyID:
-                bitWidth = 16;
-                break;
-            default:
-                bitWidth = 0;
-                break;
-        }
-        return bitWidth / 8;
-    }
-
     llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, int idx) {
         std::vector<llvm::Value*> idx_vec = {
         llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
