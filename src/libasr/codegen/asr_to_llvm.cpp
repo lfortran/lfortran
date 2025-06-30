@@ -10200,7 +10200,7 @@ public:
                                     builder->CreateStore(tmp, target);
                                     tmp = target;
                                 }
-                                if (ASR::is_a<ASR::String_t>(*arg->m_type)) {
+                                if (ASR::is_a<ASR::String_t>(*arg->m_type) && !ASRUtils::is_array(orig_arg->m_type)) {
                                     tmp = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(arg->m_type, module.get()), tmp);
                                 }
                             } else {

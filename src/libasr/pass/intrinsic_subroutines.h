@@ -374,18 +374,71 @@ namespace GetCommand {
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
 
         if(arg_types.size() > 0){
-            fill_func_arg_sub("command", arg_types[0], InOut);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
-            fn_symtab->add_symbol(c_func_name_1, s_1);
+            /*
+                interface
+                    function _lfortran_get_command_length() result(ret) bind(c)
+                        integer :: ret
+                    end function
+
+                    subroutine lfortran_get_command_command(receiver) bind(c)
+                        character(len=1, kind=c_char), intent(out) :: receiver(*)
+                    end subroutine lfortran_get_command_command
+                end interface
+
+                integer :: length_to_allocate
+                length_to_allocate = _lfortran_get_command_length()
+
+                character(:), allocatable :: result
+                allocate(character(len=length_to_allocate) :: result)
+                call lfortran_get_command_command(result)
+
+                character(len=*), intent(inout) :: command
+                command = result
+
+                deallocate(result)
+            */
+
+            // Create interface `lfortran_get_command_command`
+            ASR::ttype_t* array_type = b.UnboundedArray(b.String(b.i64(1), ASR::ExpressionLength, ASR::CString), 1);
+            Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al,1);
+            parameter_types.push_back(al, array_type);
+            ASR::symbol_t *lfortran_get_command_command = b.create_c_subroutine_interface(c_func_name_1, fn_symtab, parameter_types, {"receiver"});
+
+            fn_symtab->add_symbol(c_func_name_1, lfortran_get_command_command);
             dep.push_back(al, s2c(al, c_func_name_1));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+
+            // Create Interface `lcompilers_get_command_length`
+            ASR::symbol_t *_lfortran_get_command_length = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, int32);
+            fn_symtab->add_symbol(c_func_name_2, _lfortran_get_command_length);
+            dep.push_back(al, s2c(al, c_func_name_2));
+            
+            // Call `_lfortran_get_command_length`
+            ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
+            body.push_back(al, b.Assignment(length_to_allocate, b.Call(_lfortran_get_command_length, call_args, int32)));
+
+            // Create and allocate `string_holder` variable
+            ASR::expr_t* string_holder = declare("string_holder",
+                b.allocatable(b.String(nullptr, ASR::DeferredLength, ASR::DescriptorString)), Local);
+            body.push_back(al, b.Allocate(string_holder, nullptr, 0, length_to_allocate));
+
+            // Call `lfortran_get_command_command`
+            Vec<ASR::call_arg_t> call_args_to_lfortran_get_command_command;
+            call_args_to_lfortran_get_command_command.reserve(al, 1);
+            call_args_to_lfortran_get_command_command.push_back(al, ASR::call_arg_t{loc, string_holder});
+            body.push_back(al, b.SubroutineCall(lfortran_get_command_command, call_args_to_lfortran_get_command_command));
+
+            // Assign `string_holder` to `command` + deallocate
+            fill_func_arg_sub("command", arg_types[0], InOut);
+
+            body.push_back(al, b.Assignment(args[0],
+                ASRUtils::create_string_physical_cast(al, string_holder, 
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[0]))->m_physical_type)));
+            body.push_back(al, b.Deallocate(string_holder));
         }
         if(arg_types.size() > 1){
             fill_func_arg_sub("length", arg_types[1], InOut);
-            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
-            fn_symtab->add_symbol(c_func_name_2, s_2);
-            dep.push_back(al, s2c(al, c_func_name_2));
-            body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+            // `length = length_to_allocate` (Reuse the variable)
+            body.push_back(al, b.Assignment(args[1], b.Var(fn_symtab->get_symbol("length_to_allocate"))));
         }
         if(arg_types.size() > 2){
             fill_func_arg_sub("status", arg_types[2], InOut);
@@ -651,31 +704,107 @@ namespace DateAndTime {
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 0);
 
         if (!is_real(*arg_types[0])) {
-            fill_func_arg_sub("date", arg_types[0], InOut);
-            ASR::symbol_t *s_1 = b.create_c_func_subroutines(c_func_name_1, fn_symtab, 0, arg_types[0]);
-            fn_symtab->add_symbol(c_func_name_1, s_1);
+            /*
+                interface 
+                    subroutine _lfortran_date(string_receiver) bind(c)
+                        character(len=1, c_char) :: string_receiver(*)
+                    end subroutine
+                end interface
+                character(*) :: date
+                character(32) :: date_string_holder
+                call _lfortran_date(date_string_holder)
+                date = date_string_holder
+            */
+
+            // Create `_lfortran_date` interface
+            Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
+            parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1));
+            
+            ASR::symbol_t *_lfortran_date = b.create_c_subroutine_interface(c_func_name_1, fn_symtab, parameter_types, {"string_receiver"});
+            fn_symtab->add_symbol(c_func_name_1, _lfortran_date);
             dep.push_back(al, s2c(al, c_func_name_1));
-            body.push_back(al, b.Assignment(args[0], b.Call(s_1, call_args, arg_types[0])));
+
+            // Create a `date_string_holder` variable + call subroutine `_lfortran_date` 
+            ASR::expr_t* date_string_holder = declare("date_string_holder", b.String(b.i32(32), ASR::ExpressionLength, ASR::PointerString), Local);
+            Vec<ASR::call_arg_t> call_to_lfortran_date; call_to_lfortran_date.reserve(al, 1);
+            call_to_lfortran_date.push_back(al, {loc, date_string_holder});
+            body.push_back(al, b.SubroutineCall(_lfortran_date, call_to_lfortran_date));
+
+            // Declare func_arg `date` + assign `date_string_holder` into func arg `date`
+            fill_func_arg_sub("date", arg_types[0], InOut);
+            body.push_back(al, b.Assignment(args[0], // TODO : remove stringConcat, it's a workaround to avoid `strcpy`
+                b.StringConcat(date_string_holder, b.StringConstant(" ", character(1)), character(-1))));
+
         } else {
             fill_func_arg_sub("date", real32, InOut);
             body.push_back(al, b.Assignment(args[0], b.f32(0)));
         }
         if (!is_real(*arg_types[1])) {
-            fill_func_arg_sub("time", arg_types[1], InOut);
-            ASR::symbol_t *s_2 = b.create_c_func_subroutines(c_func_name_2, fn_symtab, 0, arg_types[1]);
-            fn_symtab->add_symbol(c_func_name_2, s_2);
+            /*
+                interface 
+                    subroutine _lfortran_time(string_receiver) bind(c)
+                        character(len=1, c_char) :: string_receiver(*)
+                    end subroutine
+                end interface
+                character(*) :: time
+                character(32) :: time_string_holder
+                call _lfortran_time(time_string_holder)
+                time = time_string_holder
+            */
+
+            // Create `_lfortran_time` interface
+            Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
+            parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1));
+            
+            ASR::symbol_t *_lfortran_time = b.create_c_subroutine_interface(c_func_name_2, fn_symtab, parameter_types, {"string_receiver"});
+            fn_symtab->add_symbol(c_func_name_2, _lfortran_time);
             dep.push_back(al, s2c(al, c_func_name_2));
-            body.push_back(al, b.Assignment(args[1], b.Call(s_2, call_args, arg_types[1])));
+
+            // Create a `time_string_holder` variable + call subroutine `_lfortran_time` 
+            ASR::expr_t* time_string_holder = declare("time_string_holder", b.String(b.i32(13), ASR::ExpressionLength, ASR::PointerString), Local);
+            Vec<ASR::call_arg_t> call_to_lfortran_time; call_to_lfortran_time.reserve(al, 1);
+            call_to_lfortran_time.push_back(al, {loc, time_string_holder});
+            body.push_back(al, b.SubroutineCall(_lfortran_time, call_to_lfortran_time));
+
+            // Declare func_arg `date` + assign `string_holder` into func arg `date`
+            fill_func_arg_sub("time", arg_types[1], InOut);
+            body.push_back(al, b.Assignment(args[1], // TODO : remove stringConcat, it's a workaround to avoid `strcpy`
+                b.StringConcat(time_string_holder, b.StringConstant(" ", character(1)), character(-1))));
         }  else {
             fill_func_arg_sub("time", real32, InOut);
             body.push_back(al, b.Assignment(args[1], b.f32(0)));
         }
         if (!is_real(*arg_types[2])) {
+            /*
+                interface 
+                    subroutine _lfortran_zone(string_receiver) bind(c)
+                        character(len=1, c_char) :: string_receiver(*)
+                    end subroutine
+                end interface
+                character(*), intent(inout) :: zone
+                character(32) :: zone_string_holder
+                call _lfortran_time(zone_string_holder)
+                zone = zone_string_holder
+            */
+
+            // Create `_lfortran_zone` interface
+            Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
+            parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1));
+            
+            ASR::symbol_t *_lfortran_zone = b.create_c_subroutine_interface(c_func_name_3, fn_symtab, parameter_types, {"string_receiver"});
+            fn_symtab->add_symbol(c_func_name_3, _lfortran_zone);
+            dep.push_back(al, s2c(al, c_func_name_1));
+
+            // Create a `zone_string_holder` variable + call subroutine `_lfortran_zone` 
+            ASR::expr_t* zone_string_holder = declare("zone_string_holder", b.String(b.i32(12), ASR::ExpressionLength, ASR::PointerString), Local);
+            Vec<ASR::call_arg_t> call_to_lfortran_zone; call_to_lfortran_zone.reserve(al, 1);
+            call_to_lfortran_zone.push_back(al, {loc, zone_string_holder});
+            body.push_back(al, b.SubroutineCall(_lfortran_zone, call_to_lfortran_zone));
+
+            // Declare func_arg `zone` + assign `string_holder` into func arg `zone`
             fill_func_arg_sub("zone", arg_types[2], InOut);
-            ASR::symbol_t *s_3 = b.create_c_func_subroutines(c_func_name_3, fn_symtab, 0, arg_types[2]);
-            fn_symtab->add_symbol(c_func_name_3, s_3);
-            dep.push_back(al, s2c(al, c_func_name_3));
-            body.push_back(al, b.Assignment(args[2], b.Call(s_3, call_args, arg_types[2])));
+            body.push_back(al, b.Assignment(args[2], // TODO : remove stringConcat, it's a workaround to avoid `strcpy`
+                b.StringConcat(zone_string_holder, b.StringConstant(" ", character(1)), character(-1))));
         } else {
             fill_func_arg_sub("zone", real32, InOut);
             body.push_back(al, b.Assignment(args[2], b.f32(0)));
@@ -733,31 +862,74 @@ namespace GetEnvironmentVariable {
         std::string new_name = "_lcompilers_get_environment_variable_";
         declare_basic_variables(new_name);
         fill_func_arg_sub("name", arg_types[0], InOut);
-        if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {
-            // this is the case where args[1] is `value`
-            ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
-            fill_func_arg_sub("value", arg_types[1], InOut);
-            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
-                CString_type);
-            fn_symtab->add_symbol(c_func_name, s);
+        if ( arg_types.size() >= 2 && ASRUtils::is_character(*arg_types[1]) ) {// this is the case where args[1] is `value`
+            /*
+            interface 
+                subroutine _lfortran_get_environment_variable(name, string_receiver) bind(c)
+                    character(len=1, c_char) :: name(*)
+                    character(len=1, c_char) :: string_receiver(*)
+                end subroutine
+
+                integer function _lfortran_get_length_of_environment_variable(name) bind(c)
+                    character(len=1, c_char) :: name(*)
+                end function 
+            end interface
+
+            integer :: length_to_allocate
+            length_to_allocate =  _lfortran_get_length_of_environment_variable(name)
+
+            character(:), allocatable :: envVar_string_holder
+            allocate(character(length_to_allocate) :: envVar_string_holder)
+
+            call_lfortran_get_environment_variable(name, envVar_string_holder)
+            value = envVar_string_holder
+
+            deallocate(envVar_string_holder)
+            */
+           
+           // Declare interface `_lfortran_get_environment_variable`
+            Vec<ASR::ttype_t*> parameter_types; parameter_types.reserve(al, 1);
+            parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1));
+            parameter_types.push_back(al, b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1));
+            ASR::symbol_t* _lfortran_get_environment_variable = b.create_c_subroutine_interface(c_func_name, fn_symtab, parameter_types, {"name", "string_receiver"});
+            fn_symtab->add_symbol(c_func_name, _lfortran_get_environment_variable);
             dep.push_back(al, s2c(al, c_func_name));
+
+            // Declare interface `_lfortran_get_length_of_environment_variable`
+            std::string c_func_name = "_lfortran_get_length_of_environment_variable";
+            ASR::symbol_t *_lfortran_get_length_of_environment_variable = b.create_c_func_subroutines_with_return_type(
+                c_func_name, fn_symtab, 1, 
+                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1)}, int32);
+            fn_symtab->add_symbol(c_func_name, _lfortran_get_length_of_environment_variable);
+            dep.push_back(al, s2c(al, c_func_name));
+
+            // `length_to_allocate = _lfortran_get_length_of_environment_variable(name)`
+            ASR::expr_t* length_to_allocate = declare("length_to_allocate", int32, Local);
             Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
             call_args.push_back(al, args[0]);
+            body.push_back(al, b.Assignment(length_to_allocate, b.Call(_lfortran_get_length_of_environment_variable, call_args, int32)));
+
+            // Declare allocatable string_holder + allocate
+            ASR::expr_t* envVar_string_holder = declare("envVar_string_holder", b.allocatable(b.String(nullptr, ASR::DeferredLength, ASR::DescriptorString)), Local);
+            body.push_back(al, b.Allocate(envVar_string_holder, nullptr, 0, length_to_allocate));
+
+            // Call `_lfortran_get_environment_variable`
+            Vec<ASR::call_arg_t> call_to_lfortran_get_environment_variable; call_to_lfortran_get_environment_variable.reserve(al, 2);
+            call_to_lfortran_get_environment_variable.push_back(al, {loc, args[0]});
+            call_to_lfortran_get_environment_variable.push_back(al, {loc, envVar_string_holder});
+            body.push_back(al, b.SubroutineCall(_lfortran_get_environment_variable, call_to_lfortran_get_environment_variable));
+
+            // Declare `value` +  Assign `envVar_string_holder` into func arg `value`
+            fill_func_arg_sub("value", arg_types[1], InOut);
             body.push_back(al, b.Assignment(args[1],
-                    ASRUtils::create_string_physical_cast(al, b.Call(s, call_args, CString_type),
+                ASRUtils::create_string_physical_cast(al, envVar_string_holder,
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(arg_types[1]))->m_physical_type)));
+            // Deallocate `envVar_string_holder`
+            body.push_back(al, b.Deallocate(envVar_string_holder));
 
             if (arg_types.size() >= 3) {
-                std::string c_func_name = "_lfortran_get_length_of_environment_variable";
                 fill_func_arg_sub("length", arg_types[2], InOut);
-                ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
-                    arg_types[2]);
-                fn_symtab->add_symbol(c_func_name, s);
-                dep.push_back(al, s2c(al, c_func_name));
-                Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
-                call_args.push_back(al, args[0]);
-                body.push_back(al, b.Assignment(args[2], b.Call(s, call_args, arg_types[2])));
+                body.push_back(al, b.Assignment(args[2], length_to_allocate)); // Reuse `length_to_allocate`
             }
             if (arg_types.size() >= 4) {
                 fill_func_arg_sub("status", arg_types[3], InOut);
@@ -769,9 +941,8 @@ namespace GetEnvironmentVariable {
             // this is the case where args[1] is `length`
             c_func_name = "_lfortran_get_length_of_environment_variable";
             fill_func_arg_sub("length", arg_types[1], InOut);
-            ASR::ttype_t* CString_type = character(-1);
-            ASR::down_cast<ASR::String_t>(CString_type)->m_physical_type = ASR::string_physical_typeType::CString;
-            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, {CString_type},
+            ASR::symbol_t *s = b.create_c_func_subroutines_with_return_type(c_func_name, fn_symtab, 1, 
+                {b.UnboundedArray(b.String(b.i32(1), ASR::ExpressionLength, ASR::CString), 1)},
                 arg_types[1]);
             fn_symtab->add_symbol(c_func_name, s);
             dep.push_back(al, s2c(al, c_func_name));

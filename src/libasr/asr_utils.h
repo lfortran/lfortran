@@ -3268,7 +3268,7 @@ static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR:
 */
 static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
-    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(expr_type(string));
+    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(string)));
     if(to == str_type->m_physical_type){return string;}
 
     ASR::ttype_t* cast_expr_type = ASRUtils::duplicate_type(al, (ASR::ttype_t*)str_type);
