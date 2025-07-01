@@ -146,7 +146,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--print-leading-space", compiler_options.print_leading_space, "Print leading white space if format is unspecified");
         app.add_flag("--interactive-parse", compiler_options.interactive, "Use interactive parse");
         app.add_flag("--verbose", compiler_options.po.verbose, "Print debugging statements");
-        app.add_flag("--fasttalking", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
+        app.add_flag("--fast", compiler_options.po.fast, "Best performance (disable strict standard compliance)");
         app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically");
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas");
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack");
