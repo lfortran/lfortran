@@ -2207,6 +2207,33 @@ public:
                                      select_type_default.p, select_type_default.size());
     }
 
+    void update_parent_procedure(ASR::Module_t &parent_module, ASR::Function_t* s_proc) {
+        SymbolTable* symtab = parent_module.m_symtab;
+        std::string func_name = (std::string)s_proc->m_name;
+        ASR::symbol_t* sym = symtab->get_symbol(func_name);
+        ASR::Function_t* proc = ASR::down_cast<ASR::Function_t>(sym);
+
+        ASR::FunctionType_t* proc_func_type = ASR::down_cast<ASR::FunctionType_t>(proc->m_function_signature);
+        proc_func_type->m_deftype = ASR::deftypeType::Implementation;
+
+        proc->m_body = s_proc->m_body;
+        proc->n_body = s_proc->n_body;
+    }
+
+    void populate_parent_module(ASR::Module_t* mod) {
+        if (!mod->m_parent_module) {
+            return;
+        }
+
+        ASR::Module_t* parent_module = ASR::down_cast<ASR::Module_t>(mod->m_parent_module);
+        for (auto &item : mod->m_symtab->get_scope()) {
+            if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                ASR::Function_t* submod_proc = ASR::down_cast<ASR::Function_t>(item.second);
+                update_parent_procedure(*parent_module, submod_proc);
+            }
+        }
+    }
+
     template <typename T>
     void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
@@ -2250,6 +2277,7 @@ public:
         }
 
         create_and_replace_structType();
+        populate_parent_module(v);
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
