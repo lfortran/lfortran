@@ -299,13 +299,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         current_module_dependencies.reserve(al, 4);
         generic_procedures.clear();
-        ASR::asr_t *tmp0 = ASR::make_Module_t(al, x.base.base.loc,
-                                            /* a_symtab */ current_scope,
-                                            /* a_name */ s2c(al, to_lower(x.m_name)),
-                                            nullptr,
-                                            0,
-                                            false, false);
-        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
+        ASR::asr_t *tmp0 = nullptr;
         if( x.class_type == AST::modType::Submodule ) {
             ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
@@ -316,12 +310,28 @@ public:
                                                             diag::Label("", {loc})}));
                                                     throw SemanticAbort();}, lm, compiler_options.generate_object_code
                                                 ));
+            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                /* a_symtab */ current_scope,
+                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                nullptr,
+                                                0,
+                                                submod_parent,
+                                                false, false);
             ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
+        } else {
+            tmp0 = ASR::make_Module_t(al, x.base.base.loc,
+                                                /* a_symtab */ current_scope,
+                                                /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                nullptr,
+                                                0,
+                                                nullptr,
+                                                false, false);
         }
+        current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_use; i++) {
             try {
                 visit_unit_decl1(*x.m_use[i]);
@@ -1882,6 +1892,7 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
         is_derived_type = true;
+        ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             this->visit_unit_decl2(*x.m_items[i]);
         }
@@ -1948,6 +1959,7 @@ public:
 
         current_scope = parent_scope;
         is_derived_type = false;
+        dflt_access = dflt_access_copy;
     }
 
     void visit_Union(const AST::Union_t&x) {
@@ -2703,10 +2715,43 @@ public:
         }
     }
 
+    void get_indirect_public_symbols(const ASR::Module_t* m,
+                                    std::set<std::string> &indirect_public_symbols) {
+        // Get all public symbols from the module
+        for (auto &item : m->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Struct_t>(*item.second)) {
+                ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
+                if (st->m_access != ASR::accessType::Private) {
+                    for (auto &x: st->m_symtab->get_scope()) {
+                        if (ASR::is_a<ASR::ClassProcedure_t>(*x.second)) {
+                            indirect_public_symbols.insert(x.first);
+                        }
+                    }
+                }
+            } else if (ASR::is_a<ASR::GenericProcedure_t>(*item.second)) {
+                ASR::GenericProcedure_t *gp = ASR::down_cast<ASR::GenericProcedure_t>(item.second);
+                if (gp->m_access != ASR::accessType::Private) {
+                    for (size_t i = 0; i < gp->n_procs; i++ ) {
+                        indirect_public_symbols.insert(ASRUtils::symbol_name(gp->m_procs[i]));
+                    }
+                }
+            } else if (ASR::is_a<ASR::CustomOperator_t>(*item.second)) {
+                ASR::CustomOperator_t *cop = ASR::down_cast<ASR::CustomOperator_t>(item.second);
+                if (cop->m_access != ASR::accessType::Private) {
+                    for (size_t i = 0; i < cop->n_procs; i++ ) {
+                        indirect_public_symbols.insert(ASRUtils::symbol_name(cop->m_procs[i]));
+                    }
+                }
+            }
+        }
+    }
+
     std::string import_all(const ASR::Module_t* m, bool to_submodule=false,
                            std::vector<std::string> symbols_already_imported_with_renaming = {}) {
         // Import all symbols from the module, e.g.:
         //     use a
+        std::set<std::string> indirect_public_symbols;
+        get_indirect_public_symbols(m, indirect_public_symbols);
         for (auto &item : m->m_symtab->get_scope()) {
             if ( symbols_already_imported_with_renaming.size() > 0 &&
                  std::find(symbols_already_imported_with_renaming.begin(),
@@ -2721,6 +2766,10 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
+                if (mfn->m_access == ASR::accessType::Private &&
+                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
+                    continue;
+                }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
                     al, mfn->base.base.loc,
                     /* a_symtab */ current_scope,
@@ -3626,7 +3675,7 @@ public:
 
     void visit_Template(const AST::Template_t &x){
         is_template = true;
-
+        ASR::accessType dflt_access_copy = dflt_access;
         SymbolTable *parent_scope = current_scope;
         current_scope = al.make_new<SymbolTable>(parent_scope);
 
@@ -3691,7 +3740,7 @@ public:
 
         // needs to rebuild the context prior to visiting template
         class_procedures.clear();
-
+        dflt_access = dflt_access_copy;
         is_template = false;
     }
 

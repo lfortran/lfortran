@@ -17,16 +17,6 @@
                                     add_t
                                     Public
                                 ),
-                            func_arg_real:
-                                (ExternalSymbol
-                                    12
-                                    func_arg_real
-                                    2 func_arg_real
-                                    template_nested_m
-                                    []
-                                    func_arg_real
-                                    Public
-                                ),
                             r:
                                 (ExternalSymbol
                                     12
@@ -1101,7 +1091,7 @@
                                         []
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -1109,6 +1099,7 @@
                         })
                     template_nested_m
                     [template_nested_m]
+                    ()
                     .false.
                     .false.
                 )

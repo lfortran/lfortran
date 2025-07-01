@@ -17,16 +17,6 @@
                                     add_t
                                     Public
                                 ),
-                            func_arg_int:
-                                (ExternalSymbol
-                                    13
-                                    func_arg_int
-                                    2 func_arg_int
-                                    template_add_01b_m
-                                    []
-                                    func_arg_int
-                                    Public
-                                ),
                             r:
                                 (ExternalSymbol
                                     13
@@ -1207,7 +1197,7 @@
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -1215,6 +1205,7 @@
                         })
                     template_add_01b_m
                     [template_add_01b_m]
+                    ()
                     .false.
                     .false.
                 )

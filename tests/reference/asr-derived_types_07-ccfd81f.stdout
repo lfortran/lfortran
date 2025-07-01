@@ -35,7 +35,7 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -56,7 +56,7 @@
                                                     (String 1 (IntegerConstant 256 (Integer 4) Decimal) ExpressionLength PointerString)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -82,7 +82,7 @@
                                                     )
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -103,7 +103,7 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
@@ -137,7 +137,7 @@
                                     [(Var 4 self)]
                                     []
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -241,6 +241,7 @@
                         })
                     derived_types_07_stdlib_logger
                     []
+                    ()
                     .false.
                     .false.
                 )

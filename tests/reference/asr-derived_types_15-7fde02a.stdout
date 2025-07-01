@@ -355,6 +355,7 @@
                         })
                     derived_types_15_module_1
                     []
+                    ()
                     .false.
                     .false.
                 ),
@@ -391,26 +392,6 @@
                                     t_1
                                     []
                                     i
-                                    Public
-                                ),
-                            multiply:
-                                (ExternalSymbol
-                                    6
-                                    multiply
-                                    2 multiply
-                                    derived_types_15_module_1
-                                    []
-                                    multiply
-                                    Public
-                                ),
-                            sqrt_subtract:
-                                (ExternalSymbol
-                                    6
-                                    sqrt_subtract
-                                    2 sqrt_subtract
-                                    derived_types_15_module_1
-                                    []
-                                    sqrt_subtract
                                     Public
                                 ),
                             t_1:

@@ -7,16 +7,6 @@
                     (SymbolTable
                         14
                         {
-                            cast_integer:
-                                (ExternalSymbol
-                                    14
-                                    cast_integer
-                                    2 cast_integer
-                                    template_simple_02_m
-                                    []
-                                    cast_integer
-                                    Public
-                                ),
                             cast_r:
                                 (ExternalSymbol
                                     14
@@ -25,16 +15,6 @@
                                     template_simple_02_m
                                     []
                                     cast_r
-                                    Public
-                                ),
-                            cast_real:
-                                (ExternalSymbol
-                                    14
-                                    cast_real
-                                    2 cast_real
-                                    template_simple_02_m
-                                    []
-                                    cast_real
                                     Public
                                 ),
                             generic_sum:
@@ -2088,7 +2068,7 @@
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -2096,6 +2076,7 @@
                         })
                     template_simple_02_m
                     [template_simple_02_m]
+                    ()
                     .false.
                     .false.
                 )

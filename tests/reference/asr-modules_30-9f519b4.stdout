@@ -281,6 +281,7 @@
                         })
                     fpm_manifest_executable_modules_30
                     []
+                    ()
                     .true.
                     .false.
                 ),
@@ -516,6 +517,7 @@
                     fpm_manifest_modules_30
                     [fpm_manifest_package_modules_30
                     fpm_manifest_executable_modules_30]
+                    ()
                     .false.
                     .false.
                 ),
@@ -612,6 +614,7 @@
                         })
                     fpm_manifest_package_modules_30
                     [fpm_manifest_executable_modules_30]
+                    ()
                     .true.
                     .false.
                 ),

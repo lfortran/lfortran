@@ -4030,16 +4030,33 @@ LFORTRAN_API void _lfortran_read_int32(int32_t *p, int32_t unit_num)
     }
 
     bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL);
+    int access_mode; // 0 = sequential, 1 = stream
+    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_mode, NULL, NULL);
     if (!filep) {
-        printf("No file found with given unit\n");
+        fprintf(stderr, "Internal Compiler Error: No file found with given unit number %d.\n", unit_num);
         exit(1);
     }
 
     if (unit_file_bin) {
-        if (fread(p, sizeof(*p), 1, filep) != 1) {
-            fprintf(stderr, "Error: Failed to read int32_t from binary file.\n");
-            exit(1);
+        if (access_mode == 0) {
+            // Sequential unformatted: read with record markers
+            int32_t record_start = 0, record_end = 0;
+            if (fread(&record_start, sizeof(int32_t), 1, filep) != 1 ||
+                fread(p, sizeof(int32_t), 1, filep) != 1 ||
+                fread(&record_end, sizeof(int32_t), 1, filep) != 1) {
+                fprintf(stderr, "Internal Compiler Error: Failed to read int32_t from sequential binary file.\n");
+                exit(1);
+            }
+            if (record_start != sizeof(int32_t) || record_end != sizeof(int32_t)) {
+                fprintf(stderr, "Internal Compiler Error: Invalid record marker while reading int32_t.\n");
+                exit(1);
+            }
+        } else {
+            // Stream unformatted: direct read
+            if (fread(p, sizeof(int32_t), 1, filep) != 1) {
+                fprintf(stderr, "Internal Compiler Error: Failed to read int32_t from stream file.\n");
+                exit(1);
+            }
         }
     } else {
         long temp;
@@ -4949,7 +4966,7 @@ LFORTRAN_API void _lfortran_file_write(int32_t unit_num, int32_t* iostat, const 
 
             data[count].ptr = ptr;
             if (data[count].ptr == NULL) {
-                printf("Error: NULL pointer passed to _lfortran_file_write.\n");
+                printf("Internal Compiler Error: NULL pointer passed to _lfortran_file_write.\n");
                 exit(1);
             }
             data[count].len = len;

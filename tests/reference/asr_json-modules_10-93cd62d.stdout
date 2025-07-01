@@ -136,6 +136,7 @@
                         "dependencies": [
                             "my_other_module"
                         ],
+                        "parent_module": [],
                         "loaded_from_mod": false,
                         "intrinsic": false
                     },
@@ -398,6 +399,7 @@
                         },
                         "name": "my_other_module",
                         "dependencies": [],
+                        "parent_module": [],
                         "loaded_from_mod": false,
                         "intrinsic": false
                     },

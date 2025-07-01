@@ -7,16 +7,6 @@
                     (SymbolTable
                         18
                         {
-                            lt_integer:
-                                (ExternalSymbol
-                                    18
-                                    lt_integer
-                                    5 lt_integer
-                                    template_sort_01_m
-                                    []
-                                    lt_integer
-                                    Public
-                                ),
                             lt_my_type:
                                 (ExternalSymbol
                                     18
@@ -25,16 +15,6 @@
                                     template_sort_01_type
                                     []
                                     lt_my_type
-                                    Public
-                                ),
-                            lt_real:
-                                (ExternalSymbol
-                                    18
-                                    lt_real
-                                    5 lt_real
-                                    template_sort_01_m
-                                    []
-                                    lt_real
                                     Public
                                 ),
                             my_type:
@@ -2933,7 +2913,7 @@
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -2942,6 +2922,7 @@
                     template_sort_01_m
                     [template_sort_01_type
                     template_sort_01_m]
+                    ()
                     .false.
                     .false.
                 ),
@@ -3138,6 +3119,7 @@
                         })
                     template_sort_01_type
                     []
+                    ()
                     .false.
                     .false.
                 )
