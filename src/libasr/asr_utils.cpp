@@ -1232,10 +1232,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
     if( is_op_overloaded(op, intrinsic_op_name, curr_scope, left_struct) ) {
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
-        bool is_class_procedure = false;
         ASR::symbol_t* orig_sym2 = nullptr;
         if ( left_struct != nullptr) {
-            is_class_procedure = true;
             ASR::Struct_t* temp_struct = left_struct;
             while (temp_struct) {
                 if (temp_struct->m_symtab->get_symbol(intrinsic_op_name) != nullptr) {
@@ -1250,12 +1248,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         }
         // We need to compare all functions available (Class Procedures + interface declared)
         Vec<ASR::symbol_t*> op_overloading_procs; op_overloading_procs.reserve(al, 1);
+        size_t n_interface_proc = 0;
         // functions that are declared by interface operator(==)
         if (orig_sym) {
             ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
             for( size_t i = 0; i < gen_proc->n_procs; i++ ) {
                 op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
             }
+            n_interface_proc = gen_proc->n_procs;
         }
         // functions that are class procedure
         if (orig_sym2) {
@@ -1339,7 +1339,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
-                            if (is_class_procedure) {
+                            if (i >= n_interface_proc) {
                                 matched_func_name = "1_" + std::string(left_struct->m_name) + "_" + func_name;
                                 if (!curr_scope->resolve_symbol(matched_func_name)) {
                                     ASR::symbol_t* mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
