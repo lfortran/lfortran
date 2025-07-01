@@ -1233,12 +1233,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         ASR::symbol_t* sym = curr_scope->resolve_symbol(intrinsic_op_name);
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         bool is_class_procedure = false;
-        if ( left_struct != nullptr && orig_sym == nullptr ) {
+        ASR::symbol_t* orig_sym2 = nullptr;
+        if ( left_struct != nullptr) {
             is_class_procedure = true;
             ASR::Struct_t* temp_struct = left_struct;
             while (temp_struct) {
-                if (temp_struct->m_symtab->resolve_symbol(intrinsic_op_name) != nullptr) {
-                    orig_sym = temp_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+                if (temp_struct->m_symtab->get_symbol(intrinsic_op_name) != nullptr) {
+                    orig_sym2 = temp_struct->m_symtab->get_symbol(intrinsic_op_name);
                     break;
                 } else if (temp_struct->m_parent) {
                     temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
@@ -1247,20 +1248,35 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                 }
             }
         }
-        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
-        for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
+        // We need to compare all functions available (Class Procedures + interface declared)
+        Vec<ASR::symbol_t*> op_overloading_procs; op_overloading_procs.reserve(al, 1);
+        // functions that are declared by interface operator(==)
+        if (orig_sym) {
+            ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
+            for( size_t i = 0; i < gen_proc->n_procs; i++ ) {
+                op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
+            }
+        }
+        // functions that are class procedure
+        if (orig_sym2) {
+            ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym2);
+            for( size_t i = 0; i < gen_proc->n_procs; i++ ) {
+                op_overloading_procs.push_back(al, gen_proc->m_procs[i]);
+            }
+        }
+        for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
             ASR::symbol_t* proc;
-            if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i]) ) {
-                ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[i]);
-                if (gen_proc->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
+            if ( ASR::is_a<ASR::ClassProcedure_t>(*op_overloading_procs[i]) ) {
+                ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(op_overloading_procs[i]);
+                if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
                     // It may be overided in the derived class
-                    if (left_struct->m_symtab->resolve_symbol(cp->m_name) != nullptr) {
-                        cp = ASR::down_cast<ASR::ClassProcedure_t>(left_struct->m_symtab->resolve_symbol(cp->m_name));
+                    if (left_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
+                        cp = ASR::down_cast<ASR::ClassProcedure_t>(left_struct->m_symtab->get_symbol(cp->m_name));
                     }
                 }
                 proc =  ASRUtils::symbol_get_past_external(cp->m_proc);
             } else {
-                proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
+                proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             }
             switch(proc->type) {
                 case ASR::symbolType::Function: {
@@ -1556,7 +1572,7 @@ bool is_op_overloaded(ASR::cmpopType op, std::string& intrinsic_op_name,
         ASR::Struct_t* temp_struct = left_struct;
         while (temp_struct) {
             // Try to resolve intrinsic_op_name till its last ancestor
-            if (temp_struct->m_symtab->resolve_symbol(
+            if (temp_struct->m_symtab->get_symbol(
                 intrinsic_op_name) != nullptr) {
                 is_op_in_scope = true;
                 break;
