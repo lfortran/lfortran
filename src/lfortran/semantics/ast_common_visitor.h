@@ -4890,7 +4890,11 @@ public:
                             ASR::accessType::Private));
                 }
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
-                type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, v));
+                if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
+                    type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                } else {
+                    type = ASRUtils::TYPE(ASR::make_StructType_t(al, loc, nullptr, 0, nullptr, 0, true, v));
+                }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
                 if (is_pointer) {
@@ -6678,7 +6682,7 @@ public:
                 ASR::ExternalSymbol_t* der_ext = ASR::down_cast<ASR::ExternalSymbol_t>(derived_type);
                 ASR::symbol_t* der_sym = der_ext->m_external;
                 if (der_sym == nullptr) {
-                    diag.add(Diagnostic("'" + std::string(der_ext->m_name) + "' isn't a Derived type.",
+                    diag.add(Diagnostic("'" + std::string(der_ext->m_name) + "' isn't a Derived or Union type.",
                         Level::Error, Stage::Semantic, {Label("", {loc})}));
                     throw SemanticAbort();
                 } else {
@@ -6708,6 +6712,52 @@ public:
                     al, loc, v_var, v, member, current_scope);
                 make_ArrayItem_from_struct_m_args(
                     member_struct_m_args, member_struct_n_args, ASRUtils::EXPR(expr_), expr_, loc);
+                return expr_;
+            }
+            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
+
+
+        if (ASR::is_a<ASR::UnionType_t>(*v_variable_m_type)) {
+            ASR::ttype_t* v_type = v_variable_m_type;
+            ASR::symbol_t *derived_type = nullptr;
+            if (ASR::is_a<ASR::UnionType_t>(*v_type)) {
+                derived_type = ASR::down_cast<ASR::UnionType_t>(v_type)->m_union_type;
+            }
+            ASR::Union_t *der_type;
+            if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {
+                ASR::ExternalSymbol_t* der_ext = ASR::down_cast<ASR::ExternalSymbol_t>(derived_type);
+                ASR::symbol_t* der_sym = der_ext->m_external;
+                if (der_sym == nullptr) {
+                    diag.add(Diagnostic("'" + std::string(der_ext->m_name) + "' isn't a Derived or Union type.",
+                        Level::Error, Stage::Semantic, {Label("", {loc})}));
+                    throw SemanticAbort();
+                } else {
+                    der_type = ASR::down_cast<ASR::Union_t>(der_sym);
+                }
+            } else {
+                der_type = ASR::down_cast<ASR::Union_t>(derived_type);
+            }
+            ASR::Union_t *par_der_type = der_type;
+            // scope = der_type->m_symtab;
+            // ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);
+            ASR::symbol_t* member = nullptr;
+            while( par_der_type != nullptr && member == nullptr ) {
+                scope = par_der_type->m_symtab;
+                member = par_der_type->m_symtab->resolve_symbol(var_name);
+                if( par_der_type->m_parent != nullptr ) {
+                    par_der_type = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(par_der_type->m_parent));
+                } else {
+                    par_der_type = nullptr;
+                }
+            }
+            if( member != nullptr ) {
+                ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);
+                ASR::asr_t* expr_ = (ASR::asr_t*) ASR::make_UnionInstanceMember_t(
+                    al, loc, ASR::down_cast<ASR::expr_t>(v_var), member, member_var->m_type, nullptr);
                 return expr_;
             }
             diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
@@ -6783,7 +6833,7 @@ public:
                 dt_struct_m_args, dt_struct_n_args, ASRUtils::EXPR(v_var), v_var, loc);
             return create_StringLen_from_expr(ASRUtils::EXPR(v_var), int32, loc);
         } else {
-            diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
+            diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived or union type",
                 Level::Error, Stage::Semantic, {Label("", {loc})}));
             throw SemanticAbort();
         }

@@ -3107,6 +3107,12 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 tnew->m_derived_type));
             break;
         }
+        case ASR::ttypeType::UnionType: {
+            ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
+            t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
+                tnew->m_union_type));
+            break;
+        }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
             ASR::ttype_t* dup_type = duplicate_type(al, ptr->m_type, dims,

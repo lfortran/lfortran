@@ -1936,6 +1936,9 @@ public:
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
             if( aggregate_type_name ) {
@@ -1972,7 +1975,7 @@ public:
         std::string sym_name = to_lower(x.m_name);
         if (current_scope->get_symbol(sym_name) != nullptr) {
             diag.add(diag::Diagnostic(
-                "DerivedType already defined",
+                "UnionType already defined",
                 diag::Level::Error, diag::Stage::Semantic, {
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
@@ -1994,6 +1997,9 @@ public:
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
+                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
@@ -2872,6 +2878,22 @@ public:
                     m->m_name, nullptr, 0, temp->m_name,
                     dflt_access
                 );
+                current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            }  else if( ASR::is_a<ASR::Union_t>(*item.second) ) {
+                ASR::Union_t *mv = ASR::down_cast<ASR::Union_t>(item.second);
+                // `mv` is the Variable in a module. Now we construct
+                // an ExternalSymbol that points to it.
+                Str name;
+                name.from_str(al, item.first);
+                char *cname = name.c_str(al);
+                ASR::asr_t *v = ASR::make_ExternalSymbol_t(
+                    al, mv->base.base.loc,
+                    /* a_symtab */ current_scope,
+                    /* a_name */ cname,
+                    (ASR::symbol_t*)mv,
+                    m->m_name, nullptr, 0, mv->m_name,
+                    dflt_access
+                    );
                 current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
             } else {
                 return item.first;
