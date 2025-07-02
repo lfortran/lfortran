@@ -39,6 +39,13 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 # Run all tests (does not work on Windows yet):
 cmake --version
 if [[ $WIN != "1" ]]; then
+    # using debugging option i.e. `-x` causes incorrect assignment
+    set +x
+    NPROC=$(nproc)
+    # we turn on the debugging again
+    set -x
+    echo "NPROC: ${NPROC}"
+
     if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
         ./run_tests.py
     fi
@@ -47,8 +54,8 @@ if [[ $WIN != "1" ]]; then
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
-    make
-    ctest -L llvm
+    make -j${NPROC}
+    ctest -L llvm -j${NPROC}
     cd ..
 
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma
