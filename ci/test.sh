@@ -41,7 +41,16 @@ cmake --version
 if [[ $WIN != "1" ]]; then
     # using debugging option i.e. `-x` causes incorrect assignment
     set +x
-    NPROC=$(nproc)
+    if [[ $MACOS == "1" ]]; then
+        # we can't use $nproc, it overwhelms system resources on macOS
+        NPROC=2
+        # ideally, we should use something like below, but it raises
+        # error with shell
+        # NPROC=$(( $(NPROC) / 2))
+    else
+        # this works fine on Linux
+        NPROC=$(nproc)
+    fi
     # we turn on the debugging again
     set -x
     echo "NPROC: ${NPROC}"
