@@ -2540,6 +2540,10 @@ class ParallelRegionVisitor :
                 visit_OMPTaskloop(x);
                 break;
 
+                case ASR::omp_region_typeType::Teams:
+                visit_OMPTeams(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -3314,15 +3318,317 @@ class ParallelRegionVisitor :
             std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
             nested_lowered_body = {};
             this->visit_stmt(*do_loop_stmt);
-            // std::cout<<"Hello"<<std::endl;
             for (size_t i = 0; i < nested_lowered_body.size(); i++) {
-                // std::cout<<"Hello1"<<std::endl;
                 body_copy.push_back(nested_lowered_body[i]);
             }
             nested_lowered_body = body_copy;
 
             clauses_heirarchial[nesting_lvl].clear();
         }
+
+
+        // Create outlined function for teams region
+        ASR::symbol_t* create_lcompilers_function_for_teams(const Location &loc, const ASR::OMPRegion_t &x,
+                    const std::string &thread_data_module_name,
+                    std::vector<ASR::symbol_t*> &module_symbols, InvolvedSymbolsCollector* c) {
+            
+            // Similar to create_lcompilers_function_for_parallel but for teams
+            SymbolTable* current_scope_copy = current_scope;
+            while (current_scope->parent != nullptr) {
+                current_scope = current_scope->parent;
+            }
+            
+            // Create function scope
+            current_scope = al.make_new<SymbolTable>(current_scope);
+            involved_symbols_collector_map[current_scope] = c;
+            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            
+            // Load modules
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[1]));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            ASR::symbol_t* mod_sym = create_module(loc, thread_data_module_name);
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            
+            // Import omp_lib for team functions
+            ASR::symbol_t* omp_mod = create_module(loc, "omp_lib");
+            LCOMPILERS_ASSERT(omp_mod != nullptr && ASR::is_a<ASR::Module_t>(*omp_mod));
+            unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(omp_mod));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            
+            // Create data parameter
+            ASRUtils::ASRBuilder b(al, loc);
+            ASR::symbol_t* thread_data_sym = current_scope->get_symbol("teams_thread_data" + thread_data_module_name.substr(24));
+            
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, ASR::abiType::BindC, true);
+            
+            // Create tdata variable
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", 
+                ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, 
+                    ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
+                ASR::intentType::Local, ASR::abiType::BindC);
+            LCOMPILERS_ASSERT(tdata_expr != nullptr);
+            tdata_expr_copy = tdata_expr;
+            thread_data_sym_copy = thread_data_sym;
+            
+            Vec<ASR::stmt_t*> fn_body; fn_body.reserve(al, x.n_body);
+            fn_body.push_back(al, b.CPtrToPointer(data_expr, tdata_expr));
+            
+            Vec<ASR::expr_t*> fn_args; fn_args.reserve(al, 1);
+            fn_args.push_back(al, data_expr);
+            
+            // Declare involved variables
+            for (auto it : involved_symbols) {
+                bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
+                ASR::ttype_t* var_type = it.second;
+                if (is_shared && !ASRUtils::is_array(var_type)) {
+                    var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
+                }
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, 
+                    ASR::intentType::Local, ASR::abiType::BindC) != nullptr);
+            }
+            
+            // Unpack data
+            unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c, "teams_thread_data");
+            
+            Vec<ASR::OMPReduction_t*> reduction_clauses;
+            reduction_clauses.reserve(al,0);
+
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            for(size_t i=0; i<x.n_clauses; i++){
+                stmt_visitor.visit_omp_clause(*x.m_clauses[i]);
+                clauses_heirarchial[nesting_lvl].push_back(x.m_clauses[i]);
+            }
+
+            for(size_t j=0;j<x.n_clauses;j++) {
+                if(x.m_clauses[j]->type == ASR::omp_clauseType::OMPReduction) {
+                    reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(x.m_clauses[j]));
+                }
+            }
+
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            init_reduction_vars(reduction_clauses, x.base.base.loc);
+            std::vector<std::string> reduction_vars_copy=reduction_variables;
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
+            // Handle nested regions
+            if (x.m_region == ASR::omp_region_typeType::Teams) {
+                // Process body - could contain parallel, distribute, etc.
+                visit_OMPBody(&x, fn_body);
+            }
+            thread_data_sym_copy = thread_data_sym;
+            tdata_expr_copy = tdata_expr;
+            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                fn_body.push_back(al,nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
+            reduction_variables=reduction_vars_copy;
+            // Create function
+            std::string fn_name = current_scope->parent->get_unique_name("lcompilers_teams_func");
+            ASR::symbol_t* function = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Function_t_util(al, loc, current_scope,
+                s2c(al, fn_name), nullptr, 0, fn_args.p, fn_args.n,
+                fn_body.p, fn_body.n, nullptr, ASR::abiType::BindC,
+                ASR::accessType::Public, ASR::deftypeType::Implementation,
+                nullptr, false, false, false, false, false, nullptr, 0,
+                false, false, false, nullptr));
+            
+            current_scope->parent->add_symbol(ASRUtils::symbol_name(function), function);
+            current_scope = current_scope_copy;
+            thread_data_sym_copy = nullptr;
+            tdata_expr_copy = nullptr;
+            return function;
+        }
+
+        void visit_OMPTeams(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            ASRUtils::ASRBuilder b(al, x.base.base.loc);
+            
+            // Extract num_teams and thread_limit from clauses
+            ASR::expr_t* num_teams = b.i32(0);  // 0 means runtime default
+            ASR::expr_t* thread_limit = b.i32(0);
+            
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPNumTeams) {
+                    ASR::OMPNumTeams_t* nt_clause = ASR::down_cast<ASR::OMPNumTeams_t>(x.m_clauses[i]);
+                    num_teams = nt_clause->m_num_teams;
+                } else if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPThreadLimit) {
+                    ASR::OMPThreadLimit_t* tl_clause = ASR::down_cast<ASR::OMPThreadLimit_t>(x.m_clauses[i]);
+                    thread_limit = tl_clause->m_thread_limit;
+                }
+            }
+            
+            // Collect involved symbols
+            std::map<std::string, ASR::ttype_t*> involved_symbols;
+            InvolvedSymbolsCollector c(involved_symbols);
+            c.visit_OMPRegion(x);
+            
+            // Determine variable accessibility
+            for(auto it: involved_symbols) {
+                c.variable_accessibility[it.first] = is_shared_or_default_variable(it.first, x) && 
+                    !(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate) ?
+                    ASR::omp_clauseType::OMPShared : ASR::omp_clauseType::OMPPrivate;
+                
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
+                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
+                if(local_var->m_intent == ASR::intentType::In || 
+                local_var->m_storage == ASR::storage_typeType::Parameter) {
+                    c.variable_accessibility[it.first] = ASR::omp_clauseType::OMPPrivate;
+                }
+            }
+            
+            // Create thread data module
+            std::pair<std::string, ASR::symbol_t*> thread_data_module = 
+                create_thread_data_module_omp(&c, x.base.base.loc, "teams_thread_data");
+            std::vector<ASR::symbol_t*> module_symbols = 
+                create_modules_for_lcompilers_function(x.base.base.loc);
+            
+            // Create external symbol for thread data module
+            ASR::symbol_t* thread_data_ext_sym = ASR::down_cast<ASR::symbol_t>(
+                ASR::make_ExternalSymbol_t(al, x.base.base.loc,
+                current_scope, ASRUtils::symbol_name(thread_data_module.second), 
+                thread_data_module.second, s2c(al, thread_data_module.first),
+                nullptr, 0, ASRUtils::symbol_name(thread_data_module.second), 
+                ASR::accessType::Public));
+            current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), 
+                thread_data_ext_sym);
+            // Create data and tdata variables
+            ASR::expr_t* data_expr = b.Variable(current_scope, 
+                current_scope->get_unique_name("teams_data"), 
+                ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, 
+                    thread_data_ext_sym)), ASR::intentType::Local);
+            LCOMPILERS_ASSERT(data_expr != nullptr);
+            
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, 
+                current_scope->get_unique_name("teams_tdata"), 
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), 
+                ASR::intentType::Local);
+            LCOMPILERS_ASSERT(tdata_expr != nullptr);
+            
+            // Pack data
+            std::vector<std::string> array_variables;
+            pack_data_to_thread_data_omp(x.base.base.loc, current_scope, 
+                thread_data_module, data_expr, array_variables, &c);
+            
+            // tdata = c_loc(data)
+            nested_lowered_body.push_back(b.Assignment(
+                tdata_expr,
+                ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc,
+                    ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc, data_expr, 
+                        ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, 
+                            ASRUtils::expr_type(data_expr))), nullptr)),
+                    ASRUtils::expr_type(tdata_expr), nullptr))
+            ));
+            
+            // Create interface function
+            ASR::symbol_t* lcompilers_function = create_lcompilers_function_for_teams(
+                x.base.base.loc, x, thread_data_module.first, module_symbols, &c);
+            LCOMPILERS_ASSERT(lcompilers_function != nullptr);
+            ASR::Function_t* lcompilers_func = ASR::down_cast<ASR::Function_t>(lcompilers_function);
+            ASR::symbol_t* lcompilers_interface = create_interface_lcompilers_function(lcompilers_func);
+            ASR::Function_t* lcompilers_interface_func = ASR::down_cast<ASR::Function_t>(lcompilers_interface);
+            
+            // Create c_funloc
+            ASR::expr_t* c_funloc = ASRUtils::EXPR(ASR::make_PointerToCPtr_t(al, x.base.base.loc,
+                ASRUtils::EXPR(ASR::make_GetPointer_t(al, x.base.base.loc,
+                    b.Var(lcompilers_interface), 
+                    ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, 
+                        lcompilers_interface_func->m_function_signature)), nullptr)),
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, x.base.base.loc)), nullptr));
+            
+            // Call gomp_teams
+            Vec<ASR::call_arg_t> call_args; call_args.reserve(al, 4);
+            ASR::call_arg_t arg1; arg1.loc = x.base.base.loc; arg1.m_value = c_funloc;
+            ASR::call_arg_t arg2; arg2.loc = x.base.base.loc; arg2.m_value = tdata_expr;
+            ASR::call_arg_t arg3; arg3.loc = x.base.base.loc; arg3.m_value = num_teams;
+            ASR::call_arg_t arg4; arg4.loc = x.base.base.loc; arg4.m_value = thread_limit;
+            
+            call_args.push_back(al, arg1);
+            call_args.push_back(al, arg2);
+            call_args.push_back(al, arg3);
+            call_args.push_back(al, arg4);
+            
+            // Import runtime functions
+            // create_teams_runtime_functions(x.base.base.loc);
+            ASR::symbol_t* mod_sym = create_module(x.base.base.loc, "omp_lib");
+            LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
+            std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
+            LCOMPILERS_ASSERT(unsupported_sym_name == "");
+
+
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, 
+                x.base.base.loc, current_scope->get_symbol("gomp_teams"), nullptr,
+                call_args.p, call_args.n, nullptr)));
+            
+            // Handle reduction variables if any
+            ASR::symbol_t* thread_data_sym = thread_data_module.second;
+            for (auto it: reduction_variables) {
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it);
+                ASR::symbol_t* sym = current_scope->get_symbol(
+                    std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it);
+                LCOMPILERS_ASSERT(sym != nullptr);
+                nested_lowered_body.push_back(b.Assignment(
+                    b.Var(actual_sym),
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, 
+                        data_expr, sym, ASRUtils::symbol_type(sym), nullptr))
+                ));
+            }
+            reduction_variables.clear();
+            
+            // Handle shared variables (similar to parallel)
+            for(auto it:involved_symbols) {
+                ASR::symbol_t* actual_sym = current_scope->resolve_symbol(it.first);
+                ASR::symbol_t* sym = current_scope->get_symbol(
+                    std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first);
+                LCOMPILERS_ASSERT(sym != nullptr);
+                if(c.variable_accessibility[it.first] == ASR::omp_clauseType::OMPPrivate || 
+                ASRUtils::is_array(ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(actual_sym)))) {
+                    continue;
+                }
+                ASR::ttype_t* ptr_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, x.base.base.loc, 
+                    ASRUtils::symbol_type(actual_sym)));
+                ASR::Variable_t* local_var = ASR::down_cast<ASR::Variable_t>(actual_sym);
+                if(local_var->m_intent == ASR::intentType::In || 
+                local_var->m_storage == ASR::storage_typeType::Parameter) {
+                    continue;
+                }
+                ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_Variable_t(al, local_var->base.base.loc, local_var->m_parent_symtab,
+                    s2c(al, local_var->m_parent_symtab->get_unique_name("ptr_" + it.first)), 
+                    local_var->m_dependencies, local_var->n_dependencies,
+                    local_var->m_intent, local_var->m_symbolic_value, local_var->m_value,
+                    local_var->m_storage, ptr_type, local_var->m_type_declaration,
+                    local_var->m_abi, local_var->m_access, local_var->m_presence,
+                    local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
+                    local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected)
+                );
+                ASR::Variable_t* tmp_var = ASR::down_cast<ASR::Variable_t>(tmp_sym);
+                current_scope->add_symbol(tmp_var->m_name, tmp_sym);
+                
+                nested_lowered_body.push_back(b.CPtrToPointer(
+                    ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, x.base.base.loc, data_expr,
+                    sym, ASRUtils::symbol_type(sym), nullptr)),
+                    b.Var(current_scope->get_symbol(tmp_var->m_name)),
+                    nullptr
+                ));
+                
+                nested_lowered_body.push_back(b.Assignment(
+                    b.Var(actual_sym),
+                    b.Var(current_scope->get_symbol(tmp_var->m_name))
+                ));
+            }
+            
+            remove_original_statement = true;
+        }
+
 };
 
 void pass_replace_openmp(Allocator &al, ASR::TranslationUnit_t &unit,
