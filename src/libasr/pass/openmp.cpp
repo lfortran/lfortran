@@ -1867,14 +1867,6 @@ class ParallelRegionVisitor :
             for (size_t j = 0; j < omp_region->n_body; j++) {
                 if (!ASR::is_a<ASR::OMPRegion_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::DoLoop_t>(*omp_region->m_body[j]) && !ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
                     stmt_visitor.visit_stmt(*omp_region->m_body[j]);
-                } else if( ASR::is_a<ASR::DoLoop_t>(*omp_region->m_body[j])) {
-                    ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(omp_region->m_body[j]);
-                    stmt_visitor.visit_do_loop_head(do_loop->m_head);
-                    for(size_t k = 0; k < do_loop->n_body; k++) {
-                        if(!ASR::is_a<ASR::OMPRegion_t>(*do_loop->m_body[k])) {
-                            stmt_visitor.visit_stmt(*do_loop->m_body[k]);
-                        }
-                    }
                 } else if (ASR::is_a<ASR::If_t>(*omp_region->m_body[j])) {
                     ASR::If_t* if_stmt = ASR::down_cast<ASR::If_t>(omp_region->m_body[j]);
                     stmt_visitor.visit_expr(*if_stmt->m_test);
@@ -1908,6 +1900,12 @@ class ParallelRegionVisitor :
                 DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
                 stmt_visitor.current_expr = nullptr;
                 nested_lowered_body={};
+                stmt_visitor.visit_do_loop_head(x.m_head);
+                for(size_t k = 0; k < x.n_body; k++) {
+                    if(!ASR::is_a<ASR::OMPRegion_t>(*x.m_body[k])) {
+                        stmt_visitor.visit_stmt(*x.m_body[k]);
+                    }
+                }
 
                 for (size_t i = 0; i < x.n_body; i++) {
                     if (ASR::is_a<ASR::OMPRegion_t>(*x.m_body[i])) {
@@ -2536,6 +2534,10 @@ class ParallelRegionVisitor :
 
                 case ASR::omp_region_typeType::Taskwait:
                 visit_OMPTaskwait(x);
+                break;
+
+                case ASR::omp_region_typeType::Taskloop:
+                visit_OMPTaskloop(x);
                 break;
 
                 default:
@@ -3263,6 +3265,61 @@ class ParallelRegionVisitor :
             taskwait_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                 current_scope->get_symbol("gomp_taskwait"), nullptr, taskwait_args.p, taskwait_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPTaskloop(const ASR::OMPRegion_t &x) {
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            ASR::DoLoop_t* taskloop_do = nullptr;
+            for (size_t i = 0; i < x.n_body; i++) {
+                if (ASR::is_a<ASR::DoLoop_t>(*x.m_body[i])) {
+                    taskloop_do = ASR::down_cast<ASR::DoLoop_t>(x.m_body[i]);
+                    break;
+                }
+            }
+            
+            LCOMPILERS_ASSERT(taskloop_do != nullptr && "Taskloop must contain a DoLoop");
+            
+            // Create a new OMPRegion for the task
+            Vec<ASR::stmt_t*> task_body;
+            task_body.reserve(al, taskloop_do->n_body);
+            for (size_t i = 0; i < taskloop_do->n_body; i++) {
+                task_body.push_back(al, taskloop_do->m_body[i]);
+            }
+
+            // Create task clauses (inherit from taskloop)
+            Vec<ASR::omp_clause_t*> task_clauses;
+            task_clauses.reserve(al, x.n_clauses);
+            for (size_t i = 0; i < x.n_clauses; i++) {
+                task_clauses.push_back(al, x.m_clauses[i]);
+            }
+            
+
+            // Create a new OMPRegion_t for the task
+            ASR::stmt_t* task_region = ASRUtils::STMT(ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Task, task_clauses.p, task_clauses.n,
+                task_body.p, task_body.n));
+
+            // Create DoLoop to wrap the task
+            std::vector<ASR::stmt_t*> loop_body={};
+            // loop_body.reserve(al, 1);
+            loop_body.push_back(task_region);
+
+            ASR::stmt_t* do_loop_stmt = b.DoLoop(taskloop_do->m_head.m_v, taskloop_do->m_head.m_start,
+                taskloop_do->m_head.m_end, loop_body, taskloop_do->m_head.m_increment);
+
+            // Process the task within the loop
+            std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+            nested_lowered_body = {};
+            this->visit_stmt(*do_loop_stmt);
+            // std::cout<<"Hello"<<std::endl;
+            for (size_t i = 0; i < nested_lowered_body.size(); i++) {
+                // std::cout<<"Hello1"<<std::endl;
+                body_copy.push_back(nested_lowered_body[i]);
+            }
+            nested_lowered_body = body_copy;
 
             clauses_heirarchial[nesting_lvl].clear();
         }
