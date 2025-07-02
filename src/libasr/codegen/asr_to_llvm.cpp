@@ -2987,7 +2987,7 @@ public:
     void visit_StructConstant(const ASR::StructConstant_t& x) {
         std::vector<llvm::Constant *> elements;
         llvm::StructType* t = llvm::cast<llvm::StructType>(
-            llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(x.m_dt_sym), module.get()));
+            llvm_utils->getStructType(ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym)), module.get()));
         ASR::Struct_t* struct_
             = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_dt_sym));
 
@@ -10982,9 +10982,17 @@ public:
             llvm::Value* callee = llvm_utils->CreateLoad(tmp);
 
             args = convert_call_args(x, false);
-            llvm::FunctionType* fntype = llvm_utils->get_function_type(
-                *ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(x.m_name)),
-                module.get());
+            ASR::Function_t* func = nullptr;
+            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                    ASRUtils::symbol_get_past_external(x.m_name));
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration));
+            } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(x.m_name))) {
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(x.m_name));
+            }
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*func, module.get());
             tmp = builder->CreateCall(fntype, callee, args);
             return ;
         }

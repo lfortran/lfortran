@@ -303,7 +303,7 @@ namespace LCompilers {
         } else {
             std::vector<llvm::Type*> member_types;
             member_types.push_back(getIntType(8));
-            if( der_type_name == "~unlimited_polymorphic_type" ) {
+            if( der_type_name == "~unlimited_polymorphic_type_polymorphic" ) {
                 member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
             } else {
                 member_types.push_back(getStructType(der_type, module, true));

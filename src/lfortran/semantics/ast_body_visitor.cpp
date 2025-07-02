@@ -1414,7 +1414,22 @@ public:
             throw SemanticAbort();
         }
 
-        if( ASRUtils::types_equal(target_type, value_type) ) {
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
+            && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
+            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
+                ASRUtils::get_struct_sym_from_struct_expr(target));
+            // Set value of `value_struct` to `target_struct` to
+            // handle the case of a pointer null constant assignment.
+            ASR::Struct_t* value_struct = target_struct;
+
+            if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
+                value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(value));
+            }
+
+            if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
+                tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
+            }
+        } else if (ASRUtils::types_equal(target_type, value_type)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
     }

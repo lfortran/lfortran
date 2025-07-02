@@ -690,17 +690,7 @@ public:
                     substitute_type(tlist->m_type)));
             }
             case (ASR::ttypeType::StructType) : {
-                // TODO: StructType
-                // ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                // std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
-                // if (context_map.find(struct_name) != context_map.end()) {
-                //     std::string new_struct_name = context_map[struct_name];
-                //     ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
-                //     return ASRUtils::TYPE(
-                //         ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym));
-                // } else {
-                //     return ttype;
-                // }
+                return ASRUtils::duplicate_type(al, ttype);
             }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
@@ -1387,14 +1377,7 @@ public:
                     substitute_type(tlist->m_type)));
             }
             case (ASR::ttypeType::StructType) : {
-                // TODO: StructType
-                // ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                // std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
-                // if (symbol_subs.find(struct_name) != symbol_subs.end()) {
-                //     ASR::symbol_t *sym = symbol_subs[struct_name];
-                //     return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, ttype->base.loc, sym));
-                // }
-                // return ttype;
+                return ASRUtils::duplicate_type(al, ttype);
             }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
@@ -1798,14 +1781,7 @@ public:
                     substitute_type(tlist->m_type)));
             }
             case (ASR::ttypeType::StructType) : {
-                // TODO: StructType
-                // ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                // std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
-                // if (symbol_subs.find(struct_name) != symbol_subs.end()) {
-                //     ASR::symbol_t *sym = symbol_subs[struct_name];
-                //     ttype = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym));
-                // }
-                // return ttype;
+                return ASRUtils::duplicate_type(al, ttype);
             }
             case (ASR::ttypeType::Array) : {
                 ASR::Array_t *a = ASR::down_cast<ASR::Array_t>(ttype);
