@@ -5364,6 +5364,8 @@ public:
                     collect_omp_body(ASR::omp_region_typeType::Single);
                 } else if (LCompilers::startswith(x.m_construct_name, "master")) {
                     collect_omp_body(ASR::omp_region_typeType::Master);
+                } else if (LCompilers::startswith(x.m_construct_name, "taskloop")) {
+                    collect_omp_body(ASR::omp_region_typeType::Taskloop);
                 } else if (LCompilers::startswith(x.m_construct_name, "task")) {
                     collect_omp_body(ASR::omp_region_typeType::Task);
                 } else if (LCompilers::startswith(x.m_construct_name, "parallel do")) {
@@ -5496,6 +5498,14 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskwait, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "taskloop") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Taskloop, clauses.p, clauses.n, body.p, body.n)));
             } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
