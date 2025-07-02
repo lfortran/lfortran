@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     4
                                     c_bool
-                                    22 c_bool
+                                    26 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -23,7 +23,7 @@
                                 (ExternalSymbol
                                     4
                                     c_funptr
-                                    22 c_funptr
+                                    26 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -33,7 +33,7 @@
                                 (ExternalSymbol
                                     4
                                     c_int
-                                    22 c_int
+                                    26 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -43,7 +43,7 @@
                                 (ExternalSymbol
                                     4
                                     c_long
-                                    22 c_long
+                                    26 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -53,7 +53,7 @@
                                 (ExternalSymbol
                                     4
                                     c_ptr
-                                    22 c_ptr
+                                    26 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -731,14 +731,134 @@
                                     .false.
                                     ()
                                 ),
-                            omp_get_max_threads:
+                            gomp_teams:
                                 (Function
                                     (SymbolTable
                                         16
                                         {
-                                            omp_get_max_threads:
+                                            data:
                                                 (Variable
                                                     16
+                                                    data
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            fn:
+                                                (Variable
+                                                    16
+                                                    fn
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (CPtr)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            num_teams:
+                                                (Variable
+                                                    16
+                                                    num_teams
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            thread_limit:
+                                                (Variable
+                                                    16
+                                                    thread_limit
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_teams
+                                    (FunctionType
+                                        [(CPtr)
+                                        (CPtr)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        ()
+                                        BindC
+                                        Interface
+                                        "GOMP_teams_reg"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 16 fn)
+                                    (Var 16 data)
+                                    (Var 16 num_teams)
+                                    (Var 16 thread_limit)]
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_max_threads:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            omp_get_max_threads:
+                                                (Variable
+                                                    17
                                                     omp_get_max_threads
                                                     []
                                                     ReturnVar
@@ -776,7 +896,7 @@
                                     []
                                     []
                                     []
-                                    (Var 16 omp_get_max_threads)
+                                    (Var 17 omp_get_max_threads)
                                     Public
                                     .false.
                                     .false.
@@ -785,11 +905,11 @@
                             omp_get_num_procs:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        18
                                         {
                                             omp_get_num_procs:
                                                 (Variable
-                                                    17
+                                                    18
                                                     omp_get_num_procs
                                                     []
                                                     ReturnVar
@@ -827,7 +947,181 @@
                                     []
                                     []
                                     []
-                                    (Var 17 omp_get_num_procs)
+                                    (Var 18 omp_get_num_procs)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_num_teams:
+                                (Function
+                                    (SymbolTable
+                                        19
+                                        {
+                                            omp_get_num_teams:
+                                                (Variable
+                                                    19
+                                                    omp_get_num_teams
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    omp_get_num_teams
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "omp_get_num_teams"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 19 omp_get_num_teams)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_team_num:
+                                (Function
+                                    (SymbolTable
+                                        20
+                                        {
+                                            omp_get_team_num:
+                                                (Variable
+                                                    20
+                                                    omp_get_team_num
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    omp_get_team_num
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "omp_get_team_num"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 20 omp_get_team_num)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_team_size:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            level:
+                                                (Variable
+                                                    21
+                                                    level
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            omp_get_team_size:
+                                                (Variable
+                                                    21
+                                                    omp_get_team_size
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    omp_get_team_size
+                                    (FunctionType
+                                        [(Integer 4)]
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "omp_get_team_size"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 21 level)]
+                                    []
+                                    (Var 21 omp_get_team_size)
                                     Public
                                     .false.
                                     .false.
@@ -836,11 +1130,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        22
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    18
+                                                    22
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -878,7 +1172,7 @@
                                     []
                                     []
                                     []
-                                    (Var 18 omp_get_thread_num)
+                                    (Var 22 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -887,11 +1181,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        23
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    19
+                                                    23
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -929,7 +1223,7 @@
                                     []
                                     []
                                     []
-                                    (Var 19 omp_get_wtime)
+                                    (Var 23 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -938,11 +1232,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        24
                                         {
                                             n:
                                                 (Variable
-                                                    20
+                                                    24
                                                     n
                                                     []
                                                     Unspecified
@@ -978,7 +1272,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 20 n)]
+                                    [(Var 24 n)]
                                     []
                                     ()
                                     Public
@@ -1002,7 +1296,7 @@
                                 (ExternalSymbol
                                     2
                                     c_bool
-                                    22 c_bool
+                                    26 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -1012,7 +1306,7 @@
                                 (ExternalSymbol
                                     2
                                     c_funptr
-                                    22 c_funptr
+                                    26 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -1022,7 +1316,7 @@
                                 (ExternalSymbol
                                     2
                                     c_int
-                                    22 c_int
+                                    26 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -1032,7 +1326,7 @@
                                 (ExternalSymbol
                                     2
                                     c_long
-                                    22 c_long
+                                    26 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -1042,7 +1336,7 @@
                                 (ExternalSymbol
                                     2
                                     c_ptr
-                                    22 c_ptr
+                                    26 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -1156,6 +1450,16 @@
                                     omp_lib
                                     []
                                     gomp_taskwait
+                                    Public
+                                ),
+                            gomp_teams:
+                                (ExternalSymbol
+                                    2
+                                    gomp_teams
+                                    4 gomp_teams
+                                    omp_lib
+                                    []
+                                    gomp_teams
                                     Public
                                 ),
                             ik:
@@ -1302,6 +1606,36 @@
                                     omp_lib
                                     []
                                     omp_get_num_procs
+                                    Public
+                                ),
+                            omp_get_num_teams:
+                                (ExternalSymbol
+                                    2
+                                    omp_get_num_teams
+                                    4 omp_get_num_teams
+                                    omp_lib
+                                    []
+                                    omp_get_num_teams
+                                    Public
+                                ),
+                            omp_get_team_num:
+                                (ExternalSymbol
+                                    2
+                                    omp_get_team_num
+                                    4 omp_get_team_num
+                                    omp_lib
+                                    []
+                                    omp_get_team_num
+                                    Public
+                                ),
+                            omp_get_team_size:
+                                (ExternalSymbol
+                                    2
+                                    omp_get_team_size
+                                    4 omp_get_team_size
+                                    omp_lib
+                                    []
+                                    omp_get_team_size
                                     Public
                                 ),
                             omp_get_thread_num:
