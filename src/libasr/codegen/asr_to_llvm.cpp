@@ -8624,6 +8624,18 @@ public:
         }
     }
 
+    llvm::Value* get_pointer_to_variable(ASR::expr_t* var) {
+        if (llvm_symtab.find((uint64_t)var) != llvm_symtab.end()) {
+            return llvm_symtab[(uint64_t)var];
+        }
+        this->visit_expr_wrapper(var, true);
+        llvm::Value *val = tmp;
+        llvm::AllocaInst *alloc = builder->CreateAlloca(val->getType(), nullptr);
+        builder->CreateStore(val, alloc);
+        llvm_symtab[(uint64_t)var] = alloc;
+        return alloc;
+    }
+
     void visit_Cast(const ASR::Cast_t &x) {
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
@@ -8984,6 +8996,20 @@ public:
                 ptr_loads = ptr_loads_copy;
                 llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_arg), module.get());
                 tmp = llvm_utils->CreateLoad(list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
+                break;
+            }
+            case (ASR::cast_kindType::PointerToInteger): {
+                llvm::Value *ptr = nullptr;
+                if (ASR::is_a<ASR::Var_t>(*x.m_arg)) {
+                    ptr = get_pointer_to_variable(x.m_arg);
+                } else {
+                    this->visit_expr(*x.m_arg);
+                    llvm::Value *val = tmp;
+                    llvm::AllocaInst *alloc = builder->CreateAlloca(val->getType(), nullptr);
+                    builder->CreateStore(val, alloc);
+                    ptr = alloc;
+                }
+                tmp = builder->CreatePtrToInt(ptr, llvm::Type::getInt64Ty(context));
                 break;
             }
             default : throw CodeGenError("Cast kind not implemented");

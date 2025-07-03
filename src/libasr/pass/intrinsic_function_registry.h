@@ -169,6 +169,7 @@ inline std::string get_intrinsic_name(int64_t x) {
         INTRINSIC_NAME_CASE(NewLine)
         INTRINSIC_NAME_CASE(Conjg)
         INTRINSIC_NAME_CASE(Huge)
+        INTRINSIC_NAME_CASE(Loc)
         INTRINSIC_NAME_CASE(Dprod)
         INTRINSIC_NAME_CASE(SymbolicSymbol)
         INTRINSIC_NAME_CASE(SymbolicAdd)
@@ -500,6 +501,8 @@ namespace IntrinsicElementalFunctionRegistry {
         {static_cast<int64_t>(IntrinsicElementalFunctions::NewLine),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
+            {nullptr, &UnaryIntrinsicFunction::verify_args}},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Loc),
             {nullptr, &UnaryIntrinsicFunction::verify_args}},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SelectedIntKind),
             {&SelectedIntKind::instantiate_SelectedIntKind, &SelectedIntKind::verify_args}},
@@ -864,6 +867,8 @@ namespace IntrinsicElementalFunctionRegistry {
             "new_line"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::Huge),
             "huge"},
+        {static_cast<int64_t>(IntrinsicElementalFunctions::Loc),
+            "loc"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicSymbol),
             "Symbol"},
         {static_cast<int64_t>(IntrinsicElementalFunctions::SymbolicAdd),
@@ -1070,6 +1075,7 @@ namespace IntrinsicElementalFunctionRegistry {
                 {"new_line", {&NewLine::create_NewLine, &NewLine::eval_NewLine}},
                 {"conjg", {&Conjg::create_Conjg, &Conjg::eval_Conjg}},
                 {"huge", {&Huge::create_Huge, &Huge::eval_Huge}},
+                {"loc", {&Loc::create_Loc, &Loc::eval_Loc}},
                 {"Symbol", {&SymbolicSymbol::create_SymbolicSymbol, &SymbolicSymbol::eval_SymbolicSymbol}},
                 {"SymbolicAdd", {&SymbolicAdd::create_SymbolicAdd, &SymbolicAdd::eval_SymbolicAdd}},
                 {"SymbolicSub", {&SymbolicSub::create_SymbolicSub, &SymbolicSub::eval_SymbolicSub}},

@@ -165,6 +165,7 @@ enum class IntrinsicElementalFunctions : int64_t {
     NewLine,
     Conjg,
     Huge,
+    Loc,
     Popcnt,
     Poppar,
     Real,
@@ -6705,6 +6706,17 @@ namespace Huge {
     }
 
 }  // namespace Huge
+
+namespace Loc {
+
+    static ASR::expr_t* eval_Loc(Allocator &al, const Location &loc,
+            ASR::ttype_t* /*arg_type*/, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        ASR::expr_t* arg = args[0];
+        ASR::ttype_t* int64_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+        return ASRUtils::EXPR(ASR::make_Cast_t(al, loc, arg, ASR::cast_kindType::PointerToInteger, int64_type, nullptr));
+    }
+
+}   // namespace Loc
 
 namespace SymbolicSymbol {
 
