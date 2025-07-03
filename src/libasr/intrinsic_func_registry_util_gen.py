@@ -720,6 +720,12 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Loc": [
+        {
+            "args": [("any",)],
+            "return": "int32"
+        }
+    ],
     "Dprod": [
         {
             "args": [("real", "real")],
@@ -880,6 +886,7 @@ compile_time_only_fn = [
     "Rank",
     "Tiny",
     "Huge",
+    "Loc",
     "BitSize",
     "NewLine",
     "Kind",

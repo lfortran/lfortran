@@ -1314,6 +1314,7 @@ public:
         {"range", IntrinsicSignature({"x"}, 1, 1)},
         {"tiny", IntrinsicSignature({"x"}, 1, 1)},
         {"huge", IntrinsicSignature({"x"}, 1, 1)},
+        {"loc", IntrinsicSignature({"x"}, 1, 1)},
         {"epsilon", IntrinsicSignature({"x"}, 1, 1)},
         {"digits", IntrinsicSignature({"x"}, 1, 1)},
         {"present", IntrinsicSignature({"a"}, 1, 1)},
@@ -8790,7 +8791,7 @@ public:
 
                     std::vector<int> array_indices_in_args = find_array_indices_in_args(args);
                     std::vector<std::string> inquiry_functions = {"epsilon", "radix", "range", "precision", "rank", "tiny", "huge", "bit_size", "new_line", "digits",
-                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous"};
+                        "maxexponent", "minexponent", "storage_size", "kind", "is_contiguous", "loc"};
                     if (are_all_args_evaluated &&
                         (std::find(inquiry_functions.begin(), inquiry_functions.end(), var_name) == inquiry_functions.end()) &&
                         !array_indices_in_args.empty())
