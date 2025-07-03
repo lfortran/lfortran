@@ -1160,7 +1160,7 @@ RUN(NAME intrinsics_385 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # nearest
 RUN(NAME intrinsics_386 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # product
 RUN(NAME intrinsics_387 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_388 LABELS gfortran llvm) # execute_command_line
-
+RUN(NAME intrinsics_389 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # loc
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
