@@ -83,6 +83,11 @@ import :: c_int
 integer(c_int), value :: n
 end subroutine omp_set_num_threads
 
+function omp_get_num_threads() bind(c, name="omp_get_num_threads")
+import :: c_int
+integer(c_int) :: omp_get_num_threads
+end function omp_get_num_threads
+
 subroutine GOMP_atomic_start() bind(C, name="GOMP_atomic_start")
 end subroutine
 

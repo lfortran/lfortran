@@ -2760,8 +2760,8 @@ class ParallelRegionVisitor :
 
             // Step 6: Add partitioning logic to fn_body
             nested_lowered_body.push_back(b.Assignment(num_threads,
-                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_max_threads"),
-                    current_scope->get_symbol("omp_get_max_threads"), nullptr, 0, int_type, nullptr, nullptr))));
+                ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, current_scope->get_symbol("omp_get_num_threads"),
+                    current_scope->get_symbol("omp_get_num_threads"), nullptr, 0, int_type, nullptr, nullptr))));
             nested_lowered_body.push_back(b.Assignment(chunk, b.Div(total_iterations, num_threads)));
             Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
             mod_args.push_back(al, total_iterations);
