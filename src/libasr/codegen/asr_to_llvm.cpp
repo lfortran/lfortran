@@ -11243,11 +11243,11 @@ public:
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         llvm::Type* i64 = llvm::Type::getInt64Ty(context);
         llvm::Type* llvm_dt_type = nullptr;
-#if LLVM_MAJOR_VERSION > 16
+#if LLVM_VERSION_MAJOR > 16
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
 #else
-        llvm_dt_type = llvm_dt->getType()->getPointerElementType();
+        llvm_dt_type = llvm_dt->getType()->getContainedType(0);
 #endif
         for( size_t i = 0; i < vtabs.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -11359,11 +11359,11 @@ public:
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         llvm::Type* i64 = llvm::Type::getInt64Ty(context);
         llvm::Type* llvm_dt_type = nullptr;
-#if LLVM_MAJOR_VERSION > 16
+#if LLVM_VERSION_MAJOR > 16
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
 #else
-        llvm_dt_type = llvm_dt->getType()->getPointerElementType();
+        llvm_dt_type = llvm_dt->getType()->getContainedType(0);
 #endif
         for( size_t i = 0; i < vtabs.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
