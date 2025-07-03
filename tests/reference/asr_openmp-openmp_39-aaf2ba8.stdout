@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     4
                                     c_bool
-                                    26 c_bool
+                                    27 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -23,7 +23,7 @@
                                 (ExternalSymbol
                                     4
                                     c_funptr
-                                    26 c_funptr
+                                    27 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -33,7 +33,7 @@
                                 (ExternalSymbol
                                     4
                                     c_int
-                                    26 c_int
+                                    27 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -43,7 +43,7 @@
                                 (ExternalSymbol
                                     4
                                     c_long
-                                    26 c_long
+                                    27 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -53,7 +53,7 @@
                                 (ExternalSymbol
                                     4
                                     c_ptr
-                                    26 c_ptr
+                                    27 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -1004,14 +1004,65 @@
                                     .false.
                                     ()
                                 ),
-                            omp_get_team_num:
+                            omp_get_num_threads:
                                 (Function
                                     (SymbolTable
                                         20
                                         {
-                                            omp_get_team_num:
+                                            omp_get_num_threads:
                                                 (Variable
                                                     20
+                                                    omp_get_num_threads
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    omp_get_num_threads
+                                    (FunctionType
+                                        []
+                                        (Integer 4)
+                                        BindC
+                                        Interface
+                                        "omp_get_num_threads"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    (Var 20 omp_get_num_threads)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            omp_get_team_num:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            omp_get_team_num:
+                                                (Variable
+                                                    21
                                                     omp_get_team_num
                                                     []
                                                     ReturnVar
@@ -1049,7 +1100,7 @@
                                     []
                                     []
                                     []
-                                    (Var 20 omp_get_team_num)
+                                    (Var 21 omp_get_team_num)
                                     Public
                                     .false.
                                     .false.
@@ -1058,11 +1109,11 @@
                             omp_get_team_size:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        22
                                         {
                                             level:
                                                 (Variable
-                                                    21
+                                                    22
                                                     level
                                                     []
                                                     Unspecified
@@ -1083,7 +1134,7 @@
                                                 ),
                                             omp_get_team_size:
                                                 (Variable
-                                                    21
+                                                    22
                                                     omp_get_team_size
                                                     []
                                                     ReturnVar
@@ -1119,9 +1170,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 21 level)]
+                                    [(Var 22 level)]
                                     []
-                                    (Var 21 omp_get_team_size)
+                                    (Var 22 omp_get_team_size)
                                     Public
                                     .false.
                                     .false.
@@ -1130,11 +1181,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        22
+                                        23
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    22
+                                                    23
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -1172,7 +1223,7 @@
                                     []
                                     []
                                     []
-                                    (Var 22 omp_get_thread_num)
+                                    (Var 23 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -1181,11 +1232,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        24
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    23
+                                                    24
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -1223,7 +1274,7 @@
                                     []
                                     []
                                     []
-                                    (Var 23 omp_get_wtime)
+                                    (Var 24 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -1232,11 +1283,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        25
                                         {
                                             n:
                                                 (Variable
-                                                    24
+                                                    25
                                                     n
                                                     []
                                                     Unspecified
@@ -1272,7 +1323,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 24 n)]
+                                    [(Var 25 n)]
                                     []
                                     ()
                                     Public
@@ -1296,7 +1347,7 @@
                                 (ExternalSymbol
                                     2
                                     c_bool
-                                    26 c_bool
+                                    27 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -1306,7 +1357,7 @@
                                 (ExternalSymbol
                                     2
                                     c_funptr
-                                    26 c_funptr
+                                    27 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -1316,7 +1367,7 @@
                                 (ExternalSymbol
                                     2
                                     c_int
-                                    26 c_int
+                                    27 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -1326,7 +1377,7 @@
                                 (ExternalSymbol
                                     2
                                     c_long
-                                    26 c_long
+                                    27 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -1336,7 +1387,7 @@
                                 (ExternalSymbol
                                     2
                                     c_ptr
-                                    26 c_ptr
+                                    27 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -1658,6 +1709,16 @@
                                     omp_lib
                                     []
                                     omp_get_num_teams
+                                    Public
+                                ),
+                            omp_get_num_threads:
+                                (ExternalSymbol
+                                    2
+                                    omp_get_num_threads
+                                    4 omp_get_num_threads
+                                    omp_lib
+                                    []
+                                    omp_get_num_threads
                                     Public
                                 ),
                             omp_get_team_num:
