@@ -368,7 +368,7 @@ Result<std::unique_ptr<LLVMModule>> FortranEvaluator::get_llvm3(
     eval_count++;
     run_fn = "__lfortran_evaluate_" + std::to_string(eval_count);
 
-    if (compiler_options.separate_compilation) {
+    if (compiler_options.generate_code_for_global_procedures) {
         compiler_options.po.intrinsic_symbols_mangling = true;
     }
 

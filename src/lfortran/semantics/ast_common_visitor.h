@@ -9878,7 +9878,7 @@ public:
         if ( parent_scope->parent != nullptr ) {
             return;
         }
-        compiler_options.separate_compilation = true;
+        compiler_options.generate_code_for_global_procedures = true;
         compiler_options.po.intrinsic_symbols_mangling = true;
         return;
     }

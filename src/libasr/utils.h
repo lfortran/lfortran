@@ -109,7 +109,7 @@ struct CompilerOptions {
 
         It is overridden by `generate_object_code` option.
     */
-    bool separate_compilation = false;
+    bool generate_code_for_global_procedures = false;
     bool no_warnings = false;
     bool disable_style = false;
     bool logical_casting = false;
