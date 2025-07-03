@@ -11283,9 +11283,9 @@ public:
                     llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                     llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
                     llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
-                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
+                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
                     builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
+                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
                     builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
                                         target_dt_data_ptr);
                     args.push_back(target_dt);
@@ -11398,9 +11398,9 @@ public:
                     llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
                     llvm::Type* target_class_dt_type = llvm_utils->getClassType(struct_type_t);
                     llvm::Value* target_dt = llvm_utils->CreateAlloca(*builder, target_class_dt_type);
-                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep(target_dt, 0);
+                    llvm::Value* target_dt_hash_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 0);
                     builder->CreateStore(vptr_int_hash, target_dt_hash_ptr);
-                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep(target_dt, 1);
+                    llvm::Value* target_dt_data_ptr = llvm_utils->create_gep2(target_class_dt_type, target_dt, 1);
                     builder->CreateStore(builder->CreateBitCast(dt_data, target_dt_type),
                                         target_dt_data_ptr);
                     args.push_back(target_dt);
