@@ -2544,6 +2544,10 @@ class ParallelRegionVisitor :
                 visit_OMPTeams(x);
                 break;
 
+                case ASR::omp_region_typeType::Distribute:
+                visit_OMPDistribute(x);
+                break;
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -3627,6 +3631,159 @@ class ParallelRegionVisitor :
             }
             
             remove_original_statement = true;
+        }
+
+        void visit_OMPDistribute(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+            
+            // Get team information
+            ASR::expr_t* team_num = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
+                current_scope->get_symbol("omp_get_team_num"),
+                current_scope->get_symbol("omp_get_team_num"), nullptr, 0, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
+            
+            ASR::expr_t* num_teams = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc, 
+                current_scope->get_symbol("omp_get_num_teams"),
+                current_scope->get_symbol("omp_get_num_teams"), nullptr, 0, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), nullptr, nullptr));
+            
+            // Similar to OMPDo but distribute iterations across teams
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            stmt_visitor.visit_OMPRegion(x);
+            
+            int collapse_levels = 1;
+            // Extract collapse levels and process similar to OMPDo
+            for(size_t i = 0; i < x.n_clauses; i++) {
+                if(x.m_clauses[i]->type == ASR::omp_clauseType::OMPCollapse) {
+                    collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(
+                        ((ASR::down_cast<ASR::OMPCollapse_t>(x.m_clauses[i]))->m_count))->m_n;
+                }
+            }
+            
+            // Extract loop heads
+            std::vector<ASR::do_loop_head_t> heads;
+            heads.reserve(collapse_levels);
+            ASR::stmt_t* current_stmt = x.m_body[0];
+            ASR::DoLoop_t* innermost_loop = nullptr;
+            
+            for (int i = 0; i < collapse_levels; i++) {
+                if (!ASR::is_a<ASR::DoLoop_t>(*current_stmt)) {
+                    throw LCompilersException("Expected nested DoLoop for collapse level " + 
+                        std::to_string(i + 1));
+                }
+                ASR::DoLoop_t* do_loop = ASR::down_cast<ASR::DoLoop_t>(current_stmt);
+                heads.push_back(do_loop->m_head);
+                innermost_loop = do_loop;
+                if (i < collapse_levels - 1 && do_loop->n_body > 0) {
+                    current_stmt = do_loop->m_body[0];
+                }
+            }
+            
+            // Calculate total iterations
+            ASR::expr_t* total_iterations = b.i32(1);
+            std::vector<ASR::expr_t*> dimension_lengths;
+            dimension_lengths.reserve(heads.size());
+            
+            for (auto& head : heads) {
+                ASR::expr_t* length = b.Add(b.Sub(head.m_end, head.m_start), b.i32(1));
+                dimension_lengths.push_back(length);
+                total_iterations = b.Mul(total_iterations, length);
+            }
+            
+            // Distribute iterations across teams
+            ASR::ttype_t* int_type = ASRUtils::expr_type(dimension_lengths[0]);
+            ASR::expr_t* chunk_per_team = b.Variable(current_scope, 
+                current_scope->get_unique_name("chunk_per_team"), int_type, 
+                ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* team_start = b.Variable(current_scope, 
+                current_scope->get_unique_name("team_start"), int_type, 
+                ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* team_end = b.Variable(current_scope, 
+                current_scope->get_unique_name("team_end"), int_type, 
+                ASR::intentType::Local, ASR::abiType::BindC);
+            
+            // Calculate team's portion
+            nested_lowered_body.push_back(b.Assignment(chunk_per_team, 
+                b.Div(total_iterations, num_teams)));
+            nested_lowered_body.push_back(b.Assignment(team_start, 
+                b.Mul(chunk_per_team, team_num)));
+            nested_lowered_body.push_back(b.Assignment(team_end, 
+                b.Add(team_start, chunk_per_team)));
+            
+            // Handle last team getting remaining iterations
+            nested_lowered_body.push_back(b.If(
+                b.Eq(team_num, b.Sub(num_teams, b.i32(1))),
+                {b.Assignment(team_end, total_iterations)},
+                {}
+            ));
+            
+            // Create distributed loop
+            ASR::expr_t* I = b.Variable(current_scope, 
+                current_scope->get_unique_name("I_dist"), int_type, 
+                ASR::intentType::Local, ASR::abiType::BindC);
+            std::vector<ASR::stmt_t*> loop_body;
+            
+            // Compute original loop indices (similar to OMPDo)
+            ASR::expr_t* temp_I = I;
+            for (size_t i = 0; i < heads.size(); i++) {
+                ASR::do_loop_head_t head = heads[i];
+                ASR::expr_t* computed_var;
+                
+                if (i == heads.size() - 1) {
+                    Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                    mod_args.push_back(al, temp_I);
+                    mod_args.push_back(al, dimension_lengths[i]);
+                    computed_var = b.Add(
+                        ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, 
+                            mod_args.p, 2, 0, int_type, nullptr)),
+                        head.m_start);
+                } else {
+                    ASR::expr_t* product_of_next_dims = b.i32(1);
+                    for (size_t j = i + 1; j < heads.size(); j++) {
+                        product_of_next_dims = b.Mul(product_of_next_dims, dimension_lengths[j]);
+                    }
+                    if (i != 0) {
+                        Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                        mod_args.push_back(al, b.Div(temp_I, product_of_next_dims));
+                        mod_args.push_back(al, dimension_lengths[i]);
+                        computed_var = b.Add(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al,
+                            loc, 2, mod_args.p, 2, 0, ASRUtils::expr_type(dimension_lengths[i]), nullptr)), 
+                            head.m_start);
+                    } else {
+                        computed_var = b.Add(b.Div(b.Add(temp_I, b.i32(-1)), product_of_next_dims), 
+                            head.m_start);
+                    }
+                }
+                
+                ASR::expr_t* loop_var = b.Var(current_scope->resolve_symbol(
+                    ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v)));
+                loop_body.push_back(b.Assignment(loop_var, computed_var));
+            }
+            
+            // Add innermost loop's body
+            for (size_t i = 0; i < innermost_loop->n_body; i++) {
+                if(!ASR::is_a<ASR::OMPRegion_t>(*innermost_loop->m_body[i]) && 
+                !ASR::is_a<ASR::DoLoop_t>(*innermost_loop->m_body[i]) && 
+                !ASR::is_a<ASR::If_t>(*innermost_loop->m_body[i])) {
+                    loop_body.push_back(innermost_loop->m_body[i]);
+                    continue;
+                }
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                this->visit_stmt(*innermost_loop->m_body[i]);
+                for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                    loop_body.push_back(nested_lowered_body[j]);
+                }
+                nested_lowered_body = body_copy;
+            }
+            
+            // Create the distributed DoLoop
+            ASR::stmt_t* do_loop_stmt = b.DoLoop(I, b.Add(team_start, b.i32(1)), team_end, 
+                loop_body, innermost_loop->m_head.m_increment);
+            nested_lowered_body.push_back(do_loop_stmt);
+            
         }
 
 };
