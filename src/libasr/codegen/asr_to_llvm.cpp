@@ -3614,9 +3614,6 @@ public:
                 ASR::Function_t *v = down_cast<ASR::Function_t>(
                         item.second);
                 instantiate_function(*v);
-            } else if (is_a<ASR::Enum_t>(*item.second)) {
-                ASR::Enum_t *et = down_cast<ASR::Enum_t>(item.second);
-                visit_Enum(*et);
             }
         }
         finish_module_init_function_prototype(x);

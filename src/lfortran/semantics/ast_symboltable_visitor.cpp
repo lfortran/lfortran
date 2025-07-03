@@ -2895,6 +2895,9 @@ public:
                     dflt_access
                     );
                 current_scope->add_symbol(item.first, ASR::down_cast<ASR::symbol_t>(v));
+            } else if( ASR::is_a<ASR::Enum_t>(*item.second) ) {
+                // Do nothing as enum variables will already be present as 
+                // External symbol in module from which we are importing
             } else {
                 return item.first;
             }
