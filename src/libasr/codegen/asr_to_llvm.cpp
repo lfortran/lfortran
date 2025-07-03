@@ -450,7 +450,7 @@ public:
             visit_expr(*(m_dim.m_start));
             llvm::Value* start = tmp;
             LCOMPILERS_ASSERT(m_dim.m_length != nullptr);
-            visit_expr(*(m_dim.m_length));
+            load_array_size_deep_copy(m_dim.m_length);
             llvm::Value* end = tmp;
             llvm_dims.push_back(std::make_pair(start, end));
         }
@@ -2729,8 +2729,10 @@ public:
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         llvm::Value* array = nullptr;
         ASR::Variable_t *v = nullptr;
+        std::string array_name;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
+            array_name = v->m_name;
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             array = llvm_symtab[v_h];
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
@@ -2805,6 +2807,14 @@ public:
                 ptr_type[array] = array_type;
 #endif
             }
+            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
+            if (compiler_options.enable_bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
+                llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
+                llvm::Value* cond = builder->CreateNot(is_allocated);
+                llvm_utils->generate_runtime_error(cond,
+                    "Runtime Error: Array '%s' is not allocated.\n",
+                        builder->CreateGlobalStringPtr(array_name));
+            }
 
             Vec<llvm::Value*> llvm_diminfo;
             llvm_diminfo.reserve(al, 2 * x.n_args + 1);
@@ -2818,7 +2828,7 @@ public:
                     this->visit_expr_wrapper(m_dims[idim].m_start, true);
                     llvm::Value* dim_start = tmp;
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    load_array_size_deep_copy(m_dims[idim].m_length);
                     llvm::Value* dim_size = tmp;
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
@@ -2860,7 +2870,10 @@ public:
                 }
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args, ASRUtils::expr_type(x.m_v),
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
-                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic, current_select_type_block_type);
+                                                    is_fixed_size, llvm_diminfo.p, is_polymorphic,
+                                                    current_select_type_block_type, false,
+                                                    // TODO: use compiler_options.enable_bounds_checking here
+                                                    !compiler_options.po.realloc_lhs && !compiler_options.po.fast, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
