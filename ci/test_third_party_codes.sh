@@ -534,10 +534,10 @@ time_section "🧪 Testing PRIMA" '
 # Section 6: Legacy Minpack
 ##########################
 time_section "🧪 Testing Legacy Minpack (SciPy)" '
-  git clone https://github.com/certik/minpack.git
+  git clone https://github.com/pranavchiku/minpack.git
   cd minpack
-  git checkout -t origin/scipy30
-  git checkout 409ba02a107f47ee835f3976952bbc64dd46de8a
+  git checkout -t origin/scipy31
+  git checkout 45801cf882871ea8a668213e8cf90b5817877484
   mkdir lf && cd lf
 
   FC="$FC --intrinsic-mangling" cmake ..
