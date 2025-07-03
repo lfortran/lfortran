@@ -1085,7 +1085,7 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
     if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
         /*
-            If separate compilation is enabled using `--generate-object-code`, then we don't
+            If separate compilation is enabled using `--separate-compilation`, then we don't
             drop the original ( unused ) procedures. This is for the module procedures where when
             loaded from other file transformation may or maynot take place and then while linking
             it shows missing symbol. There can be multiple reasons:

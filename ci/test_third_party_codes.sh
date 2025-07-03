@@ -174,7 +174,7 @@ time_section "🧪 Testing fortran_mpi" '
   git clean -fdx
   print_subsection "Building fortran_mpi with separate compilation"
   cd tests/
-  FC="$FC --cpp --generate-object-code" ./run_tests.sh
+  FC="$FC --cpp --separate-compilation" ./run_tests.sh
   print_success "Done with fortran_mpi"
   cd ../../
   rm -rf fortran_mpi
@@ -201,7 +201,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --cpp --generate-object-code -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_success "Done with POT3D"
   cd ..
@@ -236,7 +236,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --generate-object-code --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -259,7 +259,7 @@ time_section "🧪 Testing Fortran-Primes" '
 
   print_subsection "Building Fortran-Primes with separate compilation"
   git clean -dfx
-  FC="$FC --generate-object-code" ./build_and_run.sh
+  FC="$FC --separate-compilation" ./build_and_run.sh
 
   print_success "Done with Fortran-Primes"
   cd ..
@@ -320,7 +320,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
-  FC="$FC --generate-object-code" make
+  FC="$FC --separate-compilation" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -341,7 +341,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation and f23 standard"
 
-  FC="$FC --generate-object-code --std=f23" make
+  FC="$FC --separate-compilation --std=f23" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -489,7 +489,7 @@ time_section "🧪 Testing PRIMA" '
   git restore .
   git checkout -t origin/lf-prima-sc-1
   git checkout 52b863fcd3bb694045e50884fbb689a1ca75298d
-  FC="$FC --generate-object-code --cpp" cmake -S . -B build \
+  FC="$FC --separate-compilation --cpp" cmake -S . -B build \
     -DCMAKE_INSTALL_PREFIX=$(pwd)/install \
     -DCMAKE_Fortran_FLAGS="" \
     -DCMAKE_SHARED_LIBRARY_CREATE_Fortran_FLAGS="" \
@@ -512,17 +512,17 @@ time_section "🧪 Testing PRIMA" '
 
   if [[ "$RUNNER_OS" == "macos-latest" ]]; then
     cd fortran
-    name=bobyqa test_name=test_bobyqa.f90 FC="$FC --generate-object-code" ./script_sc.sh
-    name=newuoa test_name=test_newuoa.f90 FC="$FC --generate-object-code" ./script_sc.sh
-    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --generate-object-code" ./script_sc.sh
-    name=cobyla test_name=test_cobyla.f90 FC="$FC --generate-object-code" ./script_sc.sh
-    name=lincoa test_name=test_lincoa.f90 FC="$FC --generate-object-code" ./script_sc.sh
+    name=bobyqa test_name=test_bobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=newuoa test_name=test_newuoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=cobyla test_name=test_cobyla.f90 FC="$FC --separate-compilation" ./script_sc.sh
+    name=lincoa test_name=test_lincoa.f90 FC="$FC --separate-compilation" ./script_sc.sh
     cd ..
   fi
 
   if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
     cd fortran
-    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --generate-object-code" ./script_sc.sh
+    name=uobyqa test_name=test_uobyqa.f90 FC="$FC --separate-compilation" ./script_sc.sh
     cd ..
   fi
 
@@ -569,7 +569,7 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   print_subsection "Testing with separate compilation"
   git clean -dfx
   mkdir lf && cd lf
-  FC="$FC --intrinsic-mangling --generate-object-code" cmake ..
+  FC="$FC --intrinsic-mangling --separate-compilation" cmake ..
   make
   run_test examples/example_hybrd
   run_test examples/example_hybrd1
@@ -583,7 +583,7 @@ time_section "🧪 Testing Legacy Minpack (SciPy)" '
   print_subsection "Testing with separate compilation and f23 standard"
   git clean -dfx
   mkdir lf && cd lf
-  FC="$FC --intrinsic-mangling --generate-object-code --std=f23" cmake ..
+  FC="$FC --intrinsic-mangling --separate-compilation --std=f23" cmake ..
   make
   run_test examples/example_hybrd
   run_test examples/example_hybrd1
@@ -615,11 +615,11 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --generate-object-code
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -636,11 +636,11 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --generate-object-code
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --generate-object-code minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --generate-object-code minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 ##########################
@@ -659,11 +659,11 @@ time_section "🧪 Testing dftatom" '
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --separate-compilation"
   make -f Makefile.manual quicktest
 
   git clean -dfx
-  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --generate-object-code --fast"
+  make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --separate-compilation --fast"
   make -f Makefile.manual quicktest
 '
 
@@ -697,7 +697,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -744,7 +744,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --generate-object-code --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -839,7 +839,7 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 
     make clean
-    make -j8 FORTRAN=$FC FFLAGS="--generate-object-code" MPI=no OPENMP=no
+    make -j8 FORTRAN=$FC FFLAGS="--separate-compilation" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 
     make clean

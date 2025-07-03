@@ -11,7 +11,7 @@ set(LFORTRAN_BACKEND no CACHE STRING "Only compile the LFortran subset for the g
 set(FAST no CACHE BOOL "Run supported tests with --fast")
 set(NOFAST_LLVM16 no CACHE BOOL "Don't run unsupported tests with --fast when llvm < 17")
 set(STD_F23 no CACHE BOOL "Run tests with --std-f23")
-set(LLVM_GOC no CACHE BOOL "Run tests with --generate-object-code")
+set(LLVM_GOC no CACHE BOOL "Run tests with --separate-compilation")
 
 enable_testing()
 
@@ -112,12 +112,12 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             add_test(${name} ${WASM_EXEC_RUNTIME} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm2")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
-            target_link_options(${name} PUBLIC  --generate-object-code ${extra_args})
+            target_compile_options(${name} PUBLIC --separate-compilation ${extra_args})
+            target_link_options(${name} PUBLIC  --separate-compilation ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvm_rtlib")
             add_executable(${name} ${file_name}.f90 ${extra_files})
-            target_compile_options(${name} PUBLIC --generate-object-code ${extra_args})
+            target_compile_options(${name} PUBLIC --separate-compilation ${extra_args})
             set_source_files_properties(${file_name}.f90 PROPERTIES COMPILE_OPTIONS "--rtlib")
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
         elseif (LFORTRAN_BACKEND STREQUAL "llvmImplicit")
@@ -213,7 +213,7 @@ macro(RUN)
     endif()
 
     if ((LLVM_GOC) AND (NOT RUN_NO_LLVM_GOC) AND (NOT LFORTRAN_BACKEND STREQUAL "fortran"))
-        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --generate-object-code)
+        set(RUN_EXTRA_ARGS ${RUN_EXTRA_ARGS} --separate-compilation)
         set(RUN_NAME "${RUN_NAME}_LLVM_GOC")
     endif()
 

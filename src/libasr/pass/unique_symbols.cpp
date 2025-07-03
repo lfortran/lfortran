@@ -533,7 +533,7 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
      * MANGLING_OPTION="--module-mangling"
      * MANGLING_OPTION="--global-mangling"
      * MANGLING_OPTION="--intrinsic-mangling"
-     * COMPILER_SPECIFIC_OPTION="--generate-object-code" // LFortran
+     * COMPILER_SPECIFIC_OPTION="--separate-compilation" // LFortran
      * COMPILER_SPECIFIC_OPTION="--separate-compilation" // LPython
      * Usage:
      *    `$MANGLING_OPTION $COMPILER_SPECIFIC_OPTION`

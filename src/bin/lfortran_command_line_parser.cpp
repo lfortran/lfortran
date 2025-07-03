@@ -123,7 +123,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--openmp", compiler_options.openmp, "Enable openmp")->group(group_backend_codegen_options);
         app.add_flag("--openmp-lib-dir", compiler_options.openmp_lib_dir, "Pass path to openmp library")->capture_default_str()->group(group_backend_codegen_options);
         app.add_flag("--rtlib", compiler_options.rtlib, "Include the full runtime library in the LLVM output")->group(group_backend_codegen_options);
-        app.add_flag("--generate-object-code", compiler_options.generate_object_code, "Generate object code into .o files")->group(group_backend_codegen_options);
+        app.add_flag("--separate-compilation", compiler_options.separate_compilation, "Generate object code into .o files")->group(group_backend_codegen_options);
         app.add_flag("--static", opts.static_link, "Create a static executable")->group(group_backend_codegen_options);
         app.add_flag("--shared", opts.shared_link, "Create a shared executable")->group(group_backend_codegen_options);
         app.add_flag("--linker", opts.linker, "Specify the linker to be used, available options: clang or gcc")->capture_default_str()->group(group_backend_codegen_options);
@@ -231,7 +231,7 @@ namespace LCompilers::CommandLineInterface {
             compiler_options.fixed_form = true;
             compiler_options.legacy_array_sections = true;
             compiler_options.use_loop_variable_after_loop = true;
-            compiler_options.generate_object_code = true;
+            compiler_options.separate_compilation = true;
         } else {
             throw lc::LCompilersException(
                 "The option `--std=" + opts.arg_standard + "` is not supported"
