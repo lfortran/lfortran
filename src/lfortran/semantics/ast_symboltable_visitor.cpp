@@ -291,6 +291,36 @@ public:
         }
     }
 
+    ASR::symbol_t* replace_parent_procedure_with_external_symbol(ASR::Module_t &parent_module, ASR::Module_t &submodule, ASR::Function_t* submod_proc) {
+        SymbolTable* parent_module_symtab = parent_module.m_symtab;
+        std::string proc_name = (std::string)submod_proc->m_name;
+        ASR::symbol_t* sym = parent_module_symtab->get_symbol(proc_name);
+        ASR::Function_t* parent_mod_proc = ASR::down_cast<ASR::Function_t>(sym);
+
+        ASR::symbol_t* ret_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                                                    al, parent_mod_proc->base.base.loc,
+                                                                    parent_module_symtab, parent_mod_proc->m_name,
+                                                                    (ASR::symbol_t*)submod_proc, submodule.m_name,
+                                                                    nullptr, 0, submod_proc->m_name, parent_mod_proc->m_access
+                                                                    ));
+        
+        return ret_sym;
+    }
+
+    void populate_parent_module(ASR::Module_t* mod) {
+        if (!mod->m_parent_module) {
+            return;
+        }
+
+        ASR::Module_t* parent_module = ASR::down_cast<ASR::Module_t>(mod->m_parent_module);
+        for (auto &item : mod->m_symtab->get_scope()) {
+            if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                ASR::Function_t* submod_proc = ASR::down_cast<ASR::Function_t>(item.second);
+                parent_module->m_symtab->overwrite_symbol(submod_proc->m_name, replace_parent_procedure_with_external_symbol(*parent_module, *mod, submod_proc));
+            }
+        }
+    }
+
     template <typename T, typename R>
     void visit_ModuleSubmoduleCommon(const T &x, std::string parent_name="") {
         assgn_proc_names.clear();
@@ -375,6 +405,7 @@ public:
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
         fix_struct_type(m->m_symtab);
+        populate_parent_module(m);
         dflt_access = ASR::Public;
     }
 
