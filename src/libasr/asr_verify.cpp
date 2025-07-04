@@ -833,8 +833,7 @@ public:
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
             "Var_t::m_v " + x_mv_name + " does not point to a Variable_t, " \
             "Function_t, or Enum_t (possibly behind ExternalSymbol_t)");
-        require(symtab_in_scope(current_symtab, x.m_v),
-            "Var::m_v `" + x_mv_name + "` cannot point outside of its symbol table");
+
         if ( x_mv_name != current_name ) {
             variable_dependencies.push_back(x_mv_name);
         }
