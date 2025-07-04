@@ -6,7 +6,7 @@ contains
    subroutine temp(x)
         integer, intent(inout) :: x
         logical :: keep(x)
-        integer :: result(x)
+        integer, allocatable :: result(:)
         keep = [.false., .true.]
         x = 1
         result = trueloc(keep)
