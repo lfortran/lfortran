@@ -6721,50 +6721,22 @@ public:
         }
 
 
-        /*if (ASR::is_a<ASR::UnionType_t>(*v_variable_m_type)) {*/
-        /*    ASR::ttype_t* v_type = v_variable_m_type;*/
-        /*    ASR::symbol_t *derived_type = nullptr;*/
-        /*    if (ASR::is_a<ASR::UnionType_t>(*v_type)) {*/
-        /*        derived_type = ASR::down_cast<ASR::UnionType_t>(v_type)->m_union_type;*/
-        /*    }*/
-        /*    ASR::Union_t *der_type;*/
-        /*    if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {*/
-        /*        ASR::ExternalSymbol_t* der_ext = ASR::down_cast<ASR::ExternalSymbol_t>(derived_type);*/
-        /*        ASR::symbol_t* der_sym = der_ext->m_external;*/
-        /*        if (der_sym == nullptr) {*/
-        /*            diag.add(Diagnostic("'" + std::string(der_ext->m_name) + "' isn't a Derived or Union type.",*/
-        /*                Level::Error, Stage::Semantic, {Label("", {loc})}));*/
-        /*            throw SemanticAbort();*/
-        /*        } else {*/
-        /*            der_type = ASR::down_cast<ASR::Union_t>(der_sym);*/
-        /*        }*/
-        /*    } else {*/
-        /*        der_type = ASR::down_cast<ASR::Union_t>(derived_type);*/
-        /*    }*/
-        /*    ASR::Union_t *par_der_type = der_type;*/
-        /*    // scope = der_type->m_symtab;*/
-        /*    // ASR::symbol_t* member = der_type->m_symtab->resolve_symbol(var_name);*/
-        /*    ASR::symbol_t* member = nullptr;*/
-        /*    while( par_der_type != nullptr && member == nullptr ) {*/
-        /*        scope = par_der_type->m_symtab;*/
-        /*        member = par_der_type->m_symtab->resolve_symbol(var_name);*/
-        /*        if( par_der_type->m_parent != nullptr ) {*/
-        /*            par_der_type = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(par_der_type->m_parent));*/
-        /*        } else {*/
-        /*            par_der_type = nullptr;*/
-        /*        }*/
-        /*    }*/
-        /*    if( member != nullptr ) {*/
-        /*        ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);*/
-        /*        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member);*/
-        /*        ASR::asr_t* expr_ = (ASR::asr_t*) ASR::make_UnionInstanceMember_t(*/
-        /*            al, loc, ASR::down_cast<ASR::expr_t>(v_var), member, member_var->m_type, nullptr);*/
-        /*        return expr_;*/
-        /*    }*/
-        /*    diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",*/
-        /*        Level::Error, Stage::Semantic, {Label("", {loc})}));*/
-        /*    throw SemanticAbort();*/
-        /*}*/
+        if (ASR::is_a<ASR::UnionType_t>(*v_variable_m_type)) {
+            ASR::UnionType_t* union_type = ASR::down_cast<ASR::UnionType_t>(v_variable_m_type);
+            for (size_t i=0;i<union_type->n_members;i++) {
+                if (var_name == std::string(union_type->m_member_names[i])) {
+                    ASR::asr_t* v_var = ASR::make_Var_t(al, loc, v);
+                    ASR::asr_t* expr_ = (ASR::asr_t*) ASR::make_UnionInstanceMember_t(
+                        al, loc, ASR::down_cast<ASR::expr_t>(v_var), union_type->m_name, 
+                                                        union_type->m_members[i], nullptr);
+                    return expr_;
+                }
+            }
+
+            diag.add(Diagnostic("Variable '" + dt_name + "' doesn't have any member named, '" + var_name + "'.",
+                Level::Error, Stage::Semantic, {Label("", {loc})}));
+            throw SemanticAbort();
+        }
 
         // Handle type parameter inquiry kind first because others depend on their type
         if (var_name == "kind") {

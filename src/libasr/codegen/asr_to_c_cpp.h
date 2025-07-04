@@ -2068,7 +2068,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         std::string der_expr, member;
         this->visit_expr(*x.m_v);
         der_expr = std::move(src);
-        member = ASRUtils::symbol_name(x.m_m);
+        member = x.m_member_name;
         src = der_expr + "." + member;
     }
 
