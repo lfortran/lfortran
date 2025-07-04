@@ -97,7 +97,7 @@ def get_args():
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
     parser.add_argument("-sc", "--separate_compilation", action='store_true',
-                help="Run tests with --generate-object-code")
+                help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
                 help="Don't run unsupported tests with --fast when LLVM < 17")
     parser.add_argument("-m", action='store_true',
