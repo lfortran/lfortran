@@ -2379,7 +2379,7 @@ namespace Eoshift {
             b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
             b.Assignment(i, b.Add(i, b.i32(1))),
         }, nullptr));
-        body.push_back(al, b.DoLoop(j, LBound(args[0], 1), b.Add(shift_val, b.i32(1)), {
+        body.push_back(al, b.DoLoop(j, LBound(args[0], 1), shift_val, {
             b.Assignment(b.ArrayItem_01(result, {i}), b.ArrayItem_01(args[0], {j})),
             b.Assignment(i, b.Add(i, b.i32(1))),
         }, nullptr));
