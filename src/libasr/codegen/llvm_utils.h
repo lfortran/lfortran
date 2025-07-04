@@ -335,8 +335,8 @@ namespace LCompilers {
 
             void set_module(llvm::Module* module_);
 
-            llvm::Type* getMemberType(ASR::ttype_t* mem_type,
-                ASR::Variable_t* member, llvm::Module* module);
+            llvm::Type* getMemberType(const Location &loc, ASR::ttype_t* mem_type,
+                const std::string& member_name, llvm::Module* module);
 
             void createStructTypeContext(ASR::Struct_t* der_type);
 

@@ -557,8 +557,10 @@ public:
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
+                ASR::UnionType_t* union_type = ASR::down_cast<ASR::UnionType_t>(var_type);
+                aggregate_type_name = union_type->m_name;
+                struct_dependencies.push_back(std::string(aggregate_type_name));
+                continue;
             }
             if( aggregate_type_name && ASRUtils::symbol_parent_symtab(sym) != current_symtab ) {
                 struct_dependencies.push_back(std::string(aggregate_type_name));

@@ -1781,7 +1781,8 @@ public:
             current_der_type_name = ASRUtils::symbol_name(d->m_derived_type);
         }
         member_type_asr = member_var->m_type;
-        llvm::Type* member_type_llvm = llvm_utils->getMemberType(member_type_asr, member_var, module.get())->getPointerTo();
+        llvm::Type* member_type_llvm = llvm_utils->getMemberType(x.base.base.loc, member_type_asr, 
+                        std::string(member_var->m_name), module.get())->getPointerTo();
         tmp = builder->CreateBitCast(union_llvm, member_type_llvm);
         if( is_assignment_target ) {
             return ;
@@ -8354,9 +8355,7 @@ public:
             }
             case ASR::ttypeType::UnionType: {
                 ASR::UnionType_t* der = ASR::down_cast<ASR::UnionType_t>(t2_);
-                ASR::Union_t* der_type = ASR::down_cast<ASR::Union_t>(
-                    ASRUtils::symbol_get_past_external(der->m_union_type));
-                current_der_type_name = std::string(der_type->m_name);
+                current_der_type_name = std::string(der->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                     tmp = llvm_symtab[h];

@@ -1939,7 +1939,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
         }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            res = symbol_name(d->m_union_type);
+            res = "union_" + std::string(d->m_name);
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -2082,7 +2082,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
         }
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            return "union " + std::string(symbol_name(d->m_union_type));
+            return "union " + std::string(d->m_name);
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
@@ -3110,7 +3110,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
-                tnew->m_union_type));
+                tnew->m_name, tnew->m_members, tnew->n_members, tnew->m_member_names,
+                tnew->n_member_names, tnew->m_abi, tnew->m_access, tnew->m_parent));
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -3853,13 +3854,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::UnionType) : {
                 ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
                 ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                // Simply check union identifier name
+                
+                return std::string(a2->m_name) == std::string(b2->m_name);
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
@@ -3985,13 +3982,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::UnionType) : {
                 ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
                 ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                // Simply check union identifier name
+                
+                return std::string(a2->m_name) == std::string(b2->m_name);
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
@@ -5219,6 +5212,22 @@ static inline bool is_pass_array_by_data_possible(ASR::Function_t* x, std::vecto
     }
     return v.size() > 0;
 }
+
+
+static inline ASR::ttype_t* get_union_type(Allocator &al, const Location &loc, ASR::symbol_t* union_sym) {
+    Vec<ASR::ttype_t *> member_type_vec;
+    member_type_vec.reserve(al, 1);
+    ASR::Union_t* union_sym_ = ASR::down_cast<ASR::Union_t>(union_sym);
+    for (size_t i=0;i<union_sym_->n_members;i++) {
+        ASR::symbol_t* member_sym = union_sym_->m_symtab->resolve_symbol(union_sym_->m_members[i]);
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+        member_type_vec.push_back(al, member_var->m_type);
+    }
+    return ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, union_sym_->m_name, member_type_vec.p, member_type_vec.n,
+                                                union_sym_->m_members, union_sym_->n_members, union_sym_->m_abi, 
+                                                union_sym_->m_access, union_sym_->m_parent));
+}
+
 
 template <typename SemanticAbort>
 static inline ASR::expr_t* get_bound(ASR::expr_t* arr_expr, int dim,

@@ -131,7 +131,7 @@ namespace LCompilers {
         module = module_;
     }
 
-    llvm::Type* LLVMUtils::getMemberType(ASR::ttype_t* mem_type, ASR::Variable_t* member,
+    llvm::Type* LLVMUtils::getMemberType(const Location &loc, ASR::ttype_t* mem_type, const std::string& member_name,
         llvm::Module* module) {
         llvm::Type* llvm_mem_type = nullptr;
         switch( mem_type->type ) {
@@ -159,12 +159,12 @@ namespace LCompilers {
             }
             case ASR::ttypeType::Allocatable: {
                 ASR::Allocatable_t* ptr_type = ASR::down_cast<ASR::Allocatable_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
+                llvm_mem_type = getMemberType(loc, ptr_type->m_type, member_name, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Pointer: {
                 ASR::Pointer_t* ptr_type = ASR::down_cast<ASR::Pointer_t>(mem_type);
-                llvm_mem_type = getMemberType(ptr_type->m_type, member, module)->getPointerTo();
+                llvm_mem_type = getMemberType(loc, ptr_type->m_type, member_name, module)->getPointerTo();
                 break;
             }
             case ASR::ttypeType::Complex: {
@@ -181,10 +181,9 @@ namespace LCompilers {
                 break;
             }
             default:
-                throw CodeGenError("Cannot identify the type of member, '" +
-                                    std::string(member->m_name) +
+                throw CodeGenError("Cannot identify the type of member, '" + member_name +
                                     "' in derived type, '" + der_type_name + "'.",
-                                    member->base.base.loc);
+                            loc);
         }
         return llvm_mem_type;
     }
@@ -277,20 +276,19 @@ namespace LCompilers {
         return type;
     }
 
-    llvm::Type* LLVMUtils::getUnion(ASR::Union_t* union_type,
-        llvm::Module* module, bool is_pointer) {
-        std::string union_type_name = std::string(union_type->m_name);
+    llvm::Type* LLVMUtils::getUnion(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
+        ASR::UnionType_t* union_ = ASR::down_cast<ASR::UnionType_t>(_type);
+        std::string union_type_name = std::string(union_->m_name);
         llvm::StructType* union_type_llvm = nullptr;
         if( name2dertype.find(union_type_name) != name2dertype.end() ) {
             union_type_llvm = name2dertype[union_type_name];
         } else {
-            const std::map<std::string, ASR::symbol_t*>& scope = union_type->m_symtab->get_scope();
             llvm::DataLayout data_layout(module->getDataLayout());
             llvm::Type* max_sized_type = nullptr;
             size_t max_type_size = 0;
-            for( auto itr = scope.begin(); itr != scope.end(); itr++ ) {
-                ASR::Variable_t* member = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(itr->second));
-                llvm::Type* llvm_mem_type = getMemberType(member->m_type, member, module);
+            for( size_t i = 0; i<union_->n_members; i++ ) {
+                llvm::Type* llvm_mem_type = getMemberType(union_->base.base.loc, union_->m_members[i], 
+                                                           union_->m_member_names[i], module);
                 size_t type_size = data_layout.getTypeAllocSize(llvm_mem_type);
                 if( max_type_size < type_size ) {
                     max_sized_type = llvm_mem_type;
@@ -304,13 +302,6 @@ namespace LCompilers {
             return union_type_llvm->getPointerTo();
         }
         return (llvm::Type*) union_type_llvm;
-    }
-
-    llvm::Type* LLVMUtils::getUnion(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
-        ASR::UnionType_t* union_ = ASR::down_cast<ASR::UnionType_t>(_type);
-        ASR::symbol_t* union_sym = ASRUtils::symbol_get_past_external(union_->m_union_type);
-        ASR::Union_t* union_type = ASR::down_cast<ASR::Union_t>(union_sym);
-        return getUnion(union_type, module, is_pointer);
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
