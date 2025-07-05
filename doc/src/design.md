@@ -83,18 +83,18 @@ The ASR is designed to have the following features:
 
 We support two compilation modes:
 
-1. Default mode: The standard compilation mode. In this mode, LFortran
-produces empty object files (`.o` files) with `-c` flag, and everything is linked
+1. Default mode: The standard compilation mode. 
+In this mode, LFortran produces empty object files (`.o` files) with `-c` flag, and everything is linked
 at the end via `.mod` files.
 
-Specifically for files with global procedure, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` ( not exposed to user ), which then generates
-object code only for global procedures, and rest of the modules are serialized to `.mod` files which does not contain global procedure.
+Specifically for files with global procedure, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` (not exposed to user), which then generates
+object code only for global procedures, and rest of the modules are serialized to `.mod` files which do not contain global procedure.
 
 2. Separate compilation mode: This mode is enabled with `--separate-compilation` flag.
 In this mode, LFortran produces object files (`.o` files) with full symbol information. This
 is default mode in other Fortran compilers such as GFortran.
 
-In this mode, we create object code, and we still create `.mod` files for modules and they contain everything just like for direct mode --- but when any `.mod` file is loaded, we change all symbols to `ExternalUndefined` ABI. We don't change the ABI for `bind(c)` (since those are undefined already in object code, the user is responsible to provide an implementation at link time).
+We create object code, and we still create `.mod` files for modules and they contain everything just like for direct mode but when any `.mod` file is loaded, we change all symbols to `ExternalUndefined` ABI. We don't change the ABI for `bind(c)` (since those are undefined already in object code, the user is responsible to provide an implementation at link time).
 
 Note: **_If you enable separate compilation mode, you've to enable it for all the files._**
 
