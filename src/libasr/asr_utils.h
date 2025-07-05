@@ -1117,7 +1117,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::Template: {
             return ASR::down_cast<ASR::Template_t>(f)->m_symtab->parent;
         }
-        default : throw LCompilersException("Not implemented");
+        default : throw LCompilersException("Not implemented for type " + 
+              std::to_string(f->type));
     }
 }
 

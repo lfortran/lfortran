@@ -891,6 +891,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     alloc_arg.n_dims = allocate_dims.size();
     alloc_arg.m_len_expr = nullptr;
     alloc_arg.m_type = nullptr;
+    alloc_arg.m_sym_subclass = nullptr;
     alloc_args.push_back(al, alloc_arg);
 
     Vec<ASR::expr_t*> dealloc_args; dealloc_args.reserve(al, 1);

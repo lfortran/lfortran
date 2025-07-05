@@ -94,6 +94,7 @@
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         ()
                         ()
@@ -154,6 +155,7 @@
                         [((Var 2 greetings)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
+                        ()
                         ()
                         ())]
                         ()
@@ -297,6 +299,7 @@
                         [((Var 2 str)
                         []
                         (IntegerConstant 8 (Integer 4) Decimal)
+                        ()
                         ())]
                         ()
                         ()

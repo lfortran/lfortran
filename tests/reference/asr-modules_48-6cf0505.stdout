@@ -276,6 +276,7 @@
                         [((Var 8 char_str_alloc)
                         []
                         (IntegerConstant 40 (Integer 4) Decimal)
+                        ()
                         ())]
                         ()
                         ()

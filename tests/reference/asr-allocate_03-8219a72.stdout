@@ -114,6 +114,7 @@
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                         ()
+                                        ()
                                         ())]
                                         ()
                                         ()
@@ -600,6 +601,7 @@
                         (IntegerConstant 3 (Integer 4) Decimal))
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
+                        ()
                         ()
                         ())]
                         (Var 2 stat)

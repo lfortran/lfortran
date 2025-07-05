@@ -327,6 +327,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::alloc_arg_t arg;
         arg.m_len_expr = nullptr;
         arg.m_type = nullptr;
+        arg.m_sym_subclass = nullptr;
         arg.m_dims = dims.p;
         arg.n_dims = dims.size();
         if( is_allocatable ) {
@@ -421,6 +422,7 @@ class ReplaceArrayConstant: public ASR::BaseExprReplacer<ReplaceArrayConstant> {
         ASR::alloc_arg_t arg;
         arg.m_len_expr = nullptr;
         arg.m_type = nullptr;
+        arg.m_sym_subclass = nullptr;
         arg.m_dims = dims.p;
         arg.n_dims = dims.size();
         if( is_allocatable ) {
