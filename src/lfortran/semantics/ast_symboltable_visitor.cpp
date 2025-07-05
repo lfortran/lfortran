@@ -2804,7 +2804,7 @@ public:
                     m->m_name, nullptr, 0, gp->m_name,
                     dflt_access
                     );
-                std::string sym = to_lower(gp->m_name);
+                std::string sym = gp->m_name;
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
@@ -3417,6 +3417,7 @@ public:
                     AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
                     local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
                 } else {
+                    remote_sym = to_lower(remote_sym);
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
