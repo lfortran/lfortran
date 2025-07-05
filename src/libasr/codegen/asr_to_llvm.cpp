@@ -11245,6 +11245,7 @@ public:
         llvm::Type* llvm_dt_type = nullptr;
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+        llvm_dt = builder->CreateBitCast(llvm_dt, llvm_dt_type->getPointerTo());
         for( size_t i = 0; i < vtabs.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
@@ -11357,6 +11358,7 @@ public:
         llvm::Type* llvm_dt_type = nullptr;
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+        llvm_dt = builder->CreateBitCast(llvm_dt, llvm_dt_type->getPointerTo());
         for( size_t i = 0; i < vtabs.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
