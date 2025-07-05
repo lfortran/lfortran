@@ -1937,8 +1937,8 @@ public:
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
-                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                    ASR::UnionType_t* union_type = ASR::down_cast<ASR::UnionType_t>(var_type);
+                    aggregate_type_name = union_type->m_name;
                 }
             }
             if( aggregate_type_name ) {
@@ -1999,8 +1999,8 @@ public:
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
-                    aggregate_type_name = ASRUtils::symbol_name(sym);
+                    ASR::UnionType_t* union_type = ASR::down_cast<ASR::UnionType_t>(var_type);
+                    aggregate_type_name = union_type->m_name;
                 }
             }
             if( aggregate_type_name ) {
