@@ -2263,6 +2263,15 @@ namespace LCompilers {
         LLVMDict(context_, llvm_utils_, builder_) {
         }
 
+    llvm::Type* LLVMUtils::get_pointee_type(llvm::Value* val) {
+        llvm::Type* ty = val->getType();
+        if (ty->isPointerTy()) {
+            return llvm::cast<llvm::PointerType>(ty)->getElementType();
+        } else {
+            throw std::runtime_error("Expected a pointer type");
+        }
+    }
+
     llvm::Type* LLVMList::get_list_type(llvm::Type* el_type, std::string& type_code,
                                         int32_t type_size) {
         if( typecode2listtype.find(type_code) != typecode2listtype.end() ) {

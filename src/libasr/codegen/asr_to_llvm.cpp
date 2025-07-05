@@ -1403,7 +1403,8 @@ public:
                 struct_sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
                 if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
-                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                    llvm::Type* dt_ptr_type = llvm_utils->get_pointee_type(dt);
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep2(dt_ptr_type, dt, 1));
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
@@ -2733,7 +2734,7 @@ public:
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x_m_array_type, module.get());
                 llvm::Value *target = llvm_utils->CreateAlloca(
                     target_type, nullptr, "fixed_size_reshaped_array");
-                llvm::Value* target_ = llvm_utils->create_gep(target, 0);
+                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -2806,8 +2807,10 @@ public:
         ASR::Enum_t* enum_type = ASR::down_cast<ASR::Enum_t>(enum_t->m_enum_type);
         uint32_t h = get_hash((ASR::asr_t*) enum_type);
         llvm::Value* array = llvm_symtab[h];
-        tmp = llvm_utils->create_gep(array, tmp);
-        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep(tmp, 1));
+        llvm::Type* array_type = llvm_utils->get_pointee_type(array);
+        tmp = llvm_utils->create_gep2(array_type, array, tmp);
+        llvm::Type* tmp_type = llvm_utils->get_pointee_type(tmp);
+        tmp = llvm_utils->CreateLoad(llvm_utils->create_gep2(tmp_type, tmp, 1));
     }
 
     void visit_EnumValue(const ASR::EnumValue_t& x) {
@@ -2867,8 +2870,11 @@ public:
             }
             tmp = builder->CreateSub(tmp, llvm::ConstantInt::get(tmp->getType(),
                         llvm::APInt(32, min_value, true)));
-            tmp = llvm_utils->create_gep(array, tmp);
-            tmp = llvm_utils->create_gep(tmp, 0);
+            llvm::Type* array_type = llvm_utils->get_pointee_type(array);
+            tmp = llvm_utils->create_gep2(array_type, array, tmp);
+
+            llvm::Type* tmp_type = llvm_utils->get_pointee_type(tmp);
+            tmp = llvm_utils->create_gep2(tmp_type, tmp, 0);
         }
     }
 
@@ -4030,7 +4036,8 @@ public:
                 llvm::Value* ptr_i = nullptr;
                 switch (phy_type) {
                     case ASR::array_physical_typeType::FixedSizeArray: {
-                        ptr_i = llvm_utils->create_gep(ptr, llvm_utils->CreateLoad(llvmi));
+                        llvm::Type* ptr_type = llvm_utils->get_pointee_type(ptr);
+                        ptr_i = llvm_utils->create_gep2(ptr_type, ptr, llvm_utils->CreateLoad(llvmi));
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
@@ -4144,7 +4151,8 @@ public:
                 size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
-                builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
+                llvm::Type* target_var_type = llvm_utils->get_pointee_type(target_var);
+                builder->CreateMemCpy(llvm_utils->create_gep2(target_var_type, target_var, 0),
                     llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
             }
         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
@@ -5049,7 +5057,8 @@ public:
                     break;
                 }
                 case ASR::array_physical_typeType::FixedSizeArray: {
-                    llvm_tmp = llvm_utils->create_gep(llvm_tmp, 0);
+                    llvm::Type *llvm_tmp_type = llvm_utils->get_pointee_type(llvm_tmp);
+                    llvm_tmp = llvm_utils->create_gep2(llvm_tmp_type, llvm_tmp, 0);
                     break;
                 }
                 case ASR::array_physical_typeType::PointerToDataArray: {
@@ -5182,8 +5191,9 @@ public:
                     new_ub = shape_data ? llvm_utils->CreateLoad2(
                         llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+                    llvm::Type* shape_type = llvm_utils->get_pointee_type(shape_data);
                     new_ub = shape_data ? llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep(shape_data, i)) : i32_one;
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_type, shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 llvm::Value* new_size = builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one);
@@ -5234,7 +5244,8 @@ public:
 #endif
         if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
             // If the pointer is class, get its type pointer
-            ptr = llvm_utils->create_gep(ptr, 1);
+            llvm::Type* ptr_type = llvm_utils->get_pointee_type(ptr);
+            ptr = llvm_utils->create_gep2(ptr_type, ptr, 1);
             ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get())->getPointerTo(), ptr);
         } else {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(p_type, module.get());
@@ -5287,7 +5298,8 @@ public:
                     ASR::array_physical_typeType tgt_ptype = ASRUtils::extract_physical_type(
                         ASRUtils::expr_type(x.m_tgt));
                     if( tgt_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
-                        nptr = llvm_utils->create_gep(nptr, 0);
+                        llvm::Type* nptr_type = llvm_utils->get_pointee_type(nptr);
+                        nptr = llvm_utils->create_gep2(nptr_type, nptr, 0);
                     } else if( tgt_ptype == ASR::array_physical_typeType::DescriptorArray ) {
                         llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::expr_type(x.m_tgt), module.get());
@@ -5424,7 +5436,8 @@ public:
             ptr_loads = ptr_loads_copy;
             ASR::dimension_t* m_dims = nullptr;
             ASR::ttype_t* target_type = ASRUtils::expr_type(x.m_target);
-
+            llvm::Type* llvm_target_type = llvm_utils->get_pointee_type(llvm_target);
+            llvm::Type* llvm_value_type = llvm_utils->get_pointee_type(llvm_value);
             ASR::ttype_t* value_type = ASRUtils::expr_type(x.m_value);
             int n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, m_dims);
             ASR::ttype_t *type = ASRUtils::get_contained_type(target_type);
@@ -5457,8 +5470,8 @@ public:
                 llvm_value = llvm_utils->CreateLoad(llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class && !is_value_class) {
-                llvm::Value* vtab_address_ptr = llvm_utils->create_gep(llvm_target, 0);
-                llvm_target = llvm_utils->create_gep(llvm_target, 1);
+                llvm::Value* vtab_address_ptr = llvm_utils->create_gep2(llvm_target_type, llvm_target, 0);
+                llvm_target = llvm_utils->create_gep2(llvm_target_type, llvm_target, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
                         ASRUtils::type_get_past_pointer(value_type));
                 ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
@@ -5467,7 +5480,8 @@ public:
                     create_vtab_for_struct_type(struct_sym, current_scope);
                 }
                 llvm::Value* vtab_obj = type2vtab[struct_sym][current_scope];
-                llvm::Value* struct_type_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(vtab_obj, 0));
+                llvm::Type* vtab_obj_type = llvm_utils->get_pointee_type(vtab_obj);
+                llvm::Value* struct_type_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(vtab_obj_type, vtab_obj, 0));
                 builder->CreateStore(struct_type_hash, vtab_address_ptr);
 
                 ASR::StructType_t* class_t = ASR::down_cast<ASR::StructType_t>(
@@ -5477,7 +5491,7 @@ public:
                 llvm_value = builder->CreateBitCast(llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (!is_target_class && is_value_class) {
-                llvm::Value* val_data_ptr = llvm_utils->create_gep(llvm_value, 1);
+                llvm::Value* val_data_ptr = llvm_utils->create_gep2(llvm_value_type, llvm_value, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::type_get_past_allocatable_pointer(target_type));
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
@@ -5506,15 +5520,15 @@ public:
                 LCOMPILERS_ASSERT(target_class_t->m_derived_type == value_class_t->m_derived_type);
                 llvm::Type *value_llvm_type = llvm_utils->getStructType(
                     ASRUtils::extract_type(value_type), module.get(), true);
-                llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_value, 0));
-                llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep(llvm_value, 1));
-                builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
+                llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_value_type, llvm_value, 0));
+                llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep2(llvm_value_type, llvm_value, 1));
+                builder->CreateStore(value_vtabid, llvm_utils->create_gep2(llvm_target_type, llvm_target, 0));
                 if ( value_struct_t_name == "~abstract_type" ) {
                     // we need to cast `value_class` to `void*`
                     llvm::Type* void_ptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     value_class = builder->CreateBitCast(value_class, void_ptr_type);
                 }
-                builder->CreateStore(value_class, llvm_utils->create_gep(llvm_target, 1));
+                builder->CreateStore(value_class, llvm_utils->create_gep2(llvm_target_type, llvm_target, 1));
             } else if (ASR::is_a<ASR::Pointer_t>(*value_type) &&
                        ASR::is_a<ASR::Pointer_t>(*target_type) &&
                        ASR::is_a<ASR::FunctionCall_t>(*x.m_value)) {
@@ -5561,7 +5575,7 @@ public:
                                 // Other fields of the array descriptor should be already set.
                                 return;
                             }else if( ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ) {
-                                llvm_value = llvm_utils->create_gep(llvm_value, 0);
+                                llvm_value = llvm_utils->create_gep2(llvm_value_type, llvm_value, 0);
                             }
                             llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(target_type_, module.get());
                             llvm::Value* llvm_target_ = llvm_utils->CreateAlloca(*builder, llvm_target_type);
