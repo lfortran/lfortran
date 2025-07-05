@@ -1280,6 +1280,12 @@ public:
                         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
+                ASR::ttype_t* alloc_arg_type = x.m_args[i].m_type;
+                if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
+                    require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
+                        "Allocate::m_sym_subclass must point to a Struct_t");
+                }
+
             }
 
             if( x.m_source == nullptr ) {
