@@ -18,6 +18,18 @@ return:                                           ; preds = %.entry
 
 declare i32 @_lfortran_exec_command(i8*)
 
+define void @_lcompilers_execute_command_line_1(i8** %command) {
+.entry:
+  %_lcompilers_exit_status = alloca i32, align 4
+  %0 = load i8*, i8** %command, align 8
+  %1 = call i32 @_lfortran_exec_command(i8* %0)
+  store i32 %1, i32* %_lcompilers_exit_status, align 4
+  br label %return
+
+return:                                           ; preds = %.entry
+  ret void
+}
+
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   %call_arg_value1 = alloca i8*, align 8
@@ -26,7 +38,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @0, i32 0, i32 0), i8** %call_arg_value, align 8
   call void @_lcompilers_execute_command_line_(i8** %call_arg_value)
   store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @1, i32 0, i32 0), i8** %call_arg_value1, align 8
-  call void @_lcompilers_execute_command_line_(i8** %call_arg_value1)
+  call void @_lcompilers_execute_command_line_1(i8** %call_arg_value1)
   call void @_lpython_free_argv()
   br label %return
 
