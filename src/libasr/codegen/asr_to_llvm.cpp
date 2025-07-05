@@ -6687,8 +6687,8 @@ public:
                     } else {
                         LCOMPILERS_ASSERT(false);
                     }
-                    if (type2vtab.find(type_sym) == type2vtab.end() &&
-                        type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end()) {
+                    if ((type2vtab.find(type_sym) == type2vtab.end()) ||
+                        (type2vtab[type_sym].find(current_scope) == type2vtab[type_sym].end())) {
                         create_vtab_for_struct_type(type_sym, current_scope);
                     }
                     llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
@@ -6714,6 +6714,10 @@ public:
                     std::vector<llvm::Value*>& class_sym_vtabs = class2vtab[class_sym][current_scope];
                     std::vector<llvm::Value*> conds;
                     if (class_sym_vtabs.size() == 0) {
+                        if ((type2vtab.find(class_sym) == type2vtab.end()) ||
+                            (type2vtab[class_sym].find(current_scope) == type2vtab[class_sym].end())) {
+                            create_vtab_for_struct_type(class_sym, current_scope);
+                        }
                         class_sym_vtabs.push_back(type2vtab[class_sym][current_scope]);
                     }
                     conds.reserve(class_sym_vtabs.size());
