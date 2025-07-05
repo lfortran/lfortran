@@ -757,3 +757,9 @@ semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot a
     |
 341 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Invalid syntax of derived type for array constructor
+   --> tests/errors/continue_compilation_1.f90:343:12
+    |
+343 |     arr = [type(MyClass) :: v1, v2, v3]
+    |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
