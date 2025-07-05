@@ -1,6 +1,6 @@
 # alloc_arg
 
-An **allocation argument** used inside the `Allocate` statement.
+An **allocation argument** used inside the `Allocate` and `Realloc` statement.
 
 ## Declaration
 
