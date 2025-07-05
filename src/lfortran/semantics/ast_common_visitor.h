@@ -5631,6 +5631,15 @@ public:
             ASR::symbol_t *type_declaration;
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false, false,
                 dims, type_declaration, ASR::abiType::Source);
+            if (ASR::is_a<ASR::StructType_t>(*type)) {
+                std::string derived_type_name = ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type);
+                diag.add(Diagnostic(
+                    "Invalid syntax of derived type for array constructor",
+                    Level::Error, Stage::Semantic, {
+                        Label("help: use just the derived type name '" + derived_type_name + "', without the keyword 'type'",{x.m_vartype->base.loc})
+                    }));
+                throw SemanticAbort();
+            }
         } else {
             if (x.n_args == 0) {
                 diag.add(Diagnostic(

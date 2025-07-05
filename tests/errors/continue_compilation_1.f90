@@ -108,8 +108,8 @@ program continue_compilation_1
     logical :: mask_size(size(arr_size))
     integer, protected :: protected_attr_var
     integer, parameter, protected :: protected_parameter_var
-
-
+    type(MyClass) :: v1, v2, v3
+    type(MyClass) :: arr(3)
 
 
 
@@ -339,4 +339,6 @@ program continue_compilation_1
 
     ! assigning to a *PROTECTED* struct instance member, not allowed
     protected_module_my_class_obj%value = 42
+
+    arr = [type(MyClass) :: v1, v2, v3]
 end program
