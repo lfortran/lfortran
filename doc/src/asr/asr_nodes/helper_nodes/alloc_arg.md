@@ -50,15 +50,24 @@ ASR (portion corresponding to `alloc_arg`):
 ```
 ((Var 2 a)
 [((IntegerConstant 1 (Integer 4) Decimal)
-(ArraySize
-    (Var 2 e)
-    (IntegerConstant 1 (Integer 4) Decimal)
-    (Integer 4)
-    ()
-))]
+(IntegerConstant 3 (Integer 4) Decimal))]
 ()
 ()
 ())
+```
+
+```fortran
+type :: base
+    integer :: x
+end type
+
+type, extends(base) :: derived
+    real :: y
+end type
+
+class(base), allocatable :: obj
+
+allocate(derived :: obj)
 ```
 
 ```
