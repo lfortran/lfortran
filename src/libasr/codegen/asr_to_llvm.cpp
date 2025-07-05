@@ -5206,6 +5206,25 @@ public:
             ptr_loads = 0;
             this->visit_expr(*fptr);
             llvm::Value* llvm_fptr = tmp;
+            ASR::ttype_t* fptr_type = ASRUtils::expr_type(fptr);
+            ASR::ttype_t* contained_type = ASRUtils::get_contained_type(fptr_type);
+
+            if (ASR::is_a<ASR::String_t>(*contained_type)) {
+                // Character descriptor: struct { i32 len, i8* ptr }
+                llvm::Type* i8_ty = llvm::IntegerType::get(context, 8);
+                llvm::Type* i8_ptr_ty = llvm::PointerType::get(i8_ty, 0);
+                llvm::Type* char_desc_type = llvm::StructType::get(
+                    llvm::Type::getInt32Ty(context), i8_ptr_ty);
+                llvm::Value* data_ptr = builder->CreateBitCast(llvm_cptr, i8_ptr_ty);
+                llvm::Value* fptr_cast = builder->CreateBitCast(llvm_fptr, char_desc_type->getPointerTo());
+                llvm::Value* gep_len = llvm_utils->create_gep2(char_desc_type, fptr_cast, 0);  // .len
+                llvm::Value* gep_data = llvm_utils->create_gep2(char_desc_type, fptr_cast, 1); // .ptr
+
+                llvm::Value* len_val = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 1); // dummy length
+                builder->CreateStore(len_val, gep_len);
+                builder->CreateStore(data_ptr, gep_data);
+                return;
+            }
             ptr_loads = ptr_loads_copy;
             llvm::Type* llvm_fptr_type = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::get_contained_type(ASRUtils::expr_type(fptr)), module.get());
