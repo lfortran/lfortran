@@ -1,6 +1,6 @@
 # alloc_arg
 
-An **allocation argument** used inside the `Allocate` and `Realloc` statement.
+An **allocation argument** used inside the `Allocate` and `ReAlloc` statement.
 
 ## Declaration
 
@@ -26,7 +26,7 @@ None.
 
 ## Description
 
-**alloc_arg** specifies one element in the `Allocate` statement. It defines what variable to allocate, with what dimensions, type, subclass, and optional length parameters. It is used only as part of the `Allocate` and `Realloc` node.
+**alloc_arg** specifies one element in the `Allocate` statement. It defines what variable to allocate, with what dimensions, type, subclass, and optional length parameters. It is used only as part of the `Allocate` and `ReAlloc` node.
 
 ## Types
 
@@ -48,15 +48,32 @@ end program
 ASR (portion corresponding to `alloc_arg`):
 
 ```
-(alloc_arg
-    (2 a
-    [((IntegerConstant 1 (Integer 4 []))
-      (IntegerConstant 3 (Integer 4 [])))])
+((Var 2 a)
+[((IntegerConstant 1 (Integer 4) Decimal)
+(ArraySize
+    (Var 2 e)
+    (IntegerConstant 1 (Integer 4) Decimal)
+    (Integer 4)
     ()
-    ()
-    ()
-)
+))]
+()
+()
+())
 ```
+
+```
+((Var 2 obj)
+[]
+()
+2 derived
+(StructType
+    []
+    []
+    .true.
+    2 derived
+))
+```
+
 
 ## See Also
 
