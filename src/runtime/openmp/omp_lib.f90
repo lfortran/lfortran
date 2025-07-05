@@ -23,6 +23,30 @@ end subroutine
 subroutine GOMP_taskwait() bind(C, name="GOMP_taskwait")
 end subroutine
 
+subroutine gomp_teams(fn, data, num_teams, thread_limit) bind(c, name="GOMP_teams_reg")
+    import :: c_funptr, c_ptr, c_int
+    type(c_funptr), value :: fn
+    type(c_ptr), value :: data
+    integer(c_int), value :: num_teams
+    integer(c_int), value :: thread_limit
+end subroutine gomp_teams
+
+function omp_get_team_num() bind(c, name="omp_get_team_num")
+    import :: c_int
+    integer(c_int) :: omp_get_team_num
+end function omp_get_team_num
+
+function omp_get_num_teams() bind(c, name="omp_get_num_teams")
+    import :: c_int
+    integer(c_int) :: omp_get_num_teams
+end function omp_get_num_teams
+
+function omp_get_team_size(level) bind(c, name="omp_get_team_size")
+    import :: c_int
+    integer(c_int), value :: level
+    integer(c_int) :: omp_get_team_size
+end function omp_get_team_size
+
 integer(c_int) function GOMP_sections_start(count) bind(C, name="GOMP_sections_start")
     import :: c_int
     integer(c_int), value :: count
@@ -58,6 +82,11 @@ subroutine omp_set_num_threads(n) bind(c, name="omp_set_num_threads")
 import :: c_int
 integer(c_int), value :: n
 end subroutine omp_set_num_threads
+
+function omp_get_num_threads() bind(c, name="omp_get_num_threads")
+import :: c_int
+integer(c_int) :: omp_get_num_threads
+end function omp_get_num_threads
 
 subroutine GOMP_atomic_start() bind(C, name="GOMP_atomic_start")
 end subroutine

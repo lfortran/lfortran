@@ -250,7 +250,7 @@ arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
 
-omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Barrier | Single | Master | Task | Taskwait | Simd | Teams | Target | TargetData
+omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | Target | TargetData
 omp_clause
   = OMPPrivate(expr* vars)
   | OMPShared(expr* vars)
@@ -262,6 +262,9 @@ omp_clause
   | OMPNumThreads(expr num_threads)
   | OMPSchedule(schedule_type kind, expr? chunk_size)
   | OMPNowait()
+  | OMPNumTeams(expr num_teams)
+  | OMPThreadLimit(expr thread_limit)
+
 schedule_type
   = Static | Dynamic | Guided | Auto | Runtime
 

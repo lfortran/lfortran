@@ -145,6 +145,10 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
             target_compile_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
             target_link_options(${name} PUBLIC --openmp --openmp-lib-dir=$ENV{CONDA_PREFIX}/lib ${extra_args})
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
+            set_tests_properties(${name} PROPERTIES
+                ENVIRONMENT
+                    "KMP_TEAMS_THREAD_LIMIT=32"
+            )
         elseif (LFORTRAN_BACKEND STREQUAL "gfortranModfileCompilation")
             execute_process(COMMAND gfortran ${CMAKE_CURRENT_SOURCE_DIR}/${file_name}.f90 -c)
             add_test(${name} ${CURRENT_BINARY_DIR}/${name})
@@ -2359,6 +2363,11 @@ RUN(NAME openmp_54 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_55 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_56 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_57 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_58 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_59 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_60 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_61 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_62 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
