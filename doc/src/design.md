@@ -85,39 +85,18 @@ We support two compilation modes:
 
 1. Default mode: The mode in which LFortran runs by default. In this mode, LFortran
 produces empty object files (`.o` files) with `-c` flag, and everything is linked
-at the end via `.mod` files.
+at the end via `.mod` files
 
-2. Separate compilation mode: This mode is enabled with `--generate-object-code` flag.
+Specifically for files with global procedure, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` ( not exposed to user ), which then generates
+object code only for global procedures, and rest of the modules are serialized to `.mod` files which does not contain global procedure.
+
+2. Separate compilation mode: This mode is enabled with `--separate-compilation` flag.
 In this mode, LFortran produces object files (`.o` files) with full symbol information. This
-is default mode in other Fortran compilers such as GFortran. In this mode, LFortran
-also produces `.mod` files, which contain the ASR information for the module. User is responsbile
-to link the object files together at the end, either manually or using a build system such as CMake.
+is default mode in other Fortran compilers such as GFortran.
 
-### Problems with Default Mode
+In this mode, we create object code, and we still create `.mod` files for modules and they contain everything just like for direct mode --- but when any `.mod` file is loaded, we change all symbols to `ExternalUndefined` ABI. We don't change the ABI for `bind(c)` (since those are undefined already in object code, the user is responsible to provide an implementation at link time).
 
-The major problem lies in handling global routines (functions and subroutines) in the default mode.
-In the default mode, LFortran does not generate object files with full symbol information, which
-means that global routines cannot be compiled and linked separately. Also, the `.mod` files generated in this mode
-do not contain any information about global routines.
-
-Also, before separate compilation, if we used `--generate-object-code` flag, LFortran produced symbols for
-global routines in both remote and main file, which caused duplication of symbols while linking.
-
-### Separate compilation Details
-
-To cater to the above problems, we introduced a separate compilation mode in LFortran. In particular,
-on spotting global routines in ASR, we set `--separate-compilation` as true. Once either of the flags are set,
-LFortran will generate object files (`.o` files) with full symbol information. In the main file, it will mark all the
-global routines as `external` by defining `abi` as `ExternalUndefined` in the ASR. With this `abi`, backend will not
-generate any code for the global routines, but will generate the symbol information in the object file.
-
-Note: **_If you enabled separate compilation mode, you've to enable it for all the files in the compilation unit._**
-
-### Why two different flags?
-
-- `--separate-compilation`: Generates object code *only* for global procedures ( subroutines / functions ) *if present* in ASR by marking modules as external. We have a utility that identifies global procedures and hence this option is not exposed to user. It gets set to true if there are any global procedures in ASR. This is the default behaviour. It is overridden by `--generate-object-code` option.
-
-- `--generate-object-code`: This flag generates object code irrespective of whether there are global procedures (subroutines / functions) in the ASR or not. It is used to generate object files for all the procedures in the ASR.
+Note: **_If you enabled separate compilation mode, you've to enable it for all the files._**
 
 ## Notes:
 
