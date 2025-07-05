@@ -10552,7 +10552,9 @@ public:
 
     void visit_DefTOp(ASR::expr_t* first_operand, ASR::expr_t* second_operand, const std::string op, const Location loc) {
         bool is_binary = (second_operand != nullptr);
-        ASR::symbol_t* op_sym = current_scope->resolve_symbol(op);
+        std::cout << op << std::endl;
+        ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(op));
+        std::cout << (op_sym == nullptr) << std::endl;
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         ASR::Struct_t *first_struct = nullptr;
@@ -10582,7 +10584,9 @@ public:
             throw SemanticAbort();
         }
 
-        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(op_sym);
+        ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(operator_sym);
+        ASR::ttype_t* left_type = ASRUtils::expr_type(first_operand);
+        ASR::ttype_t* right_type = ASRUtils::expr_type(second_operand);
         bool matched = false;
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
             ASR::symbol_t* proc;
@@ -10595,8 +10599,9 @@ public:
 
             if (proc->type != ASR::symbolType::Function) {
                 diag.add(Diagnostic("Only functions are allowed in defined binary operators",
-                                    Level::Error, Stage::Semantic,
-                                    { Label("", { proc->base.loc }) }));
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { loc }) }));
                 throw SemanticAbort();
             }
 
@@ -10613,32 +10618,29 @@ public:
                 Vec<ASR::call_arg_t> a_args;
                 a_args.reserve(al, 2);
 
-                ASR::call_arg_t left_call_arg, right_call_arg;
-                left_call_arg.loc = left->base.loc;
-                left_call_arg.m_value = left;
-                a_args.push_back(al, left_call_arg);
-
-                right_call_arg.loc = right->base.loc;
-                right_call_arg.m_value = right;
-                a_args.push_back(al, right_call_arg);
+                a_args.push_back(al, { first_operand->base.loc, first_operand });
+                a_args.push_back(al, { second_operand->base.loc, second_operand });
 
                 std::string func_name = to_lower(func->m_name);
                 std::string matched_func_name;
                 if (current_scope->resolve_symbol(func_name)) {
+                    std::cout << "Resolved" << func_name << std::endl;
                     matched_func_name = func_name;
                 } else {
-                    matched_func_name = func_name + "@" + std::string(x.m_op);
+                    std::cout << "Not Resolved" << std::endl;
+                    matched_func_name = func_name + "@" + std::string(op);
                 }
 
                 ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
-                if (a_name == nullptr) {
+                if (!a_name) {
                     diag.add(Diagnostic("Unable to resolve matched function: `" + matched_func_name
                                             + "` for defined binary operation",
                                         Level::Error,
                                         Stage::Semantic,
-                                        { Label("", { x.base.base.loc }) }));
+                                        { Label("", { loc }) }));
                     throw SemanticAbort();
                 }
+                std::cout << a_name->type << std::endl;
 
                 ASR::ttype_t* return_type = nullptr;
                 ASR::expr_t* first_array_arg
@@ -10655,11 +10657,10 @@ public:
                     return_type = ASRUtils::expr_type(func->m_return_var);
                 }
 
-                if (sym != nullptr
-                    && ASRUtils::symbol_parent_symtab(sym)->get_counter()
+                if (op_sym && ASRUtils::symbol_parent_symtab(op_sym)->get_counter()
                            != current_scope->get_counter()) {
                     ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
-                                                   sym,
+                                                   op_sym,
                                                    current_function_dependencies,
                                                    s2c(al, matched_func_name));
                 }
@@ -10667,8 +10668,7 @@ public:
                 ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
                 ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
 
-                tmp = ASRUtils::make_FunctionCall_t_util(
-                    al, x.base.base.loc, a_name, sym, a_args.p, 2, return_type, nullptr, nullptr);
+                tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, 2, return_type, nullptr, nullptr);
                 matched = true;
                 break;
             }
@@ -10679,27 +10679,9 @@ public:
                 "No matching procedure found in `.def_op.` with compatible argument types",
                 Level::Error,
                 Stage::Semantic,
-                { Label("", { x.base.base.loc }) }));
+                { Label("", { loc }) }));
             throw SemanticAbort();
         }
-    }
-
-    void visit_DefUnaryOp(const AST::DefUnaryOp_t &x) {
-        this->visit_expr(*x.m_operand);
-        ASR::expr_t* operand = ASRUtils::EXPR(tmp);
-
-        const std::string op = std::string(x.m_op);
-        visit_DefTOp(operand, nullptr, op, x.base.base.loc);
-    }
-
-    void visit_DefBinOp(const AST::DefBinOp_t &x) {
-        this->visit_expr(*x.m_left);
-        ASR::expr_t *left = ASRUtils::EXPR(tmp);
-        this->visit_expr(*x.m_right);
-        ASR::expr_t *right = ASRUtils::EXPR(tmp);
-
-        std::string op = std::string(x.m_op);
-        visit_DefTOp(left, right, op, x.base.base.loc);
     }
 
     void visit_DefUnaryOp(const AST::DefUnaryOp_t &x) {

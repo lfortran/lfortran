@@ -2763,6 +2763,7 @@ public:
                 !in_submodule ) {
                 continue;
             }
+            std::cout << item.second->type << " " << item.first << std::endl;
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
@@ -2804,7 +2805,8 @@ public:
                     m->m_name, nullptr, 0, gp->m_name,
                     dflt_access
                     );
-                std::string sym = to_lower(gp->m_name);
+                std::string sym = gp->m_name;
+                std::cout << gp->m_name << " " << sym << std::endl;
                 current_scope->add_symbol(sym, ASR::down_cast<ASR::symbol_t>(ep));
             } else if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t *mvar = ASR::down_cast<ASR::Variable_t>(item.second);
@@ -2824,6 +2826,7 @@ public:
             } else if (ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
                 // We have to "repack" the ExternalSymbol so that it lives in the
                 // local symbol table
+                std::cout << "Repacking ExternalSymbol: " << item.first << std::endl;
                 ASR::ExternalSymbol_t *es0 = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
                 ASR::asr_t *es = ASR::make_ExternalSymbol_t(
                     al, es0->base.base.loc,
@@ -3223,6 +3226,7 @@ public:
     }
 
     void visit_Use(const AST::Use_t &x) {
+        std::cout << "Im called" << std::endl;
         std::string msym = to_lower(x.m_module);
         if (msym == "ieee_arithmetic") {
             msym = "lfortran_intrinsic_" + msym;
@@ -3255,7 +3259,9 @@ public:
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
         if (x.n_symbols == 0) {
+            std::cout << "Importing all symbols from module '" << msym << "'\n";
             std::string unsupported_sym_name = import_all(m);
+            std::cout << unsupported_sym_name << "\n";
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
             }
