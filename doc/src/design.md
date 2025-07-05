@@ -79,24 +79,23 @@ The ASR is designed to have the following features:
   construction, the ASR classes always contain valid Fortran code and the rest
   of LFortran can depend on it.
 
-## Modes:
+## Compilation Modes
 
 We support two compilation modes:
 
 1. Default mode: The standard compilation mode. 
-In this mode, LFortran produces empty object files (`.o` files) with `-c` flag, and everything is linked
-at the end via `.mod` files.
+In this mode, LFortran produces empty object files (`.o` files) with `-c` flag (the only reason to produce those is to satisfy existing build systems that typically expect `.o` files to be created). The object code is generated only when main program is encountered: all modules are loaded from `.mod` files and everything compiled and linked at once. When a module is compiled, only a `.mod` file is generated with full code.
 
 For files with global procedures, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` (not exposed to user), which then generates
-object code only for global procedures, and rest of the modules are serialized to `.mod` files which do not contain global procedure.
+object code only for global procedures (you must thus link these generated `.o` object files with the main program), and rest of the modules are serialized to `.mod` files which do not contain global procedure.
 
 2. Separate compilation mode: This mode is enabled with `--separate-compilation` flag.
-In this mode, LFortran produces object files (`.o` files) with full symbol information. This
-is default mode in other Fortran compilers such as GFortran.
+In this mode, LFortran generates full code for each file into object files (`.o` files) with full symbol information. This
+is usually the default mode used by most other Fortran compilers.
 
 We create object code, and we still create `.mod` files for modules and they contain everything just like for direct mode but when any `.mod` file is loaded, we change all symbols to `ExternalUndefined` ABI. We don't change the ABI for `bind(c)` (since those are undefined already in object code, the user is responsible to provide an implementation at link time).
 
-Note: **_If you enable separate compilation mode, you've to enable it for all the files._**
+Note: **_If you enable separate compilation mode, you have to enable it for all the files._**
 
 ## Notes:
 
