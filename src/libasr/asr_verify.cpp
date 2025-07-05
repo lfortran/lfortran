@@ -1283,7 +1283,7 @@ public:
                 ASR::ttype_t* alloc_arg_type = x.m_args[i].m_type;
                 if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
                     require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
-                        "Allocate::m_sym_subclass must point to a Struct_t");
+                        "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
                 }
 
             }
