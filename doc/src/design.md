@@ -87,7 +87,7 @@ We support two compilation modes:
 In this mode, LFortran produces empty object files (`.o` files) with `-c` flag, and everything is linked
 at the end via `.mod` files.
 
-Specifically for files with global procedure, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` (not exposed to user), which then generates
+For files with global procedures, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` (not exposed to user), which then generates
 object code only for global procedures, and rest of the modules are serialized to `.mod` files which do not contain global procedure.
 
 2. Separate compilation mode: This mode is enabled with `--separate-compilation` flag.
