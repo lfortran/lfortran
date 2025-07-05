@@ -10629,7 +10629,7 @@ public:
             if (current_scope->resolve_symbol(func_name)) {
                 matched_func_name = func_name;
             } else {
-                matched_func_name = func_name + "@" + std::string(op);
+                matched_func_name = func_name + "@" + std::string(to_lower(op));
             }
 
             ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);

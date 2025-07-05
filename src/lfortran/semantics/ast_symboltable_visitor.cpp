@@ -3414,6 +3414,7 @@ public:
                     AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename) {
                     local_sym = to_lower(AST::down_cast<AST::UseSymbol_t>(x.m_symbols[i])->m_local_rename);
                 } else {
+                    remote_sym = to_lower(remote_sym);
                     local_sym = remote_sym;
                 }
                 import_symbols_util(m, msym, remote_sym, local_sym,
