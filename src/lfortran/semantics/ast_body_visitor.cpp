@@ -1501,6 +1501,7 @@ public:
             ASR::alloc_arg_t new_arg;
             new_arg.m_len_expr = nullptr;
             new_arg.m_type = nullptr;
+            new_arg.m_sym = nullptr;
             ASR::expr_t* tmp_stmt = nullptr;
             new_arg.loc = x.base.base.loc;
             if( x.m_args[i].m_end && !x.m_args[i].m_start && !x.m_args[i].m_step ) {
@@ -1643,6 +1644,7 @@ public:
                                 new_arg.m_a = alloc_args_vec[i].m_a;
                                 new_arg.m_len_expr = nullptr;
                                 new_arg.m_type = nullptr;
+                                new_arg.m_sym = nullptr;
                                 new_arg.m_dims = mold_array_type->m_dims;
                                 new_arg.n_dims = mold_array_type->n_dims;
                                 new_alloc_args_vec.push_back(al, new_arg);
@@ -1664,6 +1666,7 @@ public:
                                 new_arg.m_a = alloc_args_vec[i].m_a;
                                 new_arg.m_len_expr = nullptr;
                                 new_arg.m_type = nullptr;
+                                new_arg.m_sym = nullptr;
                                 new_arg.m_dims = mold_dims_vec.p;
                                 new_arg.n_dims = mold_dims_vec.size();
                                 new_alloc_args_vec.push_back(al, new_arg);

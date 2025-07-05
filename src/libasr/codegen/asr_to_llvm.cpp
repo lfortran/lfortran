@@ -6370,6 +6370,7 @@ public:
                     alloc_arg.m_a = target_expr;
                     alloc_arg.m_dims = nullptr;
                     alloc_arg.n_dims = 0;
+                    alloc_arg.m_sym = nullptr;
                     // if the assignment target is a class type variable and the value is not a struct type,
                     // then set the ttype of the alloc_arg to the class type
                     if (ASRUtils::is_class_type(asr_type) &&
