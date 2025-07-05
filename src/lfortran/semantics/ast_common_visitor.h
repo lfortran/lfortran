@@ -10552,9 +10552,7 @@ public:
 
     void visit_DefTOp(ASR::expr_t* first_operand, ASR::expr_t* second_operand, const std::string op, const Location loc) {
         bool is_binary = (second_operand != nullptr);
-        std::cout << op << std::endl;
         ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(op));
-        std::cout << (op_sym == nullptr) << std::endl;
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         ASR::Struct_t *first_struct = nullptr;
@@ -10586,7 +10584,9 @@ public:
 
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(operator_sym);
         ASR::ttype_t* left_type = ASRUtils::expr_type(first_operand);
-        ASR::ttype_t* right_type = ASRUtils::expr_type(second_operand);
+        ASR::ttype_t* right_type = nullptr;
+        if (is_binary)
+            right_type = ASRUtils::expr_type(second_operand);
         bool matched = false;
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
             ASR::symbol_t* proc;
@@ -10606,72 +10606,73 @@ public:
             }
 
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
-            if (func->n_args != 2) {
+            if ((is_binary && func->n_args != 2) || (!is_binary && func->n_args != 1))
                 continue;
+            bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type);
+            if (is_binary) {
+                args_match = args_match
+                             && ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[1]),
+                                                           right_type);
             }
+            if (!args_match)
+                continue;
 
-            ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
-            ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
+            Vec<ASR::call_arg_t> a_args;
+            a_args.reserve(al, is_binary ? 2 : 1);
 
-            if (ASRUtils::check_equal_type(left_arg_type, left_type)
-                && ASRUtils::check_equal_type(right_arg_type, right_type)) {
-                Vec<ASR::call_arg_t> a_args;
-                a_args.reserve(al, 2);
-
-                a_args.push_back(al, { first_operand->base.loc, first_operand });
+            a_args.push_back(al, { first_operand->base.loc, first_operand });
+            if (is_binary)
                 a_args.push_back(al, { second_operand->base.loc, second_operand });
 
-                std::string func_name = to_lower(func->m_name);
-                std::string matched_func_name;
-                if (current_scope->resolve_symbol(func_name)) {
-                    std::cout << "Resolved" << func_name << std::endl;
-                    matched_func_name = func_name;
-                } else {
-                    std::cout << "Not Resolved" << std::endl;
-                    matched_func_name = func_name + "@" + std::string(op);
-                }
-
-                ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
-                if (!a_name) {
-                    diag.add(Diagnostic("Unable to resolve matched function: `" + matched_func_name
-                                            + "` for defined binary operation",
-                                        Level::Error,
-                                        Stage::Semantic,
-                                        { Label("", { loc }) }));
-                    throw SemanticAbort();
-                }
-                std::cout << a_name->type << std::endl;
-
-                ASR::ttype_t* return_type = nullptr;
-                ASR::expr_t* first_array_arg
-                    = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
-                if (first_array_arg) {
-                    ASR::dimension_t* array_dims;
-                    size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
-                        ASRUtils::expr_type(first_array_arg), array_dims);
-                    Vec<ASR::dimension_t> new_dims;
-                    new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
-                    return_type = ASRUtils::duplicate_type(
-                        al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
-                } else {
-                    return_type = ASRUtils::expr_type(func->m_return_var);
-                }
-
-                if (op_sym && ASRUtils::symbol_parent_symtab(op_sym)->get_counter()
-                           != current_scope->get_counter()) {
-                    ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
-                                                   op_sym,
-                                                   current_function_dependencies,
-                                                   s2c(al, matched_func_name));
-                }
-
-                ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-                ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
-
-                tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, 2, return_type, nullptr, nullptr);
-                matched = true;
-                break;
+            std::string func_name = to_lower(func->m_name);
+            std::string matched_func_name;
+            if (current_scope->resolve_symbol(func_name)) {
+                matched_func_name = func_name;
+            } else {
+                matched_func_name = func_name + "@" + std::string(op);
             }
+
+            ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
+            if (!a_name) {
+                diag.add(Diagnostic("Unable to resolve matched function: `" + matched_func_name
+                                        + "` for defined binary operation",
+                                    Level::Error,
+                                    Stage::Semantic,
+                                    { Label("", { loc }) }));
+                throw SemanticAbort();
+            }
+
+            ASR::ttype_t* return_type = nullptr;
+            ASR::expr_t* first_array_arg
+                = ASRUtils::find_first_array_arg_if_elemental(func, a_args);
+            if (first_array_arg) {
+                ASR::dimension_t* array_dims;
+                size_t array_n_dims = ASRUtils::extract_dimensions_from_ttype(
+                    ASRUtils::expr_type(first_array_arg), array_dims);
+                Vec<ASR::dimension_t> new_dims;
+                new_dims.from_pointer_n_copy(al, array_dims, array_n_dims);
+                return_type = ASRUtils::duplicate_type(
+                    al, ASRUtils::get_FunctionType(func)->m_return_var_type, &new_dims);
+            } else {
+                ASR::ttype_t* type = ASRUtils::expr_type(func->m_return_var);
+                return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
+                return_type = ASRUtils::fix_scoped_type(al, type, current_scope);
+            }
+
+            if (op_sym && ASRUtils::symbol_parent_symtab(op_sym)->get_counter()
+                        != current_scope->get_counter()) {
+                ADD_ASR_DEPENDENCIES_WITH_NAME(current_scope,
+                                                op_sym,
+                                                current_function_dependencies,
+                                                s2c(al, matched_func_name));
+            }
+
+            ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
+            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+
+            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr);
+            matched = true;
+            break;
         }
 
         if (!matched) {
