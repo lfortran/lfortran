@@ -516,6 +516,22 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(expr);
+            ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(sim->m_m);
+            if (ASR::is_a<ASR::Function_t>(*sym)) {
+                return ASR::down_cast<ASR::Function_t>(sym);
+            } else if ( ASR::is_a<ASR::Variable_t>(*sym) ) {
+                // case: procedure variables
+                ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(sym);
+                ASR::symbol_t* type_decl = ASRUtils::symbol_get_past_external(var_sym->m_type_declaration);
+                if (type_decl != nullptr && 
+                    ASR::is_a<ASR::Function_t>(*type_decl)) {
+                    return ASR::down_cast<ASR::Function_t>(type_decl);
+                } else {
+                    throw LCompilersException("`ASR::Var_t` symbol is a `ASR::Variable_t` without type declared");
+                }
+            } else {
+                throw LCompilersException("`ASR::Var_t` symbol is not `ASR::Function_t`, rather: " + std::to_string(sym->type));
+            }
             return get_function_from_expr(sim->m_v);
         }
         case ASR::exprType::ArrayItem: {
