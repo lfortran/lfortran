@@ -26,7 +26,7 @@ None.
 
 ## Description
 
-**alloc_arg** specifies one element in the `Allocate` statement. It defines what variable to allocate, with what dimensions, type, subclass, and optional length parameters. It is used only as part of the `Allocate` node.
+**alloc_arg** specifies one element in the `Allocate` statement. It defines what variable to allocate, with what dimensions, type, subclass, and optional length parameters. It is used only as part of the `Allocate` and `Realloc` node.
 
 ## Types
 
