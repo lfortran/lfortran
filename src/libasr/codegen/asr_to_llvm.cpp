@@ -3474,10 +3474,11 @@ public:
 
     void visit_PointerNullConstant(const ASR::PointerNullConstant_t& x){
         llvm::Type* value_type;
+
         value_type = ASRUtils::is_array(x.m_type)?
-            llvm_utils->get_type_from_ttype_t_util(const_cast<ASR::expr_t*>(&x.base),
+            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr,
                 ASRUtils::extract_type(x.m_type), module.get())->getPointerTo():
-            llvm_utils->get_type_from_ttype_t_util(const_cast<ASR::expr_t*>(&x.base), x.m_type, module.get());
+            llvm_utils->get_type_from_ttype_t_util(x.m_var_expr, x.m_type, module.get());
         tmp = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(value_type));
     }
 

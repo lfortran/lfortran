@@ -1398,6 +1398,7 @@ public:
         ASR::expr_t* target = ASRUtils::EXPR(tmp);
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         current_variable_type_ = target_type;
+        current_struct_type_var_expr = target;
         this->visit_expr(*(x.m_value));
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         if(ASRUtils::is_descriptorString(ASRUtils::expr_type(value))){

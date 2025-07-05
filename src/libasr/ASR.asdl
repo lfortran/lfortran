@@ -191,7 +191,7 @@ expr
     | Ichar(expr arg, ttype type, expr? value)
     | Iachar(expr arg, ttype type, expr? value)
     | SizeOfType(ttype arg, ttype type, expr? value)
-    | PointerNullConstant(ttype type)
+    | PointerNullConstant(ttype type, expr? var_expr)
     | PointerAssociated(expr ptr, expr? tgt, ttype type, expr? value)
     | RealSqrt(expr arg, ttype type, expr? value)
     | ArrayIsContiguous(expr array, ttype type, expr? value)

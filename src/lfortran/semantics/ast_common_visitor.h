@@ -1480,6 +1480,8 @@ public:
     Vec<char*> data_member_names;
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
+    ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
+    ASR::expr_t* current_pointer_null_constant_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
 
     int32_t enum_init_val;
     bool default_storage_save = false;
@@ -1640,7 +1642,7 @@ public:
                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(v)->m_module_name;
                 if (startswith(m_name, "lfortran_intrinsic")) {
                     ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-                    tmp = ASR::make_PointerNullConstant_t(al, loc, type_);
+                    tmp = ASR::make_PointerNullConstant_t(al, loc, type_, nullptr);
                     return tmp;
                 }
             }
@@ -2961,6 +2963,9 @@ public:
 
     void visit_DeclarationUtil(const AST::Declaration_t &x) {
         _declaring_variable = true;
+        current_variable_type_ = nullptr;
+        current_struct_type_var_expr = nullptr;
+
         if (x.m_vartype == nullptr &&
                 x.n_attributes == 1 &&
                 AST::is_a<AST::AttrNamelist_t>(*x.m_attributes[0])) {
@@ -3875,6 +3880,15 @@ public:
                     }
                 }
 
+                if (variable_added_to_symtab) {
+                    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type)) 
+                        || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(variable_added_to_symtab->m_type))) {
+                        current_struct_type_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al,
+                                                            variable_added_to_symtab->base.base.loc,
+                                                            &variable_added_to_symtab->base));
+                    }
+                }
+
                 if (s.m_initializer != nullptr &&
                     sym_type->m_type == AST::decl_typeType::TypeType) {
                     if (AST::is_a<AST::FuncCallOrArray_t>(*s.m_initializer)) {
@@ -3924,7 +3938,7 @@ public:
                                 std::string m_name = ASR::down_cast<ASR::ExternalSymbol_t>(sym_found)->m_module_name;
                                 if (startswith(m_name, "lfortran_intrinsic")) {
                                     init_expr = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al,
-                                                    x.base.base.loc, current_variable_type_));
+                                                    x.base.base.loc, current_variable_type_, current_struct_type_var_expr));
                                 }
                             } else {
                                 diag.add(Diagnostic(
@@ -4958,10 +4972,9 @@ public:
                 current_scope = parent_scope;
             }
             // this is class variable declaration
-            type_declaration = v;
-            type = ASRUtils::make_StructType_t_util(al, loc, v, false);
             // set the variable's type declaration to the derived type
             type_declaration = v;
+            type = ASRUtils::make_StructType_t_util(al, loc, v, false);
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
@@ -8197,7 +8210,7 @@ public:
             LCOMPILERS_ASSERT(current_variable_type_ != nullptr);
             null_ptr_type_ = current_variable_type_;
         }
-        return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_);
+        return ASR::make_PointerNullConstant_t(al, x.base.base.loc, null_ptr_type_, current_struct_type_var_expr);
     }
 
     ASR::asr_t* create_Associated(const AST::FuncCallOrArray_t& x) {

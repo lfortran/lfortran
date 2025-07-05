@@ -2937,7 +2937,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> task_call_args; 
             task_call_args.reserve(al, 8);
             ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_));
+            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_, nullptr));
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = c_funloc;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = task_ptr_expr;
             ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = tmp_1;
