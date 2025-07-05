@@ -1542,7 +1542,7 @@ public:
                     if (v) {
                         ASR::ttype_t* struct_t = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, v));
                         new_arg.m_type = struct_t;
-                        // new_arg.m_sym = v;
+                        new_arg.m_sym = v;
                     } else {
                         diag.add(Diagnostic(
                             "`The type-spec: " + std::string(name_t->m_id)
