@@ -11292,7 +11292,10 @@ public:
         llvm::Type* llvm_dt_type = nullptr;
         llvm_dt_type = llvm_utils->get_type_from_ttype_t_util(
             ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)), module.get());
+<<<<<<< HEAD
         llvm_dt = builder->CreateBitCast(llvm_dt, llvm_dt_type->getPointerTo());
+=======
+>>>>>>> 75b7333ec (chore: gep to gep2 in visit_RuntimePolymorphicSubroutineCall and visit_RuntimePolymorphicFunctionCall)
         for( size_t i = 0; i < vtabs.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
 
