@@ -100,7 +100,7 @@ struct CompilerOptions {
         Generates object code for modules as well as global procedures ( subroutines / functions )
         avialable in ASR. This needs to be explicity set to true.
     */
-    bool generate_object_code = false;
+    bool separate_compilation = false;
     /*
         Generates object code *only* for global procedures ( subroutines / functions ) *if present* in ASR
         by marking modules as external. We have a utility that identifies global procedures and hence this
@@ -109,7 +109,7 @@ struct CompilerOptions {
 
         It is overridden by `generate_object_code` option.
     */
-    bool separate_compilation = false;
+    bool generate_code_for_global_procedures = false;
     bool no_warnings = false;
     bool disable_style = false;
     bool logical_casting = false;

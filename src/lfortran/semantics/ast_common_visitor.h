@@ -9878,7 +9878,7 @@ public:
         if ( parent_scope->parent != nullptr ) {
             return;
         }
-        compiler_options.separate_compilation = true;
+        compiler_options.generate_code_for_global_procedures = true;
         compiler_options.po.intrinsic_symbols_mangling = true;
         return;
     }
@@ -9905,7 +9905,7 @@ public:
                 [&](const std::string &msg, const Location &loc) {
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
-                    }, lm, compiler_options.generate_object_code
+                    }, lm, compiler_options.separate_compilation
                 );
 
         ASR::symbol_t *t = m->m_symtab->resolve_symbol(remote_sym);

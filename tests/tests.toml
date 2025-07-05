@@ -4702,7 +4702,7 @@ llvm = true
 [[test]]
 filename = "codegen_function_polymorphic.f90"
 llvm = true
-options = "-c --generate-object-code"
+options = "-c --separate-compilation"
 
 [[test]]
 filename = "../integration_tests/operator_overloading_12.f90"

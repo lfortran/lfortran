@@ -3062,7 +3062,7 @@ public:
     }
 
     void set_global_variable_linkage_as_common(llvm::Value* ptr, ASR::abiType x_abi) {
-        if ( compiler_options.generate_object_code ) {
+        if ( compiler_options.separate_compilation ) {
             /*
                 In case of global variables without initialization, clang
                 generates a common symbol. For the following C code:
@@ -3096,7 +3096,7 @@ public:
 
                 Hence, we set the linkage to CommonLinkage for
                 global variables without initialization in case
-                `compiler_options.generate_object_code` is set to true.
+                `compiler_options.separate_compilation` is set to true.
             */
             llvm::GlobalVariable *gv = llvm::cast<llvm::GlobalVariable>(
                 ptr

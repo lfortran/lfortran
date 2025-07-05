@@ -1118,7 +1118,7 @@ int compile_src_to_object_file(const std::string &infile,
         lm.files.push_back(fl);
         lm.file_ends.push_back(input.size());
     }
-    if (compiler_options.separate_compilation) {
+    if (compiler_options.generate_code_for_global_procedures) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
     }
@@ -1126,7 +1126,7 @@ int compile_src_to_object_file(const std::string &infile,
     t1 = std::chrono::high_resolution_clock::now();
     LCompilers::Result<LCompilers::ASR::TranslationUnit_t*>
         result = fe.get_asr2(input, lm, diagnostics);
-    lcompilers_unique_ID = compiler_options.generate_object_code ? get_unique_ID() : "";
+    lcompilers_unique_ID = compiler_options.separate_compilation ? get_unique_ID() : "";
 
     time_src_to_asr = std::chrono::duration_cast<std::chrono::microseconds>(t2 - t1).count();
     bool has_error_w_cc = compiler_options.continue_compilation && diagnostics.has_error();
@@ -1150,7 +1150,7 @@ int compile_src_to_object_file(const std::string &infile,
     // ASR -> LLVM
     LCompilers::LLVMEvaluator e(compiler_options.target);
 
-    if (!(compiler_options.generate_object_code || compiler_options.separate_compilation)
+    if (!(compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures)
         && !LCompilers::ASRUtils::main_program_present(*asr)
         && !LCompilers::ASRUtils::global_function_present(*asr)) {
         // Create an empty object file (things will be actually
@@ -1159,9 +1159,9 @@ int compile_src_to_object_file(const std::string &infile,
         return 0;
     }
 
-    // if compiler_options.separate_compilation is true, then mark all modules as external
+    // if compiler_options.generate_code_for_global_procedures is true, then mark all modules as external
     // so that they are not compiled again
-    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.separate_compilation && !compiler_options.generate_object_code) {
+    if (!LCompilers::ASRUtils::main_program_present(*asr) && arg_c && compiler_options.generate_code_for_global_procedures && !compiler_options.separate_compilation) {
         LCompilers::ASRUtils::mark_modules_as_external(*asr);
     }
 
@@ -2340,8 +2340,8 @@ int main_app(int argc, char *argv[]) {
         }
     }
 
-    lcompilers_unique_ID = ( parser.opts.compiler_options.generate_object_code || compiler_options.separate_compilation ) ? get_unique_ID() : "";
-    if (parser.opts.compiler_options.generate_object_code) {
+    lcompilers_unique_ID = ( parser.opts.compiler_options.separate_compilation || compiler_options.generate_code_for_global_procedures ) ? get_unique_ID() : "";
+    if (parser.opts.compiler_options.separate_compilation) {
         compiler_options.po.intrinsic_symbols_mangling = true;
         compiler_options.po.intrinsic_module_name_mangling = true;
         compiler_options.po.skip_removal_of_unused_procedures_in_pass_array_by_data = true;
