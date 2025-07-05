@@ -358,6 +358,8 @@ namespace LCompilers {
 
             llvm::Type* getComplexType(int a_kind, bool get_pointer=false);
 
+            llvm::Type* get_pointee_type(llvm::Value* val);
+
             llvm::Type* get_el_type(ASR::ttype_t* m_type_, llvm::Module* module);
 
             llvm::Type* get_dict_type(ASR::ttype_t* asr_type, llvm::Module* module);
