@@ -4149,7 +4149,9 @@ public:
                 size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
-                builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
+                llvm::Type* llvm_type
+                    = llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get());
+                builder->CreateMemCpy(llvm_utils->create_gep2(llvm_type,target_var, 0),
                     llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
             }
         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
