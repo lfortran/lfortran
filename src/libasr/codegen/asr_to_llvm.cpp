@@ -180,6 +180,7 @@ public:
     llvm::Type* current_select_type_block_type;
     ASR::ttype_t* current_select_type_block_type_asr;
     std::string current_select_type_block_der_type;
+    std::string current_selector_var_name;
 
     SymbolTable* current_scope;
     std::unique_ptr<LLVMUtils> llvm_utils;
@@ -2933,7 +2934,8 @@ public:
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
             }
-            if( current_select_type_block_type ) {
+            if( current_select_type_block_type && ASR::is_a<ASR::Var_t>(*x.m_v) &&
+                (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name) ) {
                 tmp = builder->CreateBitCast(tmp, current_select_type_block_type->getPointerTo());
                 current_der_type_name = current_select_type_block_der_type;
             } else {
@@ -6651,6 +6653,11 @@ public:
             selector_struct = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_selector);
             selector_var_name = ASRUtils::symbol_name(selector_struct->m_m);
         }
+        if (x.m_assoc_name) {
+            current_selector_var_name = x.m_assoc_name;
+        } else {
+            current_selector_var_name = selector_var_name;
+        }
         uint64_t ptr_loads_copy = ptr_loads;
         ptr_loads = 0;
         if (selector_var) {
@@ -6805,6 +6812,7 @@ public:
             }
         }
         start_new_block(mergeBB);
+        current_selector_var_name.clear();
     }
 
     void visit_IntegerCompare(const ASR::IntegerCompare_t &x) {
@@ -11246,12 +11254,12 @@ public:
                                 break;
 
                             if (a_dt->m_parent != nullptr) {
-                                a_dt = ASR::down_cast<ASR::Struct_t>(a_dt->m_parent);
+                                a_dt = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(a_dt->m_parent));
                             } else {
                                 a_dt = nullptr;
                             }
                         }
-                        vtabs.push_back(std::make_pair(item2.second, (ASR::symbol_t *)a_dt));
+                        if (a_dt) vtabs.push_back(std::make_pair(item2.second, (ASR::symbol_t *)a_dt));
                     }
                 }
             }
