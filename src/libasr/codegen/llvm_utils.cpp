@@ -1,3 +1,4 @@
+#include "libasr/asr.h"
 #include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
@@ -180,6 +181,11 @@ namespace LCompilers {
                 llvm_mem_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
+            case ASR::ttypeType::List: {
+                llvm_mem_type = get_type_from_ttype_t_util(mem_type, module);
+                break;
+            }
+            
             default:
                 throw CodeGenError("Cannot identify the type of member, '" + member_name +
                                     "' in derived type, '" + der_type_name + "'.",
