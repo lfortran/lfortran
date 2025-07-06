@@ -400,6 +400,7 @@
                                     [(Var 5 bptr)]
                                     [(SelectType
                                         (Var 5 bptr)
+                                        ()
                                         [(TypeStmtName
                                             2 base
                                             [(BlockCall

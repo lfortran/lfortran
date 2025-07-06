@@ -415,6 +415,7 @@
                                         )
                                         [(SelectType
                                             (Var 8 tmp)
+                                            ()
                                             [(TypeStmtName
                                                 4 toml_table
                                                 [(BlockCall

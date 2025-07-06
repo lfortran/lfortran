@@ -15,7 +15,7 @@ module select_type_09_mod
 contains
 
   subroutine print_value(val, x)
-    class(base), intent(in) :: val
+    class(base), intent(inout) :: val
     class(real_val), intent(out) :: x
     select type(v => val)
     type is(int_val)

@@ -616,6 +616,7 @@
                     )
                     (SelectType
                         (Var 4 p_or_cp)
+                        an
                         [(ClassStmt
                             4 point
                             [(BlockCall
