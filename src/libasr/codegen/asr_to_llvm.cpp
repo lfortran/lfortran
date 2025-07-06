@@ -4034,7 +4034,8 @@ public:
                 llvm::Value* ptr_i = nullptr;
                 switch (phy_type) {
                     case ASR::array_physical_typeType::FixedSizeArray: {
-                        ptr_i = llvm_utils->create_gep(ptr, llvm_utils->CreateLoad(llvmi));
+                        llvm::Type* ptr_i_type = llvm_utils->get_type_from_ttype_t_util(v_m_type, module.get());
+                        ptr_i = llvm_utils->create_gep2(ptr_i_type, ptr, llvm_utils->CreateLoad(llvmi));
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
