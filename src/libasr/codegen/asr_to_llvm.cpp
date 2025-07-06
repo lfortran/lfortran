@@ -2737,7 +2737,7 @@ public:
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x_m_array_type, module.get());
                 llvm::Value *target = llvm_utils->CreateAlloca(
                     target_type, nullptr, "fixed_size_reshaped_array");
-                llvm::Value* target_ = llvm_utils->create_gep(target, 0);
+                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
