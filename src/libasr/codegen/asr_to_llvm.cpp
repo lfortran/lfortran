@@ -1403,7 +1403,11 @@ public:
                 struct_sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
                 if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
-                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                    llvm::Type* dt_type_poly = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(caller_type)),
+                        module.get());
+                    llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
