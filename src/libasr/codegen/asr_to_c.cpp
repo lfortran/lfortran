@@ -492,35 +492,34 @@ public:
                                         v.m_name, use_ref, dummy);
                 }
             } else if (ASR::is_a<ASR::UnionType_t>(*v_m_type)) {
-                /*std::string indent(indentation_level*indentation_spaces, ' ');*/
-                /*ASR::UnionType_t *t = ASR::down_cast<ASR::UnionType_t>(v_m_type);*/
-                /*std::string der_type_name = ASRUtils::symbol_name(*/
-                /*    ASRUtils::symbol_get_past_external(t->m_union_type));*/
-                /*if( is_array ) {*/
-                /*    bool is_fixed_size = true;*/
-                /*    dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);*/
-                /*    std::string encoded_type_name = "x" + der_type_name;*/
-                /*    std::string type_name = std::string("union ") + der_type_name;*/
-                /*    generate_array_decl(sub, std::string(v.m_name), type_name, dims,*/
-                /*                        encoded_type_name, m_dims, n_dims,*/
-                /*                        use_ref, dummy,*/
-                /*                        v.m_intent != ASRUtils::intent_in &&*/
-                /*                        v.m_intent != ASRUtils::intent_inout &&*/
-                /*                        v.m_intent != ASRUtils::intent_out &&*/
-                /*                        v.m_intent != ASRUtils::intent_unspecified, is_fixed_size,*/
-                /*                        false,*/
-                /*                        ASR::abiType::Source, false);*/
-                /*} else {*/
-                /*    bool is_fixed_size = true;*/
-                /*    dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);*/
-                /*    if( v.m_intent == ASRUtils::intent_in ||*/
-                /*        v.m_intent == ASRUtils::intent_inout ) {*/
-                /*        use_ref = false;*/
-                /*        dims = "";*/
-                /*    }*/
-                /*    sub = format_type_c(dims, "union " + der_type_name,*/
-                /*                        v.m_name, use_ref, dummy);*/
-                /*}*/
+                std::string indent(indentation_level*indentation_spaces, ' ');
+                ASR::UnionType_t *t = ASR::down_cast<ASR::UnionType_t>(v_m_type);
+                std::string der_type_name = t->m_name;
+                if( is_array ) {
+                    bool is_fixed_size = true;
+                    dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
+                    std::string encoded_type_name = "x" + der_type_name;
+                    std::string type_name = std::string("union ") + der_type_name;
+                    generate_array_decl(sub, std::string(v.m_name), type_name, dims,
+                                        encoded_type_name, m_dims, n_dims,
+                                        use_ref, dummy,
+                                        v.m_intent != ASRUtils::intent_in &&
+                                        v.m_intent != ASRUtils::intent_inout &&
+                                        v.m_intent != ASRUtils::intent_out &&
+                                        v.m_intent != ASRUtils::intent_unspecified, is_fixed_size,
+                                        false,
+                                        ASR::abiType::Source, false);
+                } else {
+                    bool is_fixed_size = true;
+                    dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size);
+                    if( v.m_intent == ASRUtils::intent_in ||
+                        v.m_intent == ASRUtils::intent_inout ) {
+                        use_ref = false;
+                        dims = "";
+                    }
+                    sub = format_type_c(dims, "union " + der_type_name,
+                                        v.m_name, use_ref, dummy);
+                }
             } else if (ASR::is_a<ASR::List_t>(*v_m_type)) {
                 ASR::List_t* t = ASR::down_cast<ASR::List_t>(v_m_type);
                 std::string list_type_c = c_ds_api->get_list_type(t);

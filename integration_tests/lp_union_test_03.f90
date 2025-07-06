@@ -8,7 +8,7 @@ module lp_union_test_03_mod
 end module
 
 
-program lp_union_test_02
+program lp_union_test_03
     use lp_union_test_03_mod
     implicit none 
     integer::x
