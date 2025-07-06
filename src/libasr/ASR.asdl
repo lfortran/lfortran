@@ -68,7 +68,7 @@ stmt
     | Flush(int label, expr unit, expr? err, expr? iomsg, expr? iostat)
     | ListAppend(expr a, expr ele)
     | AssociateBlockCall(symbol m)
-    | SelectType(expr selector, type_stmt* body, stmt* default)
+    | SelectType(expr selector, identifier? assoc_name, type_stmt* body, stmt* default)
     | CPtrToPointer(expr cptr, expr ptr, expr? shape, expr? lower_bounds)
     | BlockCall(int label, symbol m)
     | SetInsert(expr a, expr ele)

@@ -135,6 +135,7 @@
                                         )
                                         [(SelectType
                                             (Var 7 ptr)
+                                            ()
                                             [(TypeStmtName
                                                 4 child_value
                                                 [(BlockCall

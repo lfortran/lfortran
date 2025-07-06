@@ -2206,7 +2206,7 @@ public:
         selector_variable->m_dependencies = selector_variable_dependencies;
         selector_variable->n_dependencies = selector_variable_n_dependencies;
 
-        tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector,
+        tmp = ASR::make_SelectType_t(al, x.base.base.loc, m_selector, x.m_assoc_name,
                                      select_type_body.p, select_type_body.size(),
                                      select_type_default.p, select_type_default.size());
     }
