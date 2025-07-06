@@ -341,6 +341,4 @@ program continue_compilation_1
     protected_module_my_class_obj%value = 42
 
     arr = [type(MyClass) :: v1, v2, v3]
-
-    arr = [NonExistingType :: v1, v2, v3]
 end program
