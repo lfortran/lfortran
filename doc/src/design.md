@@ -83,7 +83,7 @@ The ASR is designed to have the following features:
 
 We support two compilation modes:
 
-1. Default mode: The standard compilation mode. 
+1. Monolithic Compilation Mode: The standard compilation mode. 
 In this mode, LFortran produces empty object files (`.o` files) with `-c` flag (the only reason to produce those is to satisfy existing build systems that typically expect `.o` files to be created). The object code is generated only when main program is encountered: all modules are loaded from `.mod` files and everything compiled and linked at once. When a module is compiled, only a `.mod` file is generated with full code. For files with global procedures, LFortran identifies those automatically and sets `generate_code_for_global_procedures` compiler option to `true` (not exposed to user), which then generates object code only for global procedures (you must thus link these generated `.o` object files with the main program), and rest of the modules are serialized to `.mod` files which do not contain global procedure.
 
 2. Separate compilation mode: This mode is enabled with `--separate-compilation` flag. In this mode, LFortran generates full code for each file into object files (`.o` files) with full symbol information. This
