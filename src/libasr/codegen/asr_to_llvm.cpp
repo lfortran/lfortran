@@ -1404,7 +1404,11 @@ public:
                 struct_sym = ASRUtils::symbol_get_past_external(
                     ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(caller_type))->m_derived_type);
                 if (ASRUtils::is_class_type(ASRUtils::extract_type(caller_type))) {
-                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), llvm_utils->create_gep(dt, 1));
+                    llvm::Type* dt_type_poly = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(caller_type)),
+                        module.get());
+                    llvm::Value* dt_ptr = llvm_utils->create_gep2(dt_type_poly, dt, 1);
+                    dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt_ptr);
                 } else if (ASR::is_a<ASR::StructInstanceMember_t>(*sm->m_v)) {
                     dt = llvm_utils->CreateLoad2(dt_type->getPointerTo(), dt);
                 }
@@ -2734,7 +2738,7 @@ public:
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(x_m_array_type, module.get());
                 llvm::Value *target = llvm_utils->CreateAlloca(
                     target_type, nullptr, "fixed_size_reshaped_array");
-                llvm::Value* target_ = llvm_utils->create_gep(target, 0);
+                llvm::Value* target_ = llvm_utils->create_gep2(target_type, target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(x_m_array_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
@@ -4032,7 +4036,8 @@ public:
                 llvm::Value* ptr_i = nullptr;
                 switch (phy_type) {
                     case ASR::array_physical_typeType::FixedSizeArray: {
-                        ptr_i = llvm_utils->create_gep(ptr, llvm_utils->CreateLoad(llvmi));
+                        llvm::Type* ptr_i_type = llvm_utils->get_type_from_ttype_t_util(v_m_type, module.get());
+                        ptr_i = llvm_utils->create_gep2(ptr_i_type, ptr, llvm_utils->CreateLoad(llvmi));
                         break;
                     }
                     case ASR::array_physical_typeType::DescriptorArray: {
@@ -4146,7 +4151,9 @@ public:
                 size_t dt_size = data_layout.getTypeAllocSize(llvm_data_type);
                 arg_size = builder->CreateMul(llvm::ConstantInt::get(
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, dt_size)), arg_size);
-                builder->CreateMemCpy(llvm_utils->create_gep(target_var, 0),
+                llvm::Type* llvm_type
+                    = llvm_utils->get_type_from_ttype_t_util(v->m_type, module.get());
+                builder->CreateMemCpy(llvm_utils->create_gep2(llvm_type,target_var, 0),
                     llvm::MaybeAlign(), init_value, llvm::MaybeAlign(), arg_size, v->m_is_volatile);
             }
         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
