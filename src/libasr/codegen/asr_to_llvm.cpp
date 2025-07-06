@@ -9232,7 +9232,12 @@ public:
                     llvm::Type::getInt32Ty(context), llvm::APInt(32, -1, true));
         } else {
             is_string = ASRUtils::is_character(*expr_type(x.m_unit));
+            int ptr_loads_copy = ptr_loads;
+            if (is_string) {
+                ptr_loads = 1;
+            }
             this->visit_expr_wrapper(x.m_unit, true);
+            ptr_loads = ptr_loads_copy;
             unit_val = tmp;
             if(ASRUtils::is_integer(*ASRUtils::expr_type(x.m_unit))){
                 // Convert the unit to 32 bit integer (We only support unit number up to 1000).
