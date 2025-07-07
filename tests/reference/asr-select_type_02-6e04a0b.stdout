@@ -446,8 +446,8 @@
                                                         (StructType
                                                             []
                                                             []
-                                                            .false.
-                                                            4 point
+                                                            .true.
+                                                            4 color_point
                                                         )
                                                     )
                                                     ()
