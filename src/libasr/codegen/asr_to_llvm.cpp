@@ -2607,8 +2607,7 @@ public:
 #endif
             }
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
-            // TODO: use compiler_options.enable_bounds_checking here
-            if (!compiler_options.po.realloc_lhs && !compiler_options.po.fast && ASRUtils::is_allocatable(x_mv_type)) {
+            if (compiler_options.enable_bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
                 llvm_utils->generate_runtime_error(
                         builder->CreateXor(arr_descr->get_is_allocated_flag(array, type), llvm::APInt(1, 1)),
                     "Runtime Error: Array '%s' is not allocated.\n",
@@ -2670,8 +2669,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    // TODO: use compiler_options.enable_bounds_checking here
-                                                    !compiler_options.po.realloc_lhs && !compiler_options.po.fast, array_name);
+                                                    compiler_options.enable_bounds_checking, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
