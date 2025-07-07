@@ -10,7 +10,8 @@ program select_type_06_m
     end type
 
     class(string_value), allocatable :: val  ! Polymorphic variable
-
+    logical :: defer(2)
+    defer = .false.
     allocate(val)
     select type(val)
     type is(string_value)
@@ -24,6 +25,8 @@ program select_type_06_m
   
     select type(val)
     class is(toml_keyval)
+        defer(1) = .true.
         if (val%key /= "example") error stop
     end select
+    if (any(defer .neqv. [.true., .false.])) error stop
 end program
