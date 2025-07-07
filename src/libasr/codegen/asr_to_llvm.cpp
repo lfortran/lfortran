@@ -12190,11 +12190,10 @@ public:
         llvm::Type* vec_type = FIXED_VECTOR_TYPE::get(ele_type, n_eles);
         llvm::AllocaInst *vec = llvm_utils->CreateAlloca(*builder, vec_type);
         for (size_t i=0; i < n_eles; i++) {
-            builder->CreateStore(value, llvm_utils->create_gep(vec, i));
+            builder->CreateStore(value, llvm_utils->create_gep2(vec_type, vec, i));
         }
-        tmp = llvm_utils->CreateLoad(vec);
+        tmp = llvm_utils->CreateLoad2(vec_type, vec);
     }
-
 };
 
 
