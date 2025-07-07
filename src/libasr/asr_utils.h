@@ -4517,6 +4517,62 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
     }
 
+    ASR::asr_t* duplicate_FunctionCall(ASR::FunctionCall_t* x) {
+        ASR::symbol_t* m_name = current_scope->get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (m_name == nullptr) {
+            m_name = x->m_name;
+        }
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = self().duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::ttype_t* m_type = self().duplicate_ttype(x->m_type);
+        ASR::expr_t* m_value = self().duplicate_expr(x->m_value);
+        ASR::expr_t* m_dt = self().duplicate_expr(x->m_dt);
+        return make_FunctionCall_t(al, x->base.base.loc, m_name, m_original_name, m_args.p, x->n_args, m_type, m_value, m_dt);
+    }
+
+    ASR::asr_t* duplicate_SubroutineCall(ASR::SubroutineCall_t* x) {
+        ASR::symbol_t* m_name = current_scope->get_symbol(ASRUtils::symbol_name(x->m_name));
+        if (m_name == nullptr) {
+            m_name = x->m_name;
+        }
+        ASR::symbol_t* m_original_name = x->m_original_name;
+        Vec<ASR::call_arg_t> m_args;
+        m_args.reserve(al, x->n_args);
+        for (size_t i = 0; i < x->n_args; i++) {
+            ASR::call_arg_t call_arg_copy;
+            call_arg_copy.loc = x->m_args[i].loc;
+            call_arg_copy.m_value = self().duplicate_expr(x->m_args[i].m_value);
+            m_args.push_back(al, call_arg_copy);
+        }
+        ASR::expr_t* m_dt = self().duplicate_expr(x->m_dt);
+        return make_SubroutineCall_t(al, x->base.base.loc, m_name, m_original_name, m_args.p, x->n_args, m_dt);
+    }
+
+    ASR::asr_t* duplicate_StructType(ASR::StructType_t* x) {
+        Vec<ASR::ttype_t*> m_data_member_types;
+        m_data_member_types.reserve(al, x->n_data_member_types);
+        for (size_t i = 0; i < x->n_data_member_types; i++) {
+            m_data_member_types.push_back(al, self().duplicate_ttype(x->m_data_member_types[i]));
+        }
+        Vec<ASR::ttype_t*> m_member_function_types;
+        m_member_function_types.reserve(al, x->n_member_function_types);
+        for (size_t i = 0; i < x->n_member_function_types; i++) {
+            m_member_function_types.push_back(al, self().duplicate_ttype(x->m_member_function_types[i]));
+        }
+        ASR::symbol_t* m_derived_type = current_scope->get_symbol(ASRUtils::symbol_name(x->m_derived_type));
+        if (m_derived_type == nullptr) {
+            m_derived_type = x->m_derived_type;
+        }
+        return make_StructType_t(al, x->base.base.loc, m_data_member_types.p, x->n_data_member_types, m_member_function_types.p, x->n_member_function_types, x->m_is_cstruct, m_derived_type);
+    }
+
 };
 
 class FixScopedTypeVisitor: public ASR::BaseExprReplacer<FixScopedTypeVisitor> {
