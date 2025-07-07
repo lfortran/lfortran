@@ -5058,7 +5058,8 @@ public:
                     break;
                 }
                 case ASR::array_physical_typeType::FixedSizeArray: {
-                    llvm_tmp = llvm_utils->create_gep(llvm_tmp, 0);
+                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(asr_type, module.get());
+                    llvm_tmp = llvm_utils->create_gep2(type, llvm_tmp, 0);
                     break;
                 }
                 case ASR::array_physical_typeType::PointerToDataArray: {
