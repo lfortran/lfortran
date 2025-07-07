@@ -5642,18 +5642,14 @@ public:
             }
         } else if (x.m_classtype) {
             std::string sym = x.m_classtype;
-            ASR::symbol_t* type_declaration = ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(sym));
+            ASR::symbol_t* type_declaration = ASRUtils::symbol_get_past_external(current_scope->resolve_symbol(to_lower(sym)));
             if (type_declaration == nullptr) {
-                // TODO: figure out how to give an error message, currently
-                // the below is too strong and triggers on valid code:
-                /*
                 diag.add(Diagnostic(
                     "Class type `" + sym + "` is not defined",
                     Level::Error, Stage::Semantic, {
                         Label("",{x.base.base.loc})
                     }));
                 throw SemanticAbort();
-                */
             } else if (ASR::is_a<ASR::Struct_t>(*type_declaration)) {
                 type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, type_declaration));
             }
