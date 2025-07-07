@@ -2635,7 +2635,8 @@ public:
                 ptr_loads = ptr_loads_copy;
             }
             LCOMPILERS_ASSERT(ASRUtils::extract_n_dims_from_ttype(x_mv_type) > 0);
-            bool is_polymorphic = current_select_type_block_type != nullptr;
+            bool is_polymorphic = (current_select_type_block_type != nullptr) && ASR::is_a<ASR::Var_t>(*x.m_v) &&
+                    (ASRUtils::EXPR2VAR(x.m_v)->m_name == current_selector_var_name);
             if (array_t->m_physical_type == ASR::array_physical_typeType::UnboundedPointerToDataArray) {
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(x_mv_type), module.get());
                 tmp = arr_descr->get_single_element(type, array, indices, x.n_args,
