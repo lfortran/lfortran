@@ -2221,6 +2221,8 @@ public:
         parent_func_type->m_deftype = ASR::deftypeType::Implementation;
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        ASRUtils::ExprStmtWithScopeDuplicator funcscope_exprstmt_duplicator(al, parent_mod_proc->m_symtab);
+        ASRUtils::ExprStmtWithScopeDuplicator modulescope_exprstmt_duplicator(al, parent_module_symtab);
         
         for (auto &item : submod_proc->m_symtab->get_scope()) {
             if ( ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -2254,6 +2256,18 @@ public:
             }
         }
         
+        Vec<ASR::stmt_t*> m_body;
+        m_body.reserve(al, submod_proc->n_body);
+        for (size_t i = 0; i < submod_proc->n_body; i++) {
+            ASR::stmt_t* proc_body_stmt = modulescope_exprstmt_duplicator.duplicate_stmt(submod_proc->m_body[i]);
+            proc_body_stmt = funcscope_exprstmt_duplicator.duplicate_stmt(proc_body_stmt);
+            m_body.push_back(al, proc_body_stmt);
+        }
+
+        parent_mod_proc->m_dependencies = submod_proc->m_dependencies;
+        parent_mod_proc->n_dependencies = submod_proc->n_dependencies;
+        parent_mod_proc->m_body = m_body.p;
+        parent_mod_proc->n_body = m_body.size();
     }
 
     void populate_parent_module(ASR::Module_t* mod) {
