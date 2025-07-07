@@ -5192,8 +5192,9 @@ public:
                     new_ub = shape_data ? llvm_utils->CreateLoad2(
                         llvm::Type::getInt32Ty(context), llvm_utils->create_ptr_gep(shape_data, i)) : i32_one;
                 } else if( ASRUtils::extract_physical_type(asr_shape_type) == ASR::array_physical_typeType::FixedSizeArray ) {
+                    llvm::Type* shape_llvm_type = llvm_utils->get_type_from_ttype_t_util(asr_shape_type, module.get());
                     new_ub = shape_data ? llvm_utils->CreateLoad2(
-                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep(shape_data, i)) : i32_one;
+                        llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(shape_llvm_type, shape_data, i)) : i32_one;
                 }
                 builder->CreateStore(new_lb, desi_lb);
                 llvm::Value* new_size = builder->CreateAdd(builder->CreateSub(new_ub, new_lb), i32_one);
@@ -5263,7 +5264,7 @@ public:
 #endif
         if (ASRUtils::is_class_type(ASRUtils::extract_type(p_type))) {
             // If the pointer is class, get its type pointer
-            ptr = llvm_utils->create_gep(ptr, 1);
+            ptr = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get()), ptr, 1);
             ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get())->getPointerTo(), ptr);
         } else {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(p_type, module.get());
@@ -5315,11 +5316,11 @@ public:
                 if( ASRUtils::is_array(ASRUtils::expr_type(x.m_tgt)) ) {
                     ASR::array_physical_typeType tgt_ptype = ASRUtils::extract_physical_type(
                         ASRUtils::expr_type(x.m_tgt));
+                    llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::expr_type(x.m_tgt), module.get());
                     if( tgt_ptype == ASR::array_physical_typeType::FixedSizeArray ) {
-                        nptr = llvm_utils->create_gep(nptr, 0);
+                        nptr = llvm_utils->create_gep2(array_type, nptr, 0);
                     } else if( tgt_ptype == ASR::array_physical_typeType::DescriptorArray ) {
-                        llvm::Type* array_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::expr_type(x.m_tgt), module.get());
                         llvm::Type *array_inner_type = llvm_utils->get_type_from_ttype_t_util(
                             ASRUtils::extract_type(p_type), module.get());
                         nptr = builder->CreateLoad(array_type, nptr);
