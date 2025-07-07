@@ -1126,8 +1126,8 @@ RUN(NAME intrinsics_283 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # asinh
 RUN(NAME intrinsics_284 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acosh
 RUN(NAME intrinsics_285 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # real
 RUN(NAME intrinsics_286 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atanh
-# FIXME:
-# RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
+# FIXME:Fix this test with --array-bounds-checking (https://github.com/lfortran/lfortran/pull/7955#issuecomment-3036967309)
+RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
 RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
 RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
 RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # gamma

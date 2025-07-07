@@ -2872,8 +2872,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    // TODO: use compiler_options.enable_bounds_checking here
-                                                    !compiler_options.po.realloc_lhs && !compiler_options.po.fast, array_name);
+                                                    compiler_options.enable_bounds_checking, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {

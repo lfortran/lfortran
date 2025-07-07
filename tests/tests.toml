@@ -3857,6 +3857,18 @@ filename = "errors/intrinsics2.f90"
 asr = true
 
 [[test]]
+filename = "errors/array_bounds_check_01.f90"
+array_bounds_check = true
+
+[[test]]
+filename = "errors/array_bounds_check_02.f90"
+array_bounds_check = true
+
+[[test]]
+filename = "errors/array_bounds_check_03.f90"
+array_bounds_check = true
+
+[[test]]
 filename = "../integration_tests/statement_01.f90"
 asr_implicit_interface_and_typing = true
 

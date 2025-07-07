@@ -162,7 +162,7 @@ namespace LCompilers::CommandLineInterface {
         app.add_flag("--realloc-lhs", compiler_options.po.realloc_lhs, "Reallocate left hand side automatically")->group(group_miscellaneous_options);
         app.add_flag("--ignore-pragma", compiler_options.ignore_pragma, "Ignores all the pragmas")->group(group_miscellaneous_options);
         app.add_flag("--stack-arrays", compiler_options.stack_arrays, "Allocate memory for arrays on stack")->group(group_miscellaneous_options);
-        app.add_flag("--enable-bounds-checking", compiler_options.enable_bounds_checking, "Enables runtime bound checking")->group(group_miscellaneous_options);
+        app.add_flag("--array-bounds-checking", compiler_options.enable_bounds_checking, "Enables runtime array bounds checking")->group(group_miscellaneous_options);
 
         // LSP specific options
         app.add_flag("--show-errors", opts.show_errors, "Show errors when LSP is running in the background")->group(group_lsp_options);
