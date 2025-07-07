@@ -2220,6 +2220,24 @@ public:
         ASR::FunctionType_t* parent_func_type = ASR::down_cast<ASR::FunctionType_t>(parent_mod_proc->m_function_signature);
         parent_func_type->m_deftype = ASR::deftypeType::Implementation;
 
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        
+        for (auto &item : submod_proc->m_symtab->get_scope()) {
+            if ( ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *func_vari = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(func_vari, parent_mod_proc->m_symtab);
+                if (!parent_mod_proc->m_symtab->get_symbol((std::string)func_vari->m_name)) {
+                    parent_mod_proc->m_symtab->add_symbol((std::string)func_vari->m_name, new_sym);
+                }
+            } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t* func_external_sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_ExternalSymbol(func_external_sym, parent_mod_proc->m_symtab);
+                if (!parent_mod_proc->m_symtab->get_symbol((std::string)func_external_sym->m_name)) {
+                    parent_mod_proc->m_symtab->add_symbol((std::string)func_external_sym->m_name, new_sym);
+                }
+            }
+        }
+
         
     }
 
