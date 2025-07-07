@@ -763,3 +763,9 @@ semantic error: Invalid syntax of derived type for array constructor
     |
 343 |     arr = [type(MyClass) :: v1, v2, v3]
     |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
+
+semantic error: Class type `NonExistingType` is not defined
+   --> tests/errors/continue_compilation_1.f90:345:11
+    |
+345 |     arr = [NonExistingType :: v1, v2, v3]
+    |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
