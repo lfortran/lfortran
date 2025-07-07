@@ -10620,7 +10620,7 @@ public:
                 proc = gen_proc->m_procs[i];
             }
 
-            if (proc->type != ASR::symbolType::Function) {
+            if (!ASR::is_a<ASR::Function_t>(*proc)) {
                 diag.add(Diagnostic("Only functions are allowed in defined binary operators",
                                     Level::Error,
                                     Stage::Semantic,
