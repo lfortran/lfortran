@@ -2238,6 +2238,21 @@ public:
             }
         }
 
+        for (auto &item : sub_module->m_symtab->get_scope()) {
+            if ( ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *module_vari = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(module_vari, parent_module->m_symtab);
+                if (!parent_module->m_symtab->get_symbol((std::string)module_vari->m_name)) {
+                    parent_module->m_symtab->add_symbol((std::string)module_vari->m_name, new_sym);
+                }
+            } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t* module_external_sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_ExternalSymbol(module_external_sym, parent_module->m_symtab);
+                if (!parent_module->m_symtab->get_symbol((std::string)module_external_sym->m_name)) {
+                    parent_module->m_symtab->add_symbol((std::string)module_external_sym->m_name, new_sym);
+                }
+            }
+        }
         
     }
 
