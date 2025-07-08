@@ -10,8 +10,8 @@ program intrinsics_387
     call execute_command_line(temp)
 
     call execute_command_line(temp, exitstat=stat)
-    print *, "Exit status:", stat ! TODO: support keyword arguments in execute_command_line
-    ! if ( stat /= 0 ) error stop ! TODO: uncomment once keyword arguments are supported
+    print *, "Exit status:", stat
+    if ( stat /= 0 ) error stop 
 
 end program intrinsics_387
 
