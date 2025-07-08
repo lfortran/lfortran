@@ -1391,7 +1391,11 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else if ( is_target_tup && is_value_tup ) {
             ASR::Tuple_t* tup_target = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_target));
             std::string dc_func = c_ds_api->get_tuple_deepcopy_func(tup_target);
-            src += indent + dc_func + "(" + value + ", &" + target + ");\n";
+            // TODO: Proper intent checking instead of target name
+            if (target == "_lpython_return_variable")
+                src += indent + dc_func + "(" + value + ", " + target + ");\n";
+            else
+                src += indent + dc_func + "(" + value + ", &" + target + ");\n";
         } else if ( is_target_dict && is_value_dict ) {
             ASR::Dict_t* d_target = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(x.m_target));
             std::string dc_func = c_ds_api->get_dict_deepcopy_func(d_target);
