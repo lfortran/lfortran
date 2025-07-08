@@ -393,20 +393,20 @@ class CCPPDSUtils {
                     ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(t);
                     std::string list_type_code = ASRUtils::get_type_code(list_type->m_type, true);
                     std::string func = typecodeToDSfuncs[list_type_code]["list_deepcopy"];
-                    result = func + "(&" + value + ", &" + target + ");";
+                    result = func + "(&" + value + ", " + target + ");";
                     break;
                 }
                 case ASR::ttypeType::Tuple : {
                     ASR::Tuple_t* tup_type = ASR::down_cast<ASR::Tuple_t>(t);
                     std::string tup_type_code = CUtils::get_tuple_type_code(tup_type);
                     std::string func = typecodeToDSfuncs[tup_type_code]["tuple_deepcopy"];
-                    result = func + "(" + value + ", &" + target + ");";
+                    result = func + "(" + value + ", " + target + ");";
                     break;
                 }
                 case ASR::ttypeType::Dict : {
                     std::string d_type_code = ASRUtils::get_type_code(t, true);
                     std::string func = typecodeToDSfuncs[d_type_code]["dict_deepcopy"];
-                    result = func + "(&" + value + ", &" + target + ");";
+                    result = func + "(&" + value + ", " + target + ");";
                     break;
                 }
                 case ASR::ttypeType::String : {

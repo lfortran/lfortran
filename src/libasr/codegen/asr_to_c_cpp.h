@@ -1079,7 +1079,9 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     && !ASRUtils::is_aggregate_type(param->m_type))) {
                     args += "&" + src;
                 } else if (param->m_intent == ASRUtils::intent_out) {
-                    if (ASR::is_a<ASR::List_t>(*param->m_type)) {
+                    if (ASR::is_a<ASR::List_t>(*param->m_type) || 
+                        ASR::is_a<ASR::Dict_t>(*param->m_type) || 
+                        ASR::is_a<ASR::Tuple_t>(*param->m_type)) {
                         args += "&" + src;
                     } else {
                         args += src;
