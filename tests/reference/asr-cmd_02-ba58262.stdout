@@ -54,6 +54,10 @@
                         [(StringConstant
                             "printenv"
                             (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
                         )]
                         0
                     )]

@@ -976,16 +976,24 @@ namespace ExecuteCommandLine {
 
     static inline ASR::asr_t* create_ExecuteCommandLine(Allocator& al, const Location& loc, Vec<ASR::expr_t*>& args, diag::Diagnostics& /*diag*/) {
         Vec<ASR::expr_t*> m_args; m_args.reserve(al, args.size());
+        ASRBuilder b(al, loc);
+        int64_t overload_id = 0;
+        if (args[1]) overload_id |= 1 << 0; // WAIT
+        if (args[2]) overload_id |= 1 << 1; // EXITSTAT
+        if (args[3]) overload_id |= 1 << 2; // CMDSTAT
+        if (args[4]) overload_id |= 1 << 3; // CMDMSG
         m_args.push_back(al, args[0]);
-        for (int i = 1; i < int(args.size()); i++) {
+        if (args[1]) m_args.push_back(al, args[1]);
+        else m_args.push_back(al, b.logical_true()); // default value for WAIT is true
+        for (int i = 2; i < int(args.size()); i++) {
             if(args[i]) m_args.push_back(al, args[i]);
         }
-        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine), m_args.p, m_args.n, 0);
+        return ASR::make_IntrinsicImpureSubroutine_t(al, loc, static_cast<int64_t>(IntrinsicImpureSubroutines::ExecuteCommandLine), m_args.p, m_args.n, overload_id);
     }
 
     static inline ASR::stmt_t* instantiate_ExecuteCommandLine(Allocator &al, const Location &loc,
             SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+            Vec<ASR::call_arg_t>& new_args, int64_t overload_id) {
 
         std::string c_func_name = "_lfortran_exec_command";
         std::string new_name = "_lcompilers_execute_command_line_";
@@ -994,17 +1002,20 @@ namespace ExecuteCommandLine {
         declare_basic_variables(new_name);
         fill_func_arg_sub("command", str_type, InOut);
         ASR::expr_t* exit_status_local = declare("_lcompilers_exit_status", ret_type, Local);
-        if (arg_types.size() >= 2) {
-            fill_func_arg_sub("wait", arg_types[1], InOut);
+        constexpr int WAIT_BIT     = 1 << 0;
+        constexpr int EXITSTAT_BIT = 1 << 1;
+        constexpr int CMDSTAT_BIT  = 1 << 2;
+        constexpr int CMDMSG_BIT   = 1 << 3;
+        int optional_arg_index = 1;
+        fill_func_arg_sub("wait", arg_types[optional_arg_index++], InOut);
+        if (overload_id & EXITSTAT_BIT) {
+            fill_func_arg_sub("exitstat", arg_types[optional_arg_index++], InOut);
         }
-        if (arg_types.size() >= 3) {
-            fill_func_arg_sub("exitstat", arg_types[2], InOut);
+        if (overload_id & CMDSTAT_BIT) {
+            fill_func_arg_sub("cmdstat", arg_types[optional_arg_index++], InOut);
         }
-        if (arg_types.size() >= 4) {
-            fill_func_arg_sub("cmdstat", arg_types[3], InOut);
-        }
-        if (arg_types.size() >= 5) {
-            fill_func_arg_sub("cmdmsg", arg_types[4], InOut);
+        if (overload_id & CMDMSG_BIT) {
+            fill_func_arg_sub("cmdmsg", arg_types[optional_arg_index], InOut);
         }
 
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
@@ -1014,8 +1025,7 @@ namespace ExecuteCommandLine {
         args_1.push_back(al, arg);
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-        ret_type,
-        ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        ret_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1026,9 +1036,14 @@ namespace ExecuteCommandLine {
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
         call_args.push_back(al, args[0]);
+        optional_arg_index = 2;
+        if (overload_id & WAIT_BIT) {
+            // TODO: handle this
+        }
         body.push_back(al, b.Assignment(exit_status_local, b.Call(s, call_args, ret_type)));
-        if ( arg_types.size() >= 3) {
-            body.push_back(al, b.Assignment(args[2], exit_status_local));
+        if (overload_id & EXITSTAT_BIT) {
+            body.push_back(al, b.Assignment(args[optional_arg_index], exit_status_local));
+            optional_arg_index++;
         }
         ASR::symbol_t *new_symbol = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, nullptr, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
