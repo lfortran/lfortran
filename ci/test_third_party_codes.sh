@@ -276,7 +276,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
-  FC=$FC make
+  FC="$FC --realloc-lhs" make
 
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
@@ -320,7 +320,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
-  FC="$FC --separate-compilation" make
+  FC="$FC --realloc-lhs --separate-compilation" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
