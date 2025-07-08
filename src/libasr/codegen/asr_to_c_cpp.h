@@ -1080,10 +1080,7 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     args += "&" + src;
                 } else if (param->m_intent == ASRUtils::intent_out) {
                     if (ASR::is_a<ASR::List_t>(*param->m_type)) {
-                        ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(param->m_type);
-                        if (list_type->m_type->type == ASR::ttypeType::CPtr){
-                            args += "&" + src;
-                        }
+                        args += "&" + src;
                     } else {
                         args += src;
                     }
