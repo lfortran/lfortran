@@ -702,7 +702,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -727,7 +727,7 @@ time_section "🧪 Testing fastGPT" '
         git checkout -t origin/lf6
         git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
         echo $CONDA_PREFIX
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
         make
         ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
         file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -748,7 +748,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -771,7 +771,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-fast
         cd lf-fast
-        FC="$FC --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -785,7 +785,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf
         git clean -dfx
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -795,7 +795,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf-fast
         git clean -dfx
-        FC="$FC --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
