@@ -1006,16 +1006,16 @@ namespace ExecuteCommandLine {
         constexpr int EXITSTAT_BIT = 1 << 1;
         constexpr int CMDSTAT_BIT  = 1 << 2;
         constexpr int CMDMSG_BIT   = 1 << 3;
-
-        fill_func_arg_sub("wait", arg_types[1], InOut);
+        int optional_arg_index = 1;
+        fill_func_arg_sub("wait", arg_types[optional_arg_index++], InOut);
         if (overload_id & EXITSTAT_BIT) {
-            fill_func_arg_sub("exitstat", arg_types[2], InOut);
+            fill_func_arg_sub("exitstat", arg_types[optional_arg_index++], InOut);
         }
         if (overload_id & CMDSTAT_BIT) {
-            fill_func_arg_sub("cmdstat", arg_types[3], InOut);
+            fill_func_arg_sub("cmdstat", arg_types[optional_arg_index++], InOut);
         }
         if (overload_id & CMDMSG_BIT) {
-            fill_func_arg_sub("cmdmsg", arg_types[4], InOut);
+            fill_func_arg_sub("cmdmsg", arg_types[optional_arg_index], InOut);
         }
 
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
@@ -1036,7 +1036,7 @@ namespace ExecuteCommandLine {
 
         Vec<ASR::expr_t*> call_args; call_args.reserve(al, 1);
         call_args.push_back(al, args[0]);
-        int optional_arg_index = 2;
+        optional_arg_index = 2;
         if (overload_id & WAIT_BIT) {
             // TODO: handle this
         }
