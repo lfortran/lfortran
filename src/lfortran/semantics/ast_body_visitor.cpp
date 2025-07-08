@@ -1417,6 +1417,10 @@ public:
                 ASR::Variable_t* variable = ASRUtils::EXPR2VAR(tmp_expr);
                 tmp_storage = variable->m_storage;
                 tmp_type = variable->m_type;
+            } else if (ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+                create_associate_stmt = true;
+                ASR::StructInstanceMember_t* sim = ASR::down_cast<ASR::StructInstanceMember_t>(tmp_expr);
+                tmp_type = sim->m_type;
             } else if( ASR::is_a<ASR::ArraySection_t>(*tmp_expr) ) {
                 create_associate_stmt = true;
                 ASR::ArraySection_t* tmp_array_section = ASR::down_cast<ASR::ArraySection_t>(tmp_expr);
