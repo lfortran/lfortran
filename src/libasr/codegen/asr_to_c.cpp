@@ -533,12 +533,20 @@ public:
             } else if (ASR::is_a<ASR::Tuple_t>(*v_m_type)) {
                 ASR::Tuple_t* t = ASR::down_cast<ASR::Tuple_t>(v_m_type);
                 std::string tuple_type_c = c_ds_api->get_tuple_type(t);
-                sub = format_type_c("", tuple_type_c, v.m_name,
+                std::string name = v.m_name;
+                if (v.m_intent == ASRUtils::intent_out) {
+                    name = "*" + name;
+                }
+                sub = format_type_c("", tuple_type_c, name,
                                     false, false);
             } else if (ASR::is_a<ASR::Dict_t>(*v_m_type)) {
                 ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(v_m_type);
                 std::string dict_type_c = c_ds_api->get_dict_type(t);
-                sub = format_type_c("", dict_type_c, v.m_name,
+                std::string name = v.m_name;
+                if (v.m_intent == ASRUtils::intent_out) {
+                    name = "*" + name;
+                }
+                sub = format_type_c("", dict_type_c, name,
                                     false, false);
             } else if (ASR::is_a<ASR::CPtr_t>(*v_m_type)) {
                 sub = format_type_c("", "void*", v.m_name, false, false);
