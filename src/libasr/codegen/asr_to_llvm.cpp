@@ -160,6 +160,7 @@ public:
     bool lookup_enum_value_for_nonints;
     bool is_assignment_target;
     int64_t global_array_count;
+    int64_t global_deep_count;
 
     CompilerOptions &compiler_options;
 
@@ -218,6 +219,7 @@ public:
     lookup_enum_value_for_nonints(false),
     is_assignment_target(false),
     global_array_count(0),
+    global_deep_count(0),
     compiler_options(compiler_options_),
     current_select_type_block_type(nullptr),
     current_select_type_block_type_asr(nullptr),
@@ -4630,8 +4632,14 @@ public:
                         if (m_length_sym != nullptr && ASR::is_a<ASR::Variable_t>(*m_length_sym)) {
                             ASR::Variable_t* m_length_variable = ASR::down_cast<ASR::Variable_t>(m_length_sym);
                             uint32_t m_length_variable_h = get_hash((ASR::asr_t*)m_length_variable);
-                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length),module.get());
-                            llvm::Value* deep = llvm_utils->CreateAlloca(*builder, deep_type, nullptr, "deep");
+                            llvm::Type* deep_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
+                            llvm::Value* deep = new llvm::GlobalVariable(
+                                    *module,
+                                    deep_type,
+                                    false,
+                                    llvm::GlobalValue::InternalLinkage,
+                                    llvm::Constant::getNullValue(deep_type),
+                                    "deep_" + std::to_string(global_deep_count++));
                             builder->CreateStore(tmp, deep, v->m_is_volatile);
                             llvm::Type* m_dims_length_llvm_type = llvm_utils->get_type_from_ttype_t_util(m_dims[i].m_length, ASRUtils::expr_type(m_dims[i].m_length), module.get());
                             tmp = llvm_utils->CreateLoad2(m_dims_length_llvm_type,deep, v->m_is_volatile);
