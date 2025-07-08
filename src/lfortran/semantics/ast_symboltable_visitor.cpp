@@ -1873,8 +1873,8 @@ public:
                 case AST::decl_attributeType::SimpleAttribute: {
                     AST::SimpleAttribute_t* simple_attr =
                         AST::down_cast<AST::SimpleAttribute_t>(x.m_attrtype[i]);
-                    is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
-                    is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
+                    if (!is_abstract) is_abstract = simple_attr->m_attr == AST::simple_attributeType::AttrAbstract;
+                    if (!is_deferred) is_deferred = simple_attr->m_attr == AST::simple_attributeType::AttrDeferred;
                 }
                 default:
                     break;
