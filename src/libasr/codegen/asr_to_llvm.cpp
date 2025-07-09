@@ -4684,7 +4684,7 @@ public:
                     fn_name = sym_name;
                 }
             } else if (ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface &&
-                ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic) {
+                ASRUtils::get_FunctionType(x)->m_abi != ASR::abiType::Intrinsic && !ASRUtils::get_FunctionType(x)->m_module) {
                 fn_name = sym_name;
             } else {
                 fn_name = mangle_prefix + sym_name;
