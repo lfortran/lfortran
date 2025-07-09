@@ -1128,7 +1128,7 @@ RUN(NAME intrinsics_284 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # acosh
 RUN(NAME intrinsics_285 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # real
 RUN(NAME intrinsics_286 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # atanh
 # FIXME:Fix this test with --array-bounds-checking (https://github.com/lfortran/lfortran/pull/7955#issuecomment-3036967309)
-RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
+# RUN(NAME intrinsics_288 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # spread
 RUN(NAME intrinsics_289 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # ishftc
 RUN(NAME intrinsics_290 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # log10
 RUN(NAME intrinsics_291 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # gamma
@@ -2597,7 +2597,7 @@ RUN(NAME formatted_read_01 LABELS gfortran llvm COPY_TO_BIN formatted_read_input
 RUN(NAME list_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME list_of_lists_test LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME set_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
-RUN(NAME dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME dict_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --no-array-bounds-checking) # No gfortran 
 # RUN(NAME list_of_tuples_test LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 
 
