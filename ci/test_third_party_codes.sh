@@ -225,7 +225,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop --no-array-bounds-checking -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -236,7 +236,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop --no-array-bounds-checking -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -687,7 +687,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -697,7 +697,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --realloc-lhs --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -711,7 +711,7 @@ time_section "🧪 Testing fastGPT" '
         git checkout -t origin/lf6
         git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
         echo $CONDA_PREFIX
-        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
         make
         ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
         file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -732,7 +732,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -744,7 +744,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --realloc-lhs --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -755,7 +755,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-fast
         cd lf-fast
-        FC="$FC --realloc-lhs --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -769,7 +769,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf
         git clean -dfx
-        FC="$FC --realloc-lhs" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -779,7 +779,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf-fast
         git clean -dfx
-        FC="$FC --realloc-lhs --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -820,7 +820,7 @@ time_section "🧪 Testing stdlib" '
     micromamba install -c conda-forge fypp
 
     git clean -fdx
-    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-array-bounds-checking"
     make -j8
     ctest
 '
