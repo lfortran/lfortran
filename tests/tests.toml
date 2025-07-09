@@ -3858,14 +3858,17 @@ asr = true
 
 [[test]]
 filename = "errors/array_bounds_check_01.f90"
+run = true
 array_bounds_check = true
 
 [[test]]
 filename = "errors/array_bounds_check_02.f90"
+run = true
 array_bounds_check = true
 
 [[test]]
 filename = "errors/array_bounds_check_03.f90"
+run = true
 array_bounds_check = true
 
 [[test]]
