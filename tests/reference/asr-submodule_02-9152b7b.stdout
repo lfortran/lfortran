@@ -75,6 +75,26 @@
                                     (SymbolTable
                                         8
                                         {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_point_x
+                                                    7 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    8
+                                                    1_point_y
+                                                    7 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             a:
                                                 (Variable
                                                     8
@@ -165,7 +185,7 @@
                                         )]
                                         (Real 4)
                                         Source
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
@@ -178,7 +198,68 @@
                                     []
                                     [(Var 8 a)
                                     (Var 8 b)]
-                                    []
+                                    [(Assignment
+                                        (Var 8 distance)
+                                        (IntrinsicElementalFunction
+                                            Sqrt
+                                            [(RealBinOp
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 8 a)
+                                                            11 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 8 b)
+                                                            11 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 8 a)
+                                                            11 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 8 b)
+                                                            11 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
                                     (Var 8 distance)
                                     Public
                                     .false.
@@ -190,6 +271,26 @@
                                     (SymbolTable
                                         9
                                         {
+                                            1_point_x:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_point_x
+                                                    7 x
+                                                    point
+                                                    []
+                                                    x
+                                                    Public
+                                                ),
+                                            1_point_y:
+                                                (ExternalSymbol
+                                                    9
+                                                    1_point_y
+                                                    7 y
+                                                    point
+                                                    []
+                                                    y
+                                                    Public
+                                                ),
                                             a:
                                                 (Variable
                                                     9
@@ -281,7 +382,7 @@
                                         (Real 4)]
                                         ()
                                         Source
-                                        Interface
+                                        Implementation
                                         ()
                                         .false.
                                         .false.
@@ -295,7 +396,68 @@
                                     [(Var 9 a)
                                     (Var 9 b)
                                     (Var 9 distance)]
-                                    []
+                                    [(Assignment
+                                        (Var 9 distance)
+                                        (IntrinsicElementalFunction
+                                            Sqrt
+                                            [(RealBinOp
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 9 a)
+                                                            12 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 9 b)
+                                                            12 1_point_x
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                Add
+                                                (RealBinOp
+                                                    (RealBinOp
+                                                        (StructInstanceMember
+                                                            (Var 9 a)
+                                                            12 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        Sub
+                                                        (StructInstanceMember
+                                                            (Var 9 b)
+                                                            12 1_point_y
+                                                            (Real 4)
+                                                            ()
+                                                        )
+                                                        (Real 4)
+                                                        ()
+                                                    )
+                                                    Pow
+                                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                                    (Real 4)
+                                                    ()
+                                                )
+                                                (Real 4)
+                                                ()
+                                            )]
+                                            0
+                                            (Real 4)
+                                            ()
+                                        )
+                                        ()
+                                        .false.
+                                    )]
                                     ()
                                     Public
                                     .false.

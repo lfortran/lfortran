@@ -2211,6 +2211,80 @@ public:
                                      select_type_default.p, select_type_default.size());
     }
 
+    void modify_parent_procedure(ASR::Module_t* parent_module, ASR::Module_t* sub_module, ASR::Function_t* submod_proc) {
+        SymbolTable* parent_module_symtab = parent_module->m_symtab;
+        std::string proc_name = (std::string)submod_proc->m_name;
+        ASR::symbol_t* sym = parent_module_symtab->get_symbol(proc_name);
+        ASR::Function_t* parent_mod_proc = ASR::down_cast<ASR::Function_t>(sym);
+
+        ASR::FunctionType_t* parent_func_type = ASR::down_cast<ASR::FunctionType_t>(parent_mod_proc->m_function_signature);
+        parent_func_type->m_deftype = ASR::deftypeType::Implementation;
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        ASRUtils::ExprStmtWithScopeDuplicator funcscope_exprstmt_duplicator(al, parent_mod_proc->m_symtab);
+        ASRUtils::ExprStmtWithScopeDuplicator modulescope_exprstmt_duplicator(al, parent_module_symtab);
+        
+        for (auto &item : submod_proc->m_symtab->get_scope()) {
+            if ( ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *func_vari = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(func_vari, parent_mod_proc->m_symtab);
+                if (!parent_mod_proc->m_symtab->get_symbol((std::string)func_vari->m_name)) {
+                    parent_mod_proc->m_symtab->add_symbol((std::string)func_vari->m_name, new_sym);
+                }
+            } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t* func_external_sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_ExternalSymbol(func_external_sym, parent_mod_proc->m_symtab);
+                if (!parent_mod_proc->m_symtab->get_symbol((std::string)func_external_sym->m_name)) {
+                    parent_mod_proc->m_symtab->add_symbol((std::string)func_external_sym->m_name, new_sym);
+                }
+            }
+        }
+
+        for (auto &item : sub_module->m_symtab->get_scope()) {
+            if ( ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t *module_vari = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(module_vari, parent_module->m_symtab);
+                if (!parent_module->m_symtab->get_symbol((std::string)module_vari->m_name)) {
+                    parent_module->m_symtab->add_symbol((std::string)module_vari->m_name, new_sym);
+                }
+            } else if ( ASR::is_a<ASR::ExternalSymbol_t>(*item.second)) {
+                ASR::ExternalSymbol_t* module_external_sym = ASR::down_cast<ASR::ExternalSymbol_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_ExternalSymbol(module_external_sym, parent_module->m_symtab);
+                if (!parent_module->m_symtab->get_symbol((std::string)module_external_sym->m_name)) {
+                    parent_module->m_symtab->add_symbol((std::string)module_external_sym->m_name, new_sym);
+                }
+            }
+        }
+        
+        Vec<ASR::stmt_t*> m_body;
+        m_body.reserve(al, submod_proc->n_body);
+        for (size_t i = 0; i < submod_proc->n_body; i++) {
+            ASR::stmt_t* proc_body_stmt = modulescope_exprstmt_duplicator.duplicate_stmt(submod_proc->m_body[i]);
+            proc_body_stmt = funcscope_exprstmt_duplicator.duplicate_stmt(proc_body_stmt);
+            m_body.push_back(al, proc_body_stmt);
+        }
+
+        parent_mod_proc->m_dependencies = submod_proc->m_dependencies;
+        parent_mod_proc->n_dependencies = submod_proc->n_dependencies;
+        parent_mod_proc->m_body = m_body.p;
+        parent_mod_proc->n_body = m_body.size();
+    }
+
+    void populate_parent_module(ASR::Module_t* mod) {
+        if (!mod->m_parent_module) {
+            // For parent module, we do not do anything
+            return;
+        }
+
+        ASR::Module_t* parent_module = ASR::down_cast<ASR::Module_t>(mod->m_parent_module);
+        for (auto &item : mod->m_symtab->get_scope()) {
+            if( ASR::is_a<ASR::Function_t>(*item.second) ) {
+                ASR::Function_t* submod_proc = ASR::down_cast<ASR::Function_t>(item.second);
+                modify_parent_procedure(parent_module, mod, submod_proc);
+            }
+        }
+    }
+
     template <typename T>
     void visit_SubmoduleModuleCommon(const T& x) {
         SymbolTable *old_scope = current_scope;
@@ -2254,6 +2328,7 @@ public:
         }
 
         create_and_replace_structType();
+        populate_parent_module(v);
         current_scope = old_scope;
         current_module = nullptr;
         tmp = nullptr;
