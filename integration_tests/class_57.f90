@@ -19,9 +19,9 @@ module class_57_mod
 
   abstract interface 
     subroutine to_toml(self, x)
-    import dumper, toml_table, error
+    import dumper, toml_table
     class(dumper), intent(in) :: self
-    type(toml_table), intent(in) :: x
+    type(toml_table), intent(inout) :: x
     end subroutine
   end interface
 contains
