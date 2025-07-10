@@ -521,7 +521,7 @@ public:
             case ASR::DescriptorString:{
                 //Set data
                 data_and_length.first = builder->CreateLoad(
-                    llvm::Type::getInt8PtrTy(context),
+                    character_type,
                     llvm_utils->create_gep2(string_descriptor, tmp, 0)); 
 
                 // Set length (Length could be explicit and definitly implicit)
@@ -543,7 +543,7 @@ public:
                 data_and_length.second = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
                 // // Set data
                 // data_and_length.first = builder->CreateLoad(
-                //     llvm::Type::getInt8PtrTy(context), tmp);
+                //     character_type, tmp);
 
                 // // Set length (Length could be explicit and definitly implicit)
                 // if(str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){ // Explicit-Constant Length
@@ -552,7 +552,7 @@ public:
                 //     data_and_length.second = len_value;
                 // } else { // Implicit Length
                     // data_and_length.second = lfortran_str_len(
-                    //     builder->CreateLoad(llvm::Type::getInt8PtrTy(context), tmp));
+                    //     builder->CreateLoad(character_type, tmp));
                 // }
                 break;
             }
@@ -667,7 +667,7 @@ public:
         {
             case ASR::DescriptorString:{
                 return builder->CreateLoad(
-                    llvm::Type::getInt8PtrTy(context),
+                    character_type,
                     llvm_utils->create_gep2(string_descriptor, tmp, 0)); 
             }    
             case ASR::CChar:{
@@ -963,9 +963,9 @@ public:
         llvm::Function *fn = module->getFunction(runtime_func_name);
         if (!fn) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getInt8PtrTy(context), 
+                    character_type, 
                     {
-                        llvm::Type::getInt8PtrTy(context) /*str*/, 
+                        character_type /*str*/, 
                         llvm::Type::getInt64Ty(context) /*str_len*/,
                         llvm::Type::getInt64Ty(context) /*idx*/
                     },
@@ -9798,25 +9798,25 @@ public:
         if (x.m_filename) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_filename);
         } else {
-            f_name_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            f_name_data = llvm::Constant::getNullValue(character_type);
             f_name_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
         if (x.m_status) {
             std::tie(status_data, status_len) = get_string_data_and_length(x.m_status);
         } else {
-            status_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            status_data = llvm::Constant::getNullValue(character_type);
             status_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
         if (x.m_form) {
             std::tie(form_data, form_len) = get_string_data_and_length(x.m_form);
         } else {
-            form_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            form_data = llvm::Constant::getNullValue(character_type);
             form_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
         if (x.m_access) {
             std::tie(access_data, access_len) = get_string_data_and_length(x.m_access);
         } else {
-            access_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            access_data = llvm::Constant::getNullValue(character_type);
             access_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
         if (x.m_iostat) {
@@ -9831,7 +9831,7 @@ public:
         if (x.m_iomsg) {
             std::tie(iomsg_data, iomsg_len) = get_string_data_and_length(x.m_iomsg);
         } else {
-            iomsg_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            iomsg_data = llvm::Constant::getNullValue(character_type);
             iomsg_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         } if (x.m_action) {
             ptr_loads = 1;
@@ -9881,7 +9881,7 @@ public:
         if (x.m_file) {
             std::tie(f_name_data, f_name_len) = get_string_data_and_length(x.m_file);
         } else {
-            f_name_data = llvm::Constant::getNullValue(llvm::Type::getInt8PtrTy(context));
+            f_name_data = llvm::Constant::getNullValue(character_type);
             f_name_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         }
         if (x.m_exist) {
@@ -10111,7 +10111,7 @@ public:
         if ( is_string ) {
             ptr_loads = 0;
             runtime_func_name = "_lfortran_string_write";
-            args_type.push_back(llvm::Type::getInt8PtrTy(context)->getPointerTo());// str_holder
+            args_type.push_back(character_type->getPointerTo());// str_holder
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_allocatable
             args_type.push_back(llvm::Type::getInt8Ty(context)); // is_deferred
             args_type.push_back(llvm::Type::getInt64Ty(context)->getPointerTo()); //len
@@ -11606,7 +11606,7 @@ public:
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(arg))),
                     tmp),
                 llvm::ConstantPointerNull::get(
-                    llvm::Type::getInt8PtrTy(context)));
+                    character_type));
         } else {
             visit_expr_load_wrapper(arg, 1, true);
             tmp = builder->CreateICmpNE(

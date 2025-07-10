@@ -1997,7 +1997,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::create_empty_string_descriptor(std::string name){
         return create_string_descriptor(
-            llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8PtrTy(context)),
+            llvm::ConstantPointerNull::getNullValue(character_type),
             llvm::ConstantInt::get(context, llvm::APInt(64, 0)),
             name);
     }
@@ -2013,7 +2013,7 @@ namespace LCompilers {
 
     llvm::Value* LLVMUtils::create_string_descriptor(std::string name){
 
-        llvm::DataLayout data_layout_inst(module);
+        llvm::DataLayout data_layout_inst(module->getDataLayout());
         llvm::Value* str_desc = builder->CreateBitCast(
             LLVMArrUtils::lfortran_malloc(context,
                 *module, *builder,
@@ -2049,7 +2049,7 @@ namespace LCompilers {
             return ptr_to_data;
         } else {
             return builder->CreateLoad(
-                llvm::Type::getInt8PtrTy(context), ptr_to_data); 
+                character_type, ptr_to_data); 
         }
     }
     // >>>>>>>>>>>>>> Refactor this
@@ -2306,8 +2306,8 @@ namespace LCompilers {
         LCOMPILERS_ASSERT(str)
         llvm::Value* str_data {}, *str_len {};
         std::tie(str_data, str_len) = get_string_length_data(ASRUtils::get_string_type(type), str, true, true);
-        builder->CreateCall(_Deallocate(),{builder->CreateLoad(llvm::Type::getInt8PtrTy(context), str_data)});
-        builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8PtrTy(context)), str_data);
+        builder->CreateCall(_Deallocate(),{builder->CreateLoad(character_type, str_data)});
+        builder->CreateStore(llvm::ConstantPointerNull::getNullValue(character_type), str_data);
         builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0), str_len);
     }
 
@@ -2399,7 +2399,7 @@ namespace LCompilers {
         // setup global string constant (llvm array of i8)
         switch(str->m_len_kind){
             case ASR::DeferredLength:{
-                string_constant = llvm::ConstantPointerNull::get(llvm::Type::getInt8PtrTy(context));
+                string_constant = llvm::ConstantPointerNull::get(character_type);
                 break;
             }
             case ASR::ExpressionLength:{
@@ -2439,7 +2439,7 @@ namespace LCompilers {
                 llvm::GlobalVariable* global_string_desc = new llvm::GlobalVariable(
                         *module,
                         string_descriptor, false,
-                        llvm::GlobalValue::LinkageTypes::ExternalLinkage,
+                        llvm::GlobalValue::LinkageTypes::PrivateLinkage,
                         string_descriptor_constant,
                         name);
                 return global_string_desc;
