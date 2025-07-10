@@ -5370,17 +5370,6 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
 
 }
 
-static inline bool is_abstract_class_type(ASR::ttype_t* type) {
-    type = ASRUtils::type_get_past_array(type);
-    if( !ASRUtils::is_class_type(type) ) {
-        return false;
-    }
-    ASR::StructType_t* class_t = ASR::down_cast<ASR::StructType_t>(type);
-    return std::string( ASRUtils::symbol_name(
-                ASRUtils::symbol_get_past_external(class_t->m_derived_type))
-                ) == "~unlimited_polymorphic_type";
-}
-
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
         SymbolTable *scope) {
     int8_t IntegerConsecutiveFromZero = 1;
