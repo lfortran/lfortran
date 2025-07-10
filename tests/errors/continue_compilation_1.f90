@@ -343,4 +343,6 @@ program continue_compilation_1
     arr = [type(MyClass) :: v1, v2, v3]
 
     arr = [NonExistingType :: v1, v2, v3]
+
+    print *, ichar(char(0))
 end program
