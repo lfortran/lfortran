@@ -931,7 +931,7 @@ public:
 
     llvm::Type* get_llvm_struct_data_type(ASR::Struct_t* st, bool is_pointer) {
         std::string struct_name = (std::string)st->m_name;
-        if (struct_name == "~abstract_type") {
+        if (struct_name == "~unlimited_polymorphic_type") {
             if (is_pointer) {
                 return llvm::Type::getVoidTy(context)->getPointerTo();
             } else {
@@ -2918,7 +2918,7 @@ public:
         }
         this->visit_expr(*x.m_v);
         ptr_loads = ptr_loads_copy;
-        if (ASRUtils::is_abstract_class_type(ASRUtils::extract_type(x_m_v_type))) {
+        if (ASRUtils::is_unlimited_polymorphic_type(x.m_v)) {
             if( current_select_type_block_type ) {
                 current_der_type_name = current_select_type_block_der_type;
             }
@@ -5546,7 +5546,7 @@ public:
                 llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_value, 0));
                 llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep(llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep(llvm_target, 0));
-                if ( value_struct_t_name == "~abstract_type" ) {
+                if ( value_struct_t_name == "~unlimited_polymorphic_type" ) {
                     // we need to cast `value_class` to `void*`
                     llvm::Type* void_ptr_type = llvm::Type::getVoidTy(context)->getPointerTo();
                     value_class = builder->CreateBitCast(value_class, void_ptr_type);
@@ -6805,7 +6805,7 @@ public:
             builder->CreateCondBr(cond, thenBB, elseBB);
             builder->SetInsertPoint(thenBB);
             // TODO: change symtab for arrays too
-            bool change_symtab = ASRUtils::is_abstract_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_selector)))
+            bool change_symtab = ASRUtils::is_unlimited_polymorphic_type(x.m_selector)
                 && !ASRUtils::is_array(ASRUtils::expr_type(x.m_selector));
             // For class(*) selector variables cast to current select block type and update llvm_symtab temporarily
             // while executing blocks.
@@ -8374,7 +8374,7 @@ public:
                             current_der_type_name = ASRUtils::symbol_name(
                                 ASRUtils::symbol_get_past_external(d->m_derived_type));
                         }
-                        if (ASRUtils::is_abstract_class_type(t2)) {
+                        if (ASRUtils::is_unlimited_polymorphic_type(ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc, (ASR::symbol_t*)x)))) {
                             uint32_t h = get_hash((ASR::asr_t*)x);
                             if( llvm_symtab.find(h) != llvm_symtab.end() ) {
                                 tmp = llvm_symtab[h];
@@ -8491,7 +8491,7 @@ public:
     {
         dest_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
         ASR::ttype_t* curr_type = nullptr;
-        if (ASRUtils::is_abstract_class_type(ASRUtils::expr_type(x.m_arg))) {
+        if (ASRUtils::is_unlimited_polymorphic_type(x.m_arg)) {
             curr_type = current_select_type_block_type_asr;
         } else {
             curr_type = extract_ttype_t_from_expr(x.m_arg);
@@ -9880,7 +9880,7 @@ public:
         for(size_t i=0; i < StructSymbol->n_members; i++){
             ASR::symbol_t* StructMember = StructSymbol->m_symtab->
                                             get_symbol(StructSymbol->m_members[i]);
-            res += SerializeType(ASRUtils::symbol_type(StructMember), true);
+            res += SerializeType(ASRUtils::get_expr_from_sym(al, StructMember), ASRUtils::symbol_type(StructMember), true);
             if(i < StructSymbol->n_members-1){
                 res += ",";
             }
@@ -9901,11 +9901,11 @@ public:
     */
 
     // Serialize `type` using symbols above.
-    std::string SerializeType(ASR::ttype_t* type, bool in_struct){
+    std::string SerializeType(ASR::expr_t* expr, ASR::ttype_t* type, bool in_struct){
         std::string res {};
         type = ASRUtils::type_get_past_allocatable(
                 ASRUtils::type_get_past_pointer(type));
-        if (ASRUtils::is_abstract_class_type(type)) {
+        if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
             if (current_select_type_block_type_asr) {
                 type = current_select_type_block_type_asr;
             } else if (!current_select_type_block_der_type.empty()) {
@@ -9938,7 +9938,7 @@ public:
                 throw CodeGenError("Can't print type variable with dynamic array member");
             }
             res += "[";
-            res += SerializeType(ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
+            res += SerializeType(expr, ASR::down_cast<ASR::Array_t>(type)->m_type, in_struct);
             res += "]";
         } else if (ASR::is_a<ASR::StructType_t>(*type) && !ASRUtils::is_class_type(type)) {
             res += "(";
@@ -9958,7 +9958,7 @@ public:
     llvm::Value* SerializeExprTypes(ASR::expr_t** args, size_t n_args){
         std::string serialization_res = "";
         for (size_t i=0; i<n_args; i++) {
-            serialization_res += SerializeType(ASRUtils::expr_type(args[i]), false);
+            serialization_res += SerializeType(args[i], ASRUtils::expr_type(args[i]), false);
             if(i != n_args-1){
                 serialization_res += ",";
             }
@@ -10392,8 +10392,7 @@ public:
 
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(arg->m_type))
-                                    && !ASRUtils::is_abstract_class_type(
-                                        ASRUtils::type_get_past_allocatable(arg->m_type))
+                                    && !ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value)
                                     && !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
                                     tmp = convert_class_to_type(x.m_args[i].m_value, orig_arg->m_type, tmp);
@@ -10671,7 +10670,7 @@ public:
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
                             ASRUtils::expr_type(x.m_args[i].m_value)))))) ) {
-                tmp = convert_to_polymorphic_arg(tmp,
+                tmp = convert_to_polymorphic_arg(tmp, ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(orig_arg->m_type)),
                     ASRUtils::type_get_past_allocatable(
@@ -10789,13 +10788,13 @@ public:
         return type2vtabid[class_sym];
     }
 
-    llvm::Value* convert_to_polymorphic_arg(llvm::Value* dt,
+    llvm::Value* convert_to_polymorphic_arg(llvm::Value* dt, ASR::expr_t* s_m_args0,
         ASR::ttype_t* s_m_args0_type, ASR::ttype_t* arg_type) {
         if( !ASRUtils::is_class_type(ASRUtils::type_get_past_array(s_m_args0_type)) ) {
             return dt;
         }
 
-        if( ASRUtils::is_abstract_class_type(s_m_args0_type) ) {
+        if( ASRUtils::is_unlimited_polymorphic_type(s_m_args0) ) {
             if (ASRUtils::is_class_type(arg_type)) {
                 if( ASRUtils::is_array(s_m_args0_type) ) {
                     // TODO: Handle this case
@@ -10999,7 +10998,7 @@ public:
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(caller->m_type));
-                dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
+                dt = convert_to_polymorphic_arg(dt, s->m_args[0], s_m_args0_type, dt_type);
                 args.push_back(dt);
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
                 // Declared struct variable
@@ -11008,12 +11007,14 @@ public:
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
 
                 // Function's class type
+                ASR::expr_t* s_m_args0 = s->m_args[0];
                 ASR::ttype_t *s_m_args0_type;
                 if (self_argument != nullptr) {
                     ASR::symbol_t *class_sym = s->m_symtab->resolve_symbol(self_argument);
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(class_sym);
                     s_m_args0_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var->m_type));
+                    s_m_args0 = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, (ASR::symbol_t*) var));
                 } else {
                     s_m_args0_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
@@ -11021,7 +11022,7 @@ public:
                 }
 
                 // Convert to polymorphic argument
-                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt, s_m_args0_type, caller_type);
+                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt, s_m_args0, s_m_args0_type, caller_type);
 
                 if (self_argument == nullptr) {
                     args.push_back(dt_polymorphic);
@@ -11032,7 +11033,7 @@ public:
                 this->visit_expr(*x.m_dt);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
-                dt_polymorphic = convert_to_polymorphic_arg(dt, ASRUtils::expr_type(s->m_args[0]),
+                dt_polymorphic = convert_to_polymorphic_arg(dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
                                                 ASRUtils::expr_type(x.m_dt));
                 args.push_back(dt_polymorphic);
             } else {
@@ -11578,7 +11579,7 @@ public:
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
                 ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
-                dt = convert_to_polymorphic_arg(dt, s_m_args0_type, dt_type);
+                dt = convert_to_polymorphic_arg(dt, s->m_args[0], s_m_args0_type, dt_type);
                 args.push_back(dt);
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
                 // Declared struct variable
@@ -11587,12 +11588,14 @@ public:
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
 
                 // Function's class type
+                ASR::expr_t* s_m_args0 = s->m_args[0];
                 ASR::ttype_t *s_m_args0_type;
                 if (self_argument.length() > 0) {
                     ASR::symbol_t *class_sym = s->m_symtab->resolve_symbol(self_argument);
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(class_sym);
                     s_m_args0_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(var->m_type));
+                    s_m_args0 = ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, (ASR::symbol_t*) var));
                 } else {
                     s_m_args0_type = ASRUtils::type_get_past_allocatable(
                         ASRUtils::type_get_past_pointer(
@@ -11600,7 +11603,7 @@ public:
                 }
 
                 // Convert to polymorphic argument
-                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt, s_m_args0_type, caller_type);
+                llvm::Value* dt_polymorphic = convert_to_polymorphic_arg(dt, s_m_args0, s_m_args0_type, caller_type);
 
                 if (self_argument.length() == 0) {
                     args.push_back(dt_polymorphic);
@@ -11611,7 +11614,7 @@ public:
                 this->visit_expr(*x.m_dt);
                 llvm::Value* dt = tmp;
                 llvm::Value* dt_polymorphic = tmp;
-                dt_polymorphic = convert_to_polymorphic_arg(dt, ASRUtils::expr_type(s->m_args[0]),
+                dt_polymorphic = convert_to_polymorphic_arg(dt, s->m_args[0], ASRUtils::expr_type(s->m_args[0]),
                                                 ASRUtils::expr_type(x.m_dt));
                 args.push_back(dt_polymorphic);
             } else {

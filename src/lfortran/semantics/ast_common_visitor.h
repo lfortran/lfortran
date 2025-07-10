@@ -4914,13 +4914,13 @@ public:
         } else if (sym_type->m_type == AST::decl_typeType::TypeClass) {
             std::string derived_type_name;
             if( !sym_type->m_name ) {
-                derived_type_name = "~abstract_type";
+                derived_type_name = "~unlimited_polymorphic_type";
             } else {
                 derived_type_name = to_lower(sym_type->m_name);
             }
             ASR::symbol_t *v = current_scope->resolve_symbol(derived_type_name);
             if( !v ) {
-                if( derived_type_name != "~abstract_type" ) {
+                if( derived_type_name != "~unlimited_polymorphic_type" ) {
                     diag.add(Diagnostic(
                         "Derived type '" + derived_type_name
                         + "' not declared",

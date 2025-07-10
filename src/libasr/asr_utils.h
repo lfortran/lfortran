@@ -3635,8 +3635,8 @@ inline bool is_parent(ASR::Struct_t* a, ASR::Struct_t* b) {
 
 inline bool is_derived_type_similar(ASR::Struct_t* a, ASR::Struct_t* b) {
     return a == b || is_parent(a, b) || is_parent(b, a) ||
-        (std::string(a->m_name) == "~abstract_type" &&
-        std::string(b->m_name) == "~abstract_type");
+        (std::string(a->m_name) == "~unlimited_polymorphic_type" &&
+        std::string(b->m_name) == "~unlimited_polymorphic_type");
 }
 
 // TODO: Scaled up implementation for all exprTypes
@@ -3763,13 +3763,13 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
     if (ASRUtils::is_class_type(a)) {
         if (ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructType_t>(a)->m_derived_type)) == std::string("~abstract_type")) {
+                ASR::down_cast<ASR::StructType_t>(a)->m_derived_type)) == std::string("~unlimited_polymorphic_type")) {
             return true;
         }
     } else if (ASRUtils::is_class_type(b)) {
         if (ASRUtils::symbol_name(
             ASRUtils::symbol_get_past_external(
-                ASR::down_cast<ASR::StructType_t>(b)->m_derived_type)) == std::string("~abstract_type")) {
+                ASR::down_cast<ASR::StructType_t>(b)->m_derived_type)) == std::string("~unlimited_polymorphic_type")) {
             return true;
         }
     }
@@ -5332,6 +5332,44 @@ static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
     return ASR::down_cast<ASR::Enum_t>(enum_type_cand);
 }
 
+// Recursively creates a Var node expression from a symbol.
+// For Variable: returns Var node for the variable.
+// For Function: resolves m_return_var, gets the variable, and returns Var node for it.
+static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) {
+    sym = ASRUtils::symbol_get_past_external(sym);
+    switch (sym->type) {
+        case ASR::symbolType::Variable: {
+            return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
+        }
+        case ASR::symbolType::Function: {
+            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
+            ASR::Var_t* ret_var = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
+            return get_expr_from_sym(al, ret_var->m_v);
+        }
+        default: {
+            throw LCompilersException("get_expr_from_sym: Only Variable and Function symbols are supported.");
+        }
+    }
+}
+
+static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
+{
+    ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
+    if ( !ASR::is_a<ASR::StructType_t>(*type) ) {
+        return false;
+    }
+    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(type);
+    
+    if (!ASRUtils::is_class_type(type)) {
+        return false;
+    }
+    return (st->n_data_member_types == 0 && st->n_member_function_types == 0
+            && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
+                   st->m_derived_type))
+                   == std::string("~unlimited_polymorphic_type"));
+
+}
+
 static inline bool is_abstract_class_type(ASR::ttype_t* type) {
     type = ASRUtils::type_get_past_array(type);
     if( !ASRUtils::is_class_type(type) ) {
@@ -5340,7 +5378,7 @@ static inline bool is_abstract_class_type(ASR::ttype_t* type) {
     ASR::StructType_t* class_t = ASR::down_cast<ASR::StructType_t>(type);
     return std::string( ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(class_t->m_derived_type))
-                ) == "~abstract_type";
+                ) == "~unlimited_polymorphic_type";
 }
 
 static inline void set_enum_value_type(ASR::enumtypeType &enum_value_type,
