@@ -175,7 +175,7 @@ class ASRBuilder {
             throw LCompilersException("Invalid String Node Status");
         }
 
-        if((physical_type == ASR::CChar)){
+        if(physical_type == ASR::CChar){
             int64_t len_const;
             if(!is_value_constant(len, len_const))
                 LCompilersException("Invalid String Node Status");
