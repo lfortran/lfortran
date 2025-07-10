@@ -6424,19 +6424,15 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_type, module.get());
         llvm::Value* llvm_cond = nullptr;
-        ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
-                        ASRUtils::get_struct_sym_from_struct_expr(target_expr));
-        if (value_struct_type == nullptr) {
-            value_struct_type = wrapped_struct_type;
-        }
-
-        if (value_expr == nullptr) {
-            value_expr = target_expr;
-        }
-
+        
         if (ASR::is_a<ASR::Allocatable_t>(*asr_ttype) &&
             ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_ttype))) {
             llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_ttype, module.get());
+            ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
+                            ASRUtils::get_struct_sym_from_struct_expr(target_expr));
+            if (value_struct_type == nullptr) {
+                value_struct_type = wrapped_struct_type;
+            }
             llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, wrapped_struct_type, module.get());
             llvm::Value* target_struct_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(),
                                             llvm_utils->create_gep2(target_llvm_type, tmp, 1));
@@ -6484,7 +6480,10 @@ public:
                                 ASRUtils::get_struct_sym_from_struct_expr(target_expr));
                         alloc_arg.m_sym_subclass = ASRUtils::get_struct_sym_from_struct_expr(target_expr);
                     } else {
-                        alloc_arg.m_type  = value_struct_type;
+                        alloc_arg.m_type = value_struct_type;
+                        if (value_expr == nullptr) {
+                            value_expr = target_expr;
+                        }
                         alloc_arg.m_sym_subclass = ASRUtils::get_struct_sym_from_struct_expr(value_expr);
                     }
                     alloc_arg.m_len_expr = nullptr;

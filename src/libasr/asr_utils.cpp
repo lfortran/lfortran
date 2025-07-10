@@ -1538,14 +1538,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     SetChar& current_function_dependencies,
                     SetChar& current_module_dependencies,
                     const std::function<void (const std::string &, const Location &)> err) {
-    ASR::ttype_t *left_type = ASRUtils::extract_type(ASRUtils::expr_type(left));
-    ASR::ttype_t *right_type = ASRUtils::extract_type(ASRUtils::expr_type(right));
+    ASR::ttype_t *left_type = ASRUtils::expr_type(left);
+    ASR::ttype_t *right_type = ASRUtils::expr_type(right);
     ASR::Struct_t *left_struct = nullptr, *right_struct = nullptr;
 
-    if (ASR::is_a<ASR::StructType_t>(*left_type)) {
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(left_type))) {
         left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(left));
     }
-    if (ASR::is_a<ASR::StructType_t>(*right_type)) {
+    if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(right_type))) {
         right_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(right));
     }
     bool found = false;
@@ -1642,7 +1642,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1]));
 
-                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
+                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
                                     break;
                                 }
                             }
@@ -1773,7 +1774,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ASR::Struct_t* right_arg_sym = ASR::down_cast<ASR::Struct_t>(
                                     ASRUtils::symbol_get_past_external(
                                         ASRUtils::get_struct_sym_from_struct_expr(func->m_args[1])));
-                                if (left_sym != left_arg_sym || right_sym != right_arg_sym) {
+                                        
+                                if (!is_derived_type_similar(left_sym, left_arg_sym) ||
+                                        !is_derived_type_similar(right_sym, right_arg_sym)) {
                                     break;
                                 }
                             }
