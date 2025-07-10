@@ -5566,7 +5566,7 @@ public:
                     }));
                 throw SemanticAbort();
             } else if (ASR::is_a<ASR::Struct_t>(*type_declaration)) {
-                type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, type_declaration));
+                type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, type_declaration);
             }
         } else {
             if (x.n_args == 0) {
@@ -10571,7 +10571,7 @@ public:
             } else {
                 ASR::ttype_t* type = ASRUtils::expr_type(func->m_return_var);
                 return_type = ASRUtils::duplicate_type_without_dims(al, type, loc);
-                return_type = ASRUtils::fix_scoped_type(al, type, current_scope);
+                // return_type = ASRUtils::fix_scoped_type(al, type, current_scope);
             }
 
             if (op_sym && ASRUtils::symbol_parent_symtab(op_sym)->get_counter()
