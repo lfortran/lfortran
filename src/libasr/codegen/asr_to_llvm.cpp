@@ -1146,8 +1146,7 @@ public:
 
                         // Set class hash in polymorphic struct
                         llvm::Value* class_hash = nullptr;
-                        if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
-                            ASR::symbol_t* dest_class_sym = ASRUtils::get_struct_sym_from_struct_expr(curr_arg.m_a);
+                        if (dest_class_sym) {
                             class_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
                                 llvm::APInt(64, get_class_hash(dest_class_sym)));
                         } else {
@@ -6425,13 +6424,18 @@ public:
         ptr_loads = ptr_loads_copy;
         llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_type, module.get());
         llvm::Value* llvm_cond = nullptr;
+        ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
+                        ASRUtils::get_struct_sym_from_struct_expr(target_expr));
+        if (value_struct_type == nullptr) {
+            value_struct_type = wrapped_struct_type;
+        }
+
+        if (value_expr == nullptr) {
+            value_expr = target_expr;
+        }
+
         if (ASR::is_a<ASR::Allocatable_t>(*asr_ttype) &&
             ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(asr_ttype))) {
-            ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_ttype->base.loc,
-                            ASRUtils::get_struct_sym_from_struct_expr(target_expr));
-            if (value_struct_type == nullptr) {
-                value_struct_type = wrapped_struct_type;
-            }
             llvm::Type* target_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, asr_ttype, module.get());
             llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(target_expr, wrapped_struct_type, module.get());
             llvm::Value* target_struct_ptr = llvm_utils->CreateLoad2(wrapper_struct_llvm_type->getPointerTo(),
@@ -6478,8 +6482,10 @@ public:
                         !ASR::is_a<ASR::StructType_t>(*value_struct_type)) {
                         alloc_arg.m_type = ASRUtils::make_StructType_t_util(al, asr_type->base.loc,
                                 ASRUtils::get_struct_sym_from_struct_expr(target_expr));
+                        alloc_arg.m_sym_subclass = ASRUtils::get_struct_sym_from_struct_expr(target_expr);
                     } else {
                         alloc_arg.m_type  = value_struct_type;
+                        alloc_arg.m_sym_subclass = ASRUtils::get_struct_sym_from_struct_expr(value_expr);
                     }
                     alloc_arg.m_len_expr = nullptr;
                     alloc_args.push_back(al, alloc_arg);
