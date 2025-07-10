@@ -901,7 +901,7 @@ namespace LCompilers {
                 llvm::Value* capacity, ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type,
                 llvm::Module* module, std::map<std::string, std::map<std::string, int>>& name2memidx);
 
-            void resolve_collision(llvm::Value* capacity, llvm::Value* key_hash,
+            void resolve_collision(ASR::expr_t* dict_expr, llvm::Value* capacity, llvm::Value* key_hash,
                 llvm::Value* key, llvm::Value* key_value_pair_linked_list,
                 llvm::Type* kv_pair_type, llvm::Value* key_mask,
                 llvm::Module* module, ASR::ttype_t* key_asr_type);
@@ -937,15 +937,6 @@ namespace LCompilers {
 
             llvm::Value* get_pointer_to_capacity_using_typecode(std::string& key_type_code, std::string& value_type_code, llvm::Value* dict);
 
-            void resolve_collision(ASR::expr_t* dict_expr,
-                                   llvm::Value*,
-                                   llvm::Value* key_hash,
-                                   llvm::Value* key,
-                                   llvm::Value* key_value_pair_linked_list,
-                                   llvm::Type* kv_pair_type,
-                                   llvm::Value* key_mask,
-                                   llvm::Module* module,
-                                   ASR::ttype_t* key_asr_type);
 
             void resolve_collision_for_write(
                 ASR::expr_t* dict_expr,

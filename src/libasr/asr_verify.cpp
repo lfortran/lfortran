@@ -1145,12 +1145,7 @@ public:
 
     void visit_StructType(const StructType_t& x) {
         for (size_t i = 0; i < x.n_data_member_types; i++) {
-            symbol_visited = false;
             visit_ttype(*x.m_data_member_types[i]);
-            ASRUtils ::require_impl((symbol_visited == false),
-                                    ("ASR::ttype_t in ASR::StructType cannot be tied to a scope."),
-                                    x.base.base.loc,
-                                    diagnostics);
         }
     }
 

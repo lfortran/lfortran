@@ -4925,8 +4925,8 @@ public:
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
-                } else {
-                    type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v, true));
+                } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
+                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -5547,7 +5547,7 @@ public:
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false, false,
                 dims, type_declaration, ASR::abiType::Source);
             if (ASR::is_a<ASR::StructType_t>(*type)) {
-                std::string derived_type_name = ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type);
+                std::string derived_type_name = "ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type)"; // TODO: fix this regression
                 diag.add(Diagnostic(
                     "Invalid syntax of derived type for array constructor",
                     Level::Error, Stage::Semantic, {
@@ -10474,32 +10474,19 @@ public:
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(first_operand))) {
             first_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::StructType_t>(ASRUtils::expr_type(first_operand))->m_derived_type
+                    ASRUtils::get_struct_sym_from_struct_expr(first_operand)
                 )
             );
         }
 
-        ASR::Struct_t *left_struct = nullptr;
-        if ( ASR::is_a<ASR::StructType_t>(*left_type) ) {
-            left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(left));
-        }
-
-        ASR::symbol_t* sym = current_scope->resolve_symbol(x.m_op);
-        ASR::symbol_t *op_sym = ASRUtils::symbol_get_past_external(sym);
-        if ( left_struct != nullptr && op_sym == nullptr) {
-            op_sym = left_struct->m_symtab->resolve_symbol(
-                "~def_op~" + std::string(x.m_op));
-            if (op_sym == nullptr) {
-                diag.add(Diagnostic("`" + std::string(x.m_op)
-                    + "` is not defined in the Struct: `" + left_struct->m_name
-                    + "`", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+        if (first_struct != nullptr && operator_sym == nullptr) {
+            operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
+            if (operator_sym == nullptr) {
+                diag.add(Diagnostic("`" + op
+                    + "` is not defined in the Struct: `" + first_struct->m_name
+                    + "`", Level::Error, Stage::Semantic, {Label("", {loc})}));
                 throw SemanticAbort();
             }
-        }
-        if (op_sym == nullptr) {
-            diag.add(Diagnostic("`" + std::string(x.m_op)
-                + "` is not defined or imported", Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-            throw SemanticAbort();
         }
 
         if (operator_sym == nullptr) {

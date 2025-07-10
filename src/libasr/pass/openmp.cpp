@@ -3373,7 +3373,7 @@ class ParallelRegionVisitor :
             // Create tdata variable
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", 
                 ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, 
-                    ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, thread_data_sym)))),
+                    ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
                 ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
             tdata_expr_copy = tdata_expr;
@@ -3507,8 +3507,8 @@ class ParallelRegionVisitor :
             // Create data and tdata variables
             ASR::expr_t* data_expr = b.Variable(current_scope, 
                 current_scope->get_unique_name("teams_data"), 
-                ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, x.base.base.loc, 
-                    thread_data_ext_sym)), ASR::intentType::Local);
+                ASRUtils::make_StructType_t_util(al, x.base.base.loc, 
+                    thread_data_ext_sym), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
             
             ASR::expr_t* tdata_expr = b.Variable(current_scope, 
