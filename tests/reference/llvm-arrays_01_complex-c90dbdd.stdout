@@ -112,9 +112,9 @@ loop.body:                                        ; preds = %loop.head
   %8 = sub i32 %7, 1
   %9 = mul i32 1, %8
   %10 = add i32 0, %9
-  %11 = icmp sgt i32 %7, 3
-  %12 = icmp slt i32 %7, 1
-  %13 = or i1 %12, %11
+  %11 = icmp slt i32 %7, 1
+  %12 = icmp sgt i32 %7, 3
+  %13 = or i1 %11, %12
   br i1 %13, label %then, label %else
 
 loop.end:                                         ; preds = %loop.head
