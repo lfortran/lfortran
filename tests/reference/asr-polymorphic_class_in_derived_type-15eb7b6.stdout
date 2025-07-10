@@ -26,7 +26,7 @@
                                                             []
                                                             []
                                                             .false.
-                                                            3 ~abstract_type
+                                                            3 ~unlimited_polymorphic_type
                                                         )
                                                     )
                                                     ()
@@ -54,7 +54,7 @@
                                                             []
                                                             []
                                                             .false.
-                                                            3 ~abstract_type
+                                                            3 ~unlimited_polymorphic_type
                                                         )
                                                     )
                                                     ()
@@ -68,14 +68,14 @@
                                                     .false.
                                                     .false.
                                                 ),
-                                            ~abstract_type:
+                                            ~unlimited_polymorphic_type:
                                                 (Struct
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
                                                         })
-                                                    ~abstract_type
+                                                    ~unlimited_polymorphic_type
                                                     []
                                                     []
                                                     []
