@@ -759,7 +759,7 @@ RUN(NAME format_35 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_01 LABELS gfortran)
 RUN(NAME submodule_02 LABELS gfortran fortran)
 RUN(NAME submodule_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) 
-RUN(NAME submodule_04 LABELS gfortran)
+RUN(NAME submodule_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_05 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) 
 
@@ -2438,6 +2438,7 @@ RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_16a.f90 separate_compilation_16b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_17a.f90 separate_compilation_17b.f90 EXTRA_ARGS --separate-compilation)
 RUN(NAME separate_compilation_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_18a.f90 separate_compilation_18b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_19a.f90 separate_compilation_19b.f90 EXTRA_ARGS --separate-compilation)
 
 
 
