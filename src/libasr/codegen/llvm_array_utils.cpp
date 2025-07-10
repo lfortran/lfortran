@@ -725,9 +725,12 @@ namespace LCompilers {
                     llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
                     llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, length),
                                                             llvm::ConstantInt::get(i32, llvm::APInt(32, 1)));
+                    llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
+                    llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
+
                     llvm_utils->generate_runtime_error(builder->CreateOr(
-                                                            builder->CreateICmpSLT(req_idx, lval),
-                                                            builder->CreateICmpSGT(req_idx, ubound)),
+                                                            lbound_check,
+                                                            ubound_check),
                                             "Runtime error: Array '%s' index out of bounds.\n\n"
                                                      "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
                                                      builder->CreateGlobalStringPtr(array_name),
@@ -768,9 +771,11 @@ namespace LCompilers {
                         llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
                         llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, dim_size),
                                 llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
+                        llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
+                        llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
                         llvm_utils->generate_runtime_error(builder->CreateOr(
-                                                                builder->CreateICmpSLT(req_idx, lval),
-                                                                builder->CreateICmpSGT(req_idx, ubound)),
+                                                                lbound_check,
+                                                                ubound_check),
                                                 "Runtime error: Array '%s' index out of bounds.\n\n"
                                                         "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
                                                         builder->CreateGlobalStringPtr(array_name),

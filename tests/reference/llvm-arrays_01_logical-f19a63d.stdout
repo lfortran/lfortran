@@ -124,9 +124,9 @@ loop.body:                                        ; preds = %loop.head
   %9 = sub i32 %8, 1
   %10 = mul i32 1, %9
   %11 = add i32 0, %10
-  %12 = icmp sgt i32 %8, 3
-  %13 = icmp slt i32 %8, 1
-  %14 = or i1 %13, %12
+  %12 = icmp slt i32 %8, 1
+  %13 = icmp sgt i32 %8, 3
+  %14 = or i1 %12, %13
   br i1 %14, label %then3, label %else4
 
 loop.end:                                         ; preds = %loop.head
@@ -555,9 +555,9 @@ loop.body64:                                      ; preds = %loop.head63
   %78 = sub i32 %77, 1
   %79 = mul i32 1, %78
   %80 = add i32 0, %79
-  %81 = icmp sgt i32 %77, 4
-  %82 = icmp slt i32 %77, 1
-  %83 = or i1 %82, %81
+  %81 = icmp slt i32 %77, 1
+  %82 = icmp sgt i32 %77, 4
+  %83 = or i1 %81, %82
   br i1 %83, label %then65, label %else66
 
 then65:                                           ; preds = %loop.body64
@@ -574,9 +574,9 @@ ifcont67:                                         ; preds = %else66, %then65
   %86 = sub i32 %85, 1
   %87 = mul i32 1, %86
   %88 = add i32 0, %87
-  %89 = icmp sgt i32 %85, 3
-  %90 = icmp slt i32 %85, 1
-  %91 = or i1 %90, %89
+  %89 = icmp slt i32 %85, 1
+  %90 = icmp sgt i32 %85, 3
+  %91 = or i1 %89, %90
   br i1 %91, label %then68, label %else69
 
 then68:                                           ; preds = %ifcont67
@@ -859,9 +859,9 @@ then127:                                          ; preds = %loop.body126
   %148 = sub i32 %146, 1
   %149 = mul i32 1, %148
   %150 = add i32 0, %149
-  %151 = icmp sgt i32 %146, 2
-  %152 = icmp slt i32 %146, 1
-  %153 = or i1 %152, %151
+  %151 = icmp slt i32 %146, 1
+  %152 = icmp sgt i32 %146, 2
+  %153 = or i1 %151, %152
   br i1 %153, label %then128, label %else129
 
 then128:                                          ; preds = %then127
@@ -876,9 +876,9 @@ ifcont130:                                        ; preds = %else129, %then128
   %154 = sub i32 %147, 1
   %155 = mul i32 2, %154
   %156 = add i32 %150, %155
-  %157 = icmp sgt i32 %147, 2
-  %158 = icmp slt i32 %147, 1
-  %159 = or i1 %158, %157
+  %157 = icmp slt i32 %147, 1
+  %158 = icmp sgt i32 %147, 2
+  %159 = or i1 %157, %158
   br i1 %159, label %then131, label %else132
 
 then131:                                          ; preds = %ifcont130
@@ -900,9 +900,9 @@ else134:                                          ; preds = %loop.body126
   %163 = sub i32 %161, 1
   %164 = mul i32 1, %163
   %165 = add i32 0, %164
-  %166 = icmp sgt i32 %161, 2
-  %167 = icmp slt i32 %161, 1
-  %168 = or i1 %167, %166
+  %166 = icmp slt i32 %161, 1
+  %167 = icmp sgt i32 %161, 2
+  %168 = or i1 %166, %167
   br i1 %168, label %then135, label %else136
 
 then135:                                          ; preds = %else134
@@ -917,9 +917,9 @@ ifcont137:                                        ; preds = %else136, %then135
   %169 = sub i32 %162, 1
   %170 = mul i32 2, %169
   %171 = add i32 %165, %170
-  %172 = icmp sgt i32 %162, 2
-  %173 = icmp slt i32 %162, 1
-  %174 = or i1 %173, %172
+  %172 = icmp slt i32 %162, 1
+  %173 = icmp sgt i32 %162, 2
+  %174 = or i1 %172, %173
   br i1 %174, label %then138, label %else139
 
 then138:                                          ; preds = %ifcont137
