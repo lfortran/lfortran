@@ -12,7 +12,7 @@ module mod_submodule_04
     interface
         module subroutine map_open_entry(map, key)
             class(open_hashmap_type), intent(inout) :: map
-            integer, intent(in) :: key
+            integer, intent(inout) :: key
         end subroutine map_open_entry
     end interface
     
@@ -24,7 +24,9 @@ contains
 
     module subroutine map_open_entry(map, key)
         class(open_hashmap_type), intent(inout) :: map
-        integer, intent(in) :: key
+        integer, intent(inout) :: key
+        integer, parameter :: i = 5
+        key = i
     end subroutine map_open_entry
 
 end submodule submod_submodule_04
@@ -35,7 +37,9 @@ program submodule_04
     implicit none
 
     type(open_hashmap_type)   :: map
-    integer :: key
+    integer :: key = 1
     call map % map_entry( key )
 
+    print *, key
+    if (key /= 5) error stop
 end program

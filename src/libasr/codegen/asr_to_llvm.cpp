@@ -4668,7 +4668,7 @@ public:
             F = llvm_symtab_fn[h];
         } else {
             llvm::FunctionType* function_type = llvm_utils->get_function_type(x, module.get());
-            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface ) {
+            if( ASRUtils::get_FunctionType(x)->m_deftype == ASR::deftypeType::Interface && !ASRUtils::get_FunctionType(x)->m_module ) {
                 ASR::FunctionType_t* asr_function_type = ASRUtils::get_FunctionType(x);
                 for( size_t i = 0; i < asr_function_type->n_arg_types; i++ ) {
                     if( ASRUtils::is_class_type(asr_function_type->m_arg_types[i]) ) {
