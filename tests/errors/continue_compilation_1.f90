@@ -346,4 +346,6 @@ program continue_compilation_1
 
     character(len=5) :: new = 'hello'
     print *, iachar(new)
+
+    print *, ichar(char(0))
 end program
