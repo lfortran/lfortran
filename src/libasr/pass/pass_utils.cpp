@@ -102,8 +102,8 @@ namespace LCompilers {
                         struct_t->m_derived_type)->get_counter() ) { \
                     ASR::symbol_t* m_derived_type = current_scope->resolve_symbol( \
                         ASRUtils::symbol_name(struct_t->m_derived_type)); \
-                    ASR::ttype_t* struct_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, \
-                        struct_t->base.base.loc, m_derived_type)); \
+                    ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, \
+                        struct_t->base.base.loc, m_derived_type); \
                     array_ref_type = struct_type; \
                 } \
             } \
