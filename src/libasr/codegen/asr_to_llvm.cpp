@@ -11084,9 +11084,8 @@ public:
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
 
                 // Function's class type
-                ASR::expr_t* s_m_args0 = s->m_args[0];
                 ASR::ttype_t *s_m_args0_type;
-                ASR::expr_t* s_m_args0;
+                ASR::expr_t* s_m_args0 = nullptr;
                 if (self_argument != nullptr) {
                     ASR::symbol_t *class_sym = s->m_symtab->resolve_symbol(self_argument);
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(class_sym);
@@ -11666,9 +11665,8 @@ public:
                 ASR::ttype_t* caller_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_dt));
 
                 // Function's class type
-                ASR::expr_t* s_m_args0 = s->m_args[0];
                 ASR::ttype_t *s_m_args0_type;
-                ASR::expr_t *s_m_args0;
+                ASR::expr_t *s_m_args0 = nullptr;
                 if (self_argument.length() > 0) {
                     ASR::symbol_t *class_sym = s->m_symtab->resolve_symbol(self_argument);
                     ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(class_sym);

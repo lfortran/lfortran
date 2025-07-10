@@ -5294,26 +5294,6 @@ static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {
     return ASR::down_cast<ASR::Enum_t>(enum_type_cand);
 }
 
-// Recursively creates a Var node expression from a symbol.
-// For Variable: returns Var node for the variable.
-// For Function: resolves m_return_var, gets the variable, and returns Var node for it.
-static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) {
-    sym = ASRUtils::symbol_get_past_external(sym);
-    switch (sym->type) {
-        case ASR::symbolType::Variable: {
-            return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
-        }
-        case ASR::symbolType::Function: {
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
-            ASR::Var_t* ret_var = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
-            return get_expr_from_sym(al, ret_var->m_v);
-        }
-        default: {
-            throw LCompilersException("get_expr_from_sym: Only Variable and Function symbols are supported.");
-        }
-    }
-}
-
 static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
 {
     ASR::ttype_t* type = ASRUtils::extract_type(ASRUtils::expr_type(expr));
