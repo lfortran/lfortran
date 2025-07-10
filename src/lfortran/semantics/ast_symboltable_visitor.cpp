@@ -1931,7 +1931,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~abstract_type") {
+            if (item.first != "~unlimited_polymorphic_type") {
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
@@ -1993,7 +1993,7 @@ public:
                 continue;
             }
             char* aggregate_type_name = nullptr;
-            if (item.first != "~abstract_type") {
+            if (item.first != "~unlimited_polymorphic_type") {
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;

@@ -337,7 +337,7 @@ namespace LCompilers {
         } else {
             std::vector<llvm::Type*> member_types;
             member_types.push_back(getIntType(8));
-            if( der_sym_name == "~abstract_type" ) {
+            if( der_sym_name == "~unlimited_polymorphic_type" ) {
                 member_types.push_back(llvm::Type::getVoidTy(context)->getPointerTo());
             } else if( ASR::is_a<ASR::Struct_t>(*der_sym) ) {
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(der_sym);
