@@ -2354,7 +2354,7 @@ namespace LCompilers {
         list_deepcopy(src_expr, src, dest, list_type->m_type, module, name2memidx);
     }
 
-    void LLVMList::list_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
+    void LLVMList::list_deepcopy([[maybe_unused]] ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
                                  ASR::ttype_t* element_type, llvm::Module* module,
                                  std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
@@ -3344,7 +3344,7 @@ namespace LCompilers {
             key_mask_value_ptr);
     }
 
-    llvm::Value* LLVMDict::resolve_collision_for_read(ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDict::resolve_collision_for_read([[maybe_unused]] ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3364,7 +3364,7 @@ namespace LCompilers {
         return item;
     }
 
-    llvm::Value* LLVMDict::resolve_collision_for_read_with_bound_check(ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDict::resolve_collision_for_read_with_bound_check([[maybe_unused]] ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3655,7 +3655,7 @@ namespace LCompilers {
         return result;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read(ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read([[maybe_unused]] ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -3682,7 +3682,7 @@ namespace LCompilers {
         return tmp_value_ptr;
     }
 
-    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check(ASR::expr_t* dict_expr,
+    llvm::Value* LLVMDictSeparateChaining::resolve_collision_for_read_with_bound_check([[maybe_unused]] ASR::expr_t* dict_expr,
         llvm::Value* dict, llvm::Value* key_hash,
         llvm::Value* key, llvm::Module* module,
         ASR::ttype_t* key_asr_type, ASR::ttype_t* value_asr_type) {
@@ -4011,7 +4011,7 @@ namespace LCompilers {
     }
 
     void LLVMDictSeparateChaining::rehash(
-        ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
+        [[maybe_unused]] ASR::expr_t* dict_expr, llvm::Value* dict, llvm::Module* module,
         ASR::ttype_t* key_asr_type,
         ASR::ttype_t* value_asr_type,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -4724,7 +4724,7 @@ namespace LCompilers {
         shift_end_point_by_one_using_typecode(type_code, list);
     }
 
-    void LLVMList::insert_item(ASR::expr_t* list_expr, llvm::Value* list, llvm::Value* pos,
+    void LLVMList::insert_item([[maybe_unused]] ASR::expr_t* list_expr, llvm::Value* list, llvm::Value* pos,
                                llvm::Value* item, ASR::ttype_t* asr_type,
                                llvm::Module* module,
                                std::map<std::string, std::map<std::string, int>>& name2memidx) {
@@ -5521,7 +5521,7 @@ namespace LCompilers {
         return read_item_using_pos_value(el_type, llvm_tuple, tuple_type, llvm_pos, get_pointer);
     }
 
-    void LLVMTuple::tuple_init(ASR::expr_t* tuple_expr, llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
+    void LLVMTuple::tuple_init([[maybe_unused]] ASR::expr_t* tuple_expr, llvm::Value* llvm_tuple, std::vector<llvm::Value*>& values,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         for( size_t i = 0; i < values.size(); i++ ) {
@@ -5533,7 +5533,7 @@ namespace LCompilers {
         }
     }
 
-    void LLVMTuple::tuple_deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
+    void LLVMTuple::tuple_deepcopy([[maybe_unused]] ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
         ASR::Tuple_t* tuple_type, llvm::Module* module,
         std::map<std::string, std::map<std::string, int>>& name2memidx) {
         LCOMPILERS_ASSERT(src->getType() == dest->getType());
