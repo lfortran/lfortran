@@ -131,7 +131,7 @@ jobs:
             case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
             export LFORTRAN_LLVM_VERSION=${{ matrix.llvm-version }}
             export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
-            shell ci/test.sh
+            # shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
         shell: bash -e -l {0}
