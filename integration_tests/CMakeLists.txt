@@ -2438,7 +2438,7 @@ RUN(NAME module_array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran
 RUN(NAME attr_intrinsic LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME separate_compilation_01 LABELS gfortran llvm EXTRAFILES separate_compilation_01b.f90)
-# RUN(NAME separate_compilation_02 LABELS gfortran llvm EXTRAFILES separate_compilation_02b.f90)
+RUN(NAME separate_compilation_02 LABELS gfortran llvm EXTRAFILES separate_compilation_02b.f90)
 RUN(NAME separate_compilation_03 LABELS gfortran llvm EXTRAFILES separate_compilation_03a.f90 separate_compilation_03b.f90 EXTRA_ARGS --skip-pass=pass_array_by_data)
 RUN(NAME separate_compilation_04 LABELS gfortran llvm EXTRAFILES separate_compilation_04a.f90 separate_compilation_04b.f90)
 RUN(NAME separate_compilation_05 LABELS gfortran llvm EXTRAFILES separate_compilation_05a.f90 separate_compilation_05b.f90)

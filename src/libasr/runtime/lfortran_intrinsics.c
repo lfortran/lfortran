@@ -1248,11 +1248,12 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
     case 'L':
         *PrimitiveType = LOGICAL_TYPE;
         break;
-    case 'S':
+    case 'S':{
         Primitive_Types str_phys_type = get_string_primitive_type(s_info);
         set_string_length(s_info);
         *PrimitiveType = str_phys_type;
         break;
+    }
     case 'C':
         ASSERT_MSG(s_info->serialization_string[s_info->current_stop++] == 'P' &&
             s_info->serialization_string[s_info->current_stop++] == 't' &&
@@ -4833,7 +4834,7 @@ LFORTRAN_API void _lfortran_read_array_char(char *p, int64_t length, int array_s
         memset(p+max_read_chars, ' ', remaning);
     } else { // Formatted
         char length_format[23] /* '%' + MaxDigits + 's'*/;
-        sprintf(length_format, "%%%ld", length);
+        sprintf(length_format, "%%%"PRId64, length);
         strcat(length_format, "s");
         for(int i = 0; i < array_size; i++){
             fscanf(filep, length_format, p+(i*(length+null_c_len))); // Read exactly length 
@@ -4884,7 +4885,7 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t /*advance_length*/, char* fmt, int32_t no_of_args, ...)
+LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t advance_length, char* fmt, int32_t no_of_args, ...)
 {
     int width = -1; // default is -1, if length not mentioned
 
