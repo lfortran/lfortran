@@ -343,4 +343,10 @@ program continue_compilation_1
     arr = [type(MyClass) :: v1, v2, v3]
 
     arr = [NonExistingType :: v1, v2, v3]
+
+    character(len=100) :: m
+    m = "Hello, World!"
+    print *, m
+    print *, size(m)
+    
 end program

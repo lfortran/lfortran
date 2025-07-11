@@ -769,3 +769,9 @@ semantic error: Class type `NonExistingType` is not defined
     |
 345 |     arr = [NonExistingType :: v1, v2, v3]
     |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: 'array' argument of 'size' intrinsic must be an array
+   --> tests/errors/continue_compilation_1.f90:350:14
+    |
+350 |     print *, size(m)
+    |              ^^^^^^^ 

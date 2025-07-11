@@ -7152,6 +7152,11 @@ public:
                 throw SemanticAbort();
             }
         }
+        if(!ASRUtils::is_array(ASRUtils::expr_type(v_Var))) {
+            diag.add(diag::Diagnostic("'array' argument of 'size' intrinsic must be an array",
+                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
 
         return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
