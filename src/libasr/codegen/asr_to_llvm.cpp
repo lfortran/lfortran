@@ -11045,10 +11045,9 @@ public:
                                 }
                         }
                         if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
-                            !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
-                            LLVM::is_llvm_pointer(*arg_type) &&
-                            !ASRUtils::is_character(*orig_arg->m_type) &&
-                            ASRUtils::is_descriptorString(arg_type)) &&
+                            !(!LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                            LLVM::is_llvm_pointer(*arg_type)) &&
+                            !ASRUtils::is_character(*arg_type) &&
                             (!ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) || ASRUtils::is_value_constant(x.m_args[i].m_value)) ) {
                             llvm::AllocaInst *target = llvm_utils->CreateAlloca(
                                 target_type, nullptr, "call_arg_value");

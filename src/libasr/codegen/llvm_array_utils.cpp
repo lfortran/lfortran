@@ -25,7 +25,6 @@ namespace LCompilers {
 
         llvm::Value* lfortran_realloc(llvm::LLVMContext &context, llvm::Module &module,
                 llvm::IRBuilder<> &builder, llvm::Value* ptr, llvm::Value* arg_size) {
-            arg_size = builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context));
             std::string func_name = "_lfortran_realloc";
             llvm::Function *fn = module.getFunction(func_name);
             if (!fn) {
@@ -38,7 +37,8 @@ namespace LCompilers {
                         llvm::Function::ExternalLinkage, func_name, module);
             }
             std::vector<llvm::Value*> args = {
-                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()), arg_size};
+                builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
+                builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))};
             return builder.CreateCall(fn, args);
         }
 

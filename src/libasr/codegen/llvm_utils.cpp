@@ -55,14 +55,14 @@ namespace LCompilers {
                 llvm::FunctionType *function_type = llvm::FunctionType::get(
                         llvm::Type::getInt8Ty(context)->getPointerTo(), {
                             llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt32Ty(context)
+                            llvm::Type::getInt64Ty(context)
                         }, false);
                 fn = llvm::Function::Create(function_type,
                         llvm::Function::ExternalLinkage, func_name, module);
             }
             std::vector<llvm::Value*> args = {
                 builder.CreateBitCast(ptr, llvm::Type::getInt8Ty(context)->getPointerTo()),
-                arg_size
+                builder.CreateSExt(arg_size, llvm::Type::getInt64Ty(context))
             };
             return builder.CreateCall(fn, args);
         }
