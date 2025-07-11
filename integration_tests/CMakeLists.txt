@@ -1350,7 +1350,7 @@ RUN(NAME interface_06 LABELS gfortran)
 RUN(NAME interface_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME interface_09 LABELS gfortran)
 RUN(NAME interface_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME interface_12a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES interface_12b.f90)
+RUN(NAME interface_12a LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES interface_12b.f90)
 RUN(NAME interface_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME interface_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
@@ -2432,12 +2432,12 @@ RUN(NAME separate_compilation_11 LABELS gfortran llvm EXTRAFILES separate_compil
 RUN(NAME separate_compilation_12 LABELS gfortran llvm EXTRAFILES separate_compilation_12a.f90)
 RUN(NAME separate_compilation_13 LABELS gfortran llvm EXTRAFILES separate_compilation_13a.f90)
 
-# RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
-# RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compilation_15a.f90)
-# RUN(NAME separate_compilation_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_16a.f90 separate_compilation_16b.f90 EXTRA_ARGS --separate-compilation)
-# RUN(NAME separate_compilation_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_17a.f90 separate_compilation_17b.f90 EXTRA_ARGS --separate-compilation)
-# RUN(NAME separate_compilation_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_18a.f90 separate_compilation_18b.f90 EXTRA_ARGS --separate-compilation)
-# RUN(NAME separate_compilation_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_19a.f90 separate_compilation_19b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_14 LABELS gfortran llvm EXTRAFILES separate_compilation_14a.f90)
+RUN(NAME separate_compilation_15 LABELS gfortran llvm EXTRAFILES separate_compilation_15a.f90)
+RUN(NAME separate_compilation_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_16a.f90 separate_compilation_16b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_17a.f90 separate_compilation_17b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_18a.f90 separate_compilation_18b.f90 EXTRA_ARGS --separate-compilation)
+RUN(NAME separate_compilation_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES separate_compilation_19a.f90 separate_compilation_19b.f90 EXTRA_ARGS --separate-compilation)
 
 
 

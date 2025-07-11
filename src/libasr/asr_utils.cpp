@@ -1980,10 +1980,10 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::symbol_t* s2 = nullptr;
                 if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])) {
                     ASR::Variable_t* var = ASRUtils::EXPR2VAR(sub.m_args[i]);
-                    s2 = var->m_type_declaration;
+                    s2 = ASRUtils::symbol_get_past_external(var->m_type_declaration);
                 }
                 if (s1 && s2) {
-                    if (s1 != s2) return false;
+                    if (!ASRUtils::is_derived_type_similar(ASR::down_cast<ASR::Struct_t>(s1), ASR::down_cast<ASR::Struct_t>(s2))) return false;
                 } else if (!types_equal(arg1, arg2, !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }

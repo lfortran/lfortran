@@ -1466,6 +1466,7 @@ public:
                     throw SemanticAbort();
                 }
             }
+            ASR::symbol_t* type_decl = nullptr;
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
                     type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
@@ -1532,6 +1533,7 @@ public:
 
                     }
                     type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
+                    type_decl = v;
                     break;
                 }
                 default :
@@ -1548,7 +1550,7 @@ public:
             return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
