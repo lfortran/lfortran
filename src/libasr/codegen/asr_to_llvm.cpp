@@ -3438,21 +3438,21 @@ public:
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::String) {
             ASR::String_t* str = ASRUtils::get_string_type(x.m_type);
-            llvm::Value *ptr;
-            if (!external) {
+            llvm::Value *ptr{};
                 bool is_const = (x.m_storage == ASR::storage_typeType::Parameter);
                 if (x.m_symbolic_value) {
                     ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_symbolic_value));
                     int64_t len; ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, len);
                     std::string initial_string_value (str_const->m_s, len);
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
-                        is_const, llvm_var_name);
+                        is_const, llvm_var_name,
+                        external ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
                 } else {
                     ptr = llvm_utils->declare_global_string(str, "",
-                    is_const, llvm_var_name);
+                    is_const, llvm_var_name,
+                    external ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
                     set_global_variable_linkage_as_common(ptr, x.m_abi);
                 }
-            }
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::CPtr ) {
             llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
@@ -7143,9 +7143,13 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left,
+            LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1,
+            true);
         llvm::Value *left = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right,
+            LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1,
+            true);
         llvm::Value *right = tmp;
         load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
@@ -9854,7 +9858,7 @@ public:
                         character_type, i64, //form, form_length
                         character_type, i64, //access, access_len
                         character_type, i64, //iomsg, iomsg_len
-                        llvm::Type::getInt32PtrTy(context),
+                        llvm::Type::getInt32Ty(context)->getPointerTo(),
                         character_type, i64 // action, action_len
                     }, false);
             fn = llvm::Function::Create(function_type,
