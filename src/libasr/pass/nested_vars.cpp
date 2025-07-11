@@ -394,7 +394,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct);
                             var->m_type_declaration = current_scope->get_symbol(
                                 ASRUtils::symbol_name(derived_type_or_class_type));
-
                         }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);

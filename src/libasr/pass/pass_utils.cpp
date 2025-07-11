@@ -93,7 +93,6 @@ namespace LCompilers {
             return get_rank(x) > 0;
         }
 
-
         #define fix_struct_type_scope() if ( arr_expr != nullptr ) { \
                 ASR::symbol_t* m_derived_type = ASRUtils::get_struct_sym_from_struct_expr(arr_expr); \
                 if (m_derived_type != nullptr && current_scope != nullptr && \
