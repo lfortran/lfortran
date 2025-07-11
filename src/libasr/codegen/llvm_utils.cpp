@@ -1865,7 +1865,7 @@ namespace LCompilers {
         return nullptr;
     }
 
-    bool LLVMUtils::is_proper_array_of_strings_llvm_var(ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
+    bool LLVMUtils::is_proper_array_of_strings_llvm_var([[maybe_unused]]ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
         LCOMPILERS_ASSERT(ASRUtils::is_array(type))
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
         // str->print(llvm::outs());
@@ -1921,7 +1921,7 @@ namespace LCompilers {
 
 
 
-    bool LLVMUtils::is_proper_string_llvm_variable(ASR::String_t* str_type, llvm::Value* str){
+    bool LLVMUtils::is_proper_string_llvm_variable([[maybe_unused]]ASR::String_t* str_type, [[maybe_unused]]llvm::Value* str){
 #if LLVM_VERSION_MAJOR < 17
         switch (str_type->m_physical_type){
             case ASR::DescriptorString:
