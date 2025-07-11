@@ -16,13 +16,13 @@ module module_derived_type_with_default_init
 contains
     subroutine config(self)
         class(myType), intent(in) :: self
-        print *, "a = ", self%a
-        print *, "i = ", self%i        
+        if (self % a .neqv. .true.) error stop
+        if (self % i .ne. 2) error stop
     end subroutine config
 
 end module module_derived_type_with_default_init
 
-program main
+program derived_type_with_default_init
     use module_derived_type_with_default_init, global => global_myType
     call global % config()
-end program main
+end program derived_type_with_default_init
