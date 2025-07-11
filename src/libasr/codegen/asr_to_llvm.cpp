@@ -3023,7 +3023,6 @@ public:
         tmp = llvm::ConstantStruct::get(t, elements);
         current_der_type_name = ASRUtils::symbol_name(x.m_dt_sym);
     }
-
     llvm::Constant* get_const_array(ASR::expr_t *value, llvm::Type* type) {
         LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));
         ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(value);
@@ -3051,7 +3050,33 @@ public:
                 ASR::LogicalConstant_t* logical_const = ASR::down_cast<ASR::LogicalConstant_t>(elem);
                 arr_elements.push_back(llvm::ConstantInt::get(
                     context, llvm::APInt(1, logical_const->m_value)));
+            } else if (ASR::is_a<ASR::StringConstant_t>(*elem)) {
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(elem);
+                std::string value(sc->m_s);
+                LCOMPILERS_ASSERT(value.size() >= 1);
+                static int string_const_count = 0;
+                std::string global_name = ".str_const." + std::to_string(string_const_count++);
+                llvm::Constant* str_constant = llvm::ConstantDataArray::getString(context, value, false);
+                llvm::GlobalVariable* gvar
+                    = new llvm::GlobalVariable(*module,
+                                               str_constant->getType(),
+                                               true,  // constant
+                                               llvm::GlobalValue::PrivateLinkage,
+                                               str_constant,
+                                               global_name);
+                gvar->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+                gvar->setAlignment(llvm::MaybeAlign(1));
+
+                llvm::Constant* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+                std::vector<llvm::Constant*> indices = { zero, zero };
+
+                llvm::Constant* gep = llvm::ConstantExpr::getInBoundsGetElementPtr(
+                    str_constant->getType(), gvar, indices);
+                arr_elements.push_back(gep);
             }
+        }
+        if (ASRUtils::is_character(*arr_const->m_type)) {
+            type = llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context));
         }
         llvm::ArrayType* arr_type = llvm::ArrayType::get(type, arr_const_size);
         llvm::Constant* initializer = nullptr;
@@ -3266,14 +3291,23 @@ public:
                 if (struct_type->m_derived_type->type == ASR::symbolType::Struct) {
                     ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
                     std::vector<llvm::Constant*> field_values;
-                    for (auto& member : struct_sym->m_symtab->get_scope()) {
-                        ASR::symbol_t* sym = member.second;
+                    for (size_t i = 0; i < struct_sym->n_members; i++) {
+                        const std::string& member_name = struct_sym->m_members[i];
+                        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(
+                            struct_sym->m_symtab->get_symbol(member_name));
                         if (!ASR::is_a<ASR::Variable_t>(*sym))
                             continue;
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                         if (var->m_value != nullptr) {
-                            llvm::Constant* c = llvm_utils->create_llvm_constant_from_asr_expr(var->m_value, module.get());
-                            field_values.push_back(c);
+                            if (ASR::is_a<ASR::ArrayConstant_t>(*var->m_value)) {
+                                ASR::ArrayConstant_t* arr_const = ASR::down_cast<ASR::ArrayConstant_t>(var->m_value);
+                                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(arr_const->m_type, module.get());
+                                llvm::Constant* initializer = get_const_array(var->m_value, type);
+                                field_values.push_back(initializer);
+                            } else {
+                                llvm::Constant* c = llvm_utils->create_llvm_constant_from_asr_expr(var->m_value, var->m_type, module.get());
+                                field_values.push_back(c);
+                            }
                         } else {
                             llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(var->m_type, module.get());
                             field_values.push_back(llvm::Constant::getNullValue(member_type));

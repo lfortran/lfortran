@@ -1810,6 +1810,7 @@ namespace LCompilers {
     }
 
     llvm::Constant* LLVMUtils::create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+                                                        ASR::ttype_t* type,
                                                         llvm::Module* module) {
         switch (expr->type) {
             case ASR::exprType::IntegerConstant: {
@@ -1831,6 +1832,44 @@ namespace LCompilers {
                     return llvm::ConstantFP::get(llvm_type, rc->m_r);
                 }
                 break;
+            }
+            case ASR::exprType::StringConstant: {
+                ASR::StringConstant_t* sc = ASR::down_cast<ASR::StringConstant_t>(expr);
+                std::string value(sc->m_s);  // assumes null-terminated
+                llvm::LLVMContext& ctx = module->getContext();
+                int64_t declared_len = 1;
+                if (ASR::is_a<ASR::String_t>(*type)) {
+                    ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(type);
+                    ASR::expr_t* len_expr = str_type->m_len;
+                    if (len_expr && ASR::is_a<ASR::IntegerConstant_t>(*len_expr)) {
+                        ASR::IntegerConstant_t* int_len
+                            = ASR::down_cast<ASR::IntegerConstant_t>(len_expr);
+                        declared_len = int_len->m_n;
+                    }
+                }
+                if ((size_t)declared_len > value.size()) {
+                    value.resize(declared_len, ' ');
+                }
+                value.resize(declared_len);  // ensure it's exactly length N
+                value.push_back('\0');       // manually null-terminate after that
+                llvm::Constant* str_constant = llvm::ConstantDataArray::getString(ctx, value, false);
+
+                llvm::GlobalVariable* gvar
+                    = new llvm::GlobalVariable(*module,
+                                               str_constant->getType(),
+                                               true,
+                                               llvm::GlobalValue::PrivateLinkage,
+                                               str_constant,
+                                               ".str_const");
+
+                gvar->setUnnamedAddr(llvm::GlobalValue::UnnamedAddr::Global);
+                gvar->setAlignment(llvm::MaybeAlign(1));
+
+                llvm::Constant* zero = llvm::ConstantInt::get(llvm::Type::getInt32Ty(ctx), 0);
+                std::vector<llvm::Constant*> indices = { zero, zero };
+
+                return llvm::ConstantExpr::getInBoundsGetElementPtr(
+                    str_constant->getType(), gvar, llvm::ArrayRef<llvm::Constant*>(indices));
             }
             default:
                 throw LCompilersException( "Unsupported constant expression in struct default initializer.");

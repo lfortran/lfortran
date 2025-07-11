@@ -310,6 +310,7 @@ namespace LCompilers {
             // Supports integer, logical, and real constants used in struct initializers.
             // Throws an exception for unsupported expression types.
             llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+                                                               ASR::ttype_t* type,
                                                                llvm::Module* module);
 
             /*
