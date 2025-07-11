@@ -5975,9 +5975,9 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
+            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(char_type->m_len))
             int len {};
-            bool const_len_exist = ASRUtils::extract_value(char_type->m_len, len);
-            LCOMPILERS_ASSERT(const_len_exist)
+            ASRUtils::extract_value(char_type->m_len, len);
             char* data_char = (char*)data;
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,

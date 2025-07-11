@@ -1865,10 +1865,9 @@ namespace LCompilers {
         return nullptr;
     }
 
-    bool LLVMUtils::is_proper_array_of_strings_llvm_var(ASR::ttype_t* type, llvm::Value* str){
+    bool LLVMUtils::is_proper_array_of_strings_llvm_var(ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
         LCOMPILERS_ASSERT(ASRUtils::is_array(type))
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
-        ASR::String_t* str_type = ASRUtils::get_string_type(type);
         // str->print(llvm::outs());
         // std::cout<<str->getType()->isPointerTy() << " "
         //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
@@ -1876,6 +1875,7 @@ namespace LCompilers {
         //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
 
 #if LLVM_VERSION_MAJOR < 17
+        ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
             case ASR::DescriptorArray:{ 
                 switch (str_type->m_physical_type){
@@ -2391,7 +2391,8 @@ namespace LCompilers {
     }
     
     llvm::Value* LLVMUtils::declare_global_string(
-    ASR::String_t* str, std::string initial_data, bool is_const, std::string name){
+        ASR::String_t* str, std::string initial_data, bool is_const, std::string name, 
+        llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
         int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
         initial_data.resize(len,' '); // Pad 
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
@@ -2413,17 +2414,16 @@ namespace LCompilers {
                     *module,
                     char_array_type,
                     is_const,
-                    llvm::GlobalValue::PrivateLinkage,
+                    linkage,
                     const_data_as_array,
                     name+"_data"
                 );
-                llvm::Constant *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
-                llvm::ArrayRef<llvm::Constant*> indexing = {zero_const, zero_const};
+                llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
                 // i8* getelementptr inbounds ( global [len x i8] c "DATA HERE\00", i32 0, i32 0)
                 llvm::Constant *char_ptr = llvm::ConstantExpr::getInBoundsGetElementPtr(
                     char_array_type,
                     global_string_as_array,
-                    indexing);
+                    {zero_const, zero_const});
                 string_constant = char_ptr;
                 break;
             }
@@ -2439,7 +2439,7 @@ namespace LCompilers {
                 llvm::GlobalVariable* global_string_desc = new llvm::GlobalVariable(
                         *module,
                         string_descriptor, false,
-                        llvm::GlobalValue::LinkageTypes::PrivateLinkage,
+                        linkage,
                         string_descriptor_constant,
                         name);
                 return global_string_desc;
