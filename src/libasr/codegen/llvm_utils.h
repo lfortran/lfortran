@@ -306,6 +306,8 @@ namespace LCompilers {
 
             llvm::Value* lfortran_str_cmp(llvm::Value* left_arg, llvm::Value* right_arg,
                                           std::string runtime_func_name, llvm::Module& module);
+            llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+                                                               llvm::Module* module);
 
             /*
              * Initialize string with empty characters.

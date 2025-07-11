@@ -3258,6 +3258,31 @@ public:
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::StructType ) {
             ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(x.m_type);
+            if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
+                ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(x.m_type);
+                if (struct_type->n_member_function_types > 0) {
+                    return;
+                }
+                if (struct_type->m_derived_type->type == ASR::symbolType::Struct) {
+                    ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(struct_type->m_derived_type);
+                    std::vector<llvm::Constant*> field_values;
+                    for (auto& member : struct_sym->m_symtab->get_scope()) {
+                        ASR::symbol_t* sym = member.second;
+                        if (!ASR::is_a<ASR::Variable_t>(*sym))
+                            continue;
+                        ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+                        if (var->m_value != nullptr) {
+                            llvm::Constant* c = llvm_utils->create_llvm_constant_from_asr_expr(var->m_value, module.get());
+                            field_values.push_back(c);
+                        } else {
+                            llvm::Type* member_type = llvm_utils->get_type_from_ttype_t_util(var->m_type, module.get());
+                            field_values.push_back(llvm::Constant::getNullValue(member_type));
+                        }
+                    }
+                    llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
+                    init_value = llvm::ConstantStruct::get(llvm_struct_type, field_values);
+                }
+            }
             if (struct_t->m_is_cstruct) {
                 if( ASRUtils::is_c_ptr(struct_t->m_derived_type) ) {
                     llvm::Type* void_ptr = llvm::Type::getVoidTy(context)->getPointerTo();
@@ -4463,7 +4488,6 @@ public:
                         dict_api_sc->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
                     else
                         dict_api_lp->dict_init(key_type_code, value_type_code, ptr, module.get(), 0);
-
                 }
             }
         }
