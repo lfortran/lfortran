@@ -5617,12 +5617,14 @@ public:
                 }
                 LCOMPILERS_ASSERT(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)
                                   == ASRUtils::get_struct_sym_from_struct_expr(x.m_value));
-                llvm::Type* value_llvm_type = llvm_utils->getStructType(
+                llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
+                    ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
+                llvm::Type* ptr_type = llvm_utils->getStructType(
                     ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::get_struct_sym_from_struct_expr(x.m_value)), module.get(), true);
                 llvm::Value* gep = llvm_utils->create_gep2(value_llvm_type, llvm_value, 0);
                 llvm::Value* value_vtabid = llvm_utils->CreateLoad2(i64, gep);
-                llvm::Value* value_class = llvm_utils->CreateLoad2(value_llvm_type, llvm_utils->create_gep2(value_llvm_type, llvm_value, 1));
+                llvm::Value* value_class = llvm_utils->CreateLoad2(ptr_type, llvm_utils->create_gep2(value_llvm_type, llvm_value, 1));
                 builder->CreateStore(value_vtabid, llvm_utils->create_gep2(value_llvm_type, llvm_target, 0));
 
                 if ( value_struct_t_name == "~unlimited_polymorphic_type" ) {
@@ -5677,7 +5679,7 @@ public:
                                 // Other fields of the array descriptor should be already set.
                                 return;
                             }else if( ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ) {
-                                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(
+                                llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                                     value_type, module.get());
                                 llvm_value = llvm_utils->create_gep2(llvm_type, llvm_value, 0);
                             }
