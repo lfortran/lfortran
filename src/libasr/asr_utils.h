@@ -2951,6 +2951,10 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
             }
         }
     }
+
+    // Compile-time-know-size Array of strings must be `PointerToDataArray` physical type
+    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerToDataArray;}
+
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
 }
