@@ -3010,7 +3010,7 @@ static inline bool is_aggregate_type(ASR::ttype_t* asr_type) {
 
 static inline ASR::dimension_t* duplicate_dimensions(Allocator& al, ASR::dimension_t* m_dims, size_t n_dims);
 
-static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, ASR::symbol_t* der, bool is_cstruct=true) {
+static inline ASR::ttype_t* make_StructType_t_util(Allocator& al, Location loc, ASR::symbol_t* der, bool is_cstruct=true) {
     ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(der));
     Vec<ASR::ttype_t*> members;
     members.reserve(al, st->n_members);
@@ -3023,14 +3023,14 @@ static inline ASR::asr_t* make_StructType_t_util(Allocator& al, Location loc, AS
             members.push_back(al,var->m_type);
         }
     }
-    return ASR::make_StructType_t(al,
+    return ASRUtils::TYPE(ASR::make_StructType_t(al,
                                 loc,
                                 nullptr, // TODO: FIXME: Use the member function types computed above
                                 0,       // TODO: FIXME: Use the length of member function types computed above
                                 nullptr, //Correct this when mem fn added to Struct_t
                                 0,       //Correct this when mem fn added to Struct_t
                                 is_cstruct,
-                                der);
+                                der));
 
 }
 
@@ -4287,10 +4287,10 @@ static inline ASR::symbol_t* import_struct_instance_member(Allocator& al, ASR::s
                     nullptr, 0, s2c(al, struct_type_name), ASR::accessType::Public));
                 scope->add_symbol(struct_type_name_, imported_struct_type);
             }
-            mem_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, mem_type->base.loc, scope->get_symbol(struct_type_name_)));
+            mem_type = ASRUtils::make_StructType_t_util(al, mem_type->base.loc, scope->get_symbol(struct_type_name_));
         } else {
-            mem_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, mem_type->base.loc,
-                scope->resolve_symbol(struct_type_name)));
+            mem_type = ASRUtils::make_StructType_t_util(al, mem_type->base.loc,
+                scope->resolve_symbol(struct_type_name));
         }
     }
     if( n_dims > 0 ) {
@@ -5625,7 +5625,7 @@ static inline void import_struct_t(Allocator& al,
             } else {
                 der_sym = current_scope->resolve_symbol(sym_name);
             }
-            var_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_sym));
+            var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym);
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

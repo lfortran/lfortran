@@ -390,11 +390,11 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
-                            var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                            var_type_ = ASRUtils::make_StructType_t_util(
                                             al,
                                             struct_t->base.base.loc,
                                             m_derived_type_or_class_type,
-                                            ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct));
+                                            ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct);
                         }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
