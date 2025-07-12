@@ -6,7 +6,7 @@ program array_03
     real(RP):: zmat(1:1, 1:1) 
     knew = 1
     zmat = reshape([1.0_RP], [1, 1])
-    G = planerot(zmat(knew, [1_IK, 2]))
+    G = planerot(zmat(knew, [1_IK, 1]))
     print *, G
     if (any(G /= reshape([1.0_RP, -1.0_RP, 1.0_RP, 1.0_RP], [2, 2]))) error stop
     contains
