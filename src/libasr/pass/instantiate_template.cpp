@@ -695,8 +695,7 @@ public:
                 if (context_map.find(struct_name) != context_map.end()) {
                     std::string new_struct_name = context_map[struct_name];
                     ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
-                    return ASRUtils::TYPE(
-                        ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct));
+                    return ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct);
                 } else {
                     return ttype;
                 }
@@ -1390,8 +1389,8 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    return ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
-                        al, ttype->base.loc, sym, s->m_is_cstruct));
+                    return ASRUtils::make_StructType_t_util(
+                        al, ttype->base.loc, sym, s->m_is_cstruct);
                 }
                 return ttype;
             }
@@ -1801,8 +1800,8 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(s->m_derived_type);
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    ttype = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
-                        al, s->base.base.loc, sym, s->m_is_cstruct));
+                    ttype = ASRUtils::make_StructType_t_util(
+                        al, s->base.base.loc, sym, s->m_is_cstruct);
                 }
                 return ttype;
             }

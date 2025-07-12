@@ -561,8 +561,8 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 nullptr, 0, member_variable->m_name, ASR::accessType::Public));
             current_scope->add_symbol(mem_name, mem_es);
         }
-        ASR::ttype_t* member_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al,
-            member_variable->base.base.loc, mem_es));
+        ASR::ttype_t* member_type = ASRUtils::make_StructType_t_util(al,
+            member_variable->base.base.loc, mem_es);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             mem_es, ASRUtils::fix_scoped_type(al, member_type, current_scope), nullptr);
     } else {
@@ -623,12 +623,11 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 } else {
                     der_ext = current_scope->get_symbol(mangled_name);
                 }
-                ASR::asr_t* der_new = ASRUtils::make_StructType_t_util(al, loc, der_ext,
+                member_type_ = ASRUtils::make_StructType_t_util(al, loc, der_ext,
                             ASR::down_cast<ASR::StructType_t>(member_type_)->m_is_cstruct);
-                member_type_ = ASRUtils::TYPE(der_new);
             } else if(ASR::is_a<ASR::ExternalSymbol_t>(*der_type_sym)) {
-                member_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, der_type_sym,
-                            ASR::down_cast<ASR::StructType_t>(member_type_)->m_is_cstruct));
+                member_type_ = ASRUtils::make_StructType_t_util(al, loc, der_type_sym,
+                            ASR::down_cast<ASR::StructType_t>(member_type_)->m_is_cstruct);
             }
             member_type = ASRUtils::make_Array_t_util(al, loc,
                 member_type_, m_dims, n_dims);
@@ -777,8 +776,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                                 ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_t->m_derived_type)), nullptr, 0,
                                                 ASRUtils::symbol_name(struct_t->m_derived_type), ASR::accessType::Public)));
                                     }
-                                    return_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc,
-                                        curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type))));
+                                    return_type = ASRUtils::make_StructType_t_util(al, loc,
+                                        curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type)));
                                     if( is_array ) {
                                         return_type = ASRUtils::make_Array_t_util(al, loc, return_type, m_dims, n_dims);
                                     }
@@ -869,8 +868,8 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
                                 ASRUtils::symbol_name(ASRUtils::get_asr_owner(struct_t->m_derived_type)), nullptr, 0,
                                 ASRUtils::symbol_name(struct_t->m_derived_type), ASR::accessType::Public)));
                     }
-                    return_type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc,
-                        curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type))));
+                    return_type = ASRUtils::make_StructType_t_util(al, loc,
+                        curr_scope->resolve_symbol(ASRUtils::symbol_name(struct_t->m_derived_type)));
                     if( is_array ) {
                         return_type = ASRUtils::make_Array_t_util(
                             al, loc, return_type, m_dims, n_dims);
