@@ -112,7 +112,7 @@ ASR::expr_t* create_temporary_variable_for_scalar(Allocator& al,
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
     scope->add_symbol(var_name, temporary_variable);
 
@@ -205,14 +205,14 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
         ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
             al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
             ASRUtils::expr_value(value), ASRUtils::expr_value(value), ASR::storage_typeType::Parameter,
-            ASRUtils::expr_type(ASRUtils::expr_value(value)), nullptr, ASR::abiType::Source,
+            ASRUtils::expr_type(ASRUtils::expr_value(value)), ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
             ASR::accessType::Public, ASR::presenceType::Required, false));
         scope->add_symbol(var_name, temporary_variable);
         return ASRUtils::EXPR(ASR::make_Var_t(al, temporary_variable->base.loc, temporary_variable));
     }
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, var_type, nullptr, ASR::abiType::Source,
+        nullptr, nullptr, ASR::storage_typeType::Default, var_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
     scope->add_symbol(var_name, temporary_variable);
 
@@ -220,12 +220,16 @@ ASR::expr_t* create_temporary_variable_for_array(Allocator& al,
 }
 
 ASR::expr_t* create_temporary_variable_for_array(Allocator& al, const Location& loc,
-    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type) {
+    SymbolTable* scope, std::string name_hint, ASR::ttype_t* value_type, ASR::expr_t* value = nullptr) {
+    ASR::symbol_t* type_decl = nullptr;
+    if (value) {
+        type_decl = ASRUtils::get_struct_sym_from_struct_expr(value);
+    }
 
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
+        nullptr, nullptr, ASR::storage_typeType::Default, value_type, type_decl, ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
     scope->add_symbol(var_name, temporary_variable);
 
@@ -240,7 +244,7 @@ ASR::expr_t* create_temporary_variable_for_struct(Allocator& al,
     std::string var_name = scope->get_unique_name("__libasr_created_" + name_hint);
     ASR::symbol_t* temporary_variable = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(
         al, value->base.loc, scope, s2c(al, var_name), nullptr, 0, ASR::intentType::Local,
-        nullptr, nullptr, ASR::storage_typeType::Default, value_type, nullptr, ASR::abiType::Source,
+        nullptr, nullptr, ASR::storage_typeType::Default, value_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
         ASR::accessType::Public, ASR::presenceType::Required, false));
     scope->add_symbol(var_name, temporary_variable);
 
@@ -989,7 +993,7 @@ ASR::expr_t* create_and_allocate_temporary_variable_for_array(
             tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type));
             ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
                 al, array_expr->base.loc, current_scope,
-                "_array_section_pointer_", tmp_type);
+                "_array_section_pointer_", tmp_type, array_expr);
             current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                 al, loc, array_expr_ptr, array_expr)));
             exprs_with_target[array_expr] = std::make_pair(array_expr_ptr, targetType::GeneratedTarget);
@@ -1945,7 +1949,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
                 al, value_n_dims, ASRUtils::expr_type(*current_expr));
         tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, tmp_type));
         ASR::expr_t* array_expr_ptr = create_temporary_variable_for_array(
-                al, loc, current_scope, "_array_section_pointer_", tmp_type);
+                al, loc, current_scope, "_array_section_pointer_", tmp_type, *current_expr);
         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                 al, loc, array_expr_ptr, *current_expr)));
         *current_expr = array_expr_ptr;
@@ -2459,16 +2463,6 @@ class TransformVariableInitialiser:
         }
         m_body = body.p;
         n_body = body.size();
-    }
-
-    void visit_StructType(const ASR::StructType_t& x) {
-        std::string derived_type_name = ASRUtils::symbol_name(x.m_derived_type);
-        if( x.m_derived_type == current_scope->resolve_symbol(derived_type_name) ) {
-            return ;
-        }
-
-        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
-        xx.m_derived_type = current_scope->resolve_symbol(derived_type_name);
     }
 
 };

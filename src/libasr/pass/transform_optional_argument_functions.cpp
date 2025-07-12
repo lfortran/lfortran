@@ -416,7 +416,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                                 array_t->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl);
+                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
                 arg_type = ASRUtils::expr_type(m_arg_i);
                 if( ASRUtils::is_array(arg_type) &&
                     ASRUtils::extract_physical_type(arg_type) !=

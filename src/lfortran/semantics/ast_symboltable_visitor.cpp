@@ -117,43 +117,6 @@ public:
     }
 
 
-    void fix_struct_type(SymbolTable* symtab) {
-        for( auto& itr: symtab->get_scope() ) {
-            ASR::symbol_t* sym = itr.second;
-            if( !ASR::is_a<ASR::Variable_t>(*sym) &&
-                !ASR::is_a<ASR::Struct_t>(*sym) ) {
-                continue ;
-            }
-
-            if( ASR::is_a<ASR::Struct_t>(*sym) ) {
-                fix_struct_type(ASR::down_cast<ASR::Struct_t>(sym)->m_symtab);
-                continue ;
-            }
-
-            ASR::ttype_t* sym_type = ASRUtils::type_get_past_pointer(
-                                        ASRUtils::symbol_type(sym));
-            if( ASR::is_a<ASR::StructType_t>(*sym_type) && !ASRUtils::is_class_type(sym_type) ) {
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(sym_type);
-                ASR::symbol_t* der_sym = struct_t->m_derived_type;
-                if( ASR::is_a<ASR::ExternalSymbol_t>(*der_sym) &&
-                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_external == nullptr &&
-                    ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_module_name == nullptr ) {
-                    std::string derived_type_name = ASR::down_cast<ASR::ExternalSymbol_t>(der_sym)->m_name;
-                    ASR::symbol_t* sym_ = symtab->resolve_symbol(derived_type_name);
-                    if( !sym_ ) {
-                        diag.add(diag::Diagnostic(
-                            "Derived type '" + derived_type_name + "' not declared",
-                            diag::Level::Error, diag::Stage::Semantic, {
-                                diag::Label("", {der_sym->base.loc})}));
-                        throw SemanticAbort();
-                    }
-                    struct_t->m_derived_type = sym_;
-                }
-            }
-        }
-    }
-
-
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
             implicit_dictionary[std::string(1, ch)] = ASRUtils::TYPE(ASR::make_Integer_t(al, a_loc, compiler_options.po.default_integer_kind));
@@ -374,7 +337,6 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
-        fix_struct_type(m->m_symtab);
         dflt_access = ASR::Public;
     }
 
@@ -746,7 +708,7 @@ public:
             ASR::symbol_t* return_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al,
                                                 loc, current_scope, s2c(al, function_name), nullptr, 0,
                                                 ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                                                return_type, nullptr, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
+                                                return_type, parent_func_sym, ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required,
                                                 false));
             current_scope->add_symbol(function_name, return_var_sym);
             return_var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, return_var_sym));
@@ -1504,6 +1466,7 @@ public:
                     throw SemanticAbort();
                 }
             }
+            ASR::symbol_t* type_decl = nullptr;
             switch (return_type->m_type) {
                 case (AST::decl_typeType::TypeInteger) : {
                     type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, i_kind));
@@ -1570,6 +1533,7 @@ public:
 
                     }
                     type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
+                    type_decl = v;
                     break;
                 }
                 default :
@@ -1586,7 +1550,7 @@ public:
             return_var = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                 current_scope, s2c(al, return_var_name), variable_dependencies_vec.p,
                 variable_dependencies_vec.size(), ASRUtils::intent_return_var,
-                nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr,
+                nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl,
                 current_procedure_abi_type, ASR::Public, ASR::presenceType::Required,
                 false);
             current_scope->add_symbol(return_var_name, ASR::down_cast<ASR::symbol_t>(return_var));
@@ -1921,6 +1885,7 @@ public:
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
+        Vec<ASR::Variable_t*> self_pointing_vars; self_pointing_vars.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
             // ExternalSymbol means that current module/program
             // already depends on the module of ExternalSymbol
@@ -1932,9 +1897,17 @@ public:
             }
             char* aggregate_type_name = nullptr;
             if (item.first != "~unlimited_polymorphic_type") {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
+                ASR::Variable_t* dt_variable = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    ASR::symbol_t* sym = dt_variable->m_type_declaration;
+                    // resolve self pointing derived type variable declaration
+                    if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)
+                        && ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_external == nullptr 
+                        && ASRUtils::symbol_name(dt_variable->m_type_declaration) == to_lower(x.m_name)) {
+                        self_pointing_vars.push_back(al, dt_variable); 
+                    }
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
@@ -1949,6 +1922,13 @@ public:
             s2c(al, to_lower(x.m_name)), struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
+
+        for (ASR::Variable_t* self_pointing_var : self_pointing_vars) {
+            // If the derived type has a self pointing variable, then
+            // we need to set the type declaration of that variable
+            // to the derived type itself.
+            self_pointing_var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+        }
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         if (compiler_options.implicit_typing) {
@@ -1996,7 +1976,7 @@ public:
             if (item.first != "~unlimited_polymorphic_type") {
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
+                    ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, item.second)));
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
@@ -2583,10 +2563,9 @@ public:
         }
     }
 
-    bool arg_type_equal_to_class(ASR::ttype_t* var_type, ASR::symbol_t* clss_sym) {
-        if (ASRUtils::is_class_type(var_type)) {
-            ASR::StructType_t* var_type_clss = ASR::down_cast<ASR::StructType_t>(var_type);
-            ASR::symbol_t* var_type_clss_sym = var_type_clss->m_derived_type;
+    bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
+        if (ASRUtils::is_class_type(ASRUtils::expr_type(var_expr))) {
+            ASR::symbol_t* var_type_clss_sym = ASRUtils::get_struct_sym_from_struct_expr(var_expr);
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
                     return true;
@@ -2601,7 +2580,7 @@ public:
         if (pass_arg_name == nullptr) {
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
             if (func_type->n_arg_types == 0 ||
-                !arg_type_equal_to_class(func_type->m_arg_types[0], clss_sym)) {
+                !arg_type_equal_to_class(func->m_args[0], clss_sym)) {
                 diag.add(diag::Diagnostic(
                     "Passed object dummy argument does not match function argument",
                     diag::Level::Error, diag::Stage::Semantic, {
@@ -2613,7 +2592,8 @@ public:
             for (size_t i = 0; i < func->n_args && !is_pass_arg_name_found; i++) {
                 ASR::Variable_t* v = ASRUtils::EXPR2VAR(func->m_args[i]);
                 if (strcmp(v->m_name, pass_arg_name) == 0) {
-                    if (!arg_type_equal_to_class(v->m_type, clss_sym)) {
+                    if (!arg_type_equal_to_class(ASRUtils::EXPR(
+                            ASR::make_Var_t(al, v->base.base.loc, &v->base)), clss_sym)) {
                         diag.add(diag::Diagnostic(
                             "Passed object dummy argument " + std::string(pass_arg_name)
                             + " type does not match function argument",
@@ -4006,7 +3986,7 @@ public:
                     ASR::asr_t *return_v = ASRUtils::make_Variable_t_util(al, x.base.base.loc,
                         current_scope, s2c(al, "ret"), nullptr, 0,
                         ASR::intentType::ReturnVar, nullptr, nullptr, ASR::storage_typeType::Default,
-                        return_type, nullptr, ASR::abiType::Source,
+                        return_type, ASRUtils::get_struct_sym_from_struct_expr(value), ASR::abiType::Source,
                         ASR::accessType::Private, ASR::presenceType::Required, false);
                     current_scope->add_symbol("ret", ASR::down_cast<ASR::symbol_t>(return_v));
                     ASR::expr_t *return_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
