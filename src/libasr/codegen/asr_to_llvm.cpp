@@ -11215,6 +11215,7 @@ public:
         if( !ASRUtils::is_class_type(ASRUtils::type_get_past_array(s_m_args0_type)) ) {
             return dt;
         }
+       
         if( ASRUtils::is_unlimited_polymorphic_type(s_m_args0) ) {
             if (ASRUtils::is_class_type(arg_type)) {
                 if( ASRUtils::is_array(s_m_args0_type) ) {
@@ -12040,7 +12041,7 @@ public:
                 ASR::ttype_t* s_m_args0_type = ASRUtils::type_get_past_pointer(
                                                 ASRUtils::expr_type(s->m_args[0]));
                 // derived type declared type
-                ASR::ttype_t* dt_type = ASRUtils::type_get_past_pointer(caller->m_type);
+                ASR::ttype_t* dt_type = ASRUtils::type_get_past_allocatable_pointer(caller->m_type);
                 dt = convert_to_polymorphic_arg(x.m_dt, dt, s->m_args[0], s_m_args0_type, dt_type);
                 args.push_back(dt);
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_dt)) {
