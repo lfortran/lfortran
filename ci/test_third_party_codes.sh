@@ -1,5 +1,26 @@
 #!/bin/bash
-set +e  # Exit immediately on any error
+set -e  # Exit immediately on any error
+
+# Track test results
+declare -a PASSED_TESTS
+declare -a FAILED_TESTS
+CURRENT_TEST=""
+
+# Override time_section to track pass/fail
+time_section() {
+  local LABEL="$1"
+  local BLOCK="$2"
+  local START=$(date +%s)
+  print_section "$LABEL"
+  CURRENT_TEST="$LABEL"
+  if eval "$BLOCK"; then
+    PASSED_TESTS+=("$LABEL")
+  else
+    FAILED_TESTS+=("$LABEL")
+  fi
+  local END=$(date +%s)
+  print_subsection "⏱ Duration: $((END - START)) seconds"
+}
 
 # Default to gfortran if FC is not set
 : "${FC:=gfortran}"
@@ -29,16 +50,6 @@ run_test() {
   print_subsection "Running: $1"
   ./$1
   print_success "Success: $1"
-}
-
-time_section() {
-  local LABEL="$1"
-  local BLOCK="$2"
-  local START=$(date +%s)
-  print_section "$LABEL"
-  eval "$BLOCK"
-  local END=$(date +%s)
-  print_subsection "⏱ Duration: $((END - START)) seconds"
 }
 
 # Setup a temporary workspace
@@ -851,7 +862,32 @@ time_section "🧪 Testing SNAP" '
 ##################################
 # Final Summary and Cleanup
 ##################################
-print_section "✅ All Third Party Code Tests Completed Successfully"
+
+# At the end of the script, print summary and return exit code
+
+trap '
+EXIT_CODE=$?
+echo
+if [ $EXIT_CODE -eq 0 ]; then
+  print_section "✅ All Third Party Code Tests Completed Successfully"
+else
+  print_section "❌ Some tests failed"
+fi
+
+echo -e "${GREEN}Passed tests:${NC}"
+for t in "${PASSED_TESTS[@]}"; do
+  echo -e "  ✔ $t"
+done
+
+if [ ${#FAILED_TESTS[@]} -gt 0 ]; then
+  echo -e "${YELLOW}Failed tests:${NC}"
+  for t in "${FAILED_TESTS[@]}"; do
+    echo -e "  ✘ $t"
+  done
+fi
+
+exit $EXIT_CODE
+' EXIT
 
 # Optional cleanup
 # cd ../..
