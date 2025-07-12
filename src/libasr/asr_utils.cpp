@@ -418,6 +418,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             // `array_broadcast->m_v` will be non-null for Struct expressions
             return get_struct_sym_from_struct_expr(array_broadcast->m_array);
         }
+        case ASR::exprType::ArrayBound: {
+            ASR::ArrayBound_t* array_bound = ASR::down_cast<ASR::ArrayBound_t>(expression);
+            return get_struct_sym_from_struct_expr(array_bound->m_v);
+        }
         case ASR::exprType::StructConstructor: {
             ASR::StructConstructor_t* struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(expression);
             return ASRUtils::symbol_get_past_external(struct_constructor->m_dt_sym);
@@ -1978,7 +1982,8 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg2 = v->m_type;
                 ASR::symbol_t* s1 = get_struct_sym_from_struct_expr(args[i].m_value);
                 ASR::symbol_t* s2 = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])) {
+                if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])
+                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(sub.m_args[i]))) {
                     ASR::Variable_t* var = ASRUtils::EXPR2VAR(sub.m_args[i]);
                     s2 = ASRUtils::symbol_get_past_external(var->m_type_declaration);
                 }

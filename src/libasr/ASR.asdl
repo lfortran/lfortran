@@ -206,7 +206,7 @@ ttype
     | Set(ttype type)
     | List(ttype type)
     | Tuple(ttype* type)
-    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct)
+    | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
     | EnumType(symbol enum_type)
     | UnionType(symbol union_type)
     | Dict(ttype key_type, ttype value_type)

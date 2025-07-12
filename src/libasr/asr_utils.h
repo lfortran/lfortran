@@ -20,6 +20,7 @@
 #include <libasr/asr_walk_visitor.h>
 
 #include <complex>
+#include <string>
 
 #define ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies) ASR::symbol_t* asr_owner_sym = nullptr; \
     if(current_scope->asr_owner && ASR::is_a<ASR::symbol_t>(*current_scope->asr_owner) ) { \
@@ -2991,6 +2992,8 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
     ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
         ASRUtils::symbol_get_past_external(derived_type_sym));
 
+    std::string derived_type_name = derived_type->m_name;
+
     Vec<ASR::ttype_t*> member_types;
     member_types.reserve(al, derived_type->m_symtab->get_scope().size());
 
@@ -3009,13 +3012,15 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                 al, ASR::down_cast<ASR::Function_t>(c_proc->m_proc)->m_function_signature);
         }
     }
-    return ASRUtils::TYPE(ASR::make_StructType_t(al,
-                                                 loc,
-                                                 member_types.p,
-                                                 member_types.n,
-                                                 member_function_types.p,
-                                                 member_function_types.n,
-                                                 is_cstruct));
+    return ASRUtils::TYPE(
+        ASR::make_StructType_t(al,
+                               loc,
+                               member_types.p,
+                               member_types.n,
+                               member_function_types.p,
+                               member_function_types.n,
+                               is_cstruct,
+                               derived_type_name == "~unlimited_polymorphic_type" ? true : false));
 }
 
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
@@ -3147,7 +3152,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                                                        tnew->n_data_member_types,
                                                        tnew->m_member_function_types,
                                                        tnew->n_member_function_types,
-                                                       tnew->m_is_cstruct));
+                                                       tnew->m_is_cstruct,
+                                                       tnew->m_is_unlimited_polymorphic));
             break;
         }
         case ASR::ttypeType::UnionType: {
@@ -3393,7 +3399,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
                 tstruct->n_data_member_types,
                 tstruct->m_member_function_types,
                 tstruct->n_member_function_types,
-                tstruct->m_is_cstruct));
+                tstruct->m_is_cstruct,
+                tstruct->m_is_unlimited_polymorphic));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -3795,20 +3802,15 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
         b = ASRUtils::type_get_past_array(b);
     }
     // If either argument is a polymorphic type, return true.
-    // TODO: StructType
-    // if (ASRUtils::is_class_type(a)) {
-    //     if (ASRUtils::symbol_name(
-    //         ASRUtils::symbol_get_past_external(
-    //             ASR::down_cast<ASR::StructType_t>(a)->m_derived_type)) == std::string("~abstract_type")) {
-    //         return true;
-    //     }
-    // } else if (ASRUtils::is_class_type(b)) {
-    //     if (ASRUtils::symbol_name(
-    //         ASRUtils::symbol_get_past_external(
-    //             ASR::down_cast<ASR::StructType_t>(b)->m_derived_type)) == std::string("~abstract_type")) {
-    //         return true;
-    //     }
-    // }
+    if (ASRUtils::is_class_type(a)) {
+        if (ASR::down_cast<ASR::StructType_t>(a)->m_is_unlimited_polymorphic) {
+            return true;
+        }
+    } else if (ASRUtils::is_class_type(b)) {
+        if (ASR::down_cast<ASR::StructType_t>(b)->m_is_unlimited_polymorphic) {
+            return true;
+        }
+    }
     if (a->type == b->type) {
         // TODO: check dims
         // TODO: check all types
