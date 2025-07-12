@@ -242,11 +242,11 @@ semantic error: Keyword argument not found
 196 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     |                                 ^^^^^^^^^^^^^^^^^^^^ 'mykeyword' keyword argument not found
 
-semantic error: Incompatible ranks in assignment
-   --> tests/errors/continue_compilation_2.f90:199:5
+semantic error: Incompatible ranks `2` and `1` in assignment
+   --> tests/errors/continue_compilation_2.f90:199:36
     |
 199 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |                                    ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
