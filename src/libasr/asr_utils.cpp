@@ -1265,12 +1265,14 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         }
         for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
             ASR::symbol_t* proc;
+            ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
             if ( ASR::is_a<ASR::ClassProcedure_t>(*op_overloading_procs[i]) ) {
                 ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(op_overloading_procs[i]);
                 if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
                     // It may be overided in the derived class
                     if (left_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
-                        cp = ASR::down_cast<ASR::ClassProcedure_t>(left_struct->m_symtab->get_symbol(cp->m_name));
+                        orig_proc = left_struct->m_symtab->get_symbol(cp->m_name);
+                        cp = ASR::down_cast<ASR::ClassProcedure_t>(orig_proc);
                     }
                 }
                 proc =  ASRUtils::symbol_get_past_external(cp->m_proc);
@@ -1331,10 +1333,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
-                            a_args.reserve(al, 2);
+                            a_args.reserve(al, 1);
                             ASR::call_arg_t left_call_arg, right_call_arg;
-                            left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
-                            a_args.push_back(al, left_call_arg);
+                            ASR::expr_t* self_arg = nullptr;
+                            if (i < n_interface_proc) {
+                                left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
+                                a_args.push_back(al, left_call_arg);
+                            }
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
@@ -1342,11 +1347,12 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 matched_func_name = "1_" + std::string(left_struct->m_name) + "_" + func_name;
                                 if (!curr_scope->resolve_symbol(matched_func_name)) {
                                     ASR::symbol_t* mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                                        loc, curr_scope, s2c(al, matched_func_name), proc,
-                                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
+                                        loc, curr_scope, s2c(al, matched_func_name), orig_proc,
+                                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(orig_proc)),
+                                        nullptr, 0, s2c(al, ASRUtils::symbol_name(orig_proc)), ASR::accessType::Public));
                                     curr_scope->add_symbol(matched_func_name, mem_es);
                                 }
+                                self_arg = left;
                             } else if( curr_scope->resolve_symbol(func_name) ) {
                                 matched_func_name = func_name;
                             } else {
@@ -1376,11 +1382,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_func_name));
                             }
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al, self_arg);
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
-                                                            a_args.p, 2,
+                                                            a_args.p, a_args.n,
                                                             return_type,
-                                                            nullptr, nullptr
+                                                            nullptr, self_arg
                                                             );
                         }
                     }
