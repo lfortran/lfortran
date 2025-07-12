@@ -119,4 +119,6 @@ program intrinsics_46
     print *, ichar(e)
     if (any(ichar(e) /= x)) error stop
 
+    print *, ichar(char(0))
+
 end program intrinsics_46
