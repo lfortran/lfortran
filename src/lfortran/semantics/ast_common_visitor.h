@@ -4133,8 +4133,8 @@ public:
                             = ASR::down_cast<ASR::Array_t>(ASRUtils::expr_type(tmp_init));
                         if (lhs_array->n_dims != rhs_array->n_dims) {
                             diag.add(Diagnostic(
-                                "Incompatible ranks `"+ std::to_string(lhs_array->n_dims) + "` and `"
-                                                                  + std::to_string(rhs_array->n_dims) + "` in assignment",
+                                "Incompatible ranks "+ std::to_string(lhs_array->n_dims) + " and "
+                                                                  + std::to_string(rhs_array->n_dims) + " in assignment",
                                                 Level::Error,
                                                 Stage::Semantic,
                                                 { Label("", { tmp_init->base.loc }) }));
