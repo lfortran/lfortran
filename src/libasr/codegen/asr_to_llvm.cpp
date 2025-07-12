@@ -3313,7 +3313,7 @@ public:
                             field_values.push_back(llvm::Constant::getNullValue(member_type));
                         }
                     }
-                    llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get()));
+                    llvm::StructType* llvm_struct_type = llvm::cast<llvm::StructType>(llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get(), ASR::abiType::Source, false));
                     init_value = llvm::ConstantStruct::get(llvm_struct_type, field_values);
                 }
             }

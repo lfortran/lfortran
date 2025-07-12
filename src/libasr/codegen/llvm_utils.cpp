@@ -213,7 +213,7 @@ namespace LCompilers {
         }
     }
 
-    llvm::Type* LLVMUtils::getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer) {
+    llvm::Type* LLVMUtils::getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer, bool is_packed) {
         std::string der_type_name = std::string(der_type->m_name);
         createStructTypeContext(der_type);
         if (std::find(struct_type_stack.begin(), struct_type_stack.end(),
@@ -245,7 +245,7 @@ namespace LCompilers {
                 name2memidx[der_type_name][std::string(member->m_name)] = member_idx;
                 member_idx++;
             }
-            (*der_type_llvm)->setBody(member_types, true);
+            (*der_type_llvm)->setBody(member_types, is_packed);
             name2dertype[der_type_name] = *der_type_llvm;
         }
         struct_type_stack.pop_back();
@@ -255,7 +255,7 @@ namespace LCompilers {
         return (llvm::Type*) *der_type_llvm;
     }
 
-    llvm::Type* LLVMUtils::getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
+    llvm::Type* LLVMUtils::getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer, bool is_packed) {
         ASR::Struct_t* der_type;
         if( ASR::is_a<ASR::StructType_t>(*_type) ) {
             ASR::StructType_t* der = ASR::down_cast<ASR::StructType_t>(_type);
@@ -272,7 +272,7 @@ namespace LCompilers {
             LCOMPILERS_ASSERT(false);
             return nullptr; // silence a warning
         }
-        llvm::Type* type = getStructType(der_type, module, is_pointer);
+        llvm::Type* type = getStructType(der_type, module, is_pointer, is_packed);
         LCOMPILERS_ASSERT(type != nullptr);
         return type;
     }
@@ -1270,7 +1270,7 @@ namespace LCompilers {
         ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
         bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
         ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
-        ASR::abiType m_abi) {
+        ASR::abiType m_abi, bool is_packed) {
         llvm::Type* llvm_type = nullptr;
 
         #define handle_llvm_pointers1()                                         \
@@ -1385,7 +1385,7 @@ namespace LCompilers {
             }
             case (ASR::ttypeType::StructType) : {
                 if (ASR::down_cast<ASR::StructType_t>(asr_type)->m_is_cstruct) {
-                    llvm_type = getStructType(asr_type, module, false);
+                    llvm_type = getStructType(asr_type, module, false, is_packed);
                 } else {
                     llvm_type = getClassType(asr_type, true);
                 }
@@ -1487,7 +1487,7 @@ namespace LCompilers {
     }
 
     llvm::Type* LLVMUtils::get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
-        llvm::Module* module, ASR::abiType asr_abi) {
+        llvm::Module* module, ASR::abiType asr_abi, bool is_packed) {
         ASR::storage_typeType m_storage_local = ASR::storage_typeType::Default;
         bool is_array_type_local, is_malloc_array_type_local;
         bool is_list_local;
@@ -1495,7 +1495,7 @@ namespace LCompilers {
         int n_dims_local = 0, a_kind_local = 0;
         return get_type_from_ttype_t(asr_type, nullptr, m_storage_local, is_array_type_local,
                                      is_malloc_array_type_local, is_list_local,
-                                     m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
+                                     m_dims_local, n_dims_local, a_kind_local, module, asr_abi, is_packed);
     }
 
     llvm::Value* LLVMUtils::create_gep(llvm::Value* ds, int idx) {
