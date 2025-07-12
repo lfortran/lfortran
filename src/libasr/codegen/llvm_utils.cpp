@@ -1642,17 +1642,17 @@ namespace LCompilers {
         switch (expr->type) {
             case ASR::exprType::IntegerConstant: {
                 ASR::IntegerConstant_t* ic = ASR::down_cast<ASR::IntegerConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(ic->m_type, module);
+                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, ic->m_type, module);
                 return llvm::ConstantInt::get(llvm_type, ic->m_n, true);
             }
             case ASR::exprType::LogicalConstant: {
                 ASR::LogicalConstant_t* lc = ASR::down_cast<ASR::LogicalConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(lc->m_type, module);
+                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, lc->m_type, module);
                 return llvm::ConstantInt::get(llvm_type, lc->m_value ? 1 : 0, false);
             }
             case ASR::exprType::RealConstant: {
                 ASR::RealConstant_t* rc = ASR::down_cast<ASR::RealConstant_t>(expr);
-                llvm::Type* llvm_type = get_type_from_ttype_t_util(rc->m_type, module);
+                llvm::Type* llvm_type = get_type_from_ttype_t_util(nullptr, rc->m_type, module);
                 if (llvm_type->isFloatTy()) {
                     return llvm::ConstantFP::get(llvm_type, static_cast<float>(rc->m_r));
                 } else if (llvm_type->isDoubleTy()) {
