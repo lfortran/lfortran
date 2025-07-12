@@ -343,4 +343,9 @@ program continue_compilation_1
     arr = [type(MyClass) :: v1, v2, v3]
 
     arr = [NonExistingType :: v1, v2, v3]
+
+    character(len=5) :: new = 'hello'
+    print *, iachar(new)
+
+    print *, ichar(char(0))
 end program
