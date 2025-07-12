@@ -9917,6 +9917,9 @@ public:
         if (ASR::is_a<ASR::Integer_t>(*type)) {
             res += "I";
             res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
+        } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
+            res += "U";
+            res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));
         } else if (ASR::is_a<ASR::Real_t>(*type)) {
             res += "R";
             res += std::to_string(ASRUtils::extract_kind_from_ttype_t(type));

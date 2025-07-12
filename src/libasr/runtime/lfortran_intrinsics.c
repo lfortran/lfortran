@@ -948,7 +948,11 @@ typedef enum primitive_types{
     CHARACTER_TYPE = 6,
     LOGICAL_TYPE = 7,
     CPTR_VOID_PTR_TYPE = 8,
-    NONE_TYPE = 9
+    NONE_TYPE = 9,
+    UNSIGNED_INTEGER_64_TYPE = 10,
+    UNSIGNED_INTEGER_32_TYPE = 11,
+    UNSIGNED_INTEGER_16_TYPE = 12,
+    UNSIGNED_INTEGER_8_TYPE = 13,
 } Primitive_Types;
 
 
@@ -1132,6 +1136,29 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             break;
         case '1':
             *PrimitiveType = INTEGER_8_TYPE;
+            break;
+        default:
+            fprintf(stderr, "RunTime - compiler internal error"
+                " : Unidentified Print Types Serialization --> %s\n",
+                    s_info->serialization_string);
+            exit(1);
+            break;
+        }
+        break;
+    case 'U':
+        switch (s_info->serialization_string[s_info->current_stop++])
+        {
+        case '8':
+            *PrimitiveType = UNSIGNED_INTEGER_64_TYPE;
+            break;
+        case '4':
+            *PrimitiveType = UNSIGNED_INTEGER_32_TYPE;
+            break;
+        case '2':
+            *PrimitiveType = UNSIGNED_INTEGER_16_TYPE;
+            break;
+        case '1':
+            *PrimitiveType = UNSIGNED_INTEGER_8_TYPE;
             break;
         default:
             fprintf(stderr, "RunTime - compiler internal error"
