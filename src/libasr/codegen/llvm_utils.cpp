@@ -2370,7 +2370,7 @@ namespace LCompilers {
        // Insert null char between strings.
         std::string sequence((char*)arr_const->m_data, arr_const->m_n_data);
         { // Remove once we remove dependency on null-char
-            int64_t str_len = ASR::down_cast<ASR::IntegerConstant_t>(ASRUtils::get_string_type(arr_const->m_type)->m_len)->m_n;
+            int64_t str_len; ASRUtils::extract_value(ASRUtils::get_string_type(arr_const->m_type)->m_len, str_len);
             int64_t arr_size = ASRUtils::get_fixed_size_of_array(arr_const->m_type)*(str_len + 1);
             for(int idx = str_len; idx < arr_size; (idx += (str_len + 1)) ){
                 sequence.insert(idx, "\0", 1);
@@ -2386,10 +2386,21 @@ namespace LCompilers {
                 fake_string_len += (ASRUtils::get_fixed_size_of_array(arr_const->m_type) - 1); // counted null-character inside
             }
         }
-        return declare_global_string(
+        llvm::Value* global_arraystring = declare_global_string(
             ASRUtils::get_string_type(fake_string_type), sequence, true, "stringArray_const");
+        //Make sure to set the length properly (Set length with the actual array's element length)
+        if(ASRUtils::get_string_type(fake_string_type)->m_physical_type == ASR::DescriptorString){
+            int64_t str_len;
+             ASRUtils::extract_value(ASRUtils::get_string_type(arr_const->m_type)->m_len, str_len);
+            builder->CreateStore(
+                llvm::ConstantInt::get(context, llvm::APInt(64, str_len) ),
+                get_string_length(ASRUtils::get_string_type(fake_string_type), global_arraystring, true));
+        } else {
+            throw LCompilersException("Unhandled case");
+        }
+        return global_arraystring;
     }
-    
+
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name, 
         llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
