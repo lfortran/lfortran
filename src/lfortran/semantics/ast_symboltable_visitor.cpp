@@ -2759,8 +2759,7 @@ public:
                            item.first) != symbols_already_imported_with_renaming.end() ) {
                 continue;
             }
-            if( current_scope->get_symbol(item.first) != nullptr &&
-                !in_submodule ) {
+            if( current_scope->get_symbol(item.first) != nullptr) {
                 continue;
             }
             // TODO: only import "public" symbols from the module
