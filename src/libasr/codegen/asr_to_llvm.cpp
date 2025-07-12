@@ -10579,7 +10579,13 @@ public:
                             character_bindc = true;
                         }
 
-                        target_type = character_type;
+                        ASR::string_physical_typeType physical_type = ASR::down_cast<ASR::String_t>(arg_type)->m_physical_type;
+
+                        if ( physical_type == ASR::string_physical_typeType::DescriptorString ) {
+                            target_type = string_descriptor;
+                        } else {
+                            target_type = character_type;
+                        }
                         break;
                     }
                     case (ASR::ttypeType::Logical) :
@@ -10621,6 +10627,9 @@ public:
                     target_type = llvm::Type::getInt32Ty(context);
                 }
                 if (ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type)) {
+                    tmp = value;
+                } else if (ASR::is_a<ASR::String_t>(*arg_type) && 
+                    ASR::down_cast<ASR::String_t>(arg_type)->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
                     tmp = value;
                 } else {
                     if (!character_bindc) {
