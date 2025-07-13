@@ -55,7 +55,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_no_warnings = is_included("asr_no_warnings")
     asr_disable_style_and_warnings = is_included("asr_disable_style_and_warnings")
     continue_compilation = is_included("continue_compilation")
-    array_bounds_check = is_included("array_bounds_check")
     fixed_form_cc_asr = is_included("fixed_form_cc_asr")
     semantics_only_cc = is_included("semantics_only_cc")
     show_errors = is_included("show_errors")
@@ -421,16 +420,6 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             log.info(f"{filename} * obj    SKIPPED as requested")
         else:
             run_test(filename, "run", "lfortran --continue-compilation --no-color {infile}",
-                filename,
-                update_reference,
-                verify_hash,
-                extra_args)
-
-    if array_bounds_check:
-        if no_llvm:
-            log.info(f"{filename} * obj    SKIPPED as requested")
-        else:
-            run_test(filename, "run", "lfortran --array-bounds-checking --no-color {infile}",
                 filename,
                 update_reference,
                 verify_hash,
