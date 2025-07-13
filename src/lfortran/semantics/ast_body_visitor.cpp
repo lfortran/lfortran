@@ -5292,7 +5292,7 @@ public:
         for (size_t i = 0; i < x.n_clauses; i++) {
             std::string clause = AST::down_cast<AST::String_t>(x.m_clauses[i])->m_s;
             std::string clause_name = clause.substr(0, clause.find('('));
-            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit") {
+            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit" || clause_name == "schedule" || clause_name == "num_threads") {
                 std::string list = clause.substr(clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                 Vec<ASR::expr_t*> vars;
                 vars.reserve(al, 1);
@@ -5328,12 +5328,41 @@ public:
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumThreads_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, num_threads, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
                     continue;
                 } else if (clause_name == "thread_limit") {
-                    int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
-                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPThreadLimit_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    int thread_limit = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPThreadLimit_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, thread_limit, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
                     continue;
                 } else if (clause_name == "num_teams") {
-                    int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
-                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumTeams_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    int num_teams = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumTeams_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, num_teams, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    continue;
+                } else if (clause_name == "schedule") {
+                    ASR::schedule_typeType schedule_type;
+                    if (LCompilers::startswith(list, "static")) {
+                        schedule_type = ASR::schedule_typeType::Static;
+                    } else if (LCompilers::startswith(list, "dynamic")) {
+                        schedule_type = ASR::schedule_typeType::Dynamic;
+                    } else if (LCompilers::startswith(list, "guided")) {
+                        schedule_type = ASR::schedule_typeType::Guided;
+                    } else if (LCompilers::startswith(list, "auto")) {
+                        schedule_type = ASR::schedule_typeType::Auto;
+                    } else if (LCompilers::startswith(list, "runtime")) {
+                        schedule_type = ASR::schedule_typeType::Runtime;
+                    } else {
+                        diag.add(Diagnostic("The schedule type `" + list + "` is not supported", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    int chunk_size = 0;
+                    if(list.find(',') != std::string::npos) {
+                        list = list.substr(list.find(',')+1);
+                        chunk_size = std::stoi(list.erase(0, list.find_first_not_of(" ")));
+                    }
+                    if(chunk_size == 0) {
+                        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                        ASR::make_OMPSchedule_t(al, loc, schedule_type, nullptr)));
+                    } else {
+                        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                            ASR::make_OMPSchedule_t(al, loc, schedule_type, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, chunk_size, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    }
                     continue;
                 }
                 for (auto &s : LCompilers::string_split(list, ",", false)) {
