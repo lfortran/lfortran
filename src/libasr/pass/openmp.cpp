@@ -2637,6 +2637,22 @@ class ParallelRegionVisitor :
             LCOMPILERS_ASSERT(mod_sym != nullptr && ASR::is_a<ASR::Module_t>(*mod_sym));
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(mod_sym));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
+            
+            int num_threads=0;
+            for (size_t i=0;i<x.n_clauses;i++) {
+                if (x.m_clauses[i]->type == ASR::omp_clauseType::OMPNumThreads) {
+                    num_threads = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPNumThreads_t>(x.m_clauses[i]))->m_num_threads))->m_n;
+                }
+            }
+            if (num_threads != 0) {
+                ASR::call_arg_t arg; arg.loc = x.base.base.loc; arg.m_value = b.i32(num_threads);
+                Vec<ASR::call_arg_t> call_args1; 
+                call_args1.reserve(al, 1);
+                call_args1.push_back(al, arg);
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc,
+                                current_scope->get_symbol("omp_set_num_threads"), nullptr,
+                                call_args1.p, call_args1.n, nullptr)));
+            }
 
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, x.base.base.loc, current_scope->get_symbol("gomp_parallel"), nullptr,
                                 call_args.p, call_args.n, nullptr)));
