@@ -2684,8 +2684,8 @@ class ParallelRegionVisitor :
                 ASR::symbol_t* tmp_sym = ASR::down_cast<ASR::symbol_t>(
                                         ASR::make_Variable_t(al, local_var->base.base.loc, local_var->m_parent_symtab,
                                         s2c(al, local_var->m_parent_symtab->get_unique_name("ptr_" + it.first)), local_var->m_dependencies, local_var->n_dependencies,
-                                        local_var->m_intent, local_var->m_symbolic_value, local_var->m_value,
-                                        local_var->m_storage, ptr_type, local_var->m_type_declaration,
+                                        local_var->m_intent, nullptr, nullptr,
+                                        ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
                                         local_var->m_abi, local_var->m_access, local_var->m_presence,
                                         local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
                                         local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected)
@@ -3865,8 +3865,8 @@ class ParallelRegionVisitor :
                     ASR::make_Variable_t(al, local_var->base.base.loc, local_var->m_parent_symtab,
                     s2c(al, local_var->m_parent_symtab->get_unique_name("ptr_" + it.first)), 
                     local_var->m_dependencies, local_var->n_dependencies,
-                    local_var->m_intent, local_var->m_symbolic_value, local_var->m_value,
-                    local_var->m_storage, ptr_type, local_var->m_type_declaration,
+                    local_var->m_intent, nullptr, nullptr,
+                    ASR::storage_typeType::Default, ptr_type, local_var->m_type_declaration,
                     local_var->m_abi, local_var->m_access, local_var->m_presence,
                     local_var->m_value_attr, local_var->m_target_attr, local_var->m_contiguous_attr, 
                     local_var->m_bindc_name, local_var->m_is_volatile, local_var->m_is_protected)
