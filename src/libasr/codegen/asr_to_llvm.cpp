@@ -2540,6 +2540,12 @@ public:
             v = ASRUtils::EXPR2VAR(x.m_v);
             uint32_t v_h = get_hash((ASR::asr_t*)v);
             array = llvm_symtab[v_h];
+            // TODO after strucType Refactor: uncomment this
+            // if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
+            //     ASR::Struct_t* der_symbol = ASR::down_cast<ASR::Struct_t>(
+            //         ASRUtils::symbol_get_past_external(v->m_type_declaration));
+            //     current_der_type_name = std::string(der_symbol->m_name);
+            // }
         } else {
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 0;
@@ -10919,14 +10925,18 @@ public:
                     type2vtab[struct_sym].find(current_scope) == type2vtab[struct_sym].end() ) {
                     create_vtab_for_struct_type(struct_sym, current_scope);
                 }
+                if (ASRUtils::is_array(s_m_args0_type) &&
+                    ASRUtils::extract_physical_type(s_m_args0_type) == ASR::array_physical_typeType::DescriptorArray) {
+                    // TODO: Handle convert of descriptor arrays
+                }
                 llvm::Value* dt_polymorphic = llvm_utils->CreateAlloca(*builder,
                     llvm_utils->getClassType(s_m_args0_type, true));
-                llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
+                llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(s_m_args0_type), module.get());
                 llvm::Value* hash_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 0);
                 llvm::Value* hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), llvm::APInt(64, get_class_hash(struct_sym)));
                 builder->CreateStore(hash, hash_ptr);
                 llvm::Value* class_ptr = llvm_utils->create_gep2(_type, dt_polymorphic, 1);
-                builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(s_m_args0_type, module.get(), true)), class_ptr);
+                builder->CreateStore(builder->CreateBitCast(dt, llvm_utils->getStructType(ASRUtils::type_get_past_array(s_m_args0_type), module.get(), true)), class_ptr);
                 return dt_polymorphic;
             } else {
                 // No need to convert if types are same
