@@ -4021,18 +4021,6 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
-                    bool PARAMETER_NOT_CONSTANT_EXCEPTION = // TODO : Fix that (look `array_reshape_21.f90`)
-                        ASRUtils::is_array(ASRUtils::expr_type(init_expr))? true : false;
-                    if( PARAMETER_NOT_CONSTANT_EXCEPTION == false &&
-                        !value && 
-                        storage_type == ASR::storage_typeType::Parameter){
-                        diag.add(Diagnostic(
-                            "RHS must reduce to a constant expression.",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{init_expr->base.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
