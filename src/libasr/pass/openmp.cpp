@@ -2548,6 +2548,9 @@ class ParallelRegionVisitor :
                 visit_OMPDistribute(x);
                 break;
 
+                case ASR::omp_region_typeType::Atomic:
+                visit_OMPAtomic(x);
+
                 default:
                     // for now give error for constructs which we do not support
                     break;
@@ -3245,6 +3248,38 @@ class ParallelRegionVisitor :
             end_args.reserve(al, 0);
             nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
                 current_scope->get_symbol("gomp_critical_end"), nullptr, end_args.p, end_args.n, nullptr)));
+
+            clauses_heirarchial[nesting_lvl].clear();
+        }
+
+        void visit_OMPAtomic(const ASR::OMPRegion_t &x) {
+            nested_lowered_body = {};
+            Location loc = x.base.base.loc;
+            ASRUtils::ASRBuilder b(al, loc);
+
+            // Generate gomp_atomic_start call
+            Vec<ASR::call_arg_t> start_args;
+            start_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_atomic_start"), nullptr, start_args.p, start_args.n, nullptr)));
+
+            // Process the atomic section body
+            DoConcurrentStatementVisitor stmt_visitor(al, current_scope);
+            stmt_visitor.current_expr = nullptr;
+            Vec<ASR::stmt_t*> atomic_body;
+            atomic_body.reserve(al,1);
+            visit_OMPBody(&x, atomic_body);
+
+            // Add body statements to nested_lowered_body
+            for (size_t i = 0; i < atomic_body.size(); i++) {
+                nested_lowered_body.push_back(atomic_body[i]);
+            }
+
+            // Generate gomp_atomic_end call
+            Vec<ASR::call_arg_t> end_args;
+            end_args.reserve(al, 0);
+            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                current_scope->get_symbol("gomp_atomic_end"), nullptr, end_args.p, end_args.n, nullptr)));
 
             clauses_heirarchial[nesting_lvl].clear();
         }
