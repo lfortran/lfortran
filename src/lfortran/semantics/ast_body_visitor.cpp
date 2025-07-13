@@ -32,7 +32,7 @@ public:
     int pragma_nesting_level = 0;
     int pragma_nesting_level_2 = 0;
     bool openmp_collapse = false;
-    bool pragma_in_do_loop=false;
+    bool pragma_in_block=false;
     bool do_in_pragma=false;
     int nesting_lvl_inside_pragma=0;
     int collapse_value=0;
@@ -141,7 +141,7 @@ public:
                     tmp_vec.clear();
                 }
             }
-            if((all_blocks_nesting ==0 || pragma_in_do_loop) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
+            if((all_blocks_nesting ==0 || pragma_in_block) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                 omp_region_body.push_back(tmp_stmt);
             } else {
@@ -4616,7 +4616,17 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if(pragma_in_block) {
+            nesting_lvl_inside_pragma++;
+            do_in_pragma=true;
+        }
         transform_stmts(body, x.n_body, x.m_body);
+        if(pragma_in_block) {
+            nesting_lvl_inside_pragma--;
+        }
+        if(nesting_lvl_inside_pragma==0) {
+            do_in_pragma=false;
+        }
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
@@ -4827,12 +4837,12 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if(pragma_in_do_loop) {
+        if(pragma_in_block) {
             nesting_lvl_inside_pragma++;
             do_in_pragma=true;
         }
         transform_stmts(body, x.n_body, x.m_body);
-        if(pragma_in_do_loop) {
+        if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }
         if(nesting_lvl_inside_pragma==0) {
@@ -5395,7 +5405,7 @@ public:
                 } else if (LCompilers::startswith(x.m_construct_name, "atomic")) {
                     collect_omp_body(ASR::omp_region_typeType::Atomic);
                 }
-                pragma_in_do_loop=false;
+                pragma_in_block=false;
                 if((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0) {
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
                     omp_region_body.pop_back();
@@ -5403,7 +5413,7 @@ public:
                 return;
             }
 
-            if(all_blocks_nesting>0) pragma_in_do_loop=true;
+            if(all_blocks_nesting>0) pragma_in_block=true;
             if (to_lower(x.m_construct_name) == "parallel") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
