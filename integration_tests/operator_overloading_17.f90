@@ -88,4 +88,8 @@ program operator_overloading_17
   if (.not. c1 == c2) error stop
   c2%x = 6
   if (c1 == c2) error stop
+
+  associate(temp => a)
+    if (.not. temp == other) error stop
+  end associate
 end program operator_overloading_17
