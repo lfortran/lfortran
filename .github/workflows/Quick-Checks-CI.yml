@@ -357,6 +357,10 @@ jobs:
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
         run: |
           python3 check_binary_file_in_git_history.py
+      - name: Test Reference Documentation
+        shell: bash -e -l {0}
+        run: |
+          python3 generate_reference_doc.py
 
   build_to_wasm_and_upload:
     name: Build LFortran to WASM and Upload
