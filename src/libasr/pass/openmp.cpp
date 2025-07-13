@@ -2722,6 +2722,11 @@ class ParallelRegionVisitor :
             int collapse_levels=1;
             Vec<ASR::OMPReduction_t*> reduction_clauses;
             reduction_clauses.reserve(al,0);
+
+            // NEW: Add schedule clause handling
+            ASR::schedule_typeType schedule_kind = ASR::schedule_typeType::Static; // Default
+            ASR::expr_t* chunk_size = nullptr;
+            bool has_schedule_clause = false;
             // Step 1: Determine collapse levels from clauses (e.g., collapse(2)) and Reduction clauses too
             if(x.m_region == ASR::omp_region_typeType::Do) {
                 for(size_t i=0; i<x.n_clauses; i++){
@@ -2732,10 +2737,22 @@ class ParallelRegionVisitor :
                         reduction_clauses.push_back(al, ASR::down_cast<ASR::OMPReduction_t>(clauses_heirarchial[nesting_lvl][j]));
                     } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPCollapse) {
                         collapse_levels = ASR::down_cast<ASR::IntegerConstant_t>(((ASR::down_cast<ASR::OMPCollapse_t>(clauses_heirarchial[nesting_lvl][j]))->m_count))->m_n;
+                    } else if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPSchedule) {
+                        ASR::OMPSchedule_t* schedule_clause = ASR::down_cast<ASR::OMPSchedule_t>(clauses_heirarchial[nesting_lvl][j]);
+                        schedule_kind = schedule_clause->m_kind;
+                        chunk_size = schedule_clause->m_chunk_size;
+                        has_schedule_clause = true;
                     }
                 }
             }
-
+            for(size_t j=0;j<clauses_heirarchial[nesting_lvl].size();j++) {
+                if(clauses_heirarchial[nesting_lvl][j]->type == ASR::omp_clauseType::OMPSchedule) {
+                    ASR::OMPSchedule_t* schedule_clause = ASR::down_cast<ASR::OMPSchedule_t>(clauses_heirarchial[nesting_lvl][j]);
+                    schedule_kind = schedule_clause->m_kind;
+                    chunk_size = schedule_clause->m_chunk_size;
+                    has_schedule_clause = true;
+                }
+            }
             // Step 2: Initialize reduction variables (if any)
             init_reduction_vars(reduction_clauses, x.base.base.loc);
 
@@ -2755,8 +2772,202 @@ class ParallelRegionVisitor :
                     current_stmt = do_loop->m_body[0]; // Move to the next nested loop
                 }
             }
-            
 
+            if (has_schedule_clause && schedule_kind != ASR::schedule_typeType::Auto) {
+                // Instead of manual partitioning, use GOMP loop constructs
+                handle_scheduled_loop(heads, schedule_kind, chunk_size, innermost_loop, reduction_clauses, loc);
+            } else {
+                // Keep existing manual partitioning logic for default case
+                handle_default_loop_partitioning(heads, innermost_loop, reduction_clauses, loc);
+            }
+
+            clauses_heirarchial[nesting_lvl].clear();
+            // Step 9: Add a barrier to synchronize threads
+            // nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+            //     current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
+        }
+
+        void handle_scheduled_loop(const std::vector<ASR::do_loop_head_t> &heads, ASR::schedule_typeType schedule_kind, ASR::expr_t* chunk_size,
+                ASR::DoLoop_t* innermost_loop, const Vec<ASR::OMPReduction_t*> &reduction_clauses, const Location &loc) {
+            // This function would handle the scheduled loop using GOMP constructs
+            ASRUtils::ASRBuilder b(al, loc);
+                ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
+                ASR::ttype_t* long_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8));
+                
+                // Declare loop iteration variables
+                ASR::expr_t* start_iter = b.Variable(current_scope, current_scope->get_unique_name("start_iter"), long_type, ASR::intentType::Local);
+                ASR::expr_t* end_iter = b.Variable(current_scope, current_scope->get_unique_name("end_iter"), long_type, ASR::intentType::Local);
+                ASR::expr_t* while_condition = b.Variable(current_scope, current_scope->get_unique_name("while_condition"), ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), ASR::intentType::Local);
+                // Calculate total iterations for collapsed loops
+                ASR::expr_t* total_iterations = b.i32(1);
+                std::vector<ASR::expr_t*> dimension_lengths;
+                dimension_lengths.reserve(heads.size());
+                
+                for (auto& head : heads) {
+                    ASR::expr_t* length = b.Add(b.Sub(head.m_end, head.m_start), b.i32(1));
+                    dimension_lengths.push_back(length);
+                    total_iterations = b.Mul(total_iterations, length);
+                }
+                
+                // Convert chunk_size to long if provided
+                ASR::expr_t* chunk_long = nullptr;
+                if (chunk_size != nullptr) {
+                    chunk_long = b.i2i_t(chunk_size, long_type);
+                } else {
+                    chunk_long = b.i64(0); // 0 means let runtime decide
+                }
+                
+                // Choose appropriate GOMP function based on schedule type
+                std::string gomp_start_func;
+                std::string gomp_next_func;
+                bool is_runtime = false;
+                
+                if (schedule_kind == ASR::schedule_typeType::Static) {
+                    gomp_start_func = "gomp_loop_static_start";
+                    gomp_next_func = "gomp_loop_static_next";
+                } else if (schedule_kind == ASR::schedule_typeType::Dynamic) {
+                    gomp_start_func = "gomp_loop_dynamic_start";
+                    gomp_next_func = "gomp_loop_dynamic_next";
+                } else if (schedule_kind == ASR::schedule_typeType::Guided) {
+                    gomp_start_func = "gomp_loop_guided_start";
+                    gomp_next_func = "gomp_loop_guided_next";
+                } else if (schedule_kind == ASR::schedule_typeType::Runtime) {
+                    gomp_start_func = "gomp_loop_runtime_start";
+                    gomp_next_func = "gomp_loop_runtime_next";
+                    is_runtime = true;
+                }
+                
+                // Create arguments for GOMP_loop_*_start call
+                Vec<ASR::call_arg_t> start_args; start_args.reserve(al, 5);
+                
+                // Arguments: start, end, incr, chunk_size, start_iter, end_iter
+                ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = b.i2i_t(b.i32(0), long_type); // start from 0
+                ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = b.i2i_t(total_iterations, long_type); // total iterations
+                ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = b.i2i_t(b.i32(1), long_type); // increment
+                ASR::call_arg_t arg4; arg4.loc = loc; arg4.m_value = chunk_long; // chunk size
+                ASR::call_arg_t arg5; arg5.loc = loc; arg5.m_value = start_iter; // output: start iteration
+                ASR::call_arg_t arg6; arg6.loc = loc; arg6.m_value = end_iter; // output: end iteration
+                
+                start_args.push_back(al, arg1);
+                start_args.push_back(al, arg2);
+                start_args.push_back(al, arg3);
+                if(!is_runtime) {
+                    start_args.push_back(al, arg4);
+                }
+                start_args.push_back(al, arg5);
+                start_args.push_back(al, arg6);
+                
+                // Call GOMP_loop_*_start
+                
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_Assignment_t(al, loc, while_condition, 
+                    ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                        current_scope->get_symbol(gomp_start_func), nullptr, start_args.p, start_args.n,
+                        ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr,  nullptr)), nullptr, 0)));
+                
+                // Create the scheduled loop using GOMP_loop_*_next
+                Vec<ASR::stmt_t*> while_body;
+                
+                // Inside the while loop, convert linear iteration to multi-dimensional indices
+                ASR::expr_t* I = b.Variable(current_scope, current_scope->get_unique_name("I"), long_type, ASR::intentType::Local);
+                
+                // Create nested loop to iterate from start_iter to end_iter-1
+                std::vector<ASR::stmt_t*> iteration_body;
+                
+                // Compute original loop indices from flattened index I (same logic as before)
+                ASR::expr_t* temp_I = I;
+                for (size_t i = 0; i < heads.size(); i++) {
+                    ASR::do_loop_head_t head = heads[i];
+                    ASR::expr_t* computed_var;
+                    
+                    if (i == heads.size() - 1) {
+                        // Innermost loop variable
+                        Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                        mod_args.push_back(al, temp_I);
+                        mod_args.push_back(al, b.i2i_t(dimension_lengths[i], long_type));
+                        computed_var = b.Add(
+                            b.i2i_t(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, mod_args.p, 2, 0, long_type, nullptr)), int_type),
+                            head.m_start);
+                    } else {
+                        // Outer loop variables
+                        ASR::expr_t* product_of_next_dims = b.i64(1);
+                        for (size_t j = i + 1; j < heads.size(); j++) {
+                            product_of_next_dims = b.Mul(product_of_next_dims, b.i2i_t(dimension_lengths[j], long_type));
+                        }
+                        
+                        if (i != 0) {
+                            Vec<ASR::expr_t*> mod_args; mod_args.reserve(al, 2);
+                            mod_args.push_back(al, b.Div(temp_I, product_of_next_dims));
+                            mod_args.push_back(al, b.i2i_t(dimension_lengths[i], long_type));
+                            computed_var = b.Add(
+                                b.i2i_t(ASRUtils::EXPR(ASRUtils::make_IntrinsicElementalFunction_t_util(al, loc, 2, mod_args.p, 2, 0, long_type, nullptr)), int_type),
+                                head.m_start);
+                        } else {
+                            computed_var = b.Add(
+                                b.i2i_t(b.Div(b.Add(temp_I, b.i64(-1)), product_of_next_dims), int_type),
+                                head.m_start);
+                        }
+                    }
+                    
+                    // Assign to the original loop variable
+                    ASR::expr_t* loop_var = b.Var(current_scope->resolve_symbol(
+                        ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(head.m_v)->m_v)));
+                    iteration_body.push_back(b.Assignment(loop_var, computed_var));
+                }
+                
+                // Add the innermost loop's body
+                for (size_t i = 0; i < innermost_loop->n_body; i++) {
+                    if (!ASR::is_a<ASR::OMPRegion_t>(*innermost_loop->m_body[i]) && 
+                        !ASR::is_a<ASR::DoLoop_t>(*innermost_loop->m_body[i]) && 
+                        !ASR::is_a<ASR::If_t>(*innermost_loop->m_body[i])) {
+                        iteration_body.push_back(innermost_loop->m_body[i]);
+                        continue;
+                    }
+                    
+                    std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                    this->visit_stmt(*innermost_loop->m_body[i]);
+                    for (size_t j = 0; j < nested_lowered_body.size(); j++) {
+                        iteration_body.push_back(nested_lowered_body[j]);
+                    }
+                    nested_lowered_body = body_copy;
+                }
+                
+                // Create the inner loop that processes the assigned chunk
+                ASR::stmt_t* inner_loop = b.DoLoop(I, start_iter, b.Sub(end_iter, b.i64(1)), iteration_body, nullptr);
+                while_body.reserve(al, 1);
+                while_body.push_back(al, inner_loop);
+                
+                // Create arguments for GOMP_loop_*_next call
+                Vec<ASR::call_arg_t> next_args; next_args.reserve(al, 2);
+                ASR::call_arg_t next_arg1; next_arg1.loc = loc; next_arg1.m_value = start_iter;
+                ASR::call_arg_t next_arg2; next_arg2.loc = loc; next_arg2.m_value = end_iter;
+                next_args.push_back(al, next_arg1);
+                next_args.push_back(al, next_arg2);
+                
+                // Create the while loop: while (GOMP_loop_*_next(&start_iter, &end_iter))
+                ASR::expr_t* loop_condition = ASRUtils::EXPR(ASR::make_FunctionCall_t(al, loc,
+                    current_scope->get_symbol(gomp_next_func), current_scope->get_symbol(gomp_next_func),
+                    next_args.p, next_args.n, ASRUtils::TYPE(ASR::make_Logical_t(al, loc, 4)), nullptr, nullptr));
+                while_body.push_back(al, b.Assignment(while_condition, loop_condition));
+                ASR::stmt_t* while_stmt = ASRUtils::STMT(ASR::make_WhileLoop_t(al, loc, nullptr, while_condition, 
+                    while_body.p, while_body.n, nullptr, 0));
+                
+                nested_lowered_body.push_back(while_stmt);
+                
+                // Call GOMP_loop_end_nowait or GOMP_loop_end based on whether there's a nowait clause
+                nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
+                    current_scope->get_symbol("gomp_loop_end"), nullptr, nullptr, 0, nullptr)));
+                
+                // Handle reduction variables
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                handle_reduction_vars(reduction_clauses, loc);
+                for (size_t i = 0; i < nested_lowered_body.size(); i++) {
+                    body_copy.push_back(nested_lowered_body[i]);
+                }
+                nested_lowered_body = body_copy;
+        }
+
+        void handle_default_loop_partitioning(const std::vector<ASR::do_loop_head_t> &heads, ASR::DoLoop_t* innermost_loop, const Vec<ASR::OMPReduction_t*> &reduction_clauses, const Location &loc) {
+            ASRUtils::ASRBuilder b(al, loc);
             // Step 4: Calculate total iterations for collapsed loops
             ASR::expr_t* total_iterations = b.i32(1);
             std::vector<ASR::expr_t*> dimension_lengths;
@@ -2858,16 +3069,11 @@ class ParallelRegionVisitor :
 
             // Step 8: Handle reduction clauses with atomic operations
             std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
-            handle_reduction_vars(reduction_clauses, x.base.base.loc);
+            handle_reduction_vars(reduction_clauses, loc);
             for (size_t i=0; i<nested_lowered_body.size(); i++) {
                 body_copy.push_back(nested_lowered_body[i]);
             }
             nested_lowered_body = body_copy;
-
-            clauses_heirarchial[nesting_lvl].clear();
-            // Step 9: Add a barrier to synchronize threads
-            nested_lowered_body.push_back(ASRUtils::STMT(ASR::make_SubroutineCall_t(al, loc,
-                current_scope->get_symbol("gomp_barrier"), nullptr, nullptr, 0, nullptr)));
         }
 
         void visit_OMPParallelDo(const ASR::OMPRegion_t &x) {
