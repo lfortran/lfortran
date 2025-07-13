@@ -1302,14 +1302,23 @@ namespace LCompilers {
             * filled inside the function.
             */
             if( is_array_or_struct_or_symbolic(x->m_return_var) || is_symbolic_list_type(x->m_return_var)) {
+                ASR::expr_t* return_var = x->m_return_var;
+                ASR::symbol_t* return_var_sym = nullptr;
+                if ( ASR::is_a<ASR::Var_t>(*return_var) ) {
+                    return_var_sym = ASR::down_cast<ASR::Var_t>(return_var)->m_v;
+                } else {
+                    throw LCompilersException("The return variable of a function should be a variable, but found: " + std::to_string(return_var->type));
+                }
                 for( auto& s_item: x->m_symtab->get_scope() ) {
                     ASR::symbol_t* curr_sym = s_item.second;
                     if( curr_sym->type == ASR::symbolType::Variable ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(curr_sym);
-                        if( var->m_intent == ASR::intentType::Unspecified ) {
-                            var->m_intent = ASR::intentType::In;
-                        } else if( var->m_intent == ASR::intentType::ReturnVar ) {
-                            var->m_intent = ASR::intentType::Out;
+                        if ( return_var_sym && return_var_sym == curr_sym ){
+                            if( var->m_intent == ASR::intentType::Unspecified ) {
+                                var->m_intent = ASR::intentType::In;
+                            } else if( var->m_intent == ASR::intentType::ReturnVar ) {
+                                var->m_intent = ASR::intentType::Out;
+                            }
                         }
                     }
                 }
