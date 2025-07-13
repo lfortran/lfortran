@@ -59,6 +59,79 @@ end function GOMP_sections_next
 subroutine GOMP_sections_end() bind(C, name="GOMP_sections_end")
 end subroutine GOMP_sections_end
 
+function GOMP_loop_static_start(start, end, incr, chunk, istart, iend) bind(C, name="GOMP_loop_static_start")
+    import :: c_long, c_bool
+    integer(c_long), value :: start, end, incr, chunk
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_static_start
+end function
+
+function GOMP_loop_static_next(istart, iend) bind(C, name="GOMP_loop_static_next")
+    import :: c_long, c_bool
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_static_next
+end function
+
+function GOMP_loop_dynamic_start(start, end, incr, chunk, istart, iend) bind(C, name="GOMP_loop_dynamic_start")
+    import :: c_long, c_bool
+    integer(c_long), value :: start, end, incr, chunk
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_dynamic_start
+end function
+
+function GOMP_loop_dynamic_next(istart, iend) bind(C, name="GOMP_loop_dynamic_next")
+    import :: c_long, c_bool
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_dynamic_next
+end function
+
+function GOMP_loop_runtime_start(start, end, incr, istart, iend) bind(C, name="GOMP_loop_runtime_start")
+    import :: c_long, c_bool
+    integer(c_long), value :: start, end, incr
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_runtime_start
+end function
+
+function GOMP_loop_runtime_next(istart, iend) bind(C, name="GOMP_loop_runtime_next")
+    import :: c_long, c_bool
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_runtime_next
+end function
+
+function GOMP_loop_guided_start(start, end, incr, chunk, istart, iend) bind(C, name="GOMP_loop_guided_start")
+    import :: c_long, c_bool
+    integer(c_long), value :: start, end, incr, chunk
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_guided_start
+end function
+
+function GOMP_loop_guided_next(istart, iend) bind(C, name="GOMP_loop_guided_next")
+    import :: c_long, c_bool
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_guided_next
+end function
+
+function GOMP_loop_auto_start(start, end, incr, istart, iend) bind(C, name="GOMP_loop_auto_start")
+    import :: c_long, c_bool
+    integer(c_long), value :: start, end, incr
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_auto_start
+end function
+
+function GOMP_loop_auto_next(istart, iend) bind(C, name="GOMP_loop_auto_next")
+    import :: c_long, c_bool
+    integer(c_long) :: istart, iend
+    logical(c_bool) :: GOMP_loop_auto_next
+end function
+
+! ---------------------- LOOP END ----------------------
+subroutine GOMP_loop_end() bind(C, name="GOMP_loop_end")
+end subroutine GOMP_loop_end
+
+subroutine GOMP_loop_end_nowait() bind(C, name="GOMP_loop_end_nowait")
+end subroutine GOMP_loop_end_nowait
+
+
 subroutine GOMP_barrier() bind(C, name="GOMP_barrier")
 end subroutine
 
