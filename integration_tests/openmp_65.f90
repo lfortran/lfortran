@@ -4,24 +4,21 @@ program openmp_65
     implicit none
     integer, parameter :: n = 1000  ! Larger n to see guided behavior
     integer :: i, tid, j
-    integer :: chunk_count
+    integer :: chunk_count = 0
     integer :: chunk_size_array(100) = 0
     integer :: chunk_thread(100) = -1
-    integer :: current_pos
+    integer :: current_pos = 1
     integer :: thread_iterations(0:7) = 0
     logical :: test_passed = .true.
     logical :: decreasing_trend = .true.
     integer :: last_thread = -1
-    integer :: current_chunk_size
-    integer :: iterations_done
+    integer :: current_chunk_size = 0
+    integer :: iterations_done = 0
     call omp_set_num_threads(4)
     
     print *, "=== GUIDED Schedule Test ==="
     print *, "Iterations:", n, "Threads:", omp_get_max_threads()
-    chunk_count=0
-    current_chunk_size =0
-    iterations_done = 0
-    current_pos = 1
+    
     ! Track chunk sizes with guided schedule
     !$omp parallel private(tid)
     !$omp do schedule(guided)

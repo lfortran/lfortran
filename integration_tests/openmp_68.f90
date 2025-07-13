@@ -5,13 +5,12 @@ program openmp_68
     integer :: i, tid, j
     integer :: thread_chunks(0:7) = 0
     integer :: chunk_sizes(100)  ! Track size of each chunk given out
-    integer :: chunk_count
-    integer :: current_iteration
+    integer :: chunk_count = 0
+    integer :: current_iteration = 1
     integer :: chunk_start(100), chunk_thread(100)
     logical :: test_passed = .true.
     logical :: looks_like_static = .true.
-    current_iteration = 1
-    chunk_count = 0
+
     call omp_set_num_threads(4)
     
     print *, "=== DYNAMIC Schedule with chunk=", 5, "==="
