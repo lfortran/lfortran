@@ -13,7 +13,7 @@
                                 (ExternalSymbol
                                     4
                                     c_bool
-                                    27 c_bool
+                                    39 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -23,7 +23,7 @@
                                 (ExternalSymbol
                                     4
                                     c_funptr
-                                    27 c_funptr
+                                    39 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -33,7 +33,7 @@
                                 (ExternalSymbol
                                     4
                                     c_int
-                                    27 c_int
+                                    39 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -43,7 +43,7 @@
                                 (ExternalSymbol
                                     4
                                     c_long
-                                    27 c_long
+                                    39 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -53,7 +53,7 @@
                                 (ExternalSymbol
                                     4
                                     c_ptr
-                                    27 c_ptr
+                                    39 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -214,14 +214,1440 @@
                                     .false.
                                     ()
                                 ),
-                            gomp_parallel:
+                            gomp_loop_auto_next:
                                 (Function
                                     (SymbolTable
                                         10
                                         {
-                                            data:
+                                            gomp_loop_auto_next:
                                                 (Variable
                                                     10
+                                                    gomp_loop_auto_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    10
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    10
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_auto_next
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_auto_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 10 istart)
+                                    (Var 10 iend)]
+                                    []
+                                    (Var 10 gomp_loop_auto_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_auto_start:
+                                (Function
+                                    (SymbolTable
+                                        11
+                                        {
+                                            end:
+                                                (Variable
+                                                    11
+                                                    end
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            gomp_loop_auto_start:
+                                                (Variable
+                                                    11
+                                                    gomp_loop_auto_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    11
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            incr:
+                                                (Variable
+                                                    11
+                                                    incr
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    11
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            start:
+                                                (Variable
+                                                    11
+                                                    start
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_auto_start
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_auto_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 11 start)
+                                    (Var 11 end)
+                                    (Var 11 incr)
+                                    (Var 11 istart)
+                                    (Var 11 iend)]
+                                    []
+                                    (Var 11 gomp_loop_auto_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_dynamic_next:
+                                (Function
+                                    (SymbolTable
+                                        12
+                                        {
+                                            gomp_loop_dynamic_next:
+                                                (Variable
+                                                    12
+                                                    gomp_loop_dynamic_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    12
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    12
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_dynamic_next
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_dynamic_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 12 istart)
+                                    (Var 12 iend)]
+                                    []
+                                    (Var 12 gomp_loop_dynamic_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_dynamic_start:
+                                (Function
+                                    (SymbolTable
+                                        13
+                                        {
+                                            chunk:
+                                                (Variable
+                                                    13
+                                                    chunk
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            end:
+                                                (Variable
+                                                    13
+                                                    end
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            gomp_loop_dynamic_start:
+                                                (Variable
+                                                    13
+                                                    gomp_loop_dynamic_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    13
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            incr:
+                                                (Variable
+                                                    13
+                                                    incr
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    13
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            start:
+                                                (Variable
+                                                    13
+                                                    start
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_dynamic_start
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_dynamic_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 13 start)
+                                    (Var 13 end)
+                                    (Var 13 incr)
+                                    (Var 13 chunk)
+                                    (Var 13 istart)
+                                    (Var 13 iend)]
+                                    []
+                                    (Var 13 gomp_loop_dynamic_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_end:
+                                (Function
+                                    (SymbolTable
+                                        14
+                                        {
+                                            
+                                        })
+                                    gomp_loop_end
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_end"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_end_nowait:
+                                (Function
+                                    (SymbolTable
+                                        15
+                                        {
+                                            
+                                        })
+                                    gomp_loop_end_nowait
+                                    (FunctionType
+                                        []
+                                        ()
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_end_nowait"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    []
+                                    []
+                                    ()
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_guided_next:
+                                (Function
+                                    (SymbolTable
+                                        16
+                                        {
+                                            gomp_loop_guided_next:
+                                                (Variable
+                                                    16
+                                                    gomp_loop_guided_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    16
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    16
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_guided_next
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_guided_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 16 istart)
+                                    (Var 16 iend)]
+                                    []
+                                    (Var 16 gomp_loop_guided_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_guided_start:
+                                (Function
+                                    (SymbolTable
+                                        17
+                                        {
+                                            chunk:
+                                                (Variable
+                                                    17
+                                                    chunk
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            end:
+                                                (Variable
+                                                    17
+                                                    end
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            gomp_loop_guided_start:
+                                                (Variable
+                                                    17
+                                                    gomp_loop_guided_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    17
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            incr:
+                                                (Variable
+                                                    17
+                                                    incr
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    17
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            start:
+                                                (Variable
+                                                    17
+                                                    start
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_guided_start
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_guided_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 17 start)
+                                    (Var 17 end)
+                                    (Var 17 incr)
+                                    (Var 17 chunk)
+                                    (Var 17 istart)
+                                    (Var 17 iend)]
+                                    []
+                                    (Var 17 gomp_loop_guided_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_runtime_next:
+                                (Function
+                                    (SymbolTable
+                                        18
+                                        {
+                                            gomp_loop_runtime_next:
+                                                (Variable
+                                                    18
+                                                    gomp_loop_runtime_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    18
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    18
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_runtime_next
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_runtime_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 18 istart)
+                                    (Var 18 iend)]
+                                    []
+                                    (Var 18 gomp_loop_runtime_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_runtime_start:
+                                (Function
+                                    (SymbolTable
+                                        19
+                                        {
+                                            end:
+                                                (Variable
+                                                    19
+                                                    end
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            gomp_loop_runtime_start:
+                                                (Variable
+                                                    19
+                                                    gomp_loop_runtime_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    19
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            incr:
+                                                (Variable
+                                                    19
+                                                    incr
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    19
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            start:
+                                                (Variable
+                                                    19
+                                                    start
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_runtime_start
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_runtime_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 19 start)
+                                    (Var 19 end)
+                                    (Var 19 incr)
+                                    (Var 19 istart)
+                                    (Var 19 iend)]
+                                    []
+                                    (Var 19 gomp_loop_runtime_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_static_next:
+                                (Function
+                                    (SymbolTable
+                                        20
+                                        {
+                                            gomp_loop_static_next:
+                                                (Variable
+                                                    20
+                                                    gomp_loop_static_next
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    20
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    20
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_static_next
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_static_next"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 20 istart)
+                                    (Var 20 iend)]
+                                    []
+                                    (Var 20 gomp_loop_static_next)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_loop_static_start:
+                                (Function
+                                    (SymbolTable
+                                        21
+                                        {
+                                            chunk:
+                                                (Variable
+                                                    21
+                                                    chunk
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            end:
+                                                (Variable
+                                                    21
+                                                    end
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            gomp_loop_static_start:
+                                                (Variable
+                                                    21
+                                                    gomp_loop_static_start
+                                                    []
+                                                    ReturnVar
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Logical 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            iend:
+                                                (Variable
+                                                    21
+                                                    iend
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            incr:
+                                                (Variable
+                                                    21
+                                                    incr
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            istart:
+                                                (Variable
+                                                    21
+                                                    istart
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                ),
+                                            start:
+                                                (Variable
+                                                    21
+                                                    start
+                                                    []
+                                                    Unspecified
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 8)
+                                                    ()
+                                                    BindC
+                                                    Public
+                                                    Required
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    gomp_loop_static_start
+                                    (FunctionType
+                                        [(Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)
+                                        (Integer 8)]
+                                        (Logical 4)
+                                        BindC
+                                        Interface
+                                        "GOMP_loop_static_start"
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        .false.
+                                        []
+                                        .false.
+                                    )
+                                    []
+                                    [(Var 21 start)
+                                    (Var 21 end)
+                                    (Var 21 incr)
+                                    (Var 21 chunk)
+                                    (Var 21 istart)
+                                    (Var 21 iend)]
+                                    []
+                                    (Var 21 gomp_loop_static_start)
+                                    Public
+                                    .false.
+                                    .false.
+                                    ()
+                                ),
+                            gomp_parallel:
+                                (Function
+                                    (SymbolTable
+                                        22
+                                        {
+                                            data:
+                                                (Variable
+                                                    22
                                                     data
                                                     []
                                                     Unspecified
@@ -242,7 +1668,7 @@
                                                 ),
                                             flags:
                                                 (Variable
-                                                    10
+                                                    22
                                                     flags
                                                     []
                                                     Unspecified
@@ -263,7 +1689,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    10
+                                                    22
                                                     fn
                                                     []
                                                     Unspecified
@@ -284,7 +1710,7 @@
                                                 ),
                                             num_threads:
                                                 (Variable
-                                                    10
+                                                    22
                                                     num_threads
                                                     []
                                                     Unspecified
@@ -323,10 +1749,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 10 fn)
-                                    (Var 10 data)
-                                    (Var 10 num_threads)
-                                    (Var 10 flags)]
+                                    [(Var 22 fn)
+                                    (Var 22 data)
+                                    (Var 22 num_threads)
+                                    (Var 22 flags)]
                                     []
                                     ()
                                     Public
@@ -337,7 +1763,7 @@
                             gomp_sections_end:
                                 (Function
                                     (SymbolTable
-                                        11
+                                        23
                                         {
                                             
                                         })
@@ -368,11 +1794,11 @@
                             gomp_sections_next:
                                 (Function
                                     (SymbolTable
-                                        12
+                                        24
                                         {
                                             gomp_sections_next:
                                                 (Variable
-                                                    12
+                                                    24
                                                     gomp_sections_next
                                                     []
                                                     ReturnVar
@@ -410,7 +1836,7 @@
                                     []
                                     []
                                     []
-                                    (Var 12 gomp_sections_next)
+                                    (Var 24 gomp_sections_next)
                                     Public
                                     .false.
                                     .false.
@@ -419,11 +1845,11 @@
                             gomp_sections_start:
                                 (Function
                                     (SymbolTable
-                                        13
+                                        25
                                         {
                                             count:
                                                 (Variable
-                                                    13
+                                                    25
                                                     count
                                                     []
                                                     Unspecified
@@ -444,7 +1870,7 @@
                                                 ),
                                             gomp_sections_start:
                                                 (Variable
-                                                    13
+                                                    25
                                                     gomp_sections_start
                                                     []
                                                     ReturnVar
@@ -480,9 +1906,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 13 count)]
+                                    [(Var 25 count)]
                                     []
-                                    (Var 13 gomp_sections_start)
+                                    (Var 25 gomp_sections_start)
                                     Public
                                     .false.
                                     .false.
@@ -491,11 +1917,11 @@
                             gomp_task:
                                 (Function
                                     (SymbolTable
-                                        14
+                                        26
                                         {
                                             arg_align:
                                                 (Variable
-                                                    14
+                                                    26
                                                     arg_align
                                                     []
                                                     Unspecified
@@ -516,7 +1942,7 @@
                                                 ),
                                             arg_size:
                                                 (Variable
-                                                    14
+                                                    26
                                                     arg_size
                                                     []
                                                     Unspecified
@@ -537,7 +1963,7 @@
                                                 ),
                                             cpyfn:
                                                 (Variable
-                                                    14
+                                                    26
                                                     cpyfn
                                                     []
                                                     Unspecified
@@ -558,7 +1984,7 @@
                                                 ),
                                             data:
                                                 (Variable
-                                                    14
+                                                    26
                                                     data
                                                     []
                                                     Unspecified
@@ -579,7 +2005,7 @@
                                                 ),
                                             depend:
                                                 (Variable
-                                                    14
+                                                    26
                                                     depend
                                                     []
                                                     Unspecified
@@ -600,7 +2026,7 @@
                                                 ),
                                             flags:
                                                 (Variable
-                                                    14
+                                                    26
                                                     flags
                                                     []
                                                     Unspecified
@@ -621,7 +2047,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    14
+                                                    26
                                                     fn
                                                     []
                                                     Unspecified
@@ -642,7 +2068,7 @@
                                                 ),
                                             if_clause:
                                                 (Variable
-                                                    14
+                                                    26
                                                     if_clause
                                                     []
                                                     Unspecified
@@ -685,14 +2111,14 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 14 fn)
-                                    (Var 14 data)
-                                    (Var 14 cpyfn)
-                                    (Var 14 arg_size)
-                                    (Var 14 arg_align)
-                                    (Var 14 if_clause)
-                                    (Var 14 flags)
-                                    (Var 14 depend)]
+                                    [(Var 26 fn)
+                                    (Var 26 data)
+                                    (Var 26 cpyfn)
+                                    (Var 26 arg_size)
+                                    (Var 26 arg_align)
+                                    (Var 26 if_clause)
+                                    (Var 26 flags)
+                                    (Var 26 depend)]
                                     []
                                     ()
                                     Public
@@ -703,7 +2129,7 @@
                             gomp_taskwait:
                                 (Function
                                     (SymbolTable
-                                        15
+                                        27
                                         {
                                             
                                         })
@@ -734,11 +2160,11 @@
                             gomp_teams:
                                 (Function
                                     (SymbolTable
-                                        16
+                                        28
                                         {
                                             data:
                                                 (Variable
-                                                    16
+                                                    28
                                                     data
                                                     []
                                                     Unspecified
@@ -759,7 +2185,7 @@
                                                 ),
                                             fn:
                                                 (Variable
-                                                    16
+                                                    28
                                                     fn
                                                     []
                                                     Unspecified
@@ -780,7 +2206,7 @@
                                                 ),
                                             num_teams:
                                                 (Variable
-                                                    16
+                                                    28
                                                     num_teams
                                                     []
                                                     Unspecified
@@ -801,7 +2227,7 @@
                                                 ),
                                             thread_limit:
                                                 (Variable
-                                                    16
+                                                    28
                                                     thread_limit
                                                     []
                                                     Unspecified
@@ -840,10 +2266,10 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 16 fn)
-                                    (Var 16 data)
-                                    (Var 16 num_teams)
-                                    (Var 16 thread_limit)]
+                                    [(Var 28 fn)
+                                    (Var 28 data)
+                                    (Var 28 num_teams)
+                                    (Var 28 thread_limit)]
                                     []
                                     ()
                                     Public
@@ -854,11 +2280,11 @@
                             omp_get_max_threads:
                                 (Function
                                     (SymbolTable
-                                        17
+                                        29
                                         {
                                             omp_get_max_threads:
                                                 (Variable
-                                                    17
+                                                    29
                                                     omp_get_max_threads
                                                     []
                                                     ReturnVar
@@ -896,7 +2322,7 @@
                                     []
                                     []
                                     []
-                                    (Var 17 omp_get_max_threads)
+                                    (Var 29 omp_get_max_threads)
                                     Public
                                     .false.
                                     .false.
@@ -905,11 +2331,11 @@
                             omp_get_num_procs:
                                 (Function
                                     (SymbolTable
-                                        18
+                                        30
                                         {
                                             omp_get_num_procs:
                                                 (Variable
-                                                    18
+                                                    30
                                                     omp_get_num_procs
                                                     []
                                                     ReturnVar
@@ -947,7 +2373,7 @@
                                     []
                                     []
                                     []
-                                    (Var 18 omp_get_num_procs)
+                                    (Var 30 omp_get_num_procs)
                                     Public
                                     .false.
                                     .false.
@@ -956,11 +2382,11 @@
                             omp_get_num_teams:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        31
                                         {
                                             omp_get_num_teams:
                                                 (Variable
-                                                    19
+                                                    31
                                                     omp_get_num_teams
                                                     []
                                                     ReturnVar
@@ -998,7 +2424,7 @@
                                     []
                                     []
                                     []
-                                    (Var 19 omp_get_num_teams)
+                                    (Var 31 omp_get_num_teams)
                                     Public
                                     .false.
                                     .false.
@@ -1007,11 +2433,11 @@
                             omp_get_num_threads:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        32
                                         {
                                             omp_get_num_threads:
                                                 (Variable
-                                                    20
+                                                    32
                                                     omp_get_num_threads
                                                     []
                                                     ReturnVar
@@ -1049,7 +2475,7 @@
                                     []
                                     []
                                     []
-                                    (Var 20 omp_get_num_threads)
+                                    (Var 32 omp_get_num_threads)
                                     Public
                                     .false.
                                     .false.
@@ -1058,11 +2484,11 @@
                             omp_get_team_num:
                                 (Function
                                     (SymbolTable
-                                        21
+                                        33
                                         {
                                             omp_get_team_num:
                                                 (Variable
-                                                    21
+                                                    33
                                                     omp_get_team_num
                                                     []
                                                     ReturnVar
@@ -1100,7 +2526,7 @@
                                     []
                                     []
                                     []
-                                    (Var 21 omp_get_team_num)
+                                    (Var 33 omp_get_team_num)
                                     Public
                                     .false.
                                     .false.
@@ -1109,11 +2535,11 @@
                             omp_get_team_size:
                                 (Function
                                     (SymbolTable
-                                        22
+                                        34
                                         {
                                             level:
                                                 (Variable
-                                                    22
+                                                    34
                                                     level
                                                     []
                                                     Unspecified
@@ -1134,7 +2560,7 @@
                                                 ),
                                             omp_get_team_size:
                                                 (Variable
-                                                    22
+                                                    34
                                                     omp_get_team_size
                                                     []
                                                     ReturnVar
@@ -1170,9 +2596,9 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 22 level)]
+                                    [(Var 34 level)]
                                     []
-                                    (Var 22 omp_get_team_size)
+                                    (Var 34 omp_get_team_size)
                                     Public
                                     .false.
                                     .false.
@@ -1181,11 +2607,11 @@
                             omp_get_thread_num:
                                 (Function
                                     (SymbolTable
-                                        23
+                                        35
                                         {
                                             omp_get_thread_num:
                                                 (Variable
-                                                    23
+                                                    35
                                                     omp_get_thread_num
                                                     []
                                                     ReturnVar
@@ -1223,7 +2649,7 @@
                                     []
                                     []
                                     []
-                                    (Var 23 omp_get_thread_num)
+                                    (Var 35 omp_get_thread_num)
                                     Public
                                     .false.
                                     .false.
@@ -1232,11 +2658,11 @@
                             omp_get_wtime:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        36
                                         {
                                             omp_get_wtime:
                                                 (Variable
-                                                    24
+                                                    36
                                                     omp_get_wtime
                                                     []
                                                     ReturnVar
@@ -1274,7 +2700,7 @@
                                     []
                                     []
                                     []
-                                    (Var 24 omp_get_wtime)
+                                    (Var 36 omp_get_wtime)
                                     Public
                                     .false.
                                     .false.
@@ -1283,11 +2709,11 @@
                             omp_set_num_threads:
                                 (Function
                                     (SymbolTable
-                                        25
+                                        37
                                         {
                                             n:
                                                 (Variable
-                                                    25
+                                                    37
                                                     n
                                                     []
                                                     Unspecified
@@ -1323,7 +2749,7 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 25 n)]
+                                    [(Var 37 n)]
                                     []
                                     ()
                                     Public
@@ -1373,7 +2799,7 @@
                                 (ExternalSymbol
                                     2
                                     c_bool
-                                    27 c_bool
+                                    39 c_bool
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_bool
@@ -1383,7 +2809,7 @@
                                 (ExternalSymbol
                                     2
                                     c_funptr
-                                    27 c_funptr
+                                    39 c_funptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_funptr
@@ -1393,7 +2819,7 @@
                                 (ExternalSymbol
                                     2
                                     c_int
-                                    27 c_int
+                                    39 c_int
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_int
@@ -1403,7 +2829,7 @@
                                 (ExternalSymbol
                                     2
                                     c_long
-                                    27 c_long
+                                    39 c_long
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_long
@@ -1413,7 +2839,7 @@
                                 (ExternalSymbol
                                     2
                                     c_ptr
-                                    27 c_ptr
+                                    39 c_ptr
                                     lfortran_intrinsic_iso_c_binding
                                     []
                                     c_ptr
@@ -1467,6 +2893,126 @@
                                     omp_lib
                                     []
                                     gomp_critical_start
+                                    Public
+                                ),
+                            gomp_loop_auto_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_auto_next
+                                    4 gomp_loop_auto_next
+                                    omp_lib
+                                    []
+                                    gomp_loop_auto_next
+                                    Public
+                                ),
+                            gomp_loop_auto_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_auto_start
+                                    4 gomp_loop_auto_start
+                                    omp_lib
+                                    []
+                                    gomp_loop_auto_start
+                                    Public
+                                ),
+                            gomp_loop_dynamic_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_dynamic_next
+                                    4 gomp_loop_dynamic_next
+                                    omp_lib
+                                    []
+                                    gomp_loop_dynamic_next
+                                    Public
+                                ),
+                            gomp_loop_dynamic_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_dynamic_start
+                                    4 gomp_loop_dynamic_start
+                                    omp_lib
+                                    []
+                                    gomp_loop_dynamic_start
+                                    Public
+                                ),
+                            gomp_loop_end:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_end
+                                    4 gomp_loop_end
+                                    omp_lib
+                                    []
+                                    gomp_loop_end
+                                    Public
+                                ),
+                            gomp_loop_end_nowait:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_end_nowait
+                                    4 gomp_loop_end_nowait
+                                    omp_lib
+                                    []
+                                    gomp_loop_end_nowait
+                                    Public
+                                ),
+                            gomp_loop_guided_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_guided_next
+                                    4 gomp_loop_guided_next
+                                    omp_lib
+                                    []
+                                    gomp_loop_guided_next
+                                    Public
+                                ),
+                            gomp_loop_guided_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_guided_start
+                                    4 gomp_loop_guided_start
+                                    omp_lib
+                                    []
+                                    gomp_loop_guided_start
+                                    Public
+                                ),
+                            gomp_loop_runtime_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_runtime_next
+                                    4 gomp_loop_runtime_next
+                                    omp_lib
+                                    []
+                                    gomp_loop_runtime_next
+                                    Public
+                                ),
+                            gomp_loop_runtime_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_runtime_start
+                                    4 gomp_loop_runtime_start
+                                    omp_lib
+                                    []
+                                    gomp_loop_runtime_start
+                                    Public
+                                ),
+                            gomp_loop_static_next:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_static_next
+                                    4 gomp_loop_static_next
+                                    omp_lib
+                                    []
+                                    gomp_loop_static_next
+                                    Public
+                                ),
+                            gomp_loop_static_start:
+                                (ExternalSymbol
+                                    2
+                                    gomp_loop_static_start
+                                    4 gomp_loop_static_start
+                                    omp_lib
+                                    []
+                                    gomp_loop_static_start
                                     Public
                                 ),
                             gomp_parallel:
