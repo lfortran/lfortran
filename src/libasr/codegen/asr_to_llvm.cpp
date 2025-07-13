@@ -5516,11 +5516,16 @@ public:
             // If the pointer is class, get its type pointer
             ptr = llvm_utils->create_gep2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get()), ptr, 1);
             ptr = llvm_utils->CreateLoad2(llvm_utils->get_type_from_ttype_t_util(p_type, module.get())->getPointerTo(), ptr);
+        } else if(ASRUtils::is_character(*p_type)){ // String OR array of strings
+            ptr = ASRUtils::is_array_of_strings(p_type) ? 
+                llvm_utils->get_stringArray_data(p_type, ptr) :
+                llvm_utils->get_string_data(ASRUtils::get_string_type(p_type), ptr);
         } else {
             llvm::Type* p_llvm_type = llvm_utils->get_type_from_ttype_t_util(p_type, module.get());
             ptr = llvm_utils->CreateLoad2(p_llvm_type, ptr);
         }
         if( ASRUtils::is_array(p_type) &&
+            !ASRUtils::is_array_of_strings(p_type) &&
             ASRUtils::extract_physical_type(p_type) ==
             ASR::array_physical_typeType::DescriptorArray) {
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Pointer_t>(*p_type));
@@ -7833,17 +7838,17 @@ public:
             tmp = llvm_utils->create_string_descriptor(tmp, lfortran_str_len(tmp, false), "stringSection_desc");
         }
     }
-
+#include<libasr/pickle.h>
     void stringSection_helper_fortran(const ASR::StringSection_t &x){
         this->visit_expr_load_wrapper(x.m_arg, 0);
         llvm::Value *str = tmp;
         llvm::Value *left, *right;
         if (x.m_start) {
-            this->visit_expr_load_wrapper(x.m_start, 1);
+            this->visit_expr_load_wrapper(x.m_start, 1, true);
             left = tmp;
         }
         if (x.m_end) {
-            this->visit_expr_load_wrapper(x.m_end, 1);
+            this->visit_expr_load_wrapper(x.m_end, 1, true);
             right = tmp;
         }
         LCOMPILERS_ASSERT(x.m_step)
@@ -7965,9 +7970,9 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        this->visit_expr_wrapper(x.m_left, true);
+        this->visit_expr_load_wrapper(x.m_left, LLVM::is_llvm_pointer(*expr_type(x.m_left)) ? 2 : 1, true);
         llvm::Value *left_val = tmp;
-        this->visit_expr_wrapper(x.m_right, true);
+        this->visit_expr_load_wrapper(x.m_right, LLVM::is_llvm_pointer(*expr_type(x.m_right)) ? 2 : 1, true);
         llvm::Value *right_val = tmp;
         LCOMPILERS_ASSERT(ASRUtils::is_integer(*x.m_type) ||
             ASRUtils::is_unsigned_integer(*x.m_type))
@@ -8945,8 +8950,14 @@ public:
             return;
         }
 
-        this->visit_expr_wrapper(x.m_source, true);
-        llvm::Value* source = tmp;
+        llvm::Value* source{};
+        if(ASRUtils::is_character(*expr_type(x.m_source))){
+            this->visit_expr_load_wrapper(x.m_source, 0, true);
+            source = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+        } else {
+            this->visit_expr_wrapper(x.m_source, true);
+            source = tmp;
+        }
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
@@ -10970,9 +10981,7 @@ public:
                     case (ASR::ttypeType::Pointer) : {
                         ASR::ttype_t* type_ = ASRUtils::get_contained_type(arg_type);
                         target_type = llvm_utils->get_type_from_ttype_t_util(type_, module.get());
-                        if( !ASR::is_a<ASR::String_t>(*type_) ) {
-                            target_type = target_type->getPointerTo();
-                        }
+                        target_type = target_type->getPointerTo();
                         break;
                     }
                     case (ASR::ttypeType::List) : {
@@ -11031,7 +11040,8 @@ public:
                                     && !ASRUtils::is_allocatable(orig_arg->m_type)
                                     && (orig_arg->m_intent == ASR::intentType::Out
                                         || orig_arg->m_intent == ASR::intentType::InOut)))
-                            && value->getType()->isPointerTy()) {
+                            && value->getType()->isPointerTy()
+                            && !ASRUtils::is_character(*arg_type)) {
                                 if (ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(arg_type))
                                     && !ASRUtils::is_class_type(
@@ -11045,7 +11055,7 @@ public:
                                 }
                         }
                         if( !ASR::is_a<ASR::CPtr_t>(*arg_type) &&
-                            !(!LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                            !(orig_arg && !LLVM::is_llvm_pointer(*orig_arg->m_type) &&
                             LLVM::is_llvm_pointer(*arg_type)) &&
                             !ASRUtils::is_character(*arg_type) &&
                             (!ASR::is_a<ASR::StructInstanceMember_t>(*x.m_args[i].m_value) || ASRUtils::is_value_constant(x.m_args[i].m_value)) ) {
@@ -11640,7 +11650,6 @@ public:
                 llvm::ConstantPointerNull::get(
                     character_type));
         } else {
-            visit_expr_load_wrapper(arg, 1, true);
             tmp = builder->CreateICmpNE(
                 builder->CreatePtrToInt(tmp, llvm::Type::getInt64Ty(context)),
                     llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), llvm::APInt(64, 0)) );
