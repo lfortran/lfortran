@@ -1309,6 +1309,18 @@ void print_into_string(Serialization_Info* s_info,  char* result){
         case INTEGER_8_TYPE:
             sprintf(result, "%hhi", *(int8_t*)arg);
             break;
+        case UNSIGNED_INTEGER_64_TYPE:
+            sprintf(result, "%"PRIu64, *(uint64_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_32_TYPE:
+            sprintf(result, "%u", *(uint32_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_16_TYPE:
+            sprintf(result, "%hu", *(uint16_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_8_TYPE:
+            sprintf(result, "%hhu", *(uint8_t*)arg);
+            break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
                 double real = *(double*)arg;
