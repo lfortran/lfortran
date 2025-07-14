@@ -1371,7 +1371,14 @@ public:
             "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
         BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
     }
-
+    void visit_StringSection(const StringSection_t &x){
+        require(x.m_start, "StringSection start member must be provided")
+        require(x.m_end, "StringSection end member must be provided")
+        require(x.m_step, "StringSection step member must be provided")
+        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringSection return type must be a string")
+        require(ASRUtils::get_string_type(x.m_type)->m_len, "StringSection's string-return node must have length expression (NOT nullptr)")
+        BaseWalkVisitor<VerifyVisitor>::visit_StringSection(x);
+    }
 
 
     void visit_Allocate(const Allocate_t &x) {
@@ -1386,7 +1393,13 @@ public:
                     require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
                         "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
                 }
-
+                // Check Allocating a string OR an array of string with deferred length
+                // Not providing length in Allocate statement with non-deferredLength is permissible
+                if(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_a)) && 
+                    ASRUtils::get_string_type(ASRUtils::expr_type(x.m_args[i].m_a))->m_len_kind == ASR::DeferredLength){
+                    require(x.m_args[i].m_len_expr,
+                        "Allocating a variable that's a string of deferred length requires providing a length to allocate with");
+                }
             }
 
             if( x.m_source == nullptr ) {

@@ -4964,7 +4964,8 @@ namespace Ichar {
         body.push_back(al, b.Assignment(result, b.i2i_t(
             ASRUtils::EXPR(ASR::make_Ichar_t(al, loc, ASRUtils::EXPR(ASR::make_StringItem_t(al, loc, args[0], itr,
             ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr, 
-                ASR::string_length_kindType::AssumedLength, ASR::string_physical_typeType::DescriptorString)),
+                ASR::string_length_kindType::AssumedLength,
+                ASR::string_physical_typeType::DescriptorString)),
             nullptr)), int32, nullptr)), return_type)));
 
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,

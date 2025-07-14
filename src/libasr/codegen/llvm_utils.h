@@ -424,7 +424,10 @@ namespace LCompilers {
             llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
 
             llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
-
+            /*
+                Declare + Setup
+                string in the global scope of the llvm module.
+            */
             llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
                 llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage);
 

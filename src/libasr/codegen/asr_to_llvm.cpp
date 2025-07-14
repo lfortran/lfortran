@@ -628,15 +628,11 @@ public:
                     llvm::Value* len_value = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
                     return len_value;
                 } else { // Implicit Length
-                    {
-                        int ptr_loads_copy = ptr_loads; 
-                        ptr_loads = (ASRUtils::is_array(exp_type) &&  ASRUtils::is_allocatable(exp_type)) ? 1 : 0;
-                        visit_expr(*str_expr);ptr_loads = ptr_loads_copy;
-                    }
-
                     if(ASRUtils::is_array(exp_type)){
+                        visit_expr_load_wrapper(str_expr, ASRUtils::is_allocatable_or_pointer(exp_type) ? 1 : 0);
                         return get_string_length_in_array(exp_type, tmp);
                     } else {
+                        visit_expr_load_wrapper(str_expr, 0);
                         LCOMPILERS_ASSERT(llvm_utils->is_proper_string_llvm_variable(str, tmp))
                         return builder->CreateLoad(
                             llvm::Type::getInt64Ty(context),
@@ -708,13 +704,12 @@ public:
         }
     }
     /*
-        Used to setup a string variable declaration.
+        Setup a string variable declaration.
         Sets up string's information (data and length)
         based on ASR::String node details.
-        - Everything is set to its inital value at first.
+        - Everything is set to its inital value at first (nullptr, 0).
         - Length is set, if not deferred.
-        - Memory is allocated, if not allocatable.
-        This sets the initial state of the string descriptor.
+        - Memory gets allocated, if not allocatable.
     */
     void setup_string(llvm::Value* str, ASR::ttype_t* type){
         if(ASRUtils::is_descriptorString(type)){
@@ -4568,9 +4563,26 @@ public:
                     heap_arrays.push_back(ptr_i8);
                     ptr = builder->CreateBitCast(ptr_i8, type->getPointerTo());
                 }
-            } else if(ASR::is_a<ASR::String_t>(
-                *ASRUtils::type_get_past_allocatable_pointer(v->m_type))){
-                ptr = llvm_utils->create_string(ASRUtils::get_string_type(v->m_type), v->m_name);
+            } else if(ASRUtils::is_string_only(v->m_type)){
+                if(v->m_storage == ASR::storage_typeType::Save){
+                    std::string str_initial_value_string{};
+                    if(v->m_symbolic_value){ // Get initial value if exist.
+                        char* str_inital_value{};
+                        ASRUtils::extract_value(v->m_symbolic_value, str_inital_value);
+                        int str_initial_value_len{};
+                        ASRUtils::extract_value(
+                            ASRUtils::get_string_type(ASRUtils::expr_type(v->m_symbolic_value))->m_len,
+                            str_initial_value_len);
+                        str_initial_value_string = std::string(str_inital_value, str_initial_value_len);
+                    }
+                    ptr = llvm_utils->declare_global_string(ASRUtils::get_string_type(v->m_type),
+                            str_initial_value_string, false,
+                            v->m_name);
+                } else {
+                    // Create String + Set it up
+                    ptr = llvm_utils->create_string(ASRUtils::get_string_type(v->m_type), v->m_name);
+                    setup_string(ptr, v->m_type);
+                }
             } else { // Alloca for rest of types (not its internals if exist).
                 if (v->m_storage == ASR::storage_typeType::Save) {
                     std::string parent_function_name = std::string(x.m_name);
@@ -4620,9 +4632,6 @@ public:
                 } else {
                     allocate_array_members_of_struct(ptr, v->m_type);
                 }
-            } else if(ASR::is_a<ASR::String_t>(
-                *ASRUtils::type_get_past_allocatable_pointer(v->m_type))){ // A string, not an array of strings.
-                setup_string(ptr, v->m_type);
             }
             if (compiler_options.emit_debug_info) {
                 // Reset the debug location
@@ -4685,7 +4694,11 @@ public:
             }
             if( init_expr != nullptr && !is_list && !is_dict) {
                 target_var = ptr;
-                if(v->m_storage == ASR::storage_typeType::Save &&
+                if (v->m_storage == ASR::storage_typeType::Save && 
+                    ASRUtils::is_string_only(v->m_type)) {
+                    // DO Nothing 
+                    // (String + Save) variable is declared as global llvm variable with the intended inital value
+                } else if(v->m_storage == ASR::storage_typeType::Save &&
                     ASR::is_a<ASR::Function_t>(
                         *ASR::down_cast<ASR::symbol_t>(v->m_parent_symtab->asr_owner))){
                     variable_inital_value_vec.push_back({v, target_var});
@@ -6399,22 +6412,20 @@ public:
                 value = llvm_utils->CreateLoad2(st_type, value);
             }
         }
-        if ( ASRUtils::is_character(*(ASRUtils::expr_type(x.m_value))) ) {
-            int n_dims = ASRUtils::extract_n_dims_from_ttype(expr_type(x.m_value));
-            if (n_dims == 0) { // Not an array.
-                if (lhs_is_string_arrayref) { // Hackish (remove later)
-                    value = llvm_utils->get_string_data(
-                        ASRUtils::get_string_type(asr_value_type), value);
-                    value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
-                    builder->CreateStore(value, target);
-                } else {
-                    llvm_utils->lfortran_str_copy(target, value,
-                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
-                        ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
-                        ASRUtils::is_allocatable(asr_target_type));
-                    tmp = nullptr;
-                }
-                return;
+        if ( ASRUtils::is_string_only(ASRUtils::expr_type(x.m_value))) {
+            if (lhs_is_string_arrayref) { // Hackish (remove later)
+                value = llvm_utils->get_string_data(
+                    ASRUtils::get_string_type(asr_value_type), value);
+                value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
+                builder->CreateStore(value, target);
+            } else {
+                llvm_utils->lfortran_str_copy(target, value,
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
+                    ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
+                    ASRUtils::is_allocatable(asr_target_type));
+                tmp = nullptr;
+            }
+            return;
                 // if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_target) /*Workaround : All LHS strings should use str_copy(#6572)*/){
                 //     tmp = lfortran_str_copy(target, value,
                 //         ASRUtils::is_descriptorString(target_type));
@@ -6448,7 +6459,6 @@ public:
                 //         ASRUtils::is_descriptorString(asr_target->m_type));
                 //     return;
                 // }
-            }
         }
         if( ASRUtils::is_array(target_type) &&
             ASRUtils::is_array(value_type) &&
@@ -7842,7 +7852,7 @@ public:
     void stringSection_helper_fortran(const ASR::StringSection_t &x){
         this->visit_expr_load_wrapper(x.m_arg, 0);
         llvm::Value *str = tmp;
-        llvm::Value *left, *right;
+        llvm::Value *left{}, *right{};
         if (x.m_start) {
             this->visit_expr_load_wrapper(x.m_start, 1, true);
             left = tmp;
@@ -8949,19 +8959,19 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-
         llvm::Value* source{};
-        if(ASRUtils::is_character(*expr_type(x.m_source))){
-            this->visit_expr_load_wrapper(x.m_source, 0, true);
-            source = llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
-        } else {
-            this->visit_expr_wrapper(x.m_source, true);
-            source = tmp;
-        }
+        this->visit_expr_load_wrapper(x.m_source,
+            ASRUtils::is_character(*expr_type(x.m_source)) ? 0 : ptr_loads,
+            true);
+        source = tmp;
         llvm::Type* source_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_source), module.get());
         llvm::Value* source_ptr;
         bool is_array = ASRUtils::is_array(ASRUtils::expr_type(x.m_source));
-        if (source->getType()->isPointerTy() || source_type->isArrayTy()) {   //Case: [n x i8]* type Arrays and ptr %
+        if (ASRUtils::is_character(*expr_type(x.m_source))) {
+            source_ptr = ASRUtils::is_array_of_strings(expr_type(x.m_source)) ? 
+                        llvm_utils->get_stringArray_data(expr_type(x.m_source), tmp) :
+                        llvm_utils->get_string_data(ASRUtils::get_string_type(x.m_source), tmp);
+        } else if(source->getType()->isPointerTy() || source_type->isArrayTy()){//Case: [n x i8]* type Arrays and ptr %
             source_ptr = source;
         } else if (is_array) {
             source_type = source->getType();
@@ -8984,8 +8994,8 @@ public:
             builder->CreateStore(source, source_ptr);
         }
         llvm::Type* target_base_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::type_get_past_array(x.m_type), module.get());
-        if (ASR::is_a<ASR::String_t>(*x.m_type)) {
-            tmp = builder->CreateBitCast(source_ptr, target_base_type);
+        if (ASRUtils::is_character(*expr_type(x.m_source))) {
+            tmp = builder->CreateBitCast(source_ptr, target_base_type->getPointerTo());
         } else {
             llvm::Type* target_llvm_type = target_base_type->getPointerTo();
             if ( !ASRUtils::types_equal(ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), ASRUtils::extract_type(x.m_type), false) &&

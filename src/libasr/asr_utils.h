@@ -1757,12 +1757,23 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
-            value = (T) const_real->m_r;
+            if constexpr (std::is_same<T, double>::value){
+                value = (T) const_real->m_r;
+            }
             break;
         }
         case ASR::exprType::LogicalConstant: {
             ASR::LogicalConstant_t* const_logical = ASR::down_cast<ASR::LogicalConstant_t>(value_expr);
-            value = (T) const_logical->m_value;
+            if constexpr (std::is_same<T, bool>::value){
+                value = (T) const_logical->m_value;
+            }
+            break;
+        }
+        case ASR::exprType::StringConstant:{
+            ASR::StringConstant_t* const_string = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+            if constexpr (std::is_same<T, char*>::value){
+                value = (T) const_string->m_s;
+            }
             break;
         }
         case ASR::exprType::Var: {
@@ -6208,10 +6219,11 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     if(n_args == 1 && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_args[0]))){
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
-        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, nullptr,
-            ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::DescriptorString));
+        ASR::ttype_t *char_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, loc, ASRUtils::TYPE(ASR::make_String_t(
+                al, loc, 1, nullptr,
+                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
             ASR::string_format_kindType::FormatFortran, char_type, nullptr)));

@@ -426,7 +426,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                         nullptr, ASR::DeferredLength, ASR::DescriptorString))));
                     }
                 } else if(ASRUtils::is_array_of_strings(var_type)){ // e.g -> `character(len=foo()) :: str(10)`
-                    throw LCompilersException("Not Hanlded. Implement this");
+                    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(var_type));
+                    ASR::String_t* string_t = ASRUtils::get_string_type(var_type);
+                    if(string_t->m_len_kind == ASR::AssumedLength || (string_t->m_len && !ASRUtils::is_value_constant(string_t->m_len))){
+                        // Create a new ASR::String node, To avoid using the original one.
+                        array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, 1,
+                                            nullptr, ASR::DeferredLength, ASR::DescriptorString));
+                    }
                 }
                 if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
                     var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));

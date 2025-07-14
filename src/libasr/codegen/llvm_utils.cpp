@@ -2143,9 +2143,10 @@ namespace LCompilers {
             }
             case ASR::DeferredLength:{ // Set memory + Length
                 LCOMPILERS_ASSERT(string_length_to_allocate)
-                string_length_to_allocate = convert_kind(
-                    string_length_to_allocate,
-                    llvm::Type::getInt64Ty(context));
+                string_length_to_allocate = 
+                    convert_kind(
+                        string_length_to_allocate,
+                        llvm::Type::getInt64Ty(context));
                 set_array_of_strings_memory_on_heap(
                     str_type,
                     str,
@@ -2412,10 +2413,13 @@ namespace LCompilers {
         switch(str->m_len_kind){
             case ASR::DeferredLength:{
                 string_constant = llvm::ConstantPointerNull::get(character_type);
+                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len) || 
+                    str->m_len_kind == ASR::DeferredLength,
+                    "Handle this case");
                 break;
             }
             case ASR::ExpressionLength:{
-                LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str->m_len));
+                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len), "Handle this case");
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len + 1 /*null-char*/);
                 // [len x i8] c "DATA HERE\00"
