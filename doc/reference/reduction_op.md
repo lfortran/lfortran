@@ -2,7 +2,7 @@
 
 # reduction_op
 
-`reduction_op` is an enum-like type with the following values:
+`reduction_op` is an enum with the following values:
 
 
 - `ReduceAdd`

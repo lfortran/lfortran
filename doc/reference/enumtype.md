@@ -2,7 +2,7 @@
 
 # enumtype
 
-`enumtype` is an enum-like type with the following values:
+`enumtype` is an enum with the following values:
 
 
 - `IntegerConsecutiveFromZero`

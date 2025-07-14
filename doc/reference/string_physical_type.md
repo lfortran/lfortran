@@ -2,7 +2,7 @@
 
 # string_physical_type
 
-`string_physical_type` is an enum-like type with the following values:
+`string_physical_type` is an enum with the following values:
 
 
 - `PointerString`

@@ -2,7 +2,7 @@
 
 # ttype
 
-`ttype` is an enum-like type with the following values:
+`ttype` is an enum with the following values:
 
 
 - `CPtr`

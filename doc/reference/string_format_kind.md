@@ -2,7 +2,7 @@
 
 # string_format_kind
 
-`string_format_kind` is an enum-like type with the following values:
+`string_format_kind` is an enum with the following values:
 
 
 - `FormatFortran`

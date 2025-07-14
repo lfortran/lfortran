@@ -2,7 +2,7 @@
 
 # arraystorage
 
-`arraystorage` is an enum-like type with the following values:
+`arraystorage` is an enum with the following values:
 
 
 - `RowMajor`

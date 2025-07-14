@@ -2,7 +2,7 @@
 
 # integerboz
 
-`integerboz` is an enum-like type with the following values:
+`integerboz` is an enum with the following values:
 
 
 - `Binary`

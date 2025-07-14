@@ -2,7 +2,7 @@
 
 # omp_region_type
 
-`omp_region_type` is an enum-like type with the following values:
+`omp_region_type` is an enum with the following values:
 
 
 - `Parallel`

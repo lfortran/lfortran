@@ -2,7 +2,7 @@
 
 # access
 
-`access` is an enum-like type with the following values:
+`access` is an enum with the following values:
 
 
 - `Public`

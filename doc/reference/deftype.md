@@ -2,7 +2,7 @@
 
 # deftype
 
-`deftype` is an enum-like type with the following values:
+`deftype` is an enum with the following values:
 
 
 - `Implementation`

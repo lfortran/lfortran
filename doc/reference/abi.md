@@ -2,7 +2,7 @@
 
 # abi
 
-`abi` is an enum-like type with the following values:
+`abi` is an enum with the following values:
 
 
 - `Source`

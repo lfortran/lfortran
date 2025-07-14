@@ -2,7 +2,7 @@
 
 # string_length_kind
 
-`string_length_kind` is an enum-like type with the following values:
+`string_length_kind` is an enum with the following values:
 
 
 - `AssumedLength`

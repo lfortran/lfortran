@@ -2,7 +2,7 @@
 
 # presence
 
-`presence` is an enum-like type with the following values:
+`presence` is an enum with the following values:
 
 
 - `Required`

@@ -2,7 +2,7 @@
 
 # binop
 
-`binop` is an enum-like type with the following values:
+`binop` is an enum with the following values:
 
 
 - `Add`

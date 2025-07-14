@@ -2,7 +2,7 @@
 
 # cmpop
 
-`cmpop` is an enum-like type with the following values:
+`cmpop` is an enum with the following values:
 
 
 - `Eq`

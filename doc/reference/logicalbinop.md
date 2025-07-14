@@ -2,7 +2,7 @@
 
 # logicalbinop
 
-`logicalbinop` is an enum-like type with the following values:
+`logicalbinop` is an enum with the following values:
 
 
 - `And`

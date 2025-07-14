@@ -2,7 +2,7 @@
 
 # cast_kind
 
-`cast_kind` is an enum-like type with the following values:
+`cast_kind` is an enum with the following values:
 
 
 - `RealToInteger`

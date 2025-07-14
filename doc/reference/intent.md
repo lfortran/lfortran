@@ -2,7 +2,7 @@
 
 # intent
 
-`intent` is an enum-like type with the following values:
+`intent` is an enum with the following values:
 
 
 - `Local`

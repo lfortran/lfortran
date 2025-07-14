@@ -117,7 +117,7 @@ def generate_enum_file(lhs, values):
         "",
         f"# {lhs}",
         "",
-        f"`{lhs}` is an enum-like type with the following values:",
+        f"`{lhs}` is an enum with the following values:",
         "",
         ""
     ]

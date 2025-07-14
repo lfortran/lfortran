@@ -2,7 +2,7 @@
 
 # schedule_type
 
-`schedule_type` is an enum-like type with the following values:
+`schedule_type` is an enum with the following values:
 
 
 - `Static`

@@ -2,7 +2,7 @@
 
 # array_physical_type
 
-`array_physical_type` is an enum-like type with the following values:
+`array_physical_type` is an enum with the following values:
 
 
 - `DescriptorArray`
