@@ -6222,7 +6222,7 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
         ASR::ttype_t *char_type = ASRUtils::TYPE(
             ASR::make_Allocatable_t(al, loc, ASRUtils::TYPE(ASR::make_String_t(
                 al, loc, 1, nullptr,
-                ASR::string_length_kindType::ExpressionLength,
+                ASR::string_length_kindType::DeferredLength,
                 ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,

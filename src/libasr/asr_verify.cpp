@@ -1395,7 +1395,8 @@ public:
                 }
                 // Check Allocating a string OR an array of string with deferred length
                 // Not providing length in Allocate statement with non-deferredLength is permissible
-                if(ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_a)) && 
+                if(!x.m_source &&
+                    ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_a)) && 
                     ASRUtils::get_string_type(ASRUtils::expr_type(x.m_args[i].m_a))->m_len_kind == ASR::DeferredLength){
                     require(x.m_args[i].m_len_expr,
                         "Allocating a variable that's a string of deferred length requires providing a length to allocate with");

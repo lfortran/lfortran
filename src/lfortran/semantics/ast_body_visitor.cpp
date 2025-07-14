@@ -1591,6 +1591,19 @@ public:
                 mold = ASRUtils::EXPR(tmp);
             }
         }
+        if(source_cond && ASRUtils::is_character(*ASRUtils::expr_type(source))){
+            ASR::expr_t* string_len = ASRUtils::EXPR(
+                ASR::make_StringLen_t(al , x.base.base.loc, source, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                        compiler_options.po.default_integer_kind)),
+                    nullptr
+                )
+            );
+            for (size_t i = 0; i < alloc_args_vec.size(); i++) {
+                LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(alloc_args_vec[i].m_a)));
+                ((alloc_args_vec.p)+i)->m_len_expr = string_len;
+            }
+        }
 
         if ( mold_cond && !source_cond) {
             Vec<ASR::alloc_arg_t> new_alloc_args_vec;
