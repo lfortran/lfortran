@@ -10372,7 +10372,7 @@ public:
                                             tmp = llvm_utils->CreateLoad(tmp);
                                         }
                                     } else {
-                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
+                                        if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(arg_type))) {
                                             // Dereference the pointer argument (unless it is a CPtr)
                                             // to pass by value
                                             // E.g.:
@@ -11604,7 +11604,7 @@ public:
                 ASR::ClassProcedure_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
             if (clss_proc->m_self_argument)
-            self_argument = std::string(clss_proc->m_self_argument);
+                self_argument = std::string(clss_proc->m_self_argument);
             proc_sym = clss_proc->m_proc;
         } else if (ASR::is_a<ASR::Variable_t>(*proc_sym)) {
             ASR::symbol_t *type_decl = ASR::down_cast<ASR::Variable_t>(proc_sym)->m_type_declaration;
