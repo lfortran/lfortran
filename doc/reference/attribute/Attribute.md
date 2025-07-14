@@ -8,10 +8,10 @@ Attribute, a **attribute** node.
 
 ### Syntax
 
-Attribute(identifier name, attribute_arg *args)
+Attribute(identifier name, attribute_arg* args)
 
 ### Arguments
-Input arguments are `name` of type identifier, `*args` of type attribute_arg.
+Input arguments are `name` of type identifier, `args` of type attribute_arg*.
 
 ### Return values
 

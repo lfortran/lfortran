@@ -1,11 +1,13 @@
 import os
 import re
-import hashlib
 import sys
+import hashlib
 import difflib
 
 from pathlib import Path
 from collections import defaultdict
+import src.libasr.asdl as asdl
+
 
 ASDL_PATH = "src/libasr/ASR.asdl"
 VERIFY_CPP_PATH = "src/libasr/asr_verify.cpp"
@@ -20,94 +22,49 @@ RESET = "\033[0m"
 BLUE = "\033[94m"
 
 
+class ASDLParserVisitor(asdl.VisitorBase):
+    def __init__(self):
+        super().__init__()
+        self.nodes = defaultdict(list)
+        self.enums = defaultdict(list)
+        self.structs = {}
+
+    def visitModule(self, mod):
+        for df in mod.dfns:
+            self.visit(df)
+
+    def visitType(self, tp):
+        self.current_type = tp.name
+        self.visit(tp.value)
+
+    def visitSum(self, sum_):
+        for cons in sum_.types:
+            self.visit(cons)
+
+    def visitConstructor(self, cons):
+        if cons.fields:
+            # Node with fields (i.e. concrete AST node)
+            field_string = f"{cons.name}({', '.join(f'{f.type}' + ('*' if f.seq else '') + ('?' if f.opt else '') + ' ' + f.name for f in cons.fields)})"
+            self.nodes[self.current_type].append((cons.name, field_string))
+        else:
+            # Enum-like constructor
+            self.enums[self.current_type].append(cons.name)
+
+    def visitProduct(self, prod):
+        # Product: equivalent to tuple/struct style
+        field_string_list = []
+        for f in prod.fields:
+            type_str = f"{f.type}" + ('*' if f.seq else '') + ('?' if f.opt else '')
+            field_string_list.append(type_str + " " + f.name)
+        self.structs[self.current_type] = field_string_list
+
+
+
 def parse_asdl(asdl_text):
-    nodes = defaultdict(list)     # concrete nodes with parentheses
-    enums = defaultdict(list)     # enum values (no parentheses)
-    structs = {}                  # structs
-
-    current_section = None
-
-    lines = asdl_text.splitlines()
-
-    line_index = 0
-    while line_index < len(lines):
-        line = lines[line_index].strip()
-        # print(f"Processing line: {line}")
-        if not line or line.startswith("--") or line.startswith("module "):
-            line_index += 1
-            continue
-
-        # if current_section is not None:
-        #     print(f"current section hai")
-        # else:
-        #     print(f"current section nahi hai")
-        # if "|" in line:
-        #     print(f"Found section: {line}")
-        # else:
-        #     print("Nahi mili bhai")
-
-        # check if line starts with any of NODE_TYPES
-        if any(line.startswith(node_type) for node_type in NODE_TYPES):
-            current_section = line.split()[0]
-            line_index += 1
-            continue
-
-        if "=" in line:
-            lhs, rhs = line.split("=", 1)
-            lhs = lhs.strip()
-            rhs = rhs.strip()
-            if lhs != "":
-                current_section = lhs
-
-            # if it has `(` and no `)`, iterate to find the closing `)`
-            if "(" in rhs and ")" not in rhs:
-                while line_index + 1 < len(lines):
-                    line_index += 1
-                    next_line = lines[line_index].strip()
-                    rhs += " " + next_line
-                    if ")" in next_line:
-                        break
-
-            # print(f"Processing: {lhs} = {rhs}")
-            if rhs.startswith("(") and rhs.endswith(")"):
-                # tuple-like type
-                fields = [arg.strip() for arg in rhs[1:-1].split(",") if arg.strip()]
-                structs[current_section] = fields
-                line_index += 1
-                continue
-
-            # print(f"Found section: {current_section} with line: {line}")
-            for part in rhs.split("|"):
-                # print(f"Processing part: {part}")
-                part = part.strip()
-                if "(" in part:
-                    name = part.split("(")[0].strip()
-                    # print(f"Found node: {name} with part: {part}")
-                    nodes[current_section].append((name, part))
-                else:
-                    enums[current_section].append(part)
-        elif current_section is not None and "|" in line:
-            # print(f"Continuing section: {current_section} with line: {line}")
-            for part in line.strip("| ").split("|"):
-                part = part.strip()
-                # if it has `(` and no `)`, iterate to find the closing `)`
-                if "(" in part and ")" not in part:
-                    # print(f"Part has `(` but no `)`: {part}")
-                    while line_index + 1 < len(lines):
-                        line_index += 1
-                        next_line = lines[line_index].strip()
-                        part += " " + next_line
-                        # print(f"Continuing part: {part}")
-                        if ")" in next_line:
-                            break
-                if "(" in part:
-                    name = part.split("(")[0].strip()
-                    nodes[current_section].append((name, part))
-                else:
-                    enums[current_section].append(part)
-        line_index += 1
-
-    return nodes, enums, structs
+    mod = asdl.parse(ASDL_PATH)
+    visitor = ASDLParserVisitor()
+    visitor.visit(mod)
+    return visitor.nodes, visitor.enums, visitor.structs
 
 
 def parse_cpp_restrictions(cpp_text):
