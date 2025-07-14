@@ -1594,8 +1594,13 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                 ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(op_overloading_procs[i]);
                 if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
                     // It may be overided in the derived class
-                    if (left_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
-                        cp = ASR::down_cast<ASR::ClassProcedure_t>(left_struct->m_symtab->get_symbol(cp->m_name));
+                    ASR::Struct_t* temp_struct = left_struct;
+                    while (temp_struct->m_parent) {
+                        if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
+                            cp = ASR::down_cast<ASR::ClassProcedure_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
+                            break;
+                        }
+                        temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
                     }
                 }
                 proc =  ASRUtils::symbol_get_past_external(cp->m_proc);

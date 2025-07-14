@@ -1,6 +1,6 @@
 # Allocate
 
-Allocate function, a **statement (stmt)** node.
+Allocate an allocatable variable.
 
 ## Declaration
 

@@ -2394,7 +2394,17 @@ public:
     void handle_scalar_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t *a, size_t i, size_t &j) {
         this->visit_expr(*a->m_object[i]);
         ASR::expr_t* object = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* obj_type = ASRUtils::expr_type(object);
+        // Get the Type of Object
+        // If object is Real, set current_variable_type to Real
+        // This type flag is passed to Visit_BOZ, 
+        // so that Real Values are correctly decoded from BOZ String
+        ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        if (ASR::is_a<ASR::Real_t>(*obj_type)) {
+            current_variable_type_ = obj_type;
+        }
         this->visit_expr(*a->m_value[j++]);
+        current_variable_type_ = temp_current_variable_type_;
         ASR::expr_t* value = ASRUtils::EXPR(tmp);
         // The parser ensures object is a TK_NAME
         // The `visit_expr` ensures it resolves as an expression
@@ -4038,18 +4048,6 @@ public:
                     }
                     init_expr = ASRUtils::EXPR(tmp);
                     value = ASRUtils::expr_value(init_expr);
-                    bool PARAMETER_NOT_CONSTANT_EXCEPTION = // TODO : Fix that (look `array_reshape_21.f90`)
-                        ASRUtils::is_array(ASRUtils::expr_type(init_expr))? true : false;
-                    if( PARAMETER_NOT_CONSTANT_EXCEPTION == false &&
-                        !value && 
-                        storage_type == ASR::storage_typeType::Parameter){
-                        diag.add(Diagnostic(
-                            "RHS must reduce to a constant expression.",
-                            Level::Error, Stage::Semantic, {
-                                Label("",{init_expr->base.loc})
-                            }));
-                        throw SemanticAbort();
-                    }
                     // we do checks and correct length initialization for
                     // character (& character array) before creating repeated argument
                     // list for an initialization like:
@@ -10802,6 +10800,7 @@ public:
         std::string s = std::string(x.m_s);
         int base = -1;
         ASR::integerbozType boz_type;
+        //Check if the argument string is correct BOZ Type
         if( s[0] == 'b' || s[0] == 'B' ) {
             boz_type = ASR::integerbozType::Binary;
             base = 2;
@@ -10820,10 +10819,25 @@ public:
         }
         std::string boz_str = s.substr(2, s.size() - 2);
         uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
-        int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
-        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
-        tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
-                int_type, boz_type);
+        //If current_variable_type is Real Type, convert BOZ String to ASR::Real 
+        if ((current_variable_type_ != nullptr) && (ASR::is_a<ASR::Real_t>(*current_variable_type_)) ){
+            
+            // We need the smallest positive real value, and scale the bits accordingly
+            double min_boz = std::numeric_limits<float>::denorm_min();
+            // Scale the BOZ value: each bit represents smallest_subnormal
+            double boz_double = static_cast<double>(boz_unsigned_int) * min_boz;
+            ASR::ttype_t* real_type = ASRUtils::TYPE(ASR::make_Real_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+            tmp = ASR::make_RealConstant_t(al, x.base.base.loc, boz_double,
+                    real_type);
+        }
+
+        //If current_variable_type is Null or INT Type, default to INT 
+        else{            
+            int64_t boz_int = static_cast<int64_t>(boz_unsigned_int);
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, compiler_options.po.default_integer_kind));
+            tmp = ASR::make_IntegerConstant_t(al, x.base.base.loc, boz_int,
+                    int_type, boz_type);
+        }
     }
 
     void visit_Num(const AST::Num_t &x) {

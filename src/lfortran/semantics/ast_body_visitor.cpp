@@ -32,7 +32,7 @@ public:
     int pragma_nesting_level = 0;
     int pragma_nesting_level_2 = 0;
     bool openmp_collapse = false;
-    bool pragma_in_do_loop=false;
+    bool pragma_in_block=false;
     bool do_in_pragma=false;
     int nesting_lvl_inside_pragma=0;
     int collapse_value=0;
@@ -141,7 +141,7 @@ public:
                     tmp_vec.clear();
                 }
             }
-            if((all_blocks_nesting ==0 || pragma_in_do_loop) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
+            if((all_blocks_nesting ==0 || pragma_in_block) && !do_in_pragma && !omp_region_body.empty() && !(m_body[i]->type == AST::stmtType::Pragma && AST::down_cast<AST::Pragma_t>(m_body[i])->m_type == AST::OMPPragma)) {
                 ASR::stmt_t* tmp_stmt = ASRUtils::STMT(tmp);
                 omp_region_body.push_back(tmp_stmt);
             } else {
@@ -4643,7 +4643,17 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
+        if(pragma_in_block) {
+            nesting_lvl_inside_pragma++;
+            do_in_pragma=true;
+        }
         transform_stmts(body, x.n_body, x.m_body);
+        if(pragma_in_block) {
+            nesting_lvl_inside_pragma--;
+        }
+        if(nesting_lvl_inside_pragma==0) {
+            do_in_pragma=false;
+        }
         Vec<ASR::stmt_t*> orelse;
         orelse.reserve(al, x.n_orelse);
         transform_stmts(orelse, x.n_orelse, x.m_orelse);
@@ -4854,12 +4864,12 @@ public:
         }
         Vec<ASR::stmt_t*> body;
         body.reserve(al, x.n_body);
-        if(pragma_in_do_loop) {
+        if(pragma_in_block) {
             nesting_lvl_inside_pragma++;
             do_in_pragma=true;
         }
         transform_stmts(body, x.n_body, x.m_body);
-        if(pragma_in_do_loop) {
+        if(pragma_in_block) {
             nesting_lvl_inside_pragma--;
         }
         if(nesting_lvl_inside_pragma==0) {
@@ -5309,7 +5319,7 @@ public:
         for (size_t i = 0; i < x.n_clauses; i++) {
             std::string clause = AST::down_cast<AST::String_t>(x.m_clauses[i])->m_s;
             std::string clause_name = clause.substr(0, clause.find('('));
-            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit") {
+            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit" || clause_name == "schedule" || clause_name == "num_threads") {
                 std::string list = clause.substr(clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                 Vec<ASR::expr_t*> vars;
                 vars.reserve(al, 1);
@@ -5340,13 +5350,46 @@ public:
                     int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPCollapse_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
                     continue;
+                } else if (clause_name == "num_threads") {
+                    int num_threads = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumThreads_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, num_threads, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    continue;
                 } else if (clause_name == "thread_limit") {
-                    int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
-                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPThreadLimit_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    int thread_limit = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPThreadLimit_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, thread_limit, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
                     continue;
                 } else if (clause_name == "num_teams") {
-                    int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
-                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumTeams_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    int num_teams = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumTeams_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, num_teams, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    continue;
+                } else if (clause_name == "schedule") {
+                    ASR::schedule_typeType schedule_type;
+                    if (LCompilers::startswith(list, "static")) {
+                        schedule_type = ASR::schedule_typeType::Static;
+                    } else if (LCompilers::startswith(list, "dynamic")) {
+                        schedule_type = ASR::schedule_typeType::Dynamic;
+                    } else if (LCompilers::startswith(list, "guided")) {
+                        schedule_type = ASR::schedule_typeType::Guided;
+                    } else if (LCompilers::startswith(list, "auto")) {
+                        schedule_type = ASR::schedule_typeType::Auto;
+                    } else if (LCompilers::startswith(list, "runtime")) {
+                        schedule_type = ASR::schedule_typeType::Runtime;
+                    } else {
+                        diag.add(Diagnostic("The schedule type `" + list + "` is not supported", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    int chunk_size = 0;
+                    if(list.find(',') != std::string::npos) {
+                        list = list.substr(list.find(',')+1);
+                        chunk_size = std::stoi(list.erase(0, list.find_first_not_of(" ")));
+                    }
+                    if(chunk_size == 0) {
+                        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                        ASR::make_OMPSchedule_t(al, loc, schedule_type, nullptr)));
+                    } else {
+                        clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                            ASR::make_OMPSchedule_t(al, loc, schedule_type, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, chunk_size, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    }
                     continue;
                 }
                 for (auto &s : LCompilers::string_split(list, ",", false)) {
@@ -5419,8 +5462,10 @@ public:
                     collect_omp_body(ASR::omp_region_typeType::Teams);
                 } else if (LCompilers::startswith(x.m_construct_name, "distribute")) {
                     collect_omp_body(ASR::omp_region_typeType::Distribute);
+                } else if (LCompilers::startswith(x.m_construct_name, "atomic")) {
+                    collect_omp_body(ASR::omp_region_typeType::Atomic);
                 }
-                pragma_in_do_loop=false;
+                pragma_in_block=false;
                 if((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0) {
                     tmp=(ASR::asr_t*)(ASR::down_cast<ASR::OMPRegion_t>(omp_region_body.back()));
                     omp_region_body.pop_back();
@@ -5428,7 +5473,7 @@ public:
                 return;
             }
 
-            if(all_blocks_nesting>0) pragma_in_do_loop=true;
+            if(all_blocks_nesting>0) pragma_in_block=true;
             if (to_lower(x.m_construct_name) == "parallel") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;
@@ -5565,6 +5610,14 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Distribute, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "atomic") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Atomic, clauses.p, clauses.n, body.p, body.n)));
             } else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)

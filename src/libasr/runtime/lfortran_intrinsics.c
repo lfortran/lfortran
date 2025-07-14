@@ -948,7 +948,11 @@ typedef enum primitive_types{
     CHARACTER_TYPE = 6,
     LOGICAL_TYPE = 7,
     CPTR_VOID_PTR_TYPE = 8,
-    NONE_TYPE = 9
+    NONE_TYPE = 9,
+    UNSIGNED_INTEGER_64_TYPE = 10,
+    UNSIGNED_INTEGER_32_TYPE = 11,
+    UNSIGNED_INTEGER_16_TYPE = 12,
+    UNSIGNED_INTEGER_8_TYPE = 13,
 } Primitive_Types;
 
 
@@ -1141,6 +1145,29 @@ void set_current_PrimitiveType(Serialization_Info* s_info){
             break;
         }
         break;
+    case 'U':
+        switch (s_info->serialization_string[s_info->current_stop++])
+        {
+        case '8':
+            *PrimitiveType = UNSIGNED_INTEGER_64_TYPE;
+            break;
+        case '4':
+            *PrimitiveType = UNSIGNED_INTEGER_32_TYPE;
+            break;
+        case '2':
+            *PrimitiveType = UNSIGNED_INTEGER_16_TYPE;
+            break;
+        case '1':
+            *PrimitiveType = UNSIGNED_INTEGER_8_TYPE;
+            break;
+        default:
+            fprintf(stderr, "RunTime - compiler internal error"
+                " : Unidentified Print Types Serialization --> %s\n",
+                    s_info->serialization_string);
+            exit(1);
+            break;
+        }
+        break;
     case 'R':
         switch (s_info->serialization_string[s_info->current_stop++])
         {
@@ -1281,6 +1308,18 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             break;
         case INTEGER_8_TYPE:
             sprintf(result, "%hhi", *(int8_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_64_TYPE:
+            sprintf(result, "%"PRIu64, *(uint64_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_32_TYPE:
+            sprintf(result, "%u", *(uint32_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_16_TYPE:
+            sprintf(result, "%hu", *(uint16_t*)arg);
+            break;
+        case UNSIGNED_INTEGER_8_TYPE:
+            sprintf(result, "%hhu", *(uint8_t*)arg);
             break;
         case FLOAT_64_TYPE:
             if(s_info->current_arg_info.is_complex){
