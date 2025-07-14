@@ -2966,8 +2966,6 @@ public:
                 ASR::ttype_t* x_m_v_type_ = ASRUtils::type_get_past_allocatable(
                     ASRUtils::type_get_past_pointer(x_m_v_type));
                 llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, x_m_v_type_, module.get());
-                print_util(type);
-                print_util(tmp);
                 tmp = llvm_utils->CreateLoad2(
                     name2dertype[current_der_type_name]->getPointerTo(), llvm_utils->create_gep2(type, tmp, 1));
             }
@@ -6094,7 +6092,7 @@ public:
             !ASRUtils::is_character(*asr_value_type)) {
             ASR::StructInstanceMember_t *sim = ASR::down_cast<ASR::StructInstanceMember_t>(x.m_target);
             if (ASRUtils::is_allocatable(sim->m_v)) {
-                check_and_allocate(x.m_target, sim->m_v, asr_value_type);
+                check_and_allocate(sim->m_v, x.m_value, asr_value_type);
             }
         }
 
@@ -10063,7 +10061,11 @@ public:
             res += "]";
         } else if (ASR::is_a<ASR::StructType_t>(*type) && !ASRUtils::is_class_type(type)) {
             res += "(";
-            res += serialize_structType_symbols(ASRUtils::get_struct_sym_from_struct_expr(expr));
+            if (ASRUtils::is_unlimited_polymorphic_type(expr)) {
+                res += serialize_structType_symbols(current_scope->resolve_symbol(current_select_type_block_der_type));
+            } else {
+                res += serialize_structType_symbols(ASRUtils::get_struct_sym_from_struct_expr(expr));
+            }
             res += ")";
         } else if (ASR::is_a<ASR::Logical_t>(*type)) {
             res += "L";

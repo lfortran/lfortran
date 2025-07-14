@@ -26,6 +26,8 @@ using LCompilers::diag::Diagnostic;
 
 namespace LCompilers::LFortran {
 
+static std::map<std::string, std::vector<ASR::Variable_t*>> vars_with_deferred_struct_declaration;
+
 template <typename T>
 void extract_bind(T &x, ASR::abiType &abi_type, char *&bindc_name, diag::Diagnostics &diag) {
     if (x.m_bind) {
@@ -4528,6 +4530,29 @@ public:
                     ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, type, init_expr, value, sym);
                     variable_added_to_symtab->m_dependencies = variable_dependencies_vec.p;
                     variable_added_to_symtab->n_dependencies = variable_dependencies_vec.n;
+
+                    if (ASR::is_a<ASR::StructType_t>(
+                            *ASRUtils::extract_type(variable_added_to_symtab->m_type))
+                        && ASR::is_a<ASR::ExternalSymbol_t>(
+                            *variable_added_to_symtab->m_type_declaration)
+                        && ASR::down_cast<ASR::ExternalSymbol_t>(
+                               variable_added_to_symtab->m_type_declaration)
+                                   ->m_external == nullptr) {
+                        if (vars_with_deferred_struct_declaration.find(
+                                ASRUtils::symbol_name(variable_added_to_symtab->m_type_declaration))
+                            != vars_with_deferred_struct_declaration.end()) {
+                            vars_with_deferred_struct_declaration[ASRUtils::symbol_name(
+                                                                      variable_added_to_symtab
+                                                                          ->m_type_declaration)]
+                                .push_back(variable_added_to_symtab);
+                        } else {
+                            std::vector<ASR::Variable_t*> var_vector;
+                            var_vector.push_back(variable_added_to_symtab);
+                            vars_with_deferred_struct_declaration[ASRUtils::symbol_name(
+                                variable_added_to_symtab->m_type_declaration)]
+                                = var_vector;
+                        }
+                    }
                 }
             } // for m_syms
         }

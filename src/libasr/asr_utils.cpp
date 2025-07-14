@@ -1409,6 +1409,17 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
     bool found = false;
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~assign");
     ASR::expr_t* expr_dt = nullptr;
+    if(!sym) {
+        if( ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type) ) {
+            ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(target));
+            sym = target_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = target;
+        } else if( ASR::is_a<ASR::StructType_t>(*value_type) && !ASRUtils::is_class_type(value_type) ) {
+            ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(value));
+            sym = value_struct->m_symtab->resolve_symbol("~assign");
+            expr_dt = value;
+        }
+    }
     if (sym) {
         ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);

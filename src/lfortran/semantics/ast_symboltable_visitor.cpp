@@ -1885,7 +1885,6 @@ public:
         }
         SetChar struct_dependencies;
         struct_dependencies.reserve(al, 1);
-        Vec<ASR::Variable_t*> self_pointing_vars; self_pointing_vars.reserve(al, 0);
         for( auto& item: current_scope->get_scope() ) {
             // ExternalSymbol means that current module/program
             // already depends on the module of ExternalSymbol
@@ -1902,12 +1901,6 @@ public:
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
                     ASR::symbol_t* sym = dt_variable->m_type_declaration;
-                    // resolve self pointing derived type variable declaration
-                    if (ASR::is_a<ASR::ExternalSymbol_t>(*sym)
-                        && ASR::down_cast<ASR::ExternalSymbol_t>(sym)->m_external == nullptr 
-                        && ASRUtils::symbol_name(dt_variable->m_type_declaration) == to_lower(x.m_name)) {
-                        self_pointing_vars.push_back(al, dt_variable); 
-                    }
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
@@ -1923,11 +1916,16 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
 
-        for (ASR::Variable_t* self_pointing_var : self_pointing_vars) {
-            // If the derived type has a self pointing variable, then
-            // we need to set the type declaration of that variable
-            // to the derived type itself.
-            self_pointing_var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+        // Resolve type-declaration for self-pointing variable declarations inside structs and
+        // variables declared with deferred struct declarations. For an example, see
+        // `integration_tests/modules_37.f90` for declaration of `ptr` inside struct
+        // `build_target_ptr`.
+        if (vars_with_deferred_struct_declaration.find(to_lower(x.m_name))
+            != vars_with_deferred_struct_declaration.end()) {
+            for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
+                var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
+            }
+            vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
