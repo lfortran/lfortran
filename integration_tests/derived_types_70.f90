@@ -18,7 +18,7 @@ program derived_types_70
 contains 
 
   subroutine temp(tab)
-    class(container), intent(in) :: tab
+    class(container), intent(inout) :: tab
     tab%deps(1)%done = .true.
     tab%deps(2)%done = .false.
     tab%deps(3)%done = .true.
