@@ -1818,7 +1818,9 @@ public:
         std::vector<llvm::Value*> init_values;
         int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_elements; i++ ) {
-            if(!LLVM::is_llvm_struct(tuple_type->m_type[i])) {
+            if(ASRUtils::is_character(*tuple_type->m_type[i])){
+                ptr_loads = 0;
+            } else if(!LLVM::is_llvm_struct(tuple_type->m_type[i])) {
                 ptr_loads = 2;
             }
             else {
@@ -1972,9 +1974,7 @@ public:
         visit_expr_load_wrapper(x.m_a, 0);
         llvm::Value* plist = tmp;
 
-        visit_expr_load_wrapper(x.m_pos,
-            ASRUtils::is_character(*x.m_type)? 0 : 1,
-            true);
+        visit_expr_load_wrapper(x.m_pos, 1, true);
         llvm::Value *pos = tmp;
 
         tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
