@@ -1934,7 +1934,7 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* plist = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(asr_list->m_type);
+        ptr_loads = !(LLVM::is_llvm_struct(asr_list->m_type) || ASRUtils::is_character(*asr_list->m_type)) ? 1 : 0;
         this->visit_expr_wrapper(x.m_ele, true);
         llvm::Value *item = tmp;
         ptr_loads = ptr_loads_copy;
@@ -1969,14 +1969,12 @@ public:
     void visit_ListItem(const ASR::ListItem_t& x) {
         ASR::ttype_t* el_type = ASRUtils::get_contained_type(
                                         ASRUtils::expr_type(x.m_a));
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 0;
-        this->visit_expr(*x.m_a);
+        visit_expr_load_wrapper(x.m_a, 0);
         llvm::Value* plist = tmp;
 
-        ptr_loads = 1;
-        this->visit_expr_wrapper(x.m_pos, true);
-        ptr_loads = ptr_loads_copy;
+        visit_expr_load_wrapper(x.m_pos,
+            ASRUtils::is_character(*x.m_type)? 0 : 1,
+            true);
         llvm::Value *pos = tmp;
 
         tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
@@ -1991,7 +1989,7 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
+        ptr_loads = !(LLVM::is_llvm_struct(dict_type->m_key_type) || ASRUtils::is_character(*dict_type->m_key_type)) ? 1 : 0;
         this->visit_expr_wrapper(x.m_key, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *key = tmp;
@@ -2021,7 +2019,7 @@ public:
         this->visit_expr(*x.m_a);
         llvm::Value* pdict = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
+        ptr_loads = !(LLVM::is_llvm_struct(dict_type->m_key_type) || ASRUtils::is_character(*dict_type->m_key_type)) ? 1 : 0;
         this->visit_expr_wrapper(x.m_key, true);
         ptr_loads = ptr_loads_copy;
         llvm::Value *key = tmp;
@@ -2119,20 +2117,17 @@ public:
     void visit_ListInsert(const ASR::ListInsert_t& x) {
         ASR::List_t* asr_list = ASR::down_cast<ASR::List_t>(
                                     ASRUtils::expr_type(x.m_a));
-        int64_t ptr_loads_copy = ptr_loads;
-        ptr_loads = 0;
-        this->visit_expr(*x.m_a);
+
+        this->visit_expr_load_wrapper(x.m_a, 0);
         llvm::Value* plist = tmp;
 
-        ptr_loads = 1;
-        this->visit_expr_wrapper(x.m_pos, true);
+        this->visit_expr_load_wrapper(x.m_pos, 1, true);
         llvm::Value *pos = tmp;
 
-        ptr_loads = !LLVM::is_llvm_struct(asr_list->m_type);
-        this->visit_expr_wrapper(x.m_ele, true);
+        visit_expr_load_wrapper(x.m_ele,
+            !(LLVM::is_llvm_struct(asr_list->m_type) || ASRUtils::is_character(*asr_list->m_type)) ? 1 : 0,
+            true);
         llvm::Value *item = tmp;
-        ptr_loads = ptr_loads_copy;
-
         list_api->insert_item(plist, pos, item, asr_list->m_type, module.get(), name2memidx);
     }
 
@@ -2147,8 +2142,9 @@ public:
         ptr_loads = !LLVM::is_llvm_struct(dict_type->m_key_type);
         this->visit_expr_wrapper(x.m_key, true);
         llvm::Value *key = tmp;
-        ptr_loads = !LLVM::is_llvm_struct(dict_type->m_value_type);
-        this->visit_expr_wrapper(x.m_value, true);
+        visit_expr_load_wrapper(x.m_value,
+            !(LLVM::is_llvm_struct(dict_type->m_value_type) || ASRUtils::is_character(*dict_type->m_value_type)) ? 1 : 0,
+            true);
         llvm::Value *value = tmp;
         ptr_loads = ptr_loads_copy;
 

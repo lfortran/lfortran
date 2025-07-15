@@ -2897,8 +2897,8 @@ int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
     int res = 0;
     int i ;
     for (i = 0; i < lim; i++) {
-        if ((*s1) != (*s2)) {
-            res = (*s1) - (*s2);
+        if (s1[i] != s2[i]) {
+            res = s1[i] - s2[i];
             break;
         }
     }
@@ -5279,6 +5279,7 @@ void lfortran_error(const char *message) {
 // TODO: add support for reading comma separated string, into `_arr` functions
 // by accepting array size as an argument as well
 LFORTRAN_API void _lfortran_string_read_i32_array(char *str, int64_t len, char *format, int32_t *arr) {
+    printf("\nHERE--------------->%s\n", format);
     lfortran_error("Reading into an array of int32_t is not supported.");
 }
 
