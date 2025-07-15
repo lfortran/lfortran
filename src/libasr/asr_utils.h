@@ -383,12 +383,12 @@ static inline ASR::ttype_t* expr_type(const ASR::expr_t *f)
     return ASR::expr_type0(f);
 }
 
-static inline ASR::ttype_t* subs_expr_type(std::map<std::string, ASR::ttype_t*> subs,
+static inline ASR::ttype_t* subs_expr_type(std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs,
         const ASR::expr_t *expr) {
     ASR::ttype_t *ttype = ASRUtils::expr_type(expr);
     if (ASR::is_a<ASR::TypeParameter_t>(*ttype)) {
         ASR::TypeParameter_t *tparam = ASR::down_cast<ASR::TypeParameter_t>(ttype);
-        ttype = subs[tparam->m_param];
+        ttype = subs[tparam->m_param].first;
     }
     return ttype;
 }
@@ -946,11 +946,11 @@ static inline std::string type_to_str_with_type(const ASR::ttype_t *t) {
 }
 
 static inline std::string type_to_str_with_substitution(const ASR::ttype_t *t,
-    std::map<std::string, ASR::ttype_t*> subs)
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs)
 {
     if (ASR::is_a<ASR::TypeParameter_t>(*t)) {
         ASR::TypeParameter_t* t_tp = ASR::down_cast<ASR::TypeParameter_t>(t);
-        t = subs[t_tp->m_param];
+        t = subs[t_tp->m_param].first;
     }
     switch (t->type) {
         case ASR::ttypeType::Pointer: {
@@ -3923,7 +3923,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
 }
 
 inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
-    std::map<std::string, ASR::ttype_t*> subs,
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs,
     bool check_for_dimensions=false) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
@@ -3939,7 +3939,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     }
     if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
         ASR::TypeParameter_t* a_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
-        a = subs[a_tp->m_param];
+        a = subs[a_tp->m_param].first;
     }
     if (a->type == b->type) {
         // TODO: check dims
@@ -4011,13 +4011,6 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 if (st1->n_data_member_types != st2->n_data_member_types) return false;
                 for (size_t i = 0; i < st1->n_data_member_types; i++) {
                     if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
-                }
-
-                if (st1->n_member_function_types != st2->n_member_function_types) return false;
-                for (size_t i = 0; i < st1->n_member_function_types; i++) {
-                    if (!types_equal(st1->m_member_function_types[i], st2->m_member_function_types[i])) {
                         return false;
                     }
                 }
