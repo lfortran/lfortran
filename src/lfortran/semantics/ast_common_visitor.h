@@ -3834,6 +3834,21 @@ public:
                     lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
                 }
+                if (is_char_type && s_abi == ASR::abiType::BindC) {
+                    int64_t char_len;
+                    ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type));
+                    bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
+                    if (!has_len || char_len != 1) {
+                        diag.add(Diagnostic(
+                            "Character dummy argument `" + std::string(s.m_name) +
+                            "` must be of constant length of one or assumed length, "
+                            "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                            Level::Error, Stage::Semantic, {
+                                Label("", {x.base.base.loc})
+                            }));
+                        throw SemanticAbort();
+                    }
+                }                
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
