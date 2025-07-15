@@ -255,7 +255,7 @@ namespace LCompilers::CommandLineInterface {
             } else {
                 std::cerr << "Unknown help category: " << help_group << std::endl;
                 std::cerr << "Available categories: warnings, language, preprocessing, output, pass, backend, symbol, mangling, misc, lsp" << std::endl;
-                std::exit(1);
+                std::exit(1); 
             }
             std::cout << group_name << ":\n";
             for (const auto* opt : app.get_options([&group_name](const CLI::Option* o) {
