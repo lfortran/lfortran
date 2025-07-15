@@ -31,11 +31,6 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
 contains
 
     subroutine my_func(x, y)
@@ -56,6 +51,11 @@ contains
         filename = "lfortran"
         unit = 10
     end subroutine add_log_file
+
+    subroutine s(c) bind(c)
+        use iso_c_binding
+        character(len=2, kind=c_char), intent(in) :: c
+    end subroutine s
 
 end module
 
