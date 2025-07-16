@@ -440,6 +440,32 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 return nullptr; // If no struct symbol found in either side
             }
         }
+        case ASR::exprType::OverloadedStringConcat: {
+            ASR::OverloadedStringConcat_t* overloaded_string_concat = ASR::down_cast<ASR::OverloadedStringConcat_t>(expression);
+            ASR::symbol_t* left_struct_sym = get_struct_sym_from_struct_expr(overloaded_string_concat->m_left);
+            ASR::symbol_t* right_struct_sym = get_struct_sym_from_struct_expr(overloaded_string_concat->m_right);
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            } else if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            } else if ( overloaded_string_concat->m_value != nullptr ) {
+                return get_struct_sym_from_struct_expr(overloaded_string_concat->m_value);
+            } else {
+                return nullptr; // If no struct symbol found in either side
+            }
+        }
+        case ASR::exprType::StringItem: {
+            ASR::StringItem_t* string_item = ASR::down_cast<ASR::StringItem_t>(expression);
+            return get_struct_sym_from_struct_expr(string_item->m_arg);
+        }
+        case ASR::exprType::ComplexRe: {
+            ASR::ComplexRe_t* complex_re = ASR::down_cast<ASR::ComplexRe_t>(expression);
+            return get_struct_sym_from_struct_expr(complex_re->m_arg);
+        }
+        case ASR::exprType::ComplexIm: {
+            ASR::ComplexIm_t* complex_im = ASR::down_cast<ASR::ComplexIm_t>(expression);
+            return get_struct_sym_from_struct_expr(complex_im->m_arg);
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
