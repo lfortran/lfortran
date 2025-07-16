@@ -116,6 +116,7 @@ namespace LCompilers {
                 */
                 virtual
                 llvm::Type* get_array_type(
+                    ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
                     bool get_pointer=false) = 0;
@@ -363,6 +364,7 @@ namespace LCompilers {
 
                 virtual
                 llvm::Type* get_array_type(
+                    ASR::expr_t* expr,
                     ASR::ttype_t* m_type_,
                     llvm::Type* el_type,
                     bool get_pointer=false);

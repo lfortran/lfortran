@@ -1854,14 +1854,14 @@ static inline std::string type_encode_dims(size_t n_dims, ASR::dimension_t* m_di
 }
 
 static inline std::string get_type_code(const ASR::ttype_t *t, bool use_underscore_sep=false,
-    bool encode_dimensions_=true, bool set_dimensional_hint=true)
+    bool encode_dimensions_=true, bool set_dimensional_hint=true, ASR::expr_t* expr = nullptr)
 {
     bool is_dimensional = false;
     std::string res = "";
     switch (t->type) {
         case ASR::ttypeType::Array: {
             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(t);
-            res = get_type_code(array_t->m_type, use_underscore_sep, false, false);
+            res = get_type_code(array_t->m_type, use_underscore_sep, false, false, expr);
             if( encode_dimensions_ ) {
                 encode_dimensions(array_t->n_dims, res, use_underscore_sep);
                 return res;
@@ -1964,7 +1964,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             // } else {
             //     res = symbol_name(d->m_derived_type);
             // }
-            res = "StructType";
+            if ( expr != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+                res = symbol_name(sym);
+            } else {
+                res = "StructType";
+            }
             break;
         }
         case ASR::ttypeType::UnionType: {

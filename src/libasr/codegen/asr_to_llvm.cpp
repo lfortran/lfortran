@@ -3890,7 +3890,7 @@ public:
         bool is_list, ASR::ttype_t* m_type, bool is_data_only=false) {
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
-                ASRUtils::type_get_past_allocatable(m_type)));
+                ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
         llvm::Type* llvm_data_type = llvm_utils->get_type_from_ttype_t_util(expr, asr_data_type, module.get());
         llvm::Value* ptr_ = nullptr;
         if( is_malloc_array_type && !is_list && !is_data_only ) {
@@ -4041,6 +4041,7 @@ public:
                                 al, v->base.base.loc, &v->base)), v->m_type, module.get()),
                                 ptr_member);
                             llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
+                                ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
                                 ASRUtils::type_get_past_allocatable_pointer(v->m_type),
                                 llvm_utils->get_el_type(
                                     ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
@@ -4278,6 +4279,7 @@ public:
                 LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(v->m_type) ==
                                      ASR::array_physical_typeType::DescriptorArray);
                 llvm::Type* const array_desc_type = llvm_utils->arr_api->get_array_type(
+                    ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, (ASR::symbol_t*)v)),
                     ASRUtils::type_get_past_allocatable_pointer(v->m_type),
                     llvm_utils->get_el_type(
                         ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base)),
@@ -5684,7 +5686,7 @@ public:
                             if(ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray){
                                 // Declare llvm type for (Array descriptor, Dimension Descriptor)
                                 llvm::Type* const array_desc_type = llvm_utils->arr_api->
-                                    get_array_type(ASRUtils::type_get_past_allocatable_pointer(value_type),
+                                    get_array_type(x.m_value, ASRUtils::type_get_past_allocatable_pointer(value_type),
                                         llvm_utils->get_el_type(x.m_value, ASRUtils::extract_type(value_type), module.get()), false);
                                 LCOMPILERS_ASSERT(array_desc_type->isStructTy());
                                 llvm::Type* const dim_desc_type = llvm_utils->arr_api->get_dimension_descriptor_type(false);

@@ -178,9 +178,9 @@ namespace LCompilers {
         }
 
         llvm::Type* SimpleCMODescriptor::get_array_type
-        (ASR::ttype_t* m_type_, llvm::Type* el_type,
+        (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
         bool get_pointer) {
-            std::string array_key = ASRUtils::get_type_code(m_type_, false, false);
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();
@@ -194,7 +194,9 @@ namespace LCompilers {
                                 dim_des_array,
                                 llvm::Type::getInt1Ty(context),
                                 llvm::Type::getInt32Ty(context)  };
-            llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
+            std::string random_suffix = std::to_string(rand() % 10000);
+            std::string unique_var_name = "array_" + random_suffix;
+            llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, unique_var_name);
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
             if( get_pointer ) {
                 return tkr2array[array_key].first->getPointerTo();
@@ -609,7 +611,7 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* const array_desc_type = llvm_utils->arr_api->
-                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type),
+                get_array_type(arr_expr, ASRUtils::type_get_past_allocatable_pointer(arr_type),
                     llvm_utils->get_el_type(arr_expr, ASRUtils::extract_type(arr_type), module), false);
             return llvm_utils->create_gep2(array_desc_type, arr, 0);
         }

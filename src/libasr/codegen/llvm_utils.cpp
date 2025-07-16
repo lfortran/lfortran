@@ -505,7 +505,7 @@ namespace LCompilers {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
                         llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        type = arr_api->get_array_type(asr_type, el_type, get_pointer);
+                        type = arr_api->get_array_type(arg_expr, asr_type, el_type, get_pointer);
                         break;
                     }
                     case ASR::array_physical_typeType::PointerToDataArray: {
@@ -560,7 +560,7 @@ namespace LCompilers {
                             // Treat it as a DescriptorArray
                             is_array_type = true;
                             llvm::Type* el_type = character_type;
-                            type = arr_api->get_array_type(asr_type, el_type);
+                            type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                             break;
                         } else {
                             LCOMPILERS_ASSERT(false);
@@ -1109,7 +1109,7 @@ namespace LCompilers {
                     case ASR::array_physical_typeType::DescriptorArray: {
                         is_array_type = true;
                         llvm::Type* el_type = get_el_type(arg_expr, v_type->m_type, module);
-                        llvm_type = arr_api->get_array_type(asr_type, el_type);
+                        llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                         break;
                     }
                     case ASR::array_physical_typeType::PointerToDataArray:
@@ -1138,7 +1138,7 @@ namespace LCompilers {
                             // Treat it as a DescriptorArray
                             is_array_type = true;
                             llvm::Type* el_type = character_type;
-                            llvm_type = arr_api->get_array_type(asr_type, el_type);
+                            llvm_type = arr_api->get_array_type(arg_expr, asr_type, el_type);
                             break;
                         } else {
                             LCOMPILERS_ASSERT(false);
