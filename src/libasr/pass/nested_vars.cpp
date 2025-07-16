@@ -427,9 +427,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             ASR::asr_t *tmp = ASR::make_Module_t(al, x.base.base.loc,
                                             /* a_symtab */ current_scope,
                                             /* a_name */ s2c(al, module_name),
+                                            s2c(al, ""),
                                             nullptr,
                                             0,
-                                            nullptr,
                                             false, false);
             if (is_any_variable_externally_defined) {
                 // this module is externally defined, so we mark it as external

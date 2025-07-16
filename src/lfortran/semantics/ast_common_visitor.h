@@ -2598,9 +2598,9 @@ public:
             ASR::asr_t *tmp0 = ASR::make_Module_t(al, loc,
                         /* a_symtab */ current_scope,
                         /* a_name */ s2c(al, to_lower(module_name)),
+                        s2c(al, ""),
                         nullptr,
                         0,
-                        nullptr,
                         false, false);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);

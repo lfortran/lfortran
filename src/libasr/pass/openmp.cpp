@@ -365,8 +365,8 @@ class DoConcurrentStatementVisitor : public ASR::CallReplacerOnExpressionsVisito
             module_name = s2c(al, current_scope->parent->get_unique_name("lcompilers_user_defined_functions"));
             ASR::asr_t* mo = ASR::make_Module_t(
                                 al, x.base.base.loc, module_scope,
-                                s2c(al, module_name), nullptr,
-                                0, nullptr, false, false);
+                                s2c(al, module_name), s2c(al, ""),
+                                nullptr, 0, false, false);
             if (current_scope->parent->get_symbol(module_name) == nullptr) {
                 current_scope->parent->add_symbol(module_name, ASR::down_cast<ASR::symbol_t>(mo));
             }
@@ -861,8 +861,8 @@ class ParallelRegionVisitor :
             current_scope->parent->add_symbol(thread_data_name, thread_data_struct);
             current_scope = parent_scope;
             ASR::symbol_t* thread_data_module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al, loc,
-                                                current_scope, s2c(al, thread_data_module_name),
-                                                module_dependencies.p, module_dependencies.n, nullptr, false, false));
+                                                current_scope, s2c(al, thread_data_module_name), s2c(al, ""),
+                                                module_dependencies.p, module_dependencies.n, false, false));
             current_scope->parent->add_symbol(thread_data_module_name, thread_data_module);
             current_scope = current_scope_copy;
             return {thread_data_module_name, thread_data_struct};
@@ -1613,7 +1613,7 @@ class ParallelRegionVisitor :
                     mod_scope = al.make_new<SymbolTable>(current_scope);
                     mod = ASR::down_cast<ASR::symbol_t>(
                         ASR::make_Module_t(al, loc, mod_scope, s2c(al, mod_name),
-                        nullptr, 0, nullptr, false, false));
+                        s2c(al, ""), nullptr, 0, false, false));
                     current_scope->add_symbol(mod_name, mod);
                 }
                 SymbolTable *fn_scope{al.make_new<SymbolTable>(mod_scope)};
@@ -2040,8 +2040,8 @@ class ParallelRegionVisitor :
             current_scope = parent_scope;
             
             ASR::symbol_t* thread_data_module = ASR::down_cast<ASR::symbol_t>(ASR::make_Module_t(al, loc,
-                                                current_scope, s2c(al, thread_data_module_name),
-                                                module_dependencies.p, module_dependencies.n, nullptr, false, false));
+                                                current_scope, s2c(al, thread_data_module_name), s2c(al, ""),
+                                                module_dependencies.p, module_dependencies.n, false, false));
             current_scope->parent->add_symbol(thread_data_module_name, thread_data_module);
             current_scope = current_scope_copy;
             return {thread_data_module_name, thread_data_struct};
