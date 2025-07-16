@@ -5551,7 +5551,8 @@ public:
                 llvm_value = builder->CreateBitCast(llvm_value, llvm_utils->getStructType(struct_type_t, module.get(), true));
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (!is_target_class && is_value_class) {
-                llvm::Value* val_data_ptr = llvm_utils->create_gep(llvm_value, 1);
+                llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(value_type, module.get());
+                llvm::Value* val_data_ptr = llvm_utils->create_gep2(llvm_value_type, llvm_value, 1);
                 ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::type_get_past_allocatable_pointer(target_type));
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
