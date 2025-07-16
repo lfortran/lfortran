@@ -2811,6 +2811,14 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
                 is_dependent_only_on_argument = false;
             }
         }
+
+        void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
+            ASR::BaseWalkVisitor<ExprDependentOnlyOnArguments>::visit_StructInstanceMember(x);
+            if (ASRUtils::is_array(ASRUtils::symbol_type(x.m_m)) &&
+                !ASRUtils::is_fixed_size_array(ASRUtils::symbol_type(x.m_m)) ) {
+                is_dependent_only_on_argument = false;
+            }
+        }
 };
 
 static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
