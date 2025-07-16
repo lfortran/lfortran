@@ -3887,7 +3887,7 @@ public:
 
     void fill_array_details_(ASR::expr_t* expr, llvm::Value* ptr, llvm::Type* type_, ASR::dimension_t* m_dims,
         size_t n_dims, bool is_malloc_array_type, bool is_array_type,
-        bool is_list, ASR::ttype_t* m_type, bool is_data_only=false) {
+        bool is_list, [[maybe_unused]]ASR::ttype_t* m_type, bool is_data_only=false) {
         ASR::ttype_t* asr_data_type = ASRUtils::type_get_past_array(
             ASRUtils::type_get_past_pointer(
                 ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(expr))));
@@ -10563,6 +10563,13 @@ public:
                                 tmp = target;
                             }
                         }
+                    }
+                    if (orig_arg &&
+                        LLVM::is_llvm_pointer(*orig_arg->m_type) &&
+                        !LLVM::is_llvm_pointer(*arg->m_type)) {
+                        llvm::Value* ptr_to_tmp = llvm_utils->CreateAlloca(*builder, tmp->getType());
+                        builder->CreateStore(tmp, ptr_to_tmp);
+                        tmp = ptr_to_tmp;
                     }
                 } else if (ASR::is_a<ASR::Function_t>(*var_sym)) {
                     ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(var_sym);

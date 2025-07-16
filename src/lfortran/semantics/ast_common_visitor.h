@@ -3843,7 +3843,7 @@ public:
                     int64_t lhs_len = ASR::down_cast<ASR::IntegerConstant_t>(c_length)->m_n;
                     lhs_type->m_len = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, lhs_len,
                         ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 8))));
-                }
+                }                
                 ASR::Variable_t* variable_added_to_symtab = nullptr;
                 if( std::find(excluded_from_symtab.begin(), excluded_from_symtab.end(), sym) == excluded_from_symtab.end() ) {
                     if ( !is_implicitly_declared && !is_external) {
@@ -4857,6 +4857,22 @@ public:
             if (is_pointer) {
                 type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc,
                     ASRUtils::type_get_past_allocatable(type)));
+            }
+            
+            if (abi == ASR::abiType::BindC) {
+                int64_t char_len;
+                ASR::String_t *str_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(type));
+                bool has_len = ASRUtils::extract_value(str_type->m_len, char_len);
+                if (!has_len || char_len != 1) {
+                    diag.add(Diagnostic(
+                        "Character dummy argument `" + sym +
+                        "` must be of constant length of one or assumed length, "
+                        "unless it has assumed shape or assumed rank in a BIND(C) procedure",
+                        Level::Error, Stage::Semantic, {
+                            Label("", {loc})
+                        }));
+                    throw SemanticAbort();
+                }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeType) {
             if (sym_type->m_attr) {

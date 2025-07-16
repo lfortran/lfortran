@@ -1,3 +1,19 @@
+semantic error: Character dummy argument `c` must be of constant length of one or assumed length, unless it has assumed shape or assumed rank in a BIND(C) procedure
+  --> tests/errors/continue_compilation_1.f90:57:9
+   |
+57 |         character(len=2, kind=c_char), intent(in) :: c
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Dummy argument 'c' not defined
+  --> tests/errors/continue_compilation_1.f90:55:5 - 58:20
+   |
+55 |        subroutine s(c) bind(c)
+   |        ^^^^^^^^^^^^^^^^^^^^^^^...
+...
+   |
+58 |        end subroutine s
+   | ...^^^^^^^^^^^^^^^^^^^^ 
+
 semantic error: Implicit typing is not allowed, enable it by using --implicit-typing 
   --> tests/errors/continue_compilation_1.f90:66:5 - 68:49
    |
