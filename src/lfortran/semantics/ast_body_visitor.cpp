@@ -51,7 +51,7 @@ public:
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
@@ -1296,7 +1296,7 @@ public:
         ASR::symbol_t *sym = current_scope->resolve_symbol(x.m_name);
         ASR::Template_t* temp = ASR::down_cast<ASR::Template_t>(ASRUtils::symbol_get_past_external(sym));
 
-        std::map<std::string, ASR::ttype_t*> type_subs = instantiate_types[x.base.base.loc.first];
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs = instantiate_types[x.base.base.loc.first];
         std::map<std::string, ASR::symbol_t*> symbol_subs = instantiate_symbols[x.base.base.loc.first];
 
         if (x.n_symbols == 0) {
@@ -5666,7 +5666,7 @@ Result<ASR::TranslationUnit_t*> body_visitor(Allocator &al,
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,

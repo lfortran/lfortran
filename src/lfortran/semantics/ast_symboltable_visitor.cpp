@@ -50,7 +50,7 @@ public:
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
@@ -3579,7 +3579,7 @@ public:
             throw SemanticAbort();
         }
 
-        std::map<std::string, ASR::ttype_t*> type_subs;
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
 
         SetChar args;
         args.reserve(al, x.n_namelist);
@@ -3611,7 +3611,7 @@ public:
                     attr, false, false, dims, type_declaration, current_procedure_abi_type);
 
                 req_arg = ASRUtils::type_to_str_fortran(ttype);
-                type_subs[req_param] = ttype;
+                type_subs[req_param].first = ttype;
             } else {
                 diag.add(diag::Diagnostic(
                     "Unsupported decl_attribute for require statements.",
@@ -3760,7 +3760,7 @@ public:
             throw SemanticAbort();
         }
 
-        std::map<std::string, ASR::ttype_t*> type_subs;
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> type_subs;
         std::map<std::string, ASR::symbol_t*> symbol_subs;
 
         for (size_t i=0; i<x.n_args; i++) {
@@ -3782,7 +3782,10 @@ public:
                             diag::Label("", {x.m_args[i]->base.loc})}));
                     throw SemanticAbort();
                 }
-                type_subs[param] = arg_type;
+                type_subs[param].first = arg_type;
+                if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type))) {
+                    type_subs[param].second = type_declaration;
+                }
             } else if (AST::is_a<AST::AttrNamelist_t>(*x.m_args[i])) {
                 AST::AttrNamelist_t *attr_name = AST::down_cast<AST::AttrNamelist_t>(x.m_args[i]);
                 std::string arg = to_lower(attr_name->m_name);
@@ -3817,10 +3820,11 @@ public:
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
                             arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0);
+                            type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
                         }
-                        type_subs[param] = ASRUtils::duplicate_type(al, arg_type);
+                        type_subs[param].first = ASRUtils::duplicate_type(al, arg_type);
                     } else {
                         // Handling local variables passed as instantiate's arguments
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
@@ -3933,13 +3937,21 @@ public:
                     Vec<ASR::expr_t*> args;
                     args.reserve(al, 2);
                     for (size_t i=0; i<2; i++) {
+                        ASR::ttype_t* var_type = nullptr;
+                        ASR::symbol_t* var_type_decl = nullptr;
+
+                        if (i == 0) {
+                            var_type = ASRUtils::duplicate_type(al, left_type);
+                            var_type_decl = ASRUtils::get_struct_sym_from_struct_expr(f->m_args[0]);
+                        } else {
+                            var_type = ASRUtils::duplicate_type(al, right_type);
+                            var_type_decl = ASRUtils::get_struct_sym_from_struct_expr(f->m_args[1]);
+                        }
                         std::string var_name = "arg" + std::to_string(i);
                         ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, current_scope,
                             s2c(al, var_name), nullptr, 0, ASR::intentType::In, nullptr,
                             nullptr, ASR::storage_typeType::Default,
-                            (i == 0 ? ASRUtils::duplicate_type(al, left_type)
-                                : ASRUtils::duplicate_type(al, right_type)),
-                            nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                            var_type, var_type_decl, ASR::abiType::Source, ASR::accessType::Private,
                             ASR::presenceType::Required, false);
                         current_scope->add_symbol(var_name, ASR::down_cast<ASR::symbol_t>(v));
                         ASR::symbol_t *var = current_scope->get_symbol(var_name);
@@ -4311,7 +4323,7 @@ Result<ASR::asr_t*> symbol_table_visitor(Allocator &al, AST::TranslationUnit_t &
         std::map<uint64_t, ASR::symbol_t*>& common_variables_hash,
         std::map<uint64_t, std::vector<std::string>>& external_procedures_mapping,
         std::map<uint64_t, std::vector<std::string>>& explicit_intrinsic_procedures_mapping,
-        std::map<uint32_t, std::map<std::string, ASR::ttype_t*>> &instantiate_types,
+        std::map<uint32_t, std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>>> &instantiate_types,
         std::map<uint32_t, std::map<std::string, ASR::symbol_t*>> &instantiate_symbols,
         std::map<std::string, std::map<std::string, std::vector<AST::stmt_t*>>> &entry_functions,
         std::map<std::string, std::vector<int>> &entry_function_arguments_mapping,
