@@ -2075,7 +2075,7 @@ RUN(NAME allocate_07 LABELS gfortran llvm
 RUN(NAME allocate_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME allocate_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
-# RUN(NAME dealloc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
+RUN(NAME dealloc_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRA_ARGS --realloc-lhs)
 RUN(NAME dealloc_02 LABELS gfortran)
 RUN(NAME dealloc_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 # RUN(NAME dealloc_04 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
