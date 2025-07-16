@@ -3883,9 +3883,9 @@ public:
                                             ASR::Variable_t* dim_var = ASR::down_cast<ASR::Variable_t>(found_sym);
                                             if (dim_var->m_storage != ASR::storage_typeType::Parameter) {
                                                 diag.add(Diagnostic(
-                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression",
+                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression as it is not a constant.",
                                                     Level::Error, Stage::Semantic, {
-                                                        Label("", {x.base.base.loc}),
+                                                        Label("", {dim.m_start->base.loc}),
                                                     }
                                                 ));
                                                 throw SemanticAbort();
@@ -3904,9 +3904,9 @@ public:
                                             ASR::Variable_t* dim_var = ASR::down_cast<ASR::Variable_t>(found_sym);
                                             if (dim_var->m_storage != ASR::storage_typeType::Parameter) {
                                                 diag.add(Diagnostic(
-                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression",
+                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression as it is not a constant",
                                                     Level::Error, Stage::Semantic, {
-                                                        Label("", {x.base.base.loc}),
+                                                        Label("", {dim.m_end->base.loc}),
                                                     }
                                                 ));
                                                 throw SemanticAbort();
