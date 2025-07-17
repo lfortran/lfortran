@@ -2,7 +2,7 @@
 module arrays_51_mod
     IMPLICIT NONE
     integer :: i = 4
-    integer :: arr_mod(4,4)
+    integer :: arr_mod(4,5000)
     contains
     subroutine sub (arr)
         integer , INTENT(OUT):: arr(4,i)

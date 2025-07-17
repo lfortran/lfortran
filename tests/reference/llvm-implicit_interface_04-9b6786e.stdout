@@ -39,6 +39,8 @@ source_filename = "LFortran"
 @28 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
 @29 = private unnamed_addr constant [2 x i8] c"b\00", align 1
 @30 = private unnamed_addr constant [120 x i8] c"Runtime error: Array '%s' index out of bounds.\0A\0ATried to access index %d of dimension %d, but valid range is %d to %d.\0A\00", align 1
+@31 = private unnamed_addr constant [7 x i8] c"driver\00", align 1
+@32 = private unnamed_addr constant [143 x i8] c"Runtime error: Array shape mismatch in subroutine '%s'\0A\0ATried to match size %d of dimension %d of argument number %d, but expected size is %d\0A\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -108,11 +110,24 @@ else6:                                            ; preds = %ifcont4
 ifcont7:                                          ; preds = %else6, %then5
   %25 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %21
   store i32 30, i32* %25, align 4
+  %26 = load i32, i32* @main.n, align 4
+  %27 = icmp ne i32 3, %26
+  br i1 %27, label %then8, label %else9
+
+then8:                                            ; preds = %ifcont7
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([143 x i8], [143 x i8]* @32, i32 0, i32 0), i8* getelementptr inbounds ([7 x i8], [7 x i8]* @31, i32 0, i32 0), i32 3, i32 1, i32 2, i32 %26)
+  call void @exit(i32 1)
+  br label %ifcont10
+
+else9:                                            ; preds = %ifcont7
+  br label %ifcont10
+
+ifcont10:                                         ; preds = %else9, %then8
   call void @driver(void (i32*, i32*, i32*)* @implicit_interface_check, i32* getelementptr inbounds ([3 x i32], [3 x i32]* @main.b, i32 0, i32 0), i32* @main.n)
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont7
+return:                                           ; preds = %ifcont10
   ret i32 0
 }
 
