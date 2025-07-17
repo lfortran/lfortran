@@ -79,17 +79,29 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                []
+                                                [(Pointer
+                                                    (Array
+                                                        (StructType
+                                                            [(Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )]
                                                 []
                                                 .false.
-                                                7 t_2
+                                                .false.
                                             )
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
                                     )
-                                    ()
+                                    7 t_2
                                     Source
                                     Public
                                     Required
@@ -159,10 +171,10 @@
                                         (Pointer
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Integer 4)]
                                                     []
                                                     .true.
-                                                    7 t_1
+                                                    .false.
                                                 )
                                                 [(()
                                                 ())]
@@ -175,10 +187,10 @@
                                     (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        7 t_1
+                                        .false.
                                     )
                                     ColMajor
                                     ()

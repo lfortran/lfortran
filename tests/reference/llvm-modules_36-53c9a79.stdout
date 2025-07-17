@@ -45,7 +45,7 @@ loop.body:                                        ; preds = %loop.head
   br i1 %18, label %then, label %else
 
 then:                                             ; preds = %loop.body
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @6, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i32 %9, i32 1, i32 1, i32 %15)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i32 %9, i32 1, i32 1, i32 %15)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -213,6 +213,17 @@ ifcont14:                                         ; preds = %else13, %then12
   br label %loop.head
 
 loop.end:                                         ; preds = %ifcont8
+  br i1 false, label %then15, label %else16
+
+then15:                                           ; preds = %loop.end
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([143 x i8], [143 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([35 x i8], [35 x i8]* @4, i32 0, i32 0), i32 2, i32 1, i32 1, i32 2)
+  call void @exit(i32 1)
+  br label %ifcont17
+
+else16:                                           ; preds = %loop.end
+  br label %ifcont17
+
+ifcont17:                                         ; preds = %else16, %then15
   %31 = getelementptr [2 x i1], [2 x i1]* %__libasr_created__intrinsic_array_function_Any, i32 0, i32 0
   store i32 2, i32* %call_arg_value, align 4
   %32 = call i1 @_lcompilers_Any_4_1_0_logical____0(i1* %31, i32* %call_arg_value)
@@ -231,7 +242,7 @@ loop.end:                                         ; preds = %ifcont8
   %44 = alloca i8*, align 8
   store i8* %43, i8** %44, align 8
   %45 = alloca i8*, align 8
-  store i8* getelementptr inbounds ([1 x i8], [1 x i8]* @4, i32 0, i32 0), i8** %45, align 8
+  store i8* getelementptr inbounds ([1 x i8], [1 x i8]* @6, i32 0, i32 0), i8** %45, align 8
   %46 = call i1 @_lpython_str_compare_noteq(i8** %44, i8** %45)
   %47 = icmp eq i1 %39, false
   %48 = select i1 %47, i1 %39, i1 %46
@@ -247,18 +258,18 @@ loop.end:                                         ; preds = %ifcont8
   %58 = select i1 %57, i1 %50, i1 %56
   %59 = icmp eq i1 %33, false
   %60 = select i1 %59, i1 %58, i1 %33
-  br i1 %60, label %then15, label %else16
+  br i1 %60, label %then18, label %else19
 
-then15:                                           ; preds = %loop.end
-  br label %ifcont17
+then18:                                           ; preds = %ifcont17
+  br label %ifcont20
 
-else16:                                           ; preds = %loop.end
-  br label %ifcont17
+else19:                                           ; preds = %ifcont17
+  br label %ifcont20
 
-ifcont17:                                         ; preds = %else16, %then15
+ifcont20:                                         ; preds = %else19, %then18
   br label %return
 
-return:                                           ; preds = %ifcont17
+return:                                           ; preds = %ifcont20
   ret void
 }
 

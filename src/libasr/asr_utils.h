@@ -5,6 +5,7 @@
 #include <map>
 #include <set>
 #include <limits>
+#include <optional>
 
 #include <libasr/assert.h>
 #include <libasr/asr.h>
@@ -2868,6 +2869,48 @@ class ExprDependentOnlyOnArguments: public ASR::BaseWalkVisitor<ExprDependentOnl
         }
 };
 
+// This replacer is used for replacing FunctionParam in expressions by the arguments which are passed in.
+// To be used when creating FunctionCall or SubroutineCall.
+class ReplaceFunctionParamWithArg: public ASR::BaseExprReplacer<ReplaceFunctionParamWithArg> {
+    private:
+
+    Allocator& al;
+    ASR::call_arg_t* m_args;
+    size_t n_args;
+    bool is_method;
+
+    public:
+
+    ReplaceFunctionParamWithArg(Allocator& al_, ASR::call_arg_t* m_args_, size_t n_args_, bool is_method_ = false) :
+        al(al_), m_args(m_args_), n_args(n_args_), is_method(is_method_) {}
+
+    void replace_FunctionParam(ASR::FunctionParam_t *x) {
+        if (current_expr) {
+            size_t n = x->m_param_number - is_method;
+            if (n >= n_args) {
+                LCOMPILERS_ASSERT("FunctionParam param number not in range.");
+            };
+            *current_expr = m_args[n].m_value;
+        }
+    }
+
+    ASR::expr_t* replace_FunctionParam_with_arg(ASR::expr_t* t) {
+        ASRUtils::ExprStmtDuplicator duplicator(al);
+        duplicator.allow_procedure_calls = true;
+        duplicator.success = true;
+
+        ASR::expr_t* tc = duplicator.duplicate_expr(t);
+        LCOMPILERS_ASSERT(duplicator.success);
+
+        ASR::expr_t** current_copy = current_expr;
+        current_expr = &tc;
+        replace_expr(tc);
+        current_expr = current_copy;
+
+        return tc;
+    }
+};
+
 static inline bool is_dimension_dependent_only_on_arguments(ASR::dimension_t* m_dims, size_t n_dims, bool only_intent_in_args=false) {
     ExprDependentOnlyOnArguments visitor;
     visitor.only_intent_in_args = only_intent_in_args;
@@ -5024,6 +5067,66 @@ class SymbolDuplicator {
 
 };
 
+// This replacer is for checking if symbols in the input expression are accessible from current_scope.
+// If they are accessible as external symbols then replace them by the corresponding ExternalSymbol.
+// If atleast one symbol is not accessible then result is false.
+class CheckSymbolReplacer: public ASR::BaseExprReplacer<CheckSymbolReplacer> {
+    private:
+
+    Allocator &al;
+    bool result;
+    SymbolTable* current_scope;
+    SetChar& current_function_dependencies;
+
+    public:
+    CheckSymbolReplacer(Allocator &al_, SymbolTable* current_scope_, SetChar& current_function_dependencies_) :
+        al(al_), result(true), current_scope(current_scope_), current_function_dependencies(current_function_dependencies_) {}
+
+    ASR::symbol_t* handle_symbol(ASR::symbol_t* x) {
+        if (result) {
+            ASR::symbol_t* y = current_scope->resolve_symbol(ASRUtils::symbol_name((x)));
+            if (y == nullptr) {
+                result = false;
+            }
+            if (y && ASR::is_a<ASR::ExternalSymbol_t>(*y)) {
+                ASR::ExternalSymbol_t* ext = ASR::down_cast<ASR::ExternalSymbol_t>(y);
+                if (ext->m_external == x) {
+                    return y;
+                }
+            }
+            if (x != y) {
+                result = false;
+            }
+        }
+        return x;
+    }
+
+    void replace_Var(ASR::Var_t *x) {
+        x->m_v = handle_symbol(x->m_v);
+        ADD_ASR_DEPENDENCIES(current_scope, x->m_v, current_function_dependencies);
+    }
+
+    void replace_FunctionCall(ASR::FunctionCall_t* x) {
+        x->m_name = handle_symbol(x->m_name);
+        ADD_ASR_DEPENDENCIES(current_scope, x->m_name, current_function_dependencies);
+        if (x->m_original_name) {
+            x->m_original_name = handle_symbol(x->m_original_name);
+            ADD_ASR_DEPENDENCIES(current_scope, x->m_original_name, current_function_dependencies);
+        }
+    }
+
+    bool check_and_update_symbols(ASR::expr_t* t) {
+        if (t) {
+            ASR::expr_t** current_copy = current_expr;
+            current_expr = &t;
+            replace_expr(t);
+            current_expr = current_copy;
+            return result;
+        }
+        return false;
+    }
+};
+
 class ReplaceReturnWithGotoVisitor: public ASR::BaseStmtReplacer<ReplaceReturnWithGotoVisitor> {
 
     private:
@@ -6250,7 +6353,7 @@ inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,
-    bool implicit_argument_casting, bool nopass) {
+    bool implicit_argument_casting, bool nopass, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
     bool is_method = (a_dt != nullptr) && (!nopass);
     ASR::symbol_t* a_name_ = ASRUtils::symbol_get_past_external(a_name);
     if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
@@ -6417,19 +6520,48 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 physical_cast_arg.loc = arg->base.loc;
                 Vec<ASR::dimension_t>* dimensions = nullptr;
                 Vec<ASR::dimension_t> dimension_;
-                if( ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims) ) {
-                    dimension_.reserve(al, orig_arg_array_t->n_dims);
-                    dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                dimension_.from_pointer_n_copy(al, orig_arg_array_t->m_dims, orig_arg_array_t->n_dims);
+                ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(arg));
+
+                if (ASRUtils::is_pointer(physical_cast_type)) {
+                    dimensions = nullptr;
+                } else if (ASRUtils::is_fixed_size_array(orig_arg_array_t->m_dims, orig_arg_array_t->n_dims)) {
                     dimensions = &dimension_;
+                } else if (current_scope) {
+                    // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                    ReplaceFunctionParamWithArg r(al, a_args, n_args, is_method);
+                    SetChar temp_function_dependencies;
+                    CheckSymbolReplacer c(al, current_scope, temp_function_dependencies);
+                    bool valid_symbols = true;
+                    for (size_t i = 0; i < dimension_.size(); i++) {
+                        dimension_.p[i].loc = arg->base.loc;
+                        dimension_.p[i].m_length = r.replace_FunctionParam_with_arg(dimension_[i].m_length);
+                        dimension_.p[i].m_start = r.replace_FunctionParam_with_arg(dimension_[i].m_start);
+                        valid_symbols = c.check_and_update_symbols(dimension_[i].m_length) && c.check_and_update_symbols(dimension_[i].m_start);
+
+                        if (!valid_symbols) {
+                            break;
+                        }
+                    }
+                    // If the symbols are valid then include the dimension in ArrayPhysicalCast
+                    if (valid_symbols) {
+                        dimensions = &dimension_;
+                        if (current_function_dependencies.has_value()) {
+                            for (size_t j = 0; j < temp_function_dependencies.n; j++) {
+                                current_function_dependencies->get().push_back(al, temp_function_dependencies[j]);
+                            }
+                        }
+                    } else {
+                        dimensions = nullptr;
+                    }
                 }
+
                 //TO DO : Add appropriate errors in 'asr_uttils.h'.
                 LCOMPILERS_ASSERT_MSG(dimensions_compatible(arg_array_t->m_dims, arg_array_t->n_dims,
                     orig_arg_array_t->m_dims, orig_arg_array_t->n_dims, false),
                     "Incompatible dimensions passed to " + (std::string)(ASR::down_cast<ASR::Function_t>(a_name_)->m_name)
                     + "(" + std::to_string(get_fixed_size_of_array(arg_array_t->m_dims,arg_array_t->n_dims)) + "/" + std::to_string(get_fixed_size_of_array(orig_arg_array_t->m_dims,orig_arg_array_t->n_dims))+")");
 
-                ASR::ttype_t* physical_cast_type = ASRUtils::type_get_past_allocatable(
-                                                        ASRUtils::expr_type(arg));
                 physical_cast_arg.m_value = ASRUtils::EXPR(
                                                 ASRUtils::make_ArrayPhysicalCast_t_util(
                                                     al,
@@ -6452,10 +6584,10 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 static inline ASR::asr_t* make_FunctionCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt) {
+    ASR::ttype_t* a_type, ASR::expr_t* a_value, ASR::expr_t* a_dt, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, nullptr, false, 
-        ASRUtils::get_class_proc_nopass_val(a_name));
+        ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( ASRUtils::is_array(a_type) && ASRUtils::is_elemental(a_name) &&
         !ASRUtils::is_fixed_size_array(a_type) &&
@@ -6502,10 +6634,10 @@ static inline ASR::asr_t* make_FunctionCall_t_util(
 static inline ASR::asr_t* make_SubroutineCall_t_util(
     Allocator &al, const Location &a_loc, ASR::symbol_t* a_name,
     ASR::symbol_t* a_original_name, ASR::call_arg_t* a_args, size_t n_args,
-    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting) {
+    ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt, bool implicit_argument_casting, SymbolTable* current_scope = nullptr, std::optional<std::reference_wrapper<SetChar>> current_function_dependencies = std::nullopt) {
 
     Call_t_body(al, a_name, a_args, n_args, a_dt, cast_stmt, implicit_argument_casting,
-         ASRUtils::get_class_proc_nopass_val(a_name));
+         ASRUtils::get_class_proc_nopass_val(a_name), current_scope, current_function_dependencies);
 
     if( a_dt && ASR::is_a<ASR::Variable_t>(
         *ASRUtils::symbol_get_past_external(a_name)) &&
