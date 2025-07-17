@@ -9573,6 +9573,10 @@ public:
         if (x.m_file) {
             this->visit_expr_wrapper(x.m_file, true);
             f_name = tmp;
+            if (ASRUtils::is_descriptorString(ASRUtils::expr_type(x.m_file)) &&
+                ASR::is_a<ASR::StructInstanceMember_t>(*x.m_file)) {
+                f_name = llvm_utils->CreateLoad2(character_type, llvm_utils->create_gep2(string_descriptor, tmp, 0));
+            }
         } else {
             f_name = llvm::Constant::getNullValue(character_type);
         }
