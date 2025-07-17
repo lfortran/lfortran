@@ -6295,6 +6295,12 @@ public:
                                 llvm::Type::getInt32Ty(context)));
                     }
                 } else {
+                    target = llvm_utils->CreateLoad(target);
+#if LLVM_VERSION_MAJOR > 16
+                    ptr_type[target] = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable_pointer(target_type),
+                        module.get());
+#endif
                     target_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(target));
                 }
                 if( is_value_data_only_array ) {
@@ -6310,6 +6316,7 @@ public:
                                 break;
                             }
                             this->visit_expr_wrapper(value_dims[i].m_length, true);
+                            tmp = builder->CreateSExtOrTrunc(tmp, llvm::Type::getInt32Ty(context));
                             llvm_size = builder->CreateMul(llvm_size, tmp);
                         }
                     }
@@ -6558,7 +6565,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
                 tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
-            PointerToData_to_Descriptor(m_type, m_type_for_dimensions);
+            PointerToData_to_Descriptor(m_type, ASRUtils::expr_type(m_arg));
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::PointerToDataArray) {
@@ -10972,6 +10979,49 @@ public:
         return dt;
     }
 
+    template<typename T>
+    void bounds_check_call(T& x) {
+        for (size_t i = 0; i < x.n_args; i++) {
+            ASR::expr_t* arg_expr = x.m_args[i].m_value;
+            if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
+                ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
+                if (arr_cast->m_old == ASR::DescriptorArray && arr_cast->m_new == ASR::PointerToDataArray) {
+                    int64_t ptr_loads_copy = ptr_loads;
+                    ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
+                    this->visit_expr_wrapper(arr_cast->m_arg, false);
+                    ptr_loads = ptr_loads_copy;
+                    llvm::Value* arg = tmp;
+
+#if LLVM_VERSION_MAJOR > 16
+                    llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arr_cast->m_arg)),
+                        module.get(), ASRUtils::expr_abi(arr_cast->m_arg));
+                    ptr_type[tmp] = arr_type;
+#endif
+                    int n_dims = ASRUtils::extract_n_dims_from_ttype(arr_cast->m_type);
+                    ASR::dimension_t* m_dims = nullptr;
+                    ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
+                    for (int j = 0; j < n_dims; j++) {
+                        if (m_dims[j].m_length) {
+                            llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
+                            llvm::Value* descriptor_length = arr_descr->get_array_size(arg, dim, 4);
+                            load_array_size_deep_copy(m_dims[j].m_length);
+                            llvm::Value* pointer_length = tmp;
+                            llvm_utils->generate_runtime_error(builder->CreateICmpNE(descriptor_length, pointer_length),
+                                    "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
+                                    "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
+                                    builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
+                                    descriptor_length,
+                                    dim,
+                                    llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, i + 1)),
+                                    pointer_length);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         if (compiler_options.emit_debug_info) debug_emit_loc(x);
         if( ASRUtils::is_intrinsic_optimization(x.m_name) ) {
@@ -10984,45 +11034,7 @@ public:
 
         // Generate runtime error if array arguments' shape doesn't match
         if (compiler_options.enable_bounds_checking) {
-            for (size_t i = 0; i < x.n_args; i++) {
-                ASR::expr_t* arg_expr = x.m_args[i].m_value;
-                if (ASR::is_a<ASR::ArrayPhysicalCast_t>(*arg_expr)) {
-                    ASR::ArrayPhysicalCast_t* arr_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(arg_expr);
-                    if (arr_cast->m_old == ASR::DescriptorArray && arr_cast->m_new == ASR::PointerToDataArray) {
-                        int64_t ptr_loads_copy = ptr_loads;
-                        ptr_loads = 2 - LLVM::is_llvm_pointer(*ASRUtils::expr_type(arr_cast->m_arg));
-                        this->visit_expr_wrapper(arr_cast->m_arg, false);
-                        ptr_loads = ptr_loads_copy;
-                        llvm::Value* arg = tmp;
-
-#if LLVM_VERSION_MAJOR > 16
-                        llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
-                            ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(arr_cast->m_arg)),
-                            module.get(), ASRUtils::expr_abi(arr_cast->m_arg));
-                        ptr_type[tmp] = arr_type;
-#endif
-                        int n_dims = ASRUtils::extract_n_dims_from_ttype(arr_cast->m_type);
-                        ASR::dimension_t* m_dims = nullptr;
-                        ASRUtils::extract_dimensions_from_ttype(arr_cast->m_type, m_dims);
-                        for (int j = 0; j < n_dims; j++) {
-                            if (m_dims[j].m_length && !ASR::is_a<ASR::FunctionParam_t>(*m_dims[j].m_length)) {
-                                llvm::Value* dim = llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1));
-                                llvm::Value* descriptor_length = arr_descr->get_array_size(arg, dim, 4);
-                                load_array_size_deep_copy(m_dims[j].m_length);
-                                llvm::Value* pointer_length = tmp;
-                                llvm_utils->generate_runtime_error(builder->CreateICmpNE(descriptor_length, pointer_length),
-                                        "Runtime error: Array shape mismatch in subroutine '%s'\n\n"
-                                        "Tried to match size %d of dimension %d of argument number %d, but expected size is %d\n",
-                                        builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
-                                        descriptor_length,
-                                        dim,
-                                        llvm::ConstantInt::get(llvm_utils->getIntType(4), llvm::APInt(32, j + 1)),
-                                        pointer_length);
-                            }
-                        }
-                    }
-                }
-            }
+            bounds_check_call(x);
         }
 
         std::vector<llvm::Value*> args;
@@ -11598,6 +11610,11 @@ public:
         if (x.m_value) {
             this->visit_expr_wrapper(x.m_value, true);
             return ;
+        }
+
+        // Generate runtime error if array arguments' shape doesn't match
+        if (compiler_options.enable_bounds_checking) {
+            bounds_check_call(x);
         }
 
         std::vector<llvm::Value*> args;

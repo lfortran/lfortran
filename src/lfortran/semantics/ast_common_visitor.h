@@ -1769,7 +1769,7 @@ public:
         current_function_dependencies.push_back(al,s2c(al, func_name));
 
         ASR::expr_t* func_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, getter_func_sym->base.loc,
-                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr));
+                                getter_func_sym, getter_func_sym, nullptr, 0, ASRUtils::symbol_type(end_sym), nullptr, nullptr, current_scope, current_function_dependencies));
         return func_call;
     }
 
@@ -5958,7 +5958,7 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
             final_sym, v, args.p, args.size(), return_type,
-            value, nullptr);
+            value, nullptr, current_scope, current_function_dependencies);
     }
 
     ASR::asr_t* symbol_resolve_external_generic_procedure(
@@ -6066,7 +6066,7 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al, v_expr, v_class_proc->m_is_nopass);
         return ASRUtils::make_FunctionCall_t_util(al, loc,
                 v, nullptr, args.p, args.size(), type, nullptr,
-                v_expr);
+                v_expr, current_scope, current_function_dependencies);
     }
 
     ASR::asr_t* create_GenericProcedure(const Location &loc,
@@ -6118,7 +6118,7 @@ public:
             ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
             return ASRUtils::make_FunctionCall_t_util(al, loc,
                 final_sym, v, args.p, args.size(), type,
-                nullptr, nullptr);
+                nullptr, nullptr, current_scope, current_function_dependencies);
         }
     }
 
@@ -6178,7 +6178,7 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     cp_s, v, args.p, args.size(), type,
-                    nullptr, nullptr);
+                    nullptr, nullptr, current_scope, current_function_dependencies);
             } else {
                 if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
                     ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
@@ -6188,7 +6188,7 @@ public:
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
                     final_sym, v, args.p, args.size(), type,
-                    nullptr, nullptr);
+                    nullptr, nullptr, current_scope, current_function_dependencies);
             }
         }
     }
@@ -6437,6 +6437,28 @@ public:
                                                         dims.p, dims.size(), ASR::array_physical_typeType::DescriptorArray);
 
                         ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(expected_arg_type);
+
+                        // Replace FunctionParam in dimensions and check whether its symbols are accessible from current_scope
+                        ASRUtils::ReplaceFunctionParamWithArg r(al, args.p, args.n);
+                        ASRUtils::CheckSymbolReplacer c(al, current_scope, current_function_dependencies);
+                        bool valid_symbols = true;
+                        Vec<ASR::dimension_t> dimensions_; dimensions_.reserve(al, array_t->n_dims);
+                        for (size_t i = 0; i < array_t->n_dims; i++) {
+                            ASR::dimension_t dim;
+                            dim.m_start = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_start);
+                            dim.m_length = r.replace_FunctionParam_with_arg(array_t->m_dims[i].m_length);
+                            valid_symbols = c.check_and_update_symbols(dim.m_length) && c.check_and_update_symbols(dim.m_start);
+                            if (!valid_symbols) {
+                                break;
+                            }
+                            dimensions_.push_back(al, dim);
+                        }
+                        if (valid_symbols) {
+                            for (size_t i = 0; i < array_t->n_dims; i++) {
+                                array_t->m_dims[i] = dimensions_[i];
+                            }
+                        }
+
                         ASR::asr_t* expected_array = ASR::make_Array_t(al, loc, ASRUtils::type_get_past_array(expected_arg_type),
                                                         array_t->m_dims, array_t->n_dims, ASRUtils::extract_physical_type(expected_arg_type));
 
@@ -6560,7 +6582,7 @@ public:
         validate_create_function_arguments(args, v);
 
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-            args.p, args.size(), return_type, value, nullptr);
+            args.p, args.size(), return_type, value, nullptr, current_scope, current_function_dependencies);
     }
 
     ASR::asr_t* create_FunctionFromFunctionTypeVariable(const Location &loc,
@@ -6576,10 +6598,10 @@ public:
             ASR::expr_t* dt = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
                 al, loc, args.p[0].m_value, v, ASRUtils::symbol_type(v), nullptr));
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p + 1, args.size() - 1, return_type, nullptr, dt);
+                args.p + 1, args.size() - 1, return_type, nullptr, dt, current_scope, current_function_dependencies);
         } else {
             return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
-                args.p, args.size(), return_type, nullptr, nullptr);
+                args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies);
         }
     }
 
@@ -10691,7 +10713,7 @@ public:
             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
             ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
 
-            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr);
+            tmp = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, op_sym, a_args.p, a_args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies);
             matched = true;
             break;
         }
@@ -10851,7 +10873,7 @@ public:
             ADD_ASR_DEPENDENCIES(current_scope, v, current_function_dependencies);
             ASRUtils::insert_module_dependency(v, al, current_module_dependencies);
             tmp = ASRUtils::make_FunctionCall_t_util(al, x.base.base.loc, v,
-                v, args.p, args.size(), return_type, nullptr, nullptr
+                v, args.p, args.size(), return_type, nullptr, nullptr, current_scope, current_function_dependencies
                 );
             tmp = ASR::make_OverloadedStringConcat_t(al, x.base.base.loc,
                 left, right, return_type, nullptr, ASRUtils::EXPR(tmp));
