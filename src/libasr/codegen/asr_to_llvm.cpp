@@ -8104,7 +8104,7 @@ public:
         llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
         // Assign the array elements to `p_fxn`.
         for (size_t i=0; i < x.n_args; i++) {
-            llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
+            llvm::Value *llvm_el = llvm_utils->create_gep2(type_fxn, p_fxn, i);
             ASR::expr_t *el = x.m_args[i];
             int64_t ptr_loads_copy = ptr_loads;
             ptr_loads = 2;
@@ -8113,7 +8113,7 @@ public:
             builder->CreateStore(tmp, llvm_el);
         }
         // Return the vector as float* type:
-        tmp = llvm_utils->create_gep(p_fxn, 0);
+        tmp = llvm_utils->create_gep2(type_fxn ,p_fxn, 0);
     }
 
     void visit_ArrayConstantUtil(const ASR::ArrayConstant_t &x) {
@@ -8153,7 +8153,7 @@ public:
             llvm::AllocaInst *p_fxn = llvm_utils->CreateAlloca(*builder, type_fxn);
             // Assign the array elements to `p_fxn`.
             for (size_t i=0; i < (size_t) ASRUtils::get_fixed_size_of_array(x.m_type); i++) {
-                llvm::Value *llvm_el = llvm_utils->create_gep(p_fxn, i);
+                llvm::Value *llvm_el = llvm_utils->create_gep2(type_fxn, p_fxn, i);
                 ASR::expr_t *el = ASRUtils::fetch_ArrayConstant_value(al, x, i);
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 2;
@@ -8162,7 +8162,7 @@ public:
                 builder->CreateStore(tmp, llvm_el);
             }
             // Return the vector as float* type:
-            tmp = llvm_utils->create_gep(p_fxn, 0);
+            tmp = llvm_utils->create_gep2(type_fxn, p_fxn, 0);
             return;
         }
 
