@@ -10866,11 +10866,11 @@ public:
                     llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
                     llvm::Type* dt_type = llvm_utils->get_type_from_ttype_t_util(arg_type, module.get());
                     llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
-                    llvm::Value* polymorphic_addr = llvm_utils->create_gep(abstract_, 1);
+                    llvm::Value* polymorphic_addr = llvm_utils->create_gep2(_type, abstract_, 1);
                     builder->CreateStore(
                         builder->CreateBitCast(llvm_utils->CreateLoad2(llvm_utils->getStructType(arg_type, module.get())->getPointerTo(), llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
                         polymorphic_addr);
-                    llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
+                    llvm::Value* type_id_addr = llvm_utils->create_gep2(_type, abstract_, 0);
                     if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
                         llvm::Value* hash = llvm_utils->create_gep2(dt_type, dt, 0);
                         hash = llvm_utils->CreateLoad2(llvm_utils->getIntType(8), hash);
@@ -10913,11 +10913,11 @@ public:
             } else {
                 llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0_type, module.get());
                 llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
-                llvm::Value* polymorphic_addr = llvm_utils->create_gep(abstract_, 1);
+                llvm::Value* polymorphic_addr = llvm_utils->create_gep2(_type, abstract_, 1);
                 builder->CreateStore(
                     builder->CreateBitCast(dt, llvm::Type::getVoidTy(context)->getPointerTo()),
                     polymorphic_addr);
-                llvm::Value* type_id_addr = llvm_utils->create_gep(abstract_, 0);
+                llvm::Value* type_id_addr = llvm_utils->create_gep2(_type, abstract_, 0);
                 if (ASR::is_a<ASR::StructType_t>(*arg_type) && !ASRUtils::is_class_type(arg_type)) {
                     ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(arg_type);
                     ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(struct_t->m_derived_type);
