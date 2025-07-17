@@ -11406,10 +11406,12 @@ public:
             }
             ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(vtabs[i].second);
             llvm::Value* type_sym_vtab = vtabs[i].first;
+            llvm::Type* struct_ty = llvm::StructType::get(context, { i64 }, true);
+            llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, struct_ty->getPointerTo());
             llvm::Value* cond = builder->CreateICmpEQ(
                                     vptr_int_hash,
                                     llvm_utils->CreateLoad2(i64,
-                                        llvm_utils->create_gep(type_sym_vtab, 0) ) );
+                                        llvm_utils->create_gep2(struct_ty, vtab_obj_casted, 0) ) );
 
             builder->CreateCondBr(cond, thenBB, elseBB);
             builder->SetInsertPoint(thenBB);
@@ -11519,10 +11521,12 @@ public:
             }
             ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(vtabs[i].second);
             llvm::Value* type_sym_vtab = vtabs[i].first;
+            llvm::Type* struct_ty = llvm::StructType::get(context, { i64 }, true);
+            llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, struct_ty->getPointerTo());
             llvm::Value* cond = builder->CreateICmpEQ(
                                     vptr_int_hash,
                                     llvm_utils->CreateLoad2(i64,
-                                        llvm_utils->create_gep(type_sym_vtab, 0) ) );
+                                        llvm_utils->create_gep2(struct_ty, vtab_obj_casted, 0) ) );
 
             builder->CreateCondBr(cond, thenBB, elseBB);
             builder->SetInsertPoint(thenBB);
