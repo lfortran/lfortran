@@ -267,8 +267,8 @@
                                 )
                         })
                     derived_types_17_module_1
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),
@@ -380,8 +380,8 @@
                                 )
                         })
                     derived_types_17_module_2
+                    
                     [derived_types_17_module_1]
-                    ()
                     .false.
                     .false.
                 )

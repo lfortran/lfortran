@@ -19,8 +19,8 @@
                                 )
                         })
                     tomlf_structure
+                    
                     [tomlf_structure_base]
-                    ()
                     .true.
                     .false.
                 ),
@@ -150,8 +150,8 @@
                                 )
                         })
                     tomlf_structure_base
+                    
                     [tomlf_type_value]
-                    ()
                     .true.
                     .false.
                 ),
@@ -510,10 +510,10 @@
                                 )
                         })
                     tomlf_type_array
+                    
                     [tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
-                    ()
                     .false.
                     .false.
                 ),
@@ -637,8 +637,8 @@
                                 )
                         })
                     tomlf_type_value
+                    
                     []
-                    ()
                     .true.
                     .false.
                 )

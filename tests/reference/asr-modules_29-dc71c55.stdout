@@ -240,8 +240,8 @@
                                 )
                         })
                     fpm_git1
+                    
                     []
-                    ()
                     .true.
                     .false.
                 ),
@@ -791,8 +791,8 @@
                                 )
                         })
                     fpm_manifest_dependency1
+                    
                     [fpm_git1]
-                    ()
                     .true.
                     .false.
                 ),
@@ -1163,8 +1163,8 @@
                                 )
                         })
                     fpm_manifest_executable
+                    
                     [fpm_manifest_dependency1]
-                    ()
                     .true.
                     .false.
                 ),

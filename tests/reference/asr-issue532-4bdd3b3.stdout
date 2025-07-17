@@ -221,8 +221,8 @@
                                 )
                         })
                     issue532_mod
+                    
                     [issue532_mod]
-                    ()
                     .false.
                     .false.
                 )

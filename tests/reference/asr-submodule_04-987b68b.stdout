@@ -122,8 +122,8 @@
                                 )
                         })
                     mod_submodule_04
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),
@@ -254,8 +254,8 @@
                                 )
                         })
                     submod_submodule_04
+                    mod_submodule_04
                     []
-                    1 mod_submodule_04
                     .false.
                     .false.
                 ),

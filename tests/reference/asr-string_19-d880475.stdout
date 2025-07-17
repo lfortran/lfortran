@@ -392,8 +392,8 @@
                                 )
                         })
                     string_19_stdlib_string_type
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),
@@ -1563,9 +1563,9 @@
                                 )
                         })
                     string_19_stdlib_strings
+                    
                     [string_19_stdlib_string_type
                     string_19_stdlib_strings]
-                    ()
                     .false.
                     .false.
                 )

@@ -399,8 +399,8 @@
                                 )
                         })
                     derived_types_05_stdlib_string_type
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),
@@ -759,8 +759,8 @@
                                 )
                         })
                     stdlib_string_type_constructor
+                    derived_types_05_stdlib_string_type
                     []
-                    1 derived_types_05_stdlib_string_type
                     .false.
                     .false.
                 )

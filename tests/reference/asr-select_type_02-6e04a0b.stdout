@@ -70,8 +70,8 @@
                                 )
                         })
                     derived_type_collection
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),

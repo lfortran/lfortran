@@ -144,8 +144,8 @@
                                 )
                         })
                     test_scan_module
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),

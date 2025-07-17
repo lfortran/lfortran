@@ -19,8 +19,8 @@
                                 )
                         })
                     tomlf_structure
+                    
                     [tomlf_structure_base]
-                    ()
                     .true.
                     .false.
                 ),
@@ -150,8 +150,8 @@
                                 )
                         })
                     tomlf_structure_base
+                    
                     [tomlf_type_value]
-                    ()
                     .true.
                     .false.
                 ),
@@ -211,9 +211,9 @@
                                 )
                         })
                     tomlf_type
+                    
                     [tomlf_type_array
                     tomlf_type_keyval]
-                    ()
                     .false.
                     .false.
                 ),
@@ -572,10 +572,10 @@
                                 )
                         })
                     tomlf_type_array
+                    
                     [tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
-                    ()
                     .true.
                     .false.
                 ),
@@ -932,8 +932,8 @@
                                 )
                         })
                     tomlf_type_keyval
+                    
                     []
-                    ()
                     .true.
                     .false.
                 ),
@@ -1057,8 +1057,8 @@
                                 )
                         })
                     tomlf_type_value
+                    
                     []
-                    ()
                     .true.
                     .false.
                 )
