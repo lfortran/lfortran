@@ -457,6 +457,21 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        for (size_t i=0;i<compiler_options.arg_submodules.size();i++) {
+            std::string submodule_name = compiler_options.arg_submodules[i];
+            submodule_name.erase(submodule_name.size() - 4);
+            SymbolTable *tu_symtab = current_scope->get_global_scope();
+            ASR::Module_t* submodule = ASRUtils::load_module(al, tu_symtab, submodule_name, x.base.base.loc,
+                                                                false, compiler_options.po, true,
+                                                                [&](const std::string &msg, const Location &loc) {
+                                                                    diag.add(diag::Diagnostic(
+                                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                                            diag::Label("", {loc})}));
+                                                                    throw SemanticAbort();
+                                                                }, lm, false
+                                                            );
+            LCOMPILERS_ASSERT(submodule != nullptr && std::string(submodule->m_name) == submodule_name);
+        }
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
