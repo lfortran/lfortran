@@ -904,7 +904,7 @@ public:
     llvm::Value *nested_struct_rd(std::vector<llvm::Value*> vals,
             llvm::StructType* rd) {
         llvm::AllocaInst *pres = llvm_utils->CreateAlloca(*builder, rd);
-        llvm::Value *pim = llvm_utils->CreateGEP(pres, vals);
+        llvm::Value *pim = llvm_utils->CreateGEP2(rd, pres, vals);
         return llvm_utils->CreateLoad(pim);
     }
 
