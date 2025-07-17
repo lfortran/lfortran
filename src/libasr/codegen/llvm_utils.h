@@ -310,6 +310,7 @@ namespace LCompilers {
             // Supports integer, logical, and real constants used in struct initializers.
             // Throws an exception for unsupported expression types.
             llvm::Constant* create_llvm_constant_from_asr_expr(ASR::expr_t* expr,
+                                                               ASR::ttype_t* type,
                                                                llvm::Module* module);
 
             /*
@@ -345,9 +346,9 @@ namespace LCompilers {
 
             void createStructTypeContext(ASR::Struct_t* der_type);
 
-            llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false);
+            llvm::Type* getStructType(ASR::Struct_t* der_type, llvm::Module* module, bool is_pointer=false, bool is_packed=true);
 
-            llvm::Type* getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false);
+            llvm::Type* getStructType(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer=false, bool is_packed=true);
 
             llvm::Type* getUnion(ASR::Union_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
@@ -381,10 +382,10 @@ namespace LCompilers {
                 ASR::symbol_t *type_declaration, ASR::storage_typeType m_storage,
                 bool& is_array_type, bool& is_malloc_array_type, bool& is_list,
                 ASR::dimension_t*& m_dims, int& n_dims, int& a_kind, llvm::Module* module,
-                ASR::abiType m_abi=ASR::abiType::Source);
+                ASR::abiType m_abi=ASR::abiType::Source, bool is_packed=true);
 
             llvm::Type* get_type_from_ttype_t_util(ASR::ttype_t* asr_type,
-                llvm::Module* module, ASR::abiType asr_abi=ASR::abiType::Source);
+                llvm::Module* module, ASR::abiType asr_abi=ASR::abiType::Source, bool is_packed=true);
 
             llvm::Type* get_arg_type_from_ttype_t(ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::abiType m_abi, ASR::abiType arg_m_abi,
