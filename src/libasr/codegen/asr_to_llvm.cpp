@@ -6740,6 +6740,7 @@ public:
         }
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_selector = tmp;
+        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_selector), module.get());
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         for( size_t i = 0; i < select_type_stmts.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -6754,9 +6755,9 @@ public:
             switch( select_type_stmts[i]->type ) {
                 case ASR::type_stmtType::TypeStmtName: {
                     ASR::ttype_t* selector_var_type = ASRUtils::expr_type(x.m_selector);
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_selector, 0));
+                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
                     if( ASRUtils::is_array(selector_var_type) ) {
-                        vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep(vptr_int_hash, 0));
+                        vptr_int_hash = llvm_utils->CreateLoad(llvm_utils->create_gep2(i64, vptr_int_hash, 0));
                     }
                     ASR::TypeStmtName_t* type_stmt_name = ASR::down_cast<ASR::TypeStmtName_t>(select_type_stmts[i]);
                     ASR::symbol_t* type_sym = ASRUtils::symbol_get_past_external(type_stmt_name->m_sym);
@@ -6772,15 +6773,18 @@ public:
                         create_vtab_for_struct_type(type_sym, current_scope);
                     }
                     llvm::Value* type_sym_vtab = type2vtab[type_sym][current_scope];
+                    llvm::Type* vtab_struct_type = llvm_utils->getStructType(
+                        ASR::down_cast<ASR::Struct_t>(type_sym), module.get(), false);
+                    llvm::Value* vtab_obj_casted = builder->CreateBitCast(type_sym_vtab, vtab_struct_type->getPointerTo());
                     cond = builder->CreateICmpEQ(
                             vptr_int_hash,
-                            llvm_utils->CreateLoad2( i64, llvm_utils->create_gep(type_sym_vtab, 0) ) );
+                            llvm_utils->CreateLoad2( i64, llvm_utils->create_gep2(vtab_struct_type, vtab_obj_casted, 0) ) );
                     type_block = type_stmt_name->m_body;
                     n_type_block = type_stmt_name->n_body;
                     break ;
                 }
                 case ASR::type_stmtType::ClassStmt: {
-                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(llvm_selector, 0));
+                    llvm::Value* vptr_int_hash = llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
                     ASR::ClassStmt_t* class_stmt = ASR::down_cast<ASR::ClassStmt_t>(select_type_stmts[i]);
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(class_stmt->m_sym);
                     if( ASR::is_a<ASR::Struct_t>(*class_sym) ) {
@@ -6802,9 +6806,11 @@ public:
                     }
                     conds.reserve(class_sym_vtabs.size());
                     for( size_t i = 0; i < class_sym_vtabs.size(); i++ ) {
+                        llvm::Value* vtab_obj_casted = builder->CreateBitCast(
+                            class_sym_vtabs[i], current_select_type_block_type->getPointerTo());
                         conds.push_back(builder->CreateICmpEQ(
                             vptr_int_hash,
-                            llvm_utils->CreateLoad2(i64, llvm_utils->create_gep(class_sym_vtabs[i], 0)) ));
+                            llvm_utils->CreateLoad2(i64, llvm_utils->create_gep2(current_select_type_block_type, vtab_obj_casted, 0)) ));
                     }
                     cond = builder->CreateOr(conds);
                     type_block = class_stmt->m_body;
@@ -6826,7 +6832,7 @@ public:
                         llvm::Value* data_ptr = llvm_utils->CreateLoad2(el_type->getPointerTo(), arr_descr->get_pointer_to_data(llvm_selector));
                         _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(el_type, data_ptr, 0));
                     } else {
-                        _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep(llvm_selector, 0));
+                        _type_id = llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), llvm_utils->create_gep2(llvm_selector_type_, llvm_selector, 0));
                     }
                     cond = builder->CreateICmpEQ(_type_id, intrinsic_type_id);
                     type_block = type_stmt_type_t->m_body;
