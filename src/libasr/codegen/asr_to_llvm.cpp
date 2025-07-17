@@ -6528,7 +6528,7 @@ public:
                 !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                 ASRUtils::expr_value(m_arg) == nullptr) &&
                 !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                tmp = llvm_utils->create_gep(tmp, 0);
+                tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
             }
         } else if (
             m_new == ASR::array_physical_typeType::SIMDArray &&
@@ -6586,7 +6586,7 @@ public:
                     !ASR::is_a<ASR::ArrayConstant_t>(*ASRUtils::expr_value(m_arg))) ||
                     ASRUtils::expr_value(m_arg) == nullptr) &&
                     !ASR::is_a<ASR::ArrayConstructor_t>(*m_arg) ) {
-                    tmp = llvm_utils->create_gep(tmp, 0);
+                    tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
             } else {
                 tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
