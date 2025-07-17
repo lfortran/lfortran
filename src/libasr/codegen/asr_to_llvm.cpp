@@ -8689,8 +8689,10 @@ public:
                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source)));
             llvm::Type* source_type_ = llvm_utils->get_type_from_ttype_t_util(
                 ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), module.get());
+            llvm::Type* llvm_source_type_ = llvm_utils->get_type_from_ttype_t_util(
+                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source)), module.get());
             if (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
-                source_ptr = llvm_utils->create_gep(source_ptr, 0);
+                source_ptr = llvm_utils->create_gep2(llvm_source_type_, source_ptr, 0);
                 source_ptr = builder->CreateLoad(source_type_->getPointerTo(), source_ptr);
             } else {      // For PointerToDataArray source itself is a pointer to data
                 source_ptr = source;
