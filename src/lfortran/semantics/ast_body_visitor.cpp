@@ -2049,7 +2049,7 @@ public:
                         ASR::ttype_t* selector_type = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, false);
+                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym);
                             selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                         } else {
                             diag.add(Diagnostic(

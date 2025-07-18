@@ -352,7 +352,7 @@
                                                         (StructType
                                                             []
                                                             []
-                                                            .false.
+                                                            .true.
                                                             4 point
                                                         )
                                                     )
