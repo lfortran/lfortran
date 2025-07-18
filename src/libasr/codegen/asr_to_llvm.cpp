@@ -6822,7 +6822,7 @@ public:
         }
         ptr_loads = ptr_loads_copy;
         llvm::Value* llvm_selector = tmp;
-        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(x.m_selector), module.get());
+        llvm::Type* llvm_selector_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_selector, ASRUtils::expr_type(x.m_selector), module.get());
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         for( size_t i = 0; i < select_type_stmts.size(); i++ ) {
             llvm::Function *fn = builder->GetInsertBlock()->getParent();
@@ -8772,7 +8772,7 @@ public:
                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source)));
             llvm::Type* source_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_source,
                 ASRUtils::extract_type(ASRUtils::expr_type(x.m_source)), module.get());
-            llvm::Type* llvm_source_type_ = llvm_utils->get_type_from_ttype_t_util(
+            llvm::Type* llvm_source_type_ = llvm_utils->get_type_from_ttype_t_util(x.m_source,
                 ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(x.m_source)), module.get());
             if (arr->m_physical_type == ASR::array_physical_typeType::DescriptorArray) {
                 source_ptr = llvm_utils->create_gep2(llvm_source_type_, source_ptr, 0);
