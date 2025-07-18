@@ -15,12 +15,12 @@ program string_61
     contains
 
     function ff(string) result(ret)
-        character(10), optional, dimension(0:) :: string
+        character(10), optional, dimension(:) :: string
         character(10) :: ret
         if(.not.present(string)) then
             ret = "Hello"
         else 
-            ret = string(0)
+            ret = string(1)
         end if
     end function
 end program
