@@ -731,9 +731,15 @@ namespace LCompilers {
                         x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
                             x_m_args_i, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                x->base.base.loc, derived_ref,
-                                                x_m_args_i, nullptr, realloc_lhs));
+                    ASR::stmt_t* assign;
+                    if (ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args_i))) {
+                        assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al, 
+                                                    x->base.base.loc, derived_ref, x_m_args_i));
+                    } else {
+                        assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
+                                                    x->base.base.loc, derived_ref,
+                                                    x_m_args_i, nullptr, realloc_lhs));
+                    }
                     result_vec->push_back(replacer->al, assign);
                 }
             }
