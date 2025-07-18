@@ -133,10 +133,10 @@
                             }
                         },
                         "name": "modules_10",
+                        "parent_module": "",
                         "dependencies": [
                             "my_other_module"
                         ],
-                        "parent_module": [],
                         "loaded_from_mod": false,
                         "intrinsic": false
                     },
@@ -398,8 +398,8 @@
                             }
                         },
                         "name": "my_other_module",
+                        "parent_module": "",
                         "dependencies": [],
-                        "parent_module": [],
                         "loaded_from_mod": false,
                         "intrinsic": false
                     },

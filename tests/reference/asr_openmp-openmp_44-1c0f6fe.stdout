@@ -2759,8 +2759,8 @@
                                 )
                         })
                     omp_lib
+                    
                     [iso_c_binding]
-                    ()
                     .true.
                     .false.
                 ),
@@ -3466,8 +3466,8 @@
                                 )
                         })
                     openmp_44_parallel_sections
+                    
                     []
-                    ()
                     .false.
                     .false.
                 )

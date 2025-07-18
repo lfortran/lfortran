@@ -266,8 +266,8 @@
                                 )
                         })
                     stdlib_quadrature_simps
+                    
                     []
-                    ()
                     .false.
                     .false.
                 )

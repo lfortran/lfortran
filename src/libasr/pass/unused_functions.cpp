@@ -270,7 +270,7 @@ public:
         remove_unused_fn(x.m_symtab);
     }
     void visit_Module(const ASR::Module_t &x) {
-        if (!x.m_parent_module) {
+        if (std::string(x.m_parent_module).empty()) {
             remove_unused_fn(x.m_symtab);
         }
     }

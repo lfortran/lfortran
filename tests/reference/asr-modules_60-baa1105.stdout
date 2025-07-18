@@ -92,8 +92,8 @@
                                 )
                         })
                     inf_mod_1
+                    
                     []
-                    ()
                     .false.
                     .false.
                 ),
@@ -197,8 +197,8 @@
                                 )
                         })
                     infnan_mod_1
+                    
                     [inf_mod_1]
-                    ()
                     .false.
                     .false.
                 )

@@ -230,8 +230,8 @@
                                 )
                         })
                     tomlf_de_character
+                    
                     [tomlf_de_tokenizer_25]
-                    ()
                     .true.
                     .false.
                 ),
@@ -582,8 +582,8 @@
                                 )
                         })
                     tomlf_de_tokenizer_25
+                    
                     []
-                    ()
                     .true.
                     .false.
                 )
