@@ -76,13 +76,13 @@ struct Stacktrace {
     uint64_t stack_size;
 };
 
-#ifdef WITH_LFORTRAN_ASSERT
+#if defined (WITH_LFORTRAN_ASSERT)
     #define lfortran_assert(cond, msg)\
         if(!(cond)){\
             lfortran_error(msg);\
         }
 #else
-    #define lfortran_assert(cond, msg)
+    #define lfortran_assert(cond, msg) ((void)0)
 #endif
 
 // Styles and Colors
