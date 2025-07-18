@@ -393,7 +393,7 @@ public:
 
         ASR::symbol_t* type_decl = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
-            std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
+            std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr)));
             if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                type_decl = symbol_subs[struct_name];
             } else {
@@ -702,7 +702,7 @@ public:
             }
             case (ASR::ttypeType::StructType) : {
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(expr));
+                std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 if (context_map.find(struct_name) != context_map.end()) {
                     std::string new_struct_name = context_map[struct_name];
                     ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
@@ -1230,7 +1230,7 @@ public:
         ASR::symbol_t* type_decl = nullptr;
         if (!ASR::is_a<ASR::TypeParameter_t>(*ASRUtils::extract_type(x->m_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(new_type))) {
-            std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
+            std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr)));
             if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                type_decl = symbol_subs[struct_name];
             } else {
@@ -1414,7 +1414,7 @@ public:
             }
             case (ASR::ttypeType::StructType) : {
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(expr));
+                std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
                     return ASRUtils::make_StructType_t_util(
@@ -1825,7 +1825,7 @@ public:
             }
             case (ASR::ttypeType::StructType) : {
                 ASR::StructType_t *s = ASR::down_cast<ASR::StructType_t>(ttype);
-                std::string struct_name = ASRUtils::symbol_name(ASRUtils::get_struct_sym_from_struct_expr(expr));
+                std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
                     ttype = ASRUtils::make_StructType_t_util(

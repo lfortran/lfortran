@@ -94,10 +94,10 @@ namespace LCompilers {
         }
 
         #define fix_struct_type_scope() if ( arr_expr != nullptr ) { \
-                ASR::symbol_t* m_derived_type = ASRUtils::get_struct_sym_from_struct_expr(arr_expr); \
+                ASR::symbol_t* m_derived_type = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arr_expr)); \
                 if (m_derived_type != nullptr && current_scope != nullptr && \
                     current_scope->get_counter() != ASRUtils::symbol_parent_symtab(m_derived_type)->get_counter()) { \
-                    ASR::symbol_t* new_derived_type = current_scope->resolve_symbol( \
+                    ASR::symbol_t* new_derived_type = current_scope->get_symbol( \
                         ASRUtils::symbol_name(m_derived_type)); \
                     if (new_derived_type) { \
                         ASRUtils::set_struct_sym_to_struct_expr(arr_expr, new_derived_type); \
@@ -120,10 +120,10 @@ namespace LCompilers {
                 al, ASRUtils::expr_type(arr_expr), arr_expr->base.loc);
             // fix_struct_type_scope()
             if ( arr_expr != nullptr ) {
-                ASR::symbol_t* m_derived_type = ASRUtils::get_struct_sym_from_struct_expr(arr_expr);
+                ASR::symbol_t* m_derived_type = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arr_expr));
                 if (m_derived_type != nullptr && current_scope != nullptr &&
                     current_scope->get_counter() != ASRUtils::symbol_parent_symtab(m_derived_type)->get_counter()) {
-                    ASR::symbol_t* new_derived_type = current_scope->resolve_symbol(
+                    ASR::symbol_t* new_derived_type = current_scope->get_symbol(
                         ASRUtils::symbol_name(m_derived_type));
                     if (new_derived_type) {
                         ASRUtils::set_struct_sym_to_struct_expr(arr_expr, new_derived_type);

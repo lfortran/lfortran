@@ -1418,13 +1418,13 @@ public:
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(target_type))
             && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(value_type))) {
             ASR::Struct_t* target_struct = ASR::down_cast<ASR::Struct_t>(
-                ASRUtils::get_struct_sym_from_struct_expr(target));
+                ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(target)));
             // Set value of `value_struct` to `target_struct` to
             // handle the case of a pointer null constant assignment.
             ASR::Struct_t* value_struct = target_struct;
 
             if (!ASR::is_a<ASR::PointerNullConstant_t>(*value)) {
-                value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(value));
+                value_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value)));
             }
 
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
@@ -4255,7 +4255,7 @@ public:
                 if (v_expr &&
                     x.n_member >= 1 &&
                     ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(v_expr)) && !ASRUtils::is_class_type(ASRUtils::expr_type(v_expr)) &&
-                    (ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(v_expr))) !=
+                    (ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(v_expr)))) !=
                         ASRUtils::get_asr_owner(ASRUtils::symbol_get_past_external(original_sym))) {
                     for (size_t i = 0; i < p->n_procs; i++) {
                         final_sym = resolve_deriv_type_proc(x.base.base.loc, ASRUtils::symbol_name(p->m_procs[i]),
