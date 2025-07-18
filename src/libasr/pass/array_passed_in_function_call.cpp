@@ -240,6 +240,21 @@ public:
             ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
             value_m_dims->m_length = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
         }
+
+        /*
+            Handle character type with assumed length OR functioncall (to avoid duplicate calls).
+            `character(*), intent(in) :: inp_char_arr(:)` --TempType--> `character(len(inp_char_arr)), intent(in) :: tmp(:)`
+        */
+        if(ASRUtils::is_character(*value_type)){
+            if(ASRUtils::get_string_type(value_type)->m_len_kind == ASR::AssumedLength || 
+                (ASRUtils::get_string_type(value_type)->m_len &&
+                    ASR::is_a<ASR::FunctionCall_t>(*ASRUtils::get_string_type(value_type)->m_len)
+                )
+            ){
+                ASRUtils::ASRBuilder b(al, value->base.loc);
+                value_type = b.String(b.StringLen(value), ASR::ExpressionLength);             
+            }
+        }
         bool is_fixed_sized_array = ASRUtils::is_fixed_size_array(value_type);
         bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
             value_m_dims, value_n_dims);

@@ -299,6 +299,7 @@ LFORTRAN_API void _lfortran_get_command_command(char* receiver);
 LFORTRAN_API int32_t _lfortran_get_command_length();
 
 LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t format_len, const char* serialization_string, int32_t array_sizes_cnt, int32_t string_lengths_cnt, ...);
+void lfortran_error(const char *message);
 
 #ifdef __cplusplus
 }

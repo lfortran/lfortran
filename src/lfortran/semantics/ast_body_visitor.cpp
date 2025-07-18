@@ -1600,7 +1600,8 @@ public:
                 )
             );
             for (size_t i = 0; i < alloc_args_vec.size(); i++) {
-                LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(alloc_args_vec[i].m_a)));
+                LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(alloc_args_vec[i].m_a)) || 
+                    ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(alloc_args_vec[i].m_a))));
                 ((alloc_args_vec.p)+i)->m_len_expr = string_len;
             }
         }

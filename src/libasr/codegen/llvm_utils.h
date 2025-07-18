@@ -430,6 +430,14 @@ namespace LCompilers {
             */
             llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
                 llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage);
+            
+            /*
+                * Sets up the global array of strings that's not allocatable.
+                * Depends on the fact that PoitnerToDataArray physicalType for strings
+                    is the same representation as the string PhysicalType  
+            */
+            llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
+                ASR::ArrayConstant_t* arrayConst_t, std::string name);
 
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);

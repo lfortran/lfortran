@@ -28,7 +28,6 @@
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
-
 #ifdef HAVE_RUNTIME_STACKTRACE
 
 #ifdef COMPILE_TO_WASM
@@ -76,6 +75,15 @@ struct Stacktrace {
     uint64_t line_numbers[LCOMPILERS_MAX_STACKTRACE_LENGTH];
     uint64_t stack_size;
 };
+
+#ifdef WITH_LFORTRAN_ASSERT
+    #define lfortran_assert(cond, msg)\
+        if(!(cond)){\
+            lfortran_error(msg);\
+        }
+#else
+    #define lfortran_assert(cond, msg)
+#endif
 
 // Styles and Colors
 #define DIM "\033[2m"
@@ -1406,18 +1414,19 @@ void print_into_string(Serialization_Info* s_info,  char* result){
             sprintf(result, "%c", (*(bool*)arg)? 'T' : 'F');
             break;
         case CHAR_PTR_TYPE:
-        case STRING_DESCRIPTOR_TYPE:
-        if(array_of_string_special_case(s_info)){fprintf(stderr,"ERROR : implement this\n");exit(1);}
-        char* char_ptr = *(char**)arg;
-            if(char_ptr == NULL){
-                sprintf(result, "%s", " ");
-            } else {
-                memcpy(result,
-                    char_ptr,
-                    s_info->current_arg_info.current_string_len);
-                *(result + s_info->current_arg_info.current_string_len) = '\0';
-            }
-            break;
+        case STRING_DESCRIPTOR_TYPE:{
+            if(array_of_string_special_case(s_info)){fprintf(stderr,"ERROR : implement this\n");exit(1);}
+            char* char_ptr = *(char**)arg;
+                if(char_ptr == NULL){
+                    sprintf(result, "%s", " ");
+                } else {
+                    memcpy(result,
+                        char_ptr,
+                        s_info->current_arg_info.current_string_len);
+                    *(result + s_info->current_arg_info.current_string_len) = '\0';
+                }
+                break;
+        }
         case CPTR_VOID_PTR_TYPE:
             sprintf(result, "%p",*(void**)arg);
             break;
@@ -2738,7 +2747,7 @@ LFORTRAN_API char* _lfortran_strcat(
         dest_char[cntr] = s2[i];
         cntr++;
     }
-    dest_char[cntr] = trmn;
+    dest_char[s1_len+s2_len+trmn_size-1] = trmn;
     return dest_char;
 }
 // Allocate_allocatable-strings + Extend String ----------------------------------------------------------- 
@@ -2849,6 +2858,9 @@ LFORTRAN_API char* _lfortran_strcat(
 LFORTRAN_API void _lfortran_copy_str_and_pad(
     char* lhs, int64_t lhs_len,
     char* rhs, int64_t rhs_len){
+    lfortran_assert(lhs != NULL, "Run-time Error : Copying into unallocated LHS string")
+    lfortran_assert(rhs != NULL, "Run-time Error : Copying from unallocated RHS string")
+
     for (int64_t i = 0; i < lhs_len; i++) {
         if (i < rhs_len) {
             lhs[i] = rhs[i];
@@ -2856,7 +2868,7 @@ LFORTRAN_API void _lfortran_copy_str_and_pad(
             lhs[i] = ' ';
         }
     }
-    lhs[lhs_len] = '\0'; // Null-terminate the string(TODO::remove)
+    lhs[lhs_len] = '\0'; // Null-terminate the string (TODO::remove)
 }
 // TODO : split them into three functions instead of making compile-time choices at runtime
 LFORTRAN_API void _lfortran_strcpy(
@@ -2865,7 +2877,7 @@ LFORTRAN_API void _lfortran_strcpy(
     char* rhs, int64_t rhs_len){
     int null_terminated_string = 1; //TODO : remove this
     if(!is_lhs_deferred && !is_lhs_allocatable){
-        if(*lhs == NULL){fprintf(stderr,"Runtime Error : String not allocted\n");exit(1);}
+        if(*lhs == NULL){lfortran_error("Runtime Error : Non-allocatable string isn't allocted");}
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (!is_lhs_deferred && is_lhs_allocatable){ // Automatic Allocation
         if(*lhs == NULL) *lhs = (char*)malloc((*lhs_len + null_terminated_string) * sizeof(char));
@@ -2876,7 +2888,7 @@ LFORTRAN_API void _lfortran_strcpy(
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
         if(null_terminated_string)(*lhs)[rhs_len] = '\0';
     } else if(is_lhs_deferred && !is_lhs_allocatable) {
-        if(*lhs == NULL){fprintf(stderr,"Runtime Error : String not allocted\n");exit(1);}
+        if(*lhs == NULL){lfortran_error("Runtime Error : Non-allocatable string isn't allocted");}
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     }
 }
@@ -2884,15 +2896,15 @@ LFORTRAN_API void _lfortran_strcpy(
 
 #define MIN(x, y) ((x < y) ? x : y)
 
-int strlen_without_trailing_space(char *str) {
-    int end = strlen(str) - 1;
+int strlen_without_trailing_space(char *str, int64_t len) {
+    int end = len - 1;
     while(end >= 0 && str[end] == ' ') end--;
     return end + 1;
 }
 
 int str_compare(char *s1, int64_t s1_len, char *s2, int64_t s2_len){
-    int s1_len_ = strlen_without_trailing_space(s1);
-    int s2_len_ = strlen_without_trailing_space(s2);
+    int s1_len_ = strlen_without_trailing_space(s1, s1_len);
+    int s2_len_ = strlen_without_trailing_space(s2, s2_len);
     int lim = MIN(s1_len_, s2_len_);
     int res = 0;
     int i ;
@@ -3081,8 +3093,10 @@ LFORTRAN_API char* _lfortran_str_item(char* s, int64_t s_len, int64_t idx) {
 
 // Specific For Fortran Strings
 LFORTRAN_API char* _lfortran_str_slice_fortran(char* s, int64_t start /*1-Based index*/, int64_t end){
-    if( start<=0 || end <=0 ){
-        return "";
+    if( (start<=0) || (end <=0) ){
+        char* empty = malloc(1*sizeof(char));
+        empty = "";
+        return empty;
     }
     char* return_str = (char*)malloc(end - start + 1 + 1 /*Null Char*/);
     memcpy(return_str, s + start - 1, end - start + 1);
@@ -3137,7 +3151,7 @@ LFORTRAN_API char* _lfortran_str_slice(char* s, int64_t s_len, int64_t idx1, int
     return dest_char;
 }
 
-LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, int64_t r_len, int32_t idx1 /*1-Index-based*/, int32_t idx2, int32_t step,
+LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, int64_t r_len, int32_t idx1 /*1-Index-based*/, int32_t idx2/*1-Index-based*/, int32_t step,
                         bool idx1_present, bool idx2_present) {
     idx1--;
     if (step == 0) {
@@ -3167,8 +3181,8 @@ LFORTRAN_API char* _lfortran_str_slice_assign(char* s, int64_t s_len, char *r, i
         return s;
     }
 
-    char* dest_char = (char*)malloc(s_len + 1);
-    strcpy(dest_char, s);
+    char* dest_char = (char*)malloc(s_len + 1 /* \0 */);
+    memcpy(dest_char, s, s_len + 1 /* \0 */);
     int s_i = idx1, d_i = 0;
     while((step > 0 && s_i >= idx1 && s_i < idx2) ||
         (step < 0 && s_i <= idx1 && s_i > idx2)) {
@@ -3229,12 +3243,10 @@ LFORTRAN_API void _lfortran_free(char* ptr) {
 }
 
 
-// size_plus_one is the size of the string including the null character
-LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one, char *s) {
+//Remove once we stop depending on null
+LFORTRAN_API void _lfortran_string_init(int64_t size_plus_one /*\0 included*/, char *s) {
     int size = size_plus_one-1;
-    // for (int i=0; i < size; i++) {
-    //     s[i] = ' ';
-    // }
+    // memset(s, ' ', size);
     s[size] = '\0';
 }
 
@@ -3762,12 +3774,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
                 *iostat = 2;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
-                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
-                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
-                    size += 1;   // endline char
-                    snprintf(iomsg, size, temp, f_name);
-                    for (size_t i = size - 1; i < iomsg_len; i++) {
-                        (iomsg)[i - 1] = ' ';
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
+                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                        (iomsg)[i] = ' ';
                     }
                     (iomsg)[iomsg_len] = '\0';
                 }
@@ -3784,12 +3793,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
                 *iostat = 17;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
-                    size_t err_len = strlen(temp) - 1 + strlen(f_name); 
-                    int64_t size = iomsg_len > err_len ? err_len : iomsg_len;
-                    size += 1;   // endline char
-                    snprintf(iomsg, size, temp, f_name);
-                    for (size_t i = size - 1; i < iomsg_len; i++) {
-                        (iomsg)[i - 1] = ' ';
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
+                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                        (iomsg)[i] = ' ';
                     }
                     (iomsg)[iomsg_len] = '\0';
                 }
@@ -3815,11 +3821,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "STATUS specifier in OPEN statement has invalid value.";
-                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
-                size += 1;   // endline char
-                snprintf(iomsg, size, "%s", temp);
-                for (size_t i = size; i < iomsg_len; i++) {
-                    (iomsg)[i - 1] = ' ';
+                snprintf(iomsg, iomsg_len + 1, "%s", temp);
+                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                    (iomsg)[i] = ' ';
                 }
                 (iomsg)[iomsg_len] = '\0';
             }
@@ -3843,11 +3847,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "FORM specifier in OPEN statement has invalid value.";
-                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
-                size += 1;   // endline char
-                snprintf(iomsg, size, "%s", temp);
-                for (size_t i = size; i < iomsg_len; i++) {
-                    (iomsg)[i - 1] = ' ';
+                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
+                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                    (iomsg)[i] = ' ';
                 }
                 (iomsg)[iomsg_len] = '\0';
             }
@@ -3869,11 +3871,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             *iostat = 5002;
             if ((iomsg != NULL)&& (iomsg_len > 0)) {
                 char *temp = "ACCESS specifier in OPEN statement has invalid value.";
-                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
-                size += 1;   // endline char
-                snprintf(iomsg, size, "%s", temp);
-                for (size_t i = size; i < iomsg_len; i++) {
-                    (iomsg)[i - 1] = ' ';
+                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
+                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                    (iomsg)[i] = ' ';
                 }
                 (iomsg)[iomsg_len] = '\0';
             }
@@ -3894,11 +3894,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
-                size += 1;   // endline char
-                snprintf(iomsg, size, "%s", temp);
-                for (size_t i = size; i < iomsg_len; i++) {
-                    (iomsg)[i - 1] = ' ';
+                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
+                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
+                    (iomsg)[i] = ' ';
                 }
                 (iomsg)[iomsg_len] = '\0';
             }
@@ -3919,11 +3917,9 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
                 char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                int64_t size = iomsg_len > strlen(temp) ? strlen(temp) : iomsg_len;
-                size += 1;   // endline char
-                snprintf(iomsg, size, "%s", temp);
-                for (size_t i = size; i < iomsg_len; i++) {
-                    iomsg[i - 1] = ' ';
+                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
+                for (size_t i = strlen(iomsg); i < iomsg_len; i++) {
+                    iomsg[i] = ' ';
                 }
                 iomsg[iomsg_len] = '\0';
             }
@@ -4017,21 +4013,21 @@ LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool 
         FILE *fp = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, &read_access, &write_access);
         if (write != NULL) {
             if (write_access) {
-                strcpy(write, "YES");
+                _lfortran_copy_str_and_pad(write, write_len, "YES", 3);
             } else {
-                strcpy(write, "NO");
+                _lfortran_copy_str_and_pad(write, write_len, "NO", 2);
             }
         } if (read != NULL) {
             if (read_access) {
-                strcpy(read, "YES");
+                _lfortran_copy_str_and_pad(read, read_len, "YES", 3);
             } else {
-                strcpy(read, "NO");
+                _lfortran_copy_str_and_pad(read, read_len, "NO", 2);
             }
         } if (readwrite != NULL) {
             if (read_access && write_access) {
-                strcpy(readwrite, "YES");
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "YES", 3);
             } else {
-                strcpy(readwrite, "NO");
+                _lfortran_copy_str_and_pad(readwrite, readwrite_len, "NO", 2);
             }
         }
         *opened = (fp != NULL);
@@ -4998,6 +4994,7 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
         char *buffer = (char*)malloc((width + 1) * sizeof(char));
         if (fgets(buffer, width + 1, filep) == NULL) {
             *iostat = -1;
+            *chunk=0;
             va_end(args);
             free(buffer);
             return;

@@ -1315,7 +1315,9 @@ namespace LCompilers {
                     }
                     case ASR::array_physical_typeType::PointerToDataArray:
                     case ASR::array_physical_typeType::UnboundedPointerToDataArray : {
-                        llvm_type = get_el_type(v_type->m_type, module)->getPointerTo();
+                        llvm_type = get_el_type(v_type->m_type, module);
+                        llvm_type = ASRUtils::is_character(*v_type->m_type) ? llvm_type
+                            : llvm_type->getPointerTo();
                         break;
                     }
                     case ASR::array_physical_typeType::FixedSizeArray: {
@@ -1868,12 +1870,10 @@ namespace LCompilers {
     bool LLVMUtils::is_proper_array_of_strings_llvm_var([[maybe_unused]]ASR::ttype_t* type, [[maybe_unused]] llvm::Value* str){
         LCOMPILERS_ASSERT(ASRUtils::is_array(type))
         LCOMPILERS_ASSERT(ASRUtils::is_character(*type))
-        // str->print(llvm::outs());
         // std::cout<<str->getType()->isPointerTy() << " "
         //                     << !str->getType()->getPointerElementType()->isPointerTy() << " "
-        //                     << (str->getType() == llvm_utils->get_type_from_ttype_t_util(type, module.get())) << " "
+        //                     << (str->getType() == get_type_from_ttype_t_util(type, module)) << " "
         //                     << (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo()) << " ";
-
 #if LLVM_VERSION_MAJOR < 17
         ASR::String_t* str_type = ASRUtils::get_string_type(type);
         switch(ASRUtils::extract_physical_type(type)){
@@ -1881,11 +1881,8 @@ namespace LCompilers {
                 switch (str_type->m_physical_type){
                     // A pointer to the Array Descriptor => `{ %string_descriptor*, i32, %dimension_descriptor*, i1, i32 }`
                     case ASR::DescriptorString:{
-                        llvm::Type* llvm_type = get_type_from_ttype_t_util(
-                            type, module);
                         return str->getType()->isPointerTy() && 
                             !str->getType()->getPointerElementType()->isPointerTy() &&
-                            (str->getType() == llvm_type) && 
                             (str->getType()->getPointerElementType()->getContainedType(0) == string_descriptor->getPointerTo());
                     }
                     case ASR::CChar:{
@@ -1902,7 +1899,6 @@ namespace LCompilers {
                     case ASR::CChar : {
                         return str->getType()->isPointerTy() && 
                             !str->getType()->getPointerElementType()->isPointerTy() &&
-                            (get_StringType(type)->getPointerTo() == str->getType()) && 
                             (str->getType()->getPointerElementType() == get_StringType(type));
                     }
                     default:
@@ -2053,6 +2049,7 @@ namespace LCompilers {
         }
     }
     // >>>>>>>>>>>>>> Refactor this
+
     llvm::Value* LLVMUtils::get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len){
         LCOMPILERS_ASSERT(is_proper_string_llvm_variable(str_type, str))
         if(!get_pointer_to_len && str_type->m_len && ASRUtils::is_value_constant(str_type->m_len)){ // CompileTime-Constant Length
@@ -2464,6 +2461,100 @@ namespace LCompilers {
         }
     }
 
+// Ugly function
+// Refactor this (Try to use exisiting functinoalities)
+llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t, ASR::ArrayConstant_t* arrayConst_t, std::string name){
+    LCOMPILERS_ASSERT(array_t->m_physical_type == ASR::PointerToDataArray)
+    /*
+        Array of string is just consecutive characters in memory. It's of pointerToDataArray physicalType
+        We'll create fake duplicate-string type with length = OriginalStringLengthInArray * ArraySize 
+    */
+
+   std::string sequence("");
+    if(arrayConst_t){
+        sequence = std::string((char*)arrayConst_t->m_data, arrayConst_t->m_n_data);
+        // Insert null char between strings.
+        { // Remove once we remove dependency on null-char
+            int64_t str_len; ASRUtils::extract_value(ASRUtils::get_string_type(array_t->m_type)->m_len, str_len);
+            int64_t arr_size = ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t)*(str_len + 1);
+            for(int idx = str_len; idx < arr_size; (idx += (str_len + 1)) ){
+                sequence.insert(idx, "\0", 1);
+            }
+        }
+    }
+    ASR::ttype_t* fake_string_type = ASRUtils::duplicate_type(al, array_t->m_type);
+    { // Modify length
+        ASR::String_t* fake_string = ASR::down_cast<ASR::String_t>(fake_string_type);
+        LCOMPILERS_ASSERT(ASR::is_a<ASR::IntegerConstant_t>(*fake_string->m_len))
+        int64_t &fake_string_len = ASR::down_cast<ASR::IntegerConstant_t>(fake_string->m_len)->m_n;
+        fake_string_len*= ASRUtils::get_fixed_size_of_array((ASR::ttype_t*)array_t); 
+        { // Remove once we remove dependceny on null-char
+            fake_string_len += (ASRUtils::get_fixed_size_of_array( (ASR::ttype_t*)array_t ) - 1); // counted null-character inside
+        }
+    }
+        
+    ASR::String_t* str = ASRUtils::get_string_type(fake_string_type);
+    int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+    int64_t actual_len; ASRUtils::extract_value(ASRUtils::get_string_type(array_t->m_type)->m_len, actual_len);
+    sequence.resize(len,' '); // Pad 
+    llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, actual_len));
+    llvm::Constant* string_constant;
+    // setup global string constant (llvm array of i8)
+    switch(str->m_len_kind){
+        case ASR::DeferredLength:{
+            string_constant = llvm::ConstantPointerNull::get(character_type);
+            LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len) || 
+                str->m_len_kind == ASR::DeferredLength,
+                "Handle this case");
+            break;
+        }
+        case ASR::ExpressionLength:{
+            LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len), "Handle this case");
+            // Type -> [len x i8]
+            llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len + 1 /*null-char*/);
+            // [len x i8] c "DATA HERE\00"
+            llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, sequence, true);
+            // global [len x i8] c "DATA HERE\00"
+            llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
+                *module,
+                char_array_type,
+                false,
+                llvm::GlobalValue::PrivateLinkage,
+                const_data_as_array,
+                "_data"
+            );
+            llvm::Value *zero_const = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), 0);
+            // i8* getelementptr inbounds ( global [len x i8] c "DATA HERE\00", i32 0, i32 0)
+            llvm::Constant *char_ptr = llvm::ConstantExpr::getInBoundsGetElementPtr(
+                char_array_type,
+                global_string_as_array,
+                {zero_const, zero_const});
+            string_constant = char_ptr;
+            break;
+        }
+        default:
+            throw LCompilersException("Wrong physicalType for global string declaration");
+    }
+    // Declare the global string based on its physical type 
+    switch(str->m_physical_type) {
+        case ASR::DescriptorString:{
+            llvm::Constant* string_descriptor_constant = llvm::ConstantStruct::get(
+                llvm::dyn_cast<llvm::StructType>(string_descriptor), 
+                {string_constant, len_constant});
+            llvm::GlobalVariable* global_string_desc = new llvm::GlobalVariable(
+                    *module,
+                    string_descriptor, false,
+                    llvm::GlobalValue::PrivateLinkage,
+                    string_descriptor_constant,
+                    name);
+            return global_string_desc;
+        }
+        default:
+            throw LCompilersException("Unhandled string physical type");
+    }
+    return nullptr;
+
+}
     llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                               llvm::Module* module, ASR::ttype_t* asr_type) {
         switch( asr_type->type ) {

@@ -524,7 +524,7 @@ public:
                     character_type,
                     llvm_utils->create_gep2(string_descriptor, tmp, 0)); 
 
-                // Set length (Length could be explicit and definitly implicit)
+                // Set length (Length could be explicit OR implicit)
                 if(str->m_len && ASR::is_a<ASR::IntegerConstant_t>(*str->m_len)){ // Explicit-Constant Length
                     ASR::IntegerConstant_t* len = ASR::down_cast<ASR::IntegerConstant_t>(str->m_len);
                     llvm::Value* len_value = llvm::ConstantInt::get(context, llvm::APInt(64, len->m_n));
@@ -693,7 +693,7 @@ public:
             }
             case ASR::AssumedLength: 
                 LCOMPILERS_ASSERT_MSG(false,
-                    "Shouldn't allocate assumed length string variable ")
+                    "Shouldn't define assumed length string variable (They're only arguments) ")
                 break;
             case ASR::DeferredLength: 
                 // Do nothing, deferred length strings doesn't have information to set it up with.
@@ -726,8 +726,8 @@ public:
     }
 
     /*
-        Creates the string used for arrays of strings.
-        This sets the initial state of array's string. 
+        *Creates the string (based on stringPhysicalType) used for arrays of strings.
+        *This sets the initial state of the array's string. 
         - Creates a single string (based on the physical type).
         - If not allocatable, set data member with (array_size * string_length)
         - If not deferred length, Set length member.
@@ -1294,7 +1294,12 @@ public:
                     } else {
                         ASR::ttype_t* dest_asr_type = curr_arg.m_type;
                         if (m_source && !m_source_is_class) {
-                            dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
+                            if(ASRUtils::is_character(*ASRUtils::expr_type(m_source))){ //hackish (clean dest_type + src_type passed to deepcopy)
+                                ASRUtils::ASRBuilder b(al, x.base.base.loc) ;
+                                dest_asr_type = b.allocatable(b.String(nullptr, ASR::DeferredLength));
+                            } else {
+                                dest_asr_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(m_source));
+                            }
                         } else if (dest_asr_type == nullptr) {
                             // If no type specified then use curr_arg_m_a_type as default
                             dest_asr_type = ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc,
@@ -1348,7 +1353,7 @@ public:
                             this->visit_expr(*m_source);
                             ptr_loads = ptr_loads_copy;
 
-                            llvm_utils->deepcopy(tmp, x_arr, ASRUtils::expr_type(m_source), dest_asr_type, module.get(), name2memidx);
+                            llvm_utils->deepcopy(tmp, x_arr, dest_asr_type, dest_asr_type, module.get(), name2memidx);
                         }
                     }
                 }
@@ -3399,22 +3404,37 @@ public:
             }
             llvm_symtab[h] = ptr;
         } else if (x.m_type->type == ASR::ttypeType::Array) {
-            llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
-            llvm::Constant *ptr = module->getOrInsertGlobal(llvm_var_name, type);
-            if (!external) {
+            llvm::Constant *ptr{};
+            if(ASRUtils::is_character(*x.m_type)){
                 ASR::expr_t* value = nullptr;
                 if( x.m_value ) {
                     value = x.m_value;
                 } else if( x.m_symbolic_value &&
-                           ASRUtils::is_value_constant(x.m_symbolic_value) ) {
+                        ASRUtils::is_value_constant(x.m_symbolic_value) ) {
                     value = x.m_symbolic_value;
                 }
-                if (value) {
-                    llvm::Constant* initializer = get_const_array(value, type);
-                    module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
-                } else {
-                    module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                if(value){LCOMPILERS_ASSERT(ASR::is_a<ASR::ArrayConstant_t>(*value));}
+                ptr = llvm::cast<llvm::Constant>(llvm_utils->handle_global_nonallocatable_stringArray(al, 
+                    ASR::down_cast<ASR::Array_t>(x.m_type), value?ASR::down_cast<ASR::ArrayConstant_t>(value):nullptr, llvm_var_name));
+
+            } else {
+                llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_type, module.get());
+                ptr = module->getOrInsertGlobal(llvm_var_name, type);
+                if (!external) {
+                    ASR::expr_t* value = nullptr;
+                    if( x.m_value ) {
+                        value = x.m_value;
+                    } else if( x.m_symbolic_value &&
+                            ASRUtils::is_value_constant(x.m_symbolic_value) ) {
+                        value = x.m_symbolic_value;
+                    }
+                    if (value) {
+                        llvm::Constant* initializer = get_const_array(value, type);
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(initializer);
+                    } else {
+                        module->getNamedGlobal(llvm_var_name)->setInitializer(llvm::ConstantArray::getNullValue(type));
+                        set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    }
                 }
             }
             llvm_symtab[h] = ptr;
@@ -3437,18 +3457,20 @@ public:
             ASR::String_t* str = ASRUtils::get_string_type(x.m_type);
             llvm::Value *ptr{};
                 bool is_const = (x.m_storage == ASR::storage_typeType::Parameter);
-                if (x.m_symbolic_value) {
-                    ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_symbolic_value));
-                    int64_t len; ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, len);
-                    std::string initial_string_value (str_const->m_s, len);
+                if (!external) {
+                    std::string initial_string_value;
+                    if (x.m_symbolic_value) {
+                        ASR::StringConstant_t* str_const = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(x.m_symbolic_value));
+                        int64_t len; ASRUtils::extract_value(ASRUtils::get_string_type(str_const->m_type)->m_len, len);
+                        initial_string_value = std::string(str_const->m_s, len);
+                    } else {
+                        initial_string_value = "";
+                    }
                     ptr = llvm_utils->declare_global_string(str, initial_string_value,
                         is_const, llvm_var_name,
-                        external ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
+                        compiler_options.separate_compilation ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
                 } else {
-                    ptr = llvm_utils->declare_global_string(str, "",
-                    is_const, llvm_var_name,
-                    external ? llvm::GlobalValue::ExternalLinkage : llvm::GlobalValue::PrivateLinkage);
-                    set_global_variable_linkage_as_common(ptr, x.m_abi);
+                    ptr = module->getOrInsertGlobal(llvm_var_name, llvm_utils->get_StringType(x.m_type));
                 }
             llvm_symtab[h] = ptr;
         } else if( x.m_type->type == ASR::ttypeType::CPtr ) {
@@ -4167,7 +4189,7 @@ public:
                     }
                 } else if (ASR::is_a<ASR::StructType_t>(*symbol_type) && !ASRUtils::is_class_type(symbol_type)) {
                     allocate_array_members_of_struct(ptr_member, symbol_type, is_intent_out);
-                }  else if(ASRUtils::is_string_only(symbol_type)) {
+                }  else if(ASRUtils::is_string_only(symbol_type) && !is_intent_out) {
                     setup_string(ptr_member, symbol_type);
                 }
                 if( ASR::is_a<ASR::Variable_t>(*sym) ) {
@@ -9870,9 +9892,7 @@ public:
             iomsg_data = llvm::Constant::getNullValue(character_type);
             iomsg_len = llvm::ConstantInt::get(llvm::Type::getInt64Ty(context), 0);
         } if (x.m_action) {
-            ptr_loads = 1;
-            this->visit_expr_wrapper(x.m_action);
-            std::tie(action, action_len) = llvm_utils->get_string_length_data(ASRUtils::get_string_type(x.m_action), tmp);
+            std::tie(action, action_len) = get_string_data_and_length(x.m_action);
         } else {
             action = llvm::Constant::getNullValue(character_type);
             action_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));

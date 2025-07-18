@@ -5451,11 +5451,15 @@ public:
                 step = ASRUtils::EXPR(tmp);
                 step = CastingUtil::perform_casting(step, int_type, al, loc);
 
-                ASR::ttype_t *string_tt = ASRUtils::TYPE(ASR::make_String_t(
-                    al, loc, 1,
-                    ASRUtils::ASRBuilder(al, loc).Sub(r, l),
-                    ASR::ExpressionLength, 
-                    ASR::DescriptorString));
+                ASR::ttype_t *string_tt;
+                {
+                    ASRUtils::ASRBuilder b(al, loc);
+                    string_tt = ASRUtils::TYPE(ASR::make_String_t(
+                        al, loc, 1,
+                        b.Add(b.Sub(r, l), b.i_t(1, ASRUtils::expr_type(r))),
+                        ASR::ExpressionLength, 
+                        ASR::DescriptorString));
+                }
                 return ASR::make_StringSection_t(al, loc, array_item, l,
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
             } else {
@@ -7192,10 +7196,14 @@ public:
                 make_IntegerConstant_t, length, type, loc) : nullptr;
         }
 
-        std::string input_string;
-        if( ASRUtils::extract_string_value(ASRUtils::expr_value(v), input_string) ) {
-            len_compiletime = make_ConstantWithType(
-                make_IntegerConstant_t, input_string.size(), type, loc);
+        { // Try to get expression's string length (if exist)
+            ASR::String_t* string_t = ASRUtils::get_string_type(ASRUtils::expr_type(v));
+            int64_t len;
+            if( ASRUtils::extract_value(string_t->m_len, len) ) {
+                len_compiletime = make_ConstantWithType(make_IntegerConstant_t, len, type, loc);
+            } else {
+                len_compiletime = nullptr;
+            }
         }
         return ASR::make_StringLen_t(al, loc, v, type, len_compiletime);
     }
@@ -10796,21 +10804,29 @@ public:
             ASR::expr_t* right_value = ASRUtils::expr_value(right);
             if (left_value != nullptr && right_value != nullptr) {
                 ASR::ttype_t* left_value_type = ASRUtils::expr_type(left_value);
-                ASR::String_t* left_value_type2 = ASR::down_cast<ASR::String_t>(left_value_type);
+
                 char* left_value_ = ASR::down_cast<ASR::StringConstant_t>(left_value)->m_s;
                 char* right_value_ = ASR::down_cast<ASR::StringConstant_t>(right_value)->m_s;
+
+                int64_t left_value_len=-1; ASRUtils::extract_value(ASRUtils::get_string_type(left_value)->m_len, left_value_len);
+                int64_t right_value_len=-1; ASRUtils::extract_value(ASRUtils::get_string_type(right_value)->m_len, right_value_len);
+                
                 ASR::ttype_t *dest_value_type = ASR::down_cast<ASR::ttype_t>(
-                    ASR::make_String_t(al, x.base.base.loc, left_value_type2->m_kind, 
-                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, strlen(left_value_) + strlen(right_value_),
+                    ASR::make_String_t(al, x.base.base.loc, ASRUtils::get_string_type(left_value_type)->m_kind, 
+                        ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc, left_value_len + right_value_len,
                             ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)))),
                         ASR::string_length_kindType::ExpressionLength,
                         ASR::string_physical_typeType::DescriptorString));
                 char* result;
-                std::string result_s = std::string(left_value_) + std::string(right_value_);
-                Str s; s.from_str_view(result_s);
-                result = s.c_str(al);
-                int64_t len; ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(dest_value_type)->m_len, len);
-                LCOMPILERS_ASSERT((int64_t)strlen(result) == len)
+                { //Concat Both sides (Make sure to use actual length and don't depend on `\0`)
+                    std::string result_s;
+                    result_s= std::string(left_value_, left_value_len) + std::string(right_value_, right_value_len);
+                    Str s; s.from_str_view(result_s);
+                    result = s.c_str(al);
+                }
+                int64_t len;
+                LCOMPILERS_ASSERT(ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(dest_value_type)->m_len, len) && 
+                    ((left_value_len+right_value_len) == len))
                 value = ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(
                     al, x.base.base.loc, result, dest_value_type));
             }
@@ -11529,17 +11545,17 @@ public:
 
     void determine_char_len_and_kind(const AST::kind_item_t* len_item, const AST::kind_item_t* kind_item,
     AST::AttrType_t* type, AST::var_sym_t* var_sym, std::string& sym, ASR::String_t* str, bool is_argument, ASR::abiType abi) {
-    // Handle kind
+        // Handle kind
         if( kind_item &&
-            is_argument &&
-            abi == ASR::BindC &&
             AST::is_a<AST::Name_t>(*kind_item->m_value) && 
-            std::string(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char"){
+            std::string(AST::down_cast<AST::Name_t>(kind_item->m_value)->m_id) == "c_char" &&
+            is_argument &&
+            abi == ASR::BindC){
             str->m_physical_type = ASR::CChar;
         } else {
             str->m_physical_type = ASR::DescriptorString;
         }
-    // Handle length
+        // Handle length
         if(len_item){ // Standard Fortran Declaration. `character(len=10) :: str`
             // Set length of the string -> [`:`, `*`, `expr`]
             switch (len_item->m_type) {
