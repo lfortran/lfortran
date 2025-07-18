@@ -113,22 +113,23 @@ define i32 @main(i32 %0, i8** %1) {
   %16 = load i64, i64* %15, align 4
   %17 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %obj, i32 0, i32 1
   %18 = load %mytype*, %mytype** %17, align 8
-  %19 = getelementptr %__vtab_mytype, %__vtab_mytype* %2, i32 0, i32 0
-  %20 = load i64, i64* %19, align 4
-  %21 = icmp eq i64 %16, %20
-  br i1 %21, label %then, label %else
+  %19 = bitcast %__vtab_mytype* %2 to <{ i64 }>*
+  %20 = getelementptr <{ i64 }>, <{ i64 }>* %19, i32 0, i32 0
+  %21 = load i64, i64* %20, align 4
+  %22 = icmp eq i64 %16, %21
+  br i1 %22, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %22 = alloca %mytype_polymorphic, align 8
-  %23 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %22, i32 0, i32 0
-  store i64 %16, i64* %23, align 4
-  %24 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %22, i32 0, i32 1
-  store %mytype* %18, %mytype** %24, align 8
-  %25 = load i64, i64* %23, align 4
-  %26 = load %mytype*, %mytype** %24, align 8
-  store i64 %25, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
-  store %mytype* %26, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  call void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polymorphic* %22)
+  %23 = alloca %mytype_polymorphic, align 8
+  %24 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %23, i32 0, i32 0
+  store i64 %16, i64* %24, align 4
+  %25 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %23, i32 0, i32 1
+  store %mytype* %18, %mytype** %25, align 8
+  %26 = load i64, i64* %24, align 4
+  %27 = load %mytype*, %mytype** %25, align 8
+  store i64 %26, i64* getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 0), align 4
+  store %mytype* %27, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
+  call void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polymorphic* %23)
   br label %ifcont
 
 else:                                             ; preds = %.entry
