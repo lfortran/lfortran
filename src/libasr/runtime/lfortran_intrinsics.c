@@ -28,6 +28,16 @@
 
 #include <libasr/runtime/lfortran_intrinsics.h>
 #include <libasr/config.h>
+
+#if defined (WITH_LFORTRAN_ASSERT)
+    #define lfortran_assert(cond, msg)\
+        if(!(cond)){\
+            lfortran_error(msg);\
+        }
+#else
+    #define lfortran_assert(cond, msg) ((void)0)
+#endif
+
 #ifdef HAVE_RUNTIME_STACKTRACE
 
 #ifdef COMPILE_TO_WASM
@@ -76,14 +86,6 @@ struct Stacktrace {
     uint64_t stack_size;
 };
 
-#if defined (WITH_LFORTRAN_ASSERT)
-    #define lfortran_assert(cond, msg)\
-        if(!(cond)){\
-            lfortran_error(msg);\
-        }
-#else
-    #define lfortran_assert(cond, msg) ((void)0)
-#endif
 
 // Styles and Colors
 #define DIM "\033[2m"
