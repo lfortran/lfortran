@@ -1895,10 +1895,10 @@ public:
         ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
             try {
-            this->visit_unit_decl2(*x.m_items[i]);
+                this->visit_unit_decl2(*x.m_items[i]);
             } catch (const SemanticAbort&) {
                 current_scope = parent_scope;
-                return;
+                throw;
             }
         }
         for (size_t i=0; i<x.n_contains; i++) {
