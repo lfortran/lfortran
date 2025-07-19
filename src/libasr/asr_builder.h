@@ -437,7 +437,7 @@ class ASRBuilder {
 
     ASR::expr_t *And(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -456,7 +456,7 @@ class ASRBuilder {
 
     ASR::expr_t *Or(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -475,7 +475,7 @@ class ASRBuilder {
 
     ASR::expr_t *Xor(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -493,7 +493,7 @@ class ASRBuilder {
     }
 
     ASR::expr_t *Not(ASR::expr_t *x) {
-        ASR::ttype_t *type = expr_type(x);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(x));
         switch (type->type) {
             case ASR::ttypeType::Integer: {
                 return EXPR(ASR::make_IntegerBitNot_t(al, loc, x, type, nullptr));
@@ -511,7 +511,7 @@ class ASRBuilder {
 
     ASR::expr_t *Add(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer : {
@@ -540,7 +540,7 @@ class ASRBuilder {
 
     ASR::expr_t *Sub(ASR::expr_t *left, ASR::expr_t *right, ASR::expr_t* value = nullptr) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = extract_type(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -565,7 +565,7 @@ class ASRBuilder {
 
     ASR::expr_t *Mul(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -604,7 +604,7 @@ class ASRBuilder {
 
     ASR::expr_t *Div(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
@@ -629,7 +629,7 @@ class ASRBuilder {
 
     ASR::expr_t *Pow(ASR::expr_t *left, ASR::expr_t *right) {
         LCOMPILERS_ASSERT(check_equal_type(expr_type(left), expr_type(right)));
-        ASR::ttype_t *type = expr_type(left);
+        ASR::ttype_t *type = type_get_past_allocatable_pointer(expr_type(left));
         ASRUtils::make_ArrayBroadcast_t_util(al, loc, left, right);
         switch (type->type) {
             case ASR::ttypeType::Integer: {
