@@ -1965,7 +1965,7 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             //     res = symbol_name(d->m_derived_type);
             // }
             if ( expr != nullptr ) {
-                ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(expr);
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr));
                 res = symbol_name(sym);
             } else {
                 res = "StructType";
@@ -5330,7 +5330,7 @@ static inline bool is_unlimited_polymorphic_type(ASR::expr_t* expr)
 
     return (st->n_data_member_types == 0 && st->n_member_function_types == 0
             && ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(
-                   ASRUtils::get_struct_sym_from_struct_expr(expr)))
+                   ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr))))
                    == std::string("~unlimited_polymorphic_type"));
 }
 
@@ -5576,7 +5576,7 @@ static inline void import_struct_t(Allocator& al,
     ASR::ttype_t* var_type_unwrapped = ASRUtils::type_get_past_allocatable(
         ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_array(var_type)));
     if( var && ASR::is_a<ASR::StructType_t>(*var_type_unwrapped) && !ASRUtils::is_class_type(var_type_unwrapped) ) {
-        ASR::symbol_t* der_sym = ASRUtils::get_struct_sym_from_struct_expr(var);
+        ASR::symbol_t* der_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var));
         if( (ASR::asr_t*) ASRUtils::get_asr_owner(der_sym) != current_scope->asr_owner ) {
             std::string sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(der_sym));
             if( current_scope->resolve_symbol(sym_name) == nullptr ) {

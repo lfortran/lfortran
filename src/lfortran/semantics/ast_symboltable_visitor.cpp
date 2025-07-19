@@ -1985,7 +1985,7 @@ public:
             if (item.first != "~unlimited_polymorphic_type") {
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, item.second)));
+                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, item.second))));
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                     ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
@@ -2574,7 +2574,7 @@ public:
 
     bool arg_type_equal_to_class(ASR::expr_t* var_expr, ASR::symbol_t* clss_sym) {
         if (ASRUtils::is_class_type(ASRUtils::expr_type(var_expr))) {
-            ASR::symbol_t* var_type_clss_sym = ASRUtils::get_struct_sym_from_struct_expr(var_expr);
+            ASR::symbol_t* var_type_clss_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(var_expr));
             while (var_type_clss_sym) {
                 if (var_type_clss_sym == clss_sym) {
                     return true;

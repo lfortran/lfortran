@@ -2598,7 +2598,7 @@ public:
             ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol);
             std::string struct_var_name = base_struct_instance_name + common_block_name;
             ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
-                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, current_scope->get_symbol(common_block_name),
+                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, struct_symbol,
                                         ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
             current_scope->add_symbol(struct_var_name, struct_var_sym);
 
@@ -6812,7 +6812,7 @@ public:
         if( parent == nullptr ) {
             if ( ASR::is_a<ASR::StructType_t>(*dt_type) ) {
                 der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(dt_expr)));
+                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(dt_expr))));
             } else {
                 diag.add(Diagnostic("Variable '" + dt_name + "' is not a derived type",
                     Level::Error, Stage::Semantic, {Label("", {loc})}));
@@ -10524,7 +10524,7 @@ public:
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(first_operand))) {
             first_struct = ASR::down_cast<ASR::Struct_t>(
                 ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(first_operand)
+                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(first_operand))
                 )
             );
         }

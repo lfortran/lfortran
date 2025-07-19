@@ -248,7 +248,7 @@ namespace CUtils {
 
     static inline std::string get_struct_type_code(ASR::expr_t* struct_expr) {
         ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(
-            ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+            ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(struct_expr)));
         return ASRUtils::symbol_name(v->m_type_declaration);
     }
 
@@ -836,7 +836,7 @@ class CCPPDSUtils {
 
         void struct_deepcopy(ASR::expr_t* struct_expr) {
             ASR::ttype_t* struct_type_asr = ASRUtils::expr_type(struct_expr);
-            ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::get_struct_sym_from_struct_expr(struct_expr));
+            ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(struct_expr)));
             std::string struct_type_code = CUtils::get_struct_type_code(struct_expr);
             std::string indent(indentation_level * indentation_spaces, ' ');
             std::string tab(indentation_spaces, ' ');

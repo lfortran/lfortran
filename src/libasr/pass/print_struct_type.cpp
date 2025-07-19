@@ -88,7 +88,7 @@ public:
             is_struct_type(x_m_value)
             {
                 ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
-                    ASRUtils::get_struct_sym_from_struct_expr(x_m_value));
+                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x_m_value)));
                 if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
                     ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
                     print_struct_type(x_m_value, struct_type_t, new_values);
