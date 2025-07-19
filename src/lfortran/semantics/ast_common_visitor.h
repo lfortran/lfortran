@@ -3889,6 +3889,9 @@ public:
                         } else {
                             symbol_variable->m_type = type;
                         }
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
+                            symbol_variable->m_type_declaration = type_declaration;
+                        }
                     }
                 }
 
