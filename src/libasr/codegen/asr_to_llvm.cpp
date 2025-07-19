@@ -5645,12 +5645,9 @@ public:
                 builder->CreateStore(struct_value, llvm_target);
             } else if( is_target_class && is_value_class ) {
                 std::string value_struct_t_name = "";
-                ASR::Struct_t* value_struct_t = nullptr;
-                if ( ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))) ) {
-                    value_struct_t = ASR::down_cast<ASR::Struct_t>(
+                ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))));
-                    value_struct_t_name = value_struct_t->m_name;
-                }
+                value_struct_t_name = value_struct_t->m_name;
                 LCOMPILERS_ASSERT(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))
                                   == ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)));
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
@@ -10636,6 +10633,12 @@ public:
                             tmp = llvm_utils->CreateLoad(tmp);
                         }
                     }
+                }
+                if (ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type)) &&
+                        !LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(orig_arg->m_type, module.get());
+                    tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
                 }
                 llvm::Value *value = tmp;
                 if (orig_arg_intent == ASR::intentType::In ||
