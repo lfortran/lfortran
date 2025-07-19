@@ -125,6 +125,7 @@ struct CompilerOptions {
     bool use_loop_variable_after_loop = false;
     std::string target = "";
     std::string arg_o = "";
+    std::vector<std::string> arg_submodules;
     bool emit_debug_info = false;
     bool emit_debug_line_column = false;
     bool enable_cpython = false;
