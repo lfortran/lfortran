@@ -1,5 +1,0 @@
-semantic error: Variable `n` cannot appear in the expression as it is not a constant
- --> tests/errors/type_dim_01.f90:7:27
-  |
-7 |       integer :: elements(n)
-  |                           ^ 
