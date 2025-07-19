@@ -2588,8 +2588,6 @@ public:
     void ensure_matching_types_for_pass_obj_dum_arg(ASR::Function_t* func, char* pass_arg_name, ASR::symbol_t* clss_sym, Location &loc) {
         if (pass_arg_name == nullptr) {
             std::cout<<"here"<<std::endl;
-            std::cout<<"func->m_name: "<<func->m_name<<std::endl;
-            std::cout<<"ASRUtils::symbol_name(class_sym) : "<<ASRUtils::symbol_name(clss_sym)<<std::endl;
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
             if (func_type->n_arg_types == 0 ||
                 !arg_type_equal_to_class(func->m_args[0], clss_sym)) {

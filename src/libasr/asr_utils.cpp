@@ -275,6 +275,20 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::StringPhysicalCast_t* string_physical_cast = ASR::down_cast<ASR::StringPhysicalCast_t>(expression);
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(string_physical_cast->m_arg));
         }
+        case ASR::exprType::IntrinsicImpureFunction: {
+            ASR::IntrinsicImpureFunction_t* intrinsic_impure_function = ASR::down_cast<ASR::IntrinsicImpureFunction_t>(expression);
+            for (size_t i = 0; i < intrinsic_impure_function->n_args; i++) {
+                ASR::expr_t* arg = intrinsic_impure_function->m_args[i];
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg));
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            // If no struct symbol found in arguments, return nullptr
+            return nullptr;
+        }
         case ASR::exprType::IntrinsicElementalFunction: {
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function = ASR::down_cast<ASR::IntrinsicElementalFunction_t>(expression);
             for (size_t i = 0; i < intrinsic_elemental_function->n_args; i++) {
@@ -440,6 +454,20 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 return nullptr; // If no struct symbol found in either side
             }
         }
+        case ASR::exprType::OverloadedCompare: {
+            ASR::OverloadedCompare_t* overloaded_compare = ASR::down_cast<ASR::OverloadedCompare_t>(expression);
+            ASR::symbol_t* left_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_left));
+            ASR::symbol_t* right_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_right));
+            if (left_struct_sym != nullptr) {
+                return left_struct_sym;
+            } else if (right_struct_sym != nullptr) {
+                return right_struct_sym;
+            } else if ( overloaded_compare->m_value != nullptr ) {
+                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_value));
+            } else {
+                return nullptr; // If no struct symbol found in either side
+            }
+        }
         case ASR::exprType::OverloadedStringConcat: {
             ASR::OverloadedStringConcat_t* overloaded_string_concat = ASR::down_cast<ASR::OverloadedStringConcat_t>(expression);
             ASR::symbol_t* left_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_left));
@@ -465,6 +493,18 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         case ASR::exprType::ComplexIm: {
             ASR::ComplexIm_t* complex_im = ASR::down_cast<ASR::ComplexIm_t>(expression);
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(complex_im->m_arg));
+        }
+        case ASR::exprType::StringLen: {
+            ASR::StringLen_t* string_len = ASR::down_cast<ASR::StringLen_t>(expression);
+            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(string_len->m_arg));
+        }
+        case ASR::exprType::ComplexUnaryMinus: {
+            ASR::ComplexUnaryMinus_t* complex_unary_minus = ASR::down_cast<ASR::ComplexUnaryMinus_t>(expression);
+            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(complex_unary_minus->m_arg));
+        }
+        case ASR::exprType::Iachar: {
+            ASR::Iachar_t* iachar = ASR::down_cast<ASR::Iachar_t>(expression);
+            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(iachar->m_arg));
         }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
