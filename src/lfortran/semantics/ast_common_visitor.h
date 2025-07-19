@@ -389,7 +389,7 @@ class ImpliedDoLoopValuesVisitor : public ASR::BaseWalkVisitor<ImpliedDoLoopValu
         return name2signature_varargs.at(id);
     }
     // handle intrinsic elemental function
-    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {
+    void visit_IntrinsicElementalFunction(const ASR::IntrinsicElementalFunction_t &x) {;
         Vec<ASR::expr_t*> args; args.reserve(al, x.n_args);
         for (size_t i = 0; i < x.n_args; i++) {
             ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
@@ -2196,6 +2196,14 @@ public:
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        // Get the Type of Array
+        // If object is Real, set current_variable_type to Real
+        // This type flag is passed to Visit_BOZ, 
+        // so that Real Values are correctly decoded from BOZ String
+        ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        if (ASR::is_a<ASR::Real_t>(*array_type->m_type)) {
+            current_variable_type_ = array_type->m_type;
+        }
         if (check_equal_value(a->m_value, a->n_value)) {
             /*
                 Case:
@@ -2213,6 +2221,7 @@ public:
             */
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            current_variable_type_ = temp_current_variable_type_;
             if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
                 diag.add(Diagnostic(
                     "Type mismatch during data initialization",
@@ -2273,6 +2282,7 @@ public:
                 }
 
             }
+            current_variable_type_ = temp_current_variable_type_;
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
             ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
@@ -2374,8 +2384,17 @@ public:
                     }
                 }
                 ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+                // Get the Type of Object
+                // If object is Real, set current_variable_type to Real
+                // This type flag is passed to Visit_BOZ, 
+                // so that Real Values are correctly decoded from BOZ String
+                if (ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) {
+                    current_variable_type_ = array_item_expr->m_type;
+                }
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                current_variable_type_ = temp_current_variable_type_;
                 ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
                 ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
                                                                                     target, value, nullptr, compiler_options.po.realloc_lhs)
@@ -3981,7 +4000,7 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-
+                    
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
                         if( ASRUtils::is_value_constant(value) ) {
@@ -8990,6 +9009,7 @@ public:
         const AST::FuncCallOrArray_t &x,
         Allocator &al
     ) {
+
         ASR::asr_t* asr_node { nullptr };
         std::string var_name = to_lower(x.m_func);
         Vec<ASR::call_arg_t> args;
