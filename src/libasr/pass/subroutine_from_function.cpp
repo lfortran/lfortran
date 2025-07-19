@@ -65,6 +65,42 @@ public :
                 ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
                     to_be_deallocated.p, to_be_deallocated.size())));
             }
+            // Create allocate statement if needed
+            if(ASRUtils::is_string_only(x->m_type)){ 
+                ASR::String_t* str = ASRUtils::get_string_type(result_var);
+                if( str->m_len &&
+                !ASRUtils::is_value_constant(str->m_len) &&
+                !ASRUtils::is_allocatable(result_var)){ // Corresponds to -> `character(n) :: str` (Non-allocatable string of non-compile-time length)
+                    ASR::expr_t* len_expr_to_allocate_with = str->m_len; // length Expression
+                    {
+                    /*
+                        Replace allocate length (could be a functionCall).
+                        TODO :: Do proper replacement if functionCall is dependant on FunctionParam from the current functionCall,
+                        as the current visit does redundant functionCall replacement(FunctionCall + variable).
+                    */ 
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = &len_expr_to_allocate_with;
+                        replace_expr(len_expr_to_allocate_with);
+                        current_expr = current_expr_copy;
+                    }
+                    // Modify String info to be deferred allocatable string
+                    str->m_len = nullptr; str->m_len_kind = ASR::DeferredLength;str->m_physical_type = ASR::DescriptorString;
+                    ASRUtils::EXPR2VAR(result_var)->m_type =
+                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, str->base.base.loc, ASRUtils::EXPR2VAR(result_var)->m_type));
+                    // Create allocate statement
+                    Vec<ASR::alloc_arg_t> v;
+                    v.reserve(al, 1);
+                    ASR::alloc_arg_t alloc_arg{};
+                    alloc_arg.m_a = result_var;
+                    alloc_arg.m_dims = nullptr;
+                    alloc_arg.n_dims = 0;
+                    alloc_arg.m_len_expr = len_expr_to_allocate_with;
+                    alloc_arg.m_type = nullptr;
+                    v.push_back(al, alloc_arg);
+                    pass_result.push_back(al,
+                        ASRUtils::STMT(ASR::make_Allocate_t(al, str->base.base.loc, v.p, 1, nullptr, nullptr, nullptr)));    
+                }
+            }
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
             new_call_args.reserve(al,1);

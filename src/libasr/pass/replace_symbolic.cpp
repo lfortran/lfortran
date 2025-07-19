@@ -200,13 +200,17 @@ public:
     ASR::expr_t* basic_str(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_str_sym = create_bindc_function(loc,
             "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
+             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString)));
+                ASR::string_physical_typeType::CChar)));
         return FunctionCall(loc, basic_str_sym, {x},
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
+             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString)));
+                ASR::string_physical_typeType::CChar)));
     }
 
     ASR::expr_t* basic_get_type(const Location& loc, ASR::expr_t* value) {
@@ -237,9 +241,11 @@ public:
     ASR::stmt_t *symbol_set(const Location &loc, ASR::expr_t *target, ASR::expr_t *value) {
         ASR::symbol_t* symbol_set_sym = create_bindc_function(loc, "symbol_set",
             {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
-            ASR::make_String_t(al, loc, 1, nullptr,
+            ASR::make_String_t(al, loc, 1, 
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString))});
+                ASR::string_physical_typeType::CChar))});
         return SubroutineCall(loc, symbol_set_sym, {target, value});
     }
 
@@ -490,7 +496,7 @@ public:
                     1, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, error_str.size(),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)))),
                     ASR::string_length_kindType::ExpressionLength,
-                    ASR::string_physical_typeType::PointerString));
+                    ASR::string_physical_typeType::DescriptorString));
                 ASR::expr_t* error = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, error_str), str_type));
                 ASR::stmt_t *stmt3 = ASRUtils::STMT(ASR::make_Assert_t(al, loc, test, error));
                 pass_result.push_back(al, stmt3);

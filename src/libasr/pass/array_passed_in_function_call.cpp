@@ -240,6 +240,21 @@ public:
             ASR::ArrayConstructor_t* arr_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(value);
             value_m_dims->m_length = ASRUtils::get_ArrayConstructor_size(al, arr_constructor);
         }
+
+        /*
+            Handle character type with assumed length OR functioncall (to avoid duplicate calls).
+            `character(*), intent(in) :: inp_char_arr(:)` --TempType--> `character(len(inp_char_arr)), intent(in) :: tmp(:)`
+        */
+        if(ASRUtils::is_character(*value_type)){
+            if(ASRUtils::get_string_type(value_type)->m_len_kind == ASR::AssumedLength || 
+                (ASRUtils::get_string_type(value_type)->m_len &&
+                    ASR::is_a<ASR::FunctionCall_t>(*ASRUtils::get_string_type(value_type)->m_len)
+                )
+            ){
+                ASRUtils::ASRBuilder b(al, value->base.loc);
+                value_type = b.String(b.StringLen(value), ASR::ExpressionLength);             
+            }
+        }
         bool is_fixed_sized_array = ASRUtils::is_fixed_size_array(value_type);
         bool is_size_only_dependent_on_arguments = ASRUtils::is_dimension_dependent_only_on_arguments(
             value_m_dims, value_n_dims);
@@ -266,14 +281,17 @@ public:
     bool set_allocation_size(
         Allocator& al, ASR::expr_t* value,
         Vec<ASR::dimension_t>& allocate_dims,
-        size_t target_n_dims
+        size_t target_n_dims,
+        ASR::expr_t* &len_expr /*allocate(character(len(x)) :: y(size(x)))*/
     ) {
         if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
             return false;
         }
+
         const Location& loc = value->base.loc;
         ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                     al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
+        
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(value)) ) {
             ASR::dimension_t* m_dims = nullptr;
             size_t n_dims = ASRUtils::extract_dimensions_from_ttype(
@@ -287,6 +305,13 @@ public:
                 allocate_dims.push_back(al, allocate_dim);
             }
             return true;
+        }
+        if(ASRUtils::is_character(*ASRUtils::expr_type(value))){
+            bool is_const_len = ASRUtils::is_value_constant(ASRUtils::get_string_type(value)->m_len);
+            len_expr = ASRUtils::EXPR(ASR::make_StringLen_t(al, 
+                value->base.loc, value, 
+                ASRUtils::TYPE(ASR::make_Integer_t(al, value->base.loc, 4)),
+                is_const_len ? ASRUtils::get_string_type(value)->m_len : nullptr));
         }
         switch( value->type ) {
             case ASR::exprType::FunctionCall: {
@@ -780,8 +805,9 @@ public:
                     // This should be always true as we pass `true` to `create_temporary_variable_for_array`
                     ASRUtils::ASRBuilder b(al, arg_expr_past_cast->base.loc);
                     Vec<ASR::dimension_t> allocate_dims; allocate_dims.reserve(al, 1);
+                    ASR::expr_t* len_expr{}; // Character length to allocate with
                     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(array_var_temporary));
-                    if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims) ) {
+                    if( !set_allocation_size(al, arg_expr_past_cast, allocate_dims, target_n_dims, len_expr) ) {
                         current_body->push_back(al, ASRUtils::STMT(ASR::make_Associate_t(
                             al, loc, array_var_temporary, arg_expr_past_cast)));
                         return;
@@ -793,7 +819,7 @@ public:
                     alloc_arg.m_a = array_var_temporary;
                     alloc_arg.m_dims = allocate_dims.p;
                     alloc_arg.n_dims = allocate_dims.size();
-                    alloc_arg.m_len_expr = nullptr;
+                    alloc_arg.m_len_expr = len_expr;
                     alloc_arg.m_type = nullptr;
                     alloc_arg.m_sym_subclass = nullptr;
                     alloc_args.push_back(al, alloc_arg);

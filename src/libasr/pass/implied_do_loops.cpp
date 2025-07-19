@@ -643,11 +643,13 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                     args.reserve(al, 1);
                     args.push_back(al, x->m_values[i]);
                     ASR::expr_t* fmt_val = ASRUtils::EXPR(ASR::make_StringFormat_t(al,x->base.base.loc, nullptr,
-                        args.p, 1,ASR::string_format_kindType::FormatFortran,
-                        ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
-                        nullptr,
-                        ASR::string_length_kindType::ExpressionLength,
-                        ASR::string_physical_typeType::CString)), nullptr));
+                        args.p, 1, ASR::string_format_kindType::FormatFortran,
+                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, x->base.base.loc, 
+                            ASRUtils::TYPE(ASR::make_String_t(al,x->base.base.loc, 1,
+                                nullptr,
+                                ASR::string_length_kindType::DeferredLength,
+                                ASR::string_physical_typeType::DescriptorString)))),
+                        nullptr));
                     print_values.push_back(al, fmt_val);
                     if ( print ) {
                         stmt = ASRUtils::STMT(ASRUtils::make_print_t_util(al, x->m_values[i]->base.loc, print_values.p, print_values.size()));
@@ -674,7 +676,7 @@ class ArrayConstantVisitor : public ASR::CallReplacerOnExpressionsVisitor<ArrayC
                 integer :: i
                 print *, [(i, i=1, 10)]
             */
-            if(ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(x.m_text))){
+            if(ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::expr_type(x.m_text)))){
                 ASR::Print_t* print_stmt = const_cast<ASR::Print_t*>(&x);
                 ASR::expr_t** current_expr_copy_9 = current_expr;
                 current_expr = const_cast<ASR::expr_t**>(&(print_stmt->m_text));
