@@ -907,7 +907,7 @@ class ParallelRegionVisitor :
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // create tdata variable: `type(thread_data), pointer :: tdata`
-            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
+            ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym, false))),
                     ASR::intentType::Local, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
@@ -1701,7 +1701,7 @@ class ParallelRegionVisitor :
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym, false), ASR::intentType::Local);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
@@ -3162,7 +3162,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> task_call_args; 
             task_call_args.reserve(al, 8);
             ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_));
+            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_, nullptr));
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = c_funloc;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = task_ptr_expr;
             ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = tmp_1;
