@@ -631,7 +631,7 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
   $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o &&
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o &&
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o &&
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o &&
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -652,7 +652,7 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
   $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o &&
   $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o &&
   $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o &&
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o &&
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 ##########################
@@ -676,7 +676,7 @@ time_section "🧪 Testing dftatom" '
 
   git clean -dfx &&
   make -f Makefile.manual F90=$FC F90FLAGS="-I../../src --separate-compilation --fast" &&
-  make -f Makefile.manual quicktest &&
+  make -f Makefile.manual quicktest
 '
 
 
@@ -800,7 +800,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd .. &&
 
-        rm -rf fastGPT/ &&
+        rm -rf fastGPT/
     fi
 '
 
