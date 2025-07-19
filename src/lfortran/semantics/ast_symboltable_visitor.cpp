@@ -4,7 +4,6 @@
 #include <string>
 #include <cmath>
 #include <queue>
-
 #include <lfortran/ast.h>
 #include <libasr/asr.h>
 #include <libasr/asr_utils.h>
@@ -1916,6 +1915,13 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
 
+        ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        if (compiler_options.implicit_typing) {
+            parent_scope->add_or_overwrite_symbol(sym_name, derived_type_sym);
+        } else {
+            parent_scope->add_symbol(sym_name, derived_type_sym);
+        }
+
         // Resolve type-declaration for self-pointing variable declarations inside structs and
         // variables declared with deferred struct declarations. For an example, see
         // `integration_tests/modules_37.f90` for declaration of `ptr` inside struct
@@ -1923,17 +1929,22 @@ public:
         if (vars_with_deferred_struct_declaration.find(to_lower(x.m_name))
             != vars_with_deferred_struct_declaration.end()) {
             for (ASR::Variable_t* var : vars_with_deferred_struct_declaration[to_lower(x.m_name)]) {
+                ASR::ttype_t* var_type = var->m_type;
+                if ( ASR::is_a<ASR::Pointer_t>(*var_type) ) {
+                    ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(var_type);
+                    ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(ptr->m_type));
+                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
+                    var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
+                    if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
+                        ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
+                        ptr_null->m_type = var->m_type;
+                    }
+                }
                 var->m_type_declaration = ASR::down_cast<ASR::symbol_t>(tmp);
             }
             vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
 
-        ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
-        if (compiler_options.implicit_typing) {
-            parent_scope->add_or_overwrite_symbol(sym_name, derived_type_sym);
-        } else {
-            parent_scope->add_symbol(sym_name, derived_type_sym);
-        }
 
         current_scope = parent_scope;
         is_derived_type = false;
@@ -2576,6 +2587,9 @@ public:
 
     void ensure_matching_types_for_pass_obj_dum_arg(ASR::Function_t* func, char* pass_arg_name, ASR::symbol_t* clss_sym, Location &loc) {
         if (pass_arg_name == nullptr) {
+            std::cout<<"here"<<std::endl;
+            std::cout<<"func->m_name: "<<func->m_name<<std::endl;
+            std::cout<<"ASRUtils::symbol_name(class_sym) : "<<ASRUtils::symbol_name(clss_sym)<<std::endl;
             ASR::FunctionType_t* func_type = ASRUtils::get_FunctionType(*func);
             if (func_type->n_arg_types == 0 ||
                 !arg_type_equal_to_class(func->m_args[0], clss_sym)) {
@@ -2681,6 +2695,7 @@ public:
                     pass_arg_name = s2c(al, pname.second["pass"].name);
                 }
                 if (!is_nopass) {
+                    std::cout<<"pass_arg_name: "<<(pass_arg_name ? pass_arg_name : "nullptr")<<std::endl;
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
                 ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,

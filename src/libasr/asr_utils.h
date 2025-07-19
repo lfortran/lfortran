@@ -3017,6 +3017,19 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
         if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                 ASRUtils::symbol_get_past_external(sym.second));
+            if (ASRUtils::symbol_get_past_external(derived_type_sym) == ASRUtils::symbol_get_past_external(var->m_type_declaration)) {
+                // this is self referential, so we can directly take it
+                ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var->m_type));
+                return ASRUtils::TYPE(
+                    ASR::make_StructType_t(al, loc, stype->m_data_member_types,
+                                           stype->n_data_member_types,
+                                           stype->m_member_function_types,
+                                           stype->n_member_function_types,
+                                           is_cstruct == false ? false : stype->m_is_cstruct,
+                                           stype->m_is_unlimited_polymorphic
+                                           )
+                );
+            }
             member_types.push_back(al, var->m_type);
         } else if (ASR::is_a<ASR::ClassProcedure_t>(*sym.second)) {
             ASR::ClassProcedure_t* c_proc = ASR::down_cast<ASR::ClassProcedure_t>(
