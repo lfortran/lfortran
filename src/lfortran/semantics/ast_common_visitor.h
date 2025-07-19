@@ -3869,6 +3869,52 @@ public:
                         }
                         if( is_derived_type ) {
                             data_member_names.push_back(al, s2c(al, to_lower(s.m_name)));
+                            if ( s.n_dim > 0 && !is_template) {
+                                for (size_t dim_i = 0; dim_i < s.n_dim; dim_i++) {
+                                    AST::dimension_t& dim = s.m_dim[dim_i];
+                                    if (dim.m_start != nullptr &&
+                                        AST::is_a<AST::Name_t>(*dim.m_start)) {
+                            
+                                        AST::Name_t* start_var = AST::down_cast<AST::Name_t>(dim.m_start);
+                                        std::string dim_var_name = to_lower(std::string(start_var->m_id));
+                            
+                                        ASR::symbol_t* found_sym = current_scope->resolve_symbol(dim_var_name);
+                                        if (found_sym && ASR::is_a<ASR::Variable_t>(*found_sym)) {
+                                            ASR::Variable_t* dim_var = ASR::down_cast<ASR::Variable_t>(found_sym);
+                                            if (dim_var->m_storage != ASR::storage_typeType::Parameter) {
+                                                diag.add(Diagnostic(
+                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression as it is not a constant.",
+                                                    Level::Error, Stage::Semantic, {
+                                                        Label("", {dim.m_start->base.loc}),
+                                                    }
+                                                ));
+                                                throw SemanticAbort();
+                                            }
+                                        }
+                                    }
+                            
+                                    if (dim.m_end != nullptr &&
+                                        AST::is_a<AST::Name_t>(*dim.m_end)) {
+                            
+                                        AST::Name_t* end_var = AST::down_cast<AST::Name_t>(dim.m_end);
+                                        std::string dim_var_name = to_lower(std::string(end_var->m_id));
+                            
+                                        ASR::symbol_t* found_sym = current_scope->resolve_symbol(dim_var_name);
+                                        if (found_sym && ASR::is_a<ASR::Variable_t>(*found_sym)) {
+                                            ASR::Variable_t* dim_var = ASR::down_cast<ASR::Variable_t>(found_sym);
+                                            if (dim_var->m_storage != ASR::storage_typeType::Parameter) {
+                                                diag.add(Diagnostic(
+                                                    "Variable `"+ dim_var_name + "` cannot appear in the expression as it is not a constant",
+                                                    Level::Error, Stage::Semantic, {
+                                                        Label("", {dim.m_end->base.loc}),
+                                                    }
+                                                ));
+                                                throw SemanticAbort();
+                                            }
+                                        }
+                                    }
+                                }
+                            }
                         }
                     } else if ( is_implicitly_declared ) {
                         ASR::symbol_t* symbol = current_scope->get_symbol(sym);

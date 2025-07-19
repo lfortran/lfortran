@@ -110,10 +110,10 @@ program continue_compilation_1
     integer, parameter, protected :: protected_parameter_var
     type(MyClass) :: v1, v2, v3
     type(MyClass) :: arr(3)
-
-
-
-
+    integer :: n = 2
+    type :: matrix
+      integer :: elements(n)
+    end type
 
 
 

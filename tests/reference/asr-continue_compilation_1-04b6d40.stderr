@@ -105,6 +105,12 @@ semantic error: `protected` attribute is only allowed in specification part of a
 110 |     integer, parameter, protected :: protected_parameter_var
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Variable `n` cannot appear in the expression as it is not a constant
+   --> tests/errors/continue_compilation_1.f90:115:27
+    |
+115 |       integer :: elements(n)
+    |                           ^ 
+
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:136:8
     |
