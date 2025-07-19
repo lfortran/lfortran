@@ -2,7 +2,6 @@
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
-#include <llvm/IR/Type.h>
 
 namespace LCompilers {
 
@@ -688,7 +687,11 @@ namespace LCompilers {
                 ASR::String_t* v_type = ASR::down_cast<ASR::String_t>(asr_type);
                 a_kind = v_type->m_kind;
                 if (arg_m_abi == ASR::abiType::BindC) {
-                    type = character_type;
+                    if (v_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
+                        type = string_descriptor;
+                    } else {
+                        type = character_type;
+                    }
                 } else if (v_type->m_physical_type == ASR::string_physical_typeType::DescriptorString) {
                     type = string_descriptor->getPointerTo();
                 } else {
