@@ -10549,6 +10549,12 @@ public:
                         }
                     }
                 }
+                if (ASRUtils::is_pointer(arg_type) && !ASRUtils::is_array(arg_type) &&
+                        ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_type)) &&
+                        !LLVM::is_llvm_pointer(*orig_arg->m_type)) {
+                    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(orig_arg->m_type, module.get());
+                    tmp = llvm_utils->CreateLoad2(el_type->getPointerTo(), tmp);
+                }
                 llvm::Value *value = tmp;
                 if (orig_arg_intent == ASR::intentType::In ||
                     orig_arg_intent == ASR::intentType::InOut ||
