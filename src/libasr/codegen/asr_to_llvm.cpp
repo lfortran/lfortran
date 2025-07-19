@@ -5573,11 +5573,9 @@ public:
                 [[maybe_unused]] ASR::StructType_t* value_class_t = ASR::down_cast<ASR::StructType_t>(
                     ASRUtils::type_get_past_pointer(ASRUtils::type_get_past_allocatable(value_type)));
                 std::string value_struct_t_name = "";
-                if ( ASR::is_a<ASR::Struct_t>(*value_class_t->m_derived_type) ) {
-                    ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(value_class_t->m_derived_type));
-                    value_struct_t_name = value_struct_t->m_name;
-                }
+                ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
+                    ASRUtils::symbol_get_past_external(value_class_t->m_derived_type));
+                value_struct_t_name = value_struct_t->m_name;
                 LCOMPILERS_ASSERT(target_class_t->m_derived_type == value_class_t->m_derived_type);
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(
                     ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
