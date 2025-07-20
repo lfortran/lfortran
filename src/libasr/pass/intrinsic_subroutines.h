@@ -84,7 +84,7 @@ namespace RandomInit {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -229,12 +229,12 @@ namespace Srand {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
         ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
-            ASR::intentType::In, ASR::abiType::BindC, true);
+            ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
         args_1.push_back(al, arg);
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
            
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -289,7 +289,7 @@ namespace RandomNumber {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types[0])),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -506,13 +506,13 @@ namespace GetCommandArgument {
             Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
             SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
             ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", arg_types[0],
-                ASR::intentType::In, ASR::abiType::BindC, true);
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, arg);
             SetChar dep_1; dep_1.reserve(al, 1);
             Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
             ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, first_param_c_func_name,
                 ASRUtils::is_character(*arg_types[1])? CString_type : ASRUtils::extract_type(arg_types[1]),
-                ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+                ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
             ASR::symbol_t *s_1 = make_ASR_Function_t(first_param_c_func_name, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, first_param_c_func_name));
             
@@ -1021,11 +1021,11 @@ namespace ExecuteCommandLine {
         SymbolTable *fn_symtab_1 = al.make_new<SymbolTable>(fn_symtab);
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 1);
         ASR::expr_t *arg = b.Variable(fn_symtab_1, "n", str_type,
-            ASR::intentType::InOut, ASR::abiType::BindC, true);
+            ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
         args_1.push_back(al, arg);
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-        ret_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+        ret_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1189,24 +1189,24 @@ namespace Mvbits {
             {
                 args_1.reserve(al, 5);
                 ASR::expr_t *arg = b.Variable(fn_symtab_1, "from", arg_types[0],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
                 args_1.push_back(al, arg);
                 arg = b.Variable(fn_symtab_1, "frompos", arg_types[1],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
                 args_1.push_back(al, arg);
                 arg = b.Variable(fn_symtab_1, "len", arg_types[2],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
                 args_1.push_back(al, arg);
                 arg = b.Variable(fn_symtab_1, "to", arg_types[3],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
                 args_1.push_back(al, arg);
                 arg = b.Variable(fn_symtab_1, "topos", arg_types[4],
-                    ASR::intentType::In, ASR::abiType::BindC, true);
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
                 args_1.push_back(al, arg);
             }
 
             ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-                arg_types[3], ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+                arg_types[3], ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
             SetChar dep_1; dep_1.reserve(al, 1);
             Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);

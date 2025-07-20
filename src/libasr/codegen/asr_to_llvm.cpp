@@ -3912,34 +3912,36 @@ public:
         }
     }
 
-    #define set_pointer_variable_to_null(null_value, ptr) if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) || \
-                ASR::is_a<ASR::Pointer_t>(*v->m_type)) && \
-            (v->m_intent == ASRUtils::intent_local || \
-             v->m_intent == ASRUtils::intent_return_var )) { \
-            if(ASRUtils::is_descriptorString(v->m_type)){ \
-                /*set string descriptor to {char* null, int64 0, int 64 0} */ \
-                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()),\
-                llvm_utils->create_gep2(string_descriptor, ptr, 0));\
-                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),\
-                llvm_utils->create_gep2(string_descriptor, ptr, 1));\
-                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),\
-                llvm_utils->create_gep2(string_descriptor, ptr, 2));\
-            } else if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) { \
-                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration); \
-                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym); \
-                llvm::Type* wrapper_struct_llvm_type = get_llvm_struct_data_type(st, false); \
-                llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), \
-                                        llvm::APInt(64, get_class_hash(struct_sym))); \
-                llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t( \
-                    al, v->base.base.loc, &v->base)), v->m_type, module.get()); \
-                llvm::Value* hash_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 0); \
-                builder->CreateStore(struct_hash, hash_ptr); \
-                llvm::Value* struct_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 1); \
-                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); \
-            } else { \
-                builder->CreateStore(null_value, ptr); \
-            }\
-        } \
+    void set_pointer_variable_to_null(ASR::Variable_t* v, llvm::Value* null_value, llvm::Value* ptr) {
+        if( (ASR::is_a<ASR::Allocatable_t>(*v->m_type) ||
+                ASR::is_a<ASR::Pointer_t>(*v->m_type)) && 
+            (v->m_intent == ASRUtils::intent_local || 
+             v->m_intent == ASRUtils::intent_return_var )) { 
+            if(ASRUtils::is_descriptorString(v->m_type)){ 
+                /*set string descriptor to {char* null, int64 0, int 64 0} */ 
+                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(llvm::Type::getInt8Ty(context)->getPointerTo()),
+                llvm_utils->create_gep2(string_descriptor, ptr, 0));
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),
+                llvm_utils->create_gep2(string_descriptor, ptr, 1));
+                builder->CreateStore(llvm::ConstantInt::get(llvm::Type::getInt64Ty(context),0),
+                llvm_utils->create_gep2(string_descriptor, ptr, 2));
+            } else if (ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(v->m_type))) { 
+                ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(v->m_type_declaration); 
+                ASR::Struct_t* st = ASR::down_cast<ASR::Struct_t>(struct_sym); 
+                llvm::Type* wrapper_struct_llvm_type = get_llvm_struct_data_type(st, false); 
+                llvm::Value* struct_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8), 
+                                        llvm::APInt(64, get_class_hash(struct_sym))); 
+                llvm::Type* v_llvm_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t( 
+                    al, v->base.base.loc, &v->base)), v->m_type, module.get());
+                llvm::Value* hash_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 0); 
+                builder->CreateStore(struct_hash, hash_ptr); 
+                llvm::Value* struct_ptr = llvm_utils->create_gep2(v_llvm_type, ptr, 1); 
+                builder->CreateStore(llvm::ConstantPointerNull::getNullValue(wrapper_struct_llvm_type->getPointerTo()), struct_ptr); 
+            } else { 
+                builder->CreateStore(null_value, ptr); 
+            }
+        } 
+    }
 
 
     void allocate_array_members_of_struct(ASR::Struct_t* struct_sym, llvm::Value* ptr, ASR::ttype_t* asr_type, bool is_intent_out = false) {
@@ -3971,7 +3973,7 @@ public:
                 // and might be returned.
                 if( ASR::is_a<ASR::Variable_t>(*sym) && !(is_intent_out ) ) {
                     v = ASR::down_cast<ASR::Variable_t>(sym);
-                    set_pointer_variable_to_null(llvm::Constant::getNullValue(
+                    set_pointer_variable_to_null(v, llvm::Constant::getNullValue(
                         llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, v->base.base.loc, &v->base)), v->m_type, module.get())),
                         ptr_member);
@@ -4450,8 +4452,8 @@ public:
 #endif
                 }
             }
-            set_pointer_variable_to_null(llvm::ConstantPointerNull::get(
-                static_cast<llvm::PointerType*>(type)), ptr)
+            set_pointer_variable_to_null(v, llvm::ConstantPointerNull::get(
+                static_cast<llvm::PointerType*>(type)), ptr);
             ASR::expr_t* var_expr = ASRUtils::EXPR(ASR::make_Var_t(al, v->base.base.loc, &v->base));
             if( ASR::is_a<ASR::StructType_t>(
                 *ASRUtils::type_get_past_array(v->m_type))

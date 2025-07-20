@@ -261,12 +261,12 @@ static inline ASR::expr_t* instantiate_functions(Allocator &al,
         {
             args_1.reserve(al, 1);
             ASR::expr_t *arg = b.Variable(fn_symtab_1, "x", arg_type,
-                ASR::intentType::In, ASR::abiType::BindC, true);
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true);
             args_1.push_back(al, arg);
         }
 
         ASR::expr_t *return_var_1 = b.Variable(fn_symtab_1, c_func_name,
-            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            return_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);

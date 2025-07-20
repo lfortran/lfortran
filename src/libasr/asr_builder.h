@@ -36,22 +36,22 @@ class ASRBuilder {
 
     // Symbols -----------------------------------------------------------------
     ASR::expr_t *Variable(SymbolTable *symtab, std::string var_name,
-            ASR::ttype_t *type, ASR::intentType intent,
+            ASR::ttype_t *type, ASR::intentType intent, ASR::symbol_t* type_decl=nullptr,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
     void VariableDeclaration(SymbolTable *symtab, std::string var_name,
-            ASR::ttype_t *type, ASR::intentType intent,
+            ASR::ttype_t *type, ASR::intentType intent, ASR::symbol_t* type_decl=nullptr,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return;
@@ -1173,10 +1173,10 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, n_args);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
-                ASR::intentType::In, ASR::abiType::BindC, true));
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
-            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            return_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1190,11 +1190,11 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types,
-                ASR::intentType::InOut, ASR::abiType::BindC, true));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types)),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -1208,11 +1208,11 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
-                ASR::intentType::InOut, ASR::abiType::BindC, true));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            return_type,
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -1230,7 +1230,7 @@ class ASRBuilder {
         for (size_t i = 0; i < parameter_types.size(); i++) {
             parameters.push_back(al, Variable(symTable,
                 parameter_names[i] + std::to_string(i), parameter_types[i],
-                ASR::intentType::InOut, ASR::abiType::BindC, false));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, false));
         }
         SetChar dep; dep.reserve(al, 1);
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);

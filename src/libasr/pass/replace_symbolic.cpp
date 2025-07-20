@@ -118,13 +118,13 @@ public:
             for (auto &type: args_type) {
                 std::string arg_name = "x_0" + std::to_string(i); i++;
                 args.push_back(al, b.Variable(fn_symtab, arg_name, type,
-                    ASR::intentType::In, ASR::abiType::BindC, true));
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
             }
             ASR::expr_t *return_var = nullptr;
             if ( return_type ) {
                 char *return_var_name = s2c(al, "_lpython_return_variable");
                 return_var = b.Variable(fn_symtab, return_var_name, return_type,
-                    ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
+                    ASR::intentType::ReturnVar, nullptr, ASR::abiType::BindC, false);
             }
 
             Vec<ASR::stmt_t *> body; body.reserve(al, 1);
@@ -654,7 +654,7 @@ public:
                             SymbolTable* block_symtab = al.make_new<SymbolTable>(current_scope);
                             char *tmp_var_name = s2c(al, "tmp");
                             ASR::expr_t* tmp_var = b.Variable(block_symtab, tmp_var_name, CPtr_type,
-                                ASR::intentType::Local, ASR::abiType::Source, false);
+                                ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
                             Vec<ASR::stmt_t*> block_body; block_body.reserve(al, 1);
                             ASR::stmt_t* block_stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, tmp_var,
                                 basic_new_heap(x.base.base.loc), nullptr, false));
