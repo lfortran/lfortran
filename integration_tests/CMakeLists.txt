@@ -663,6 +663,7 @@ RUN(NAME arrays_93 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_94 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_95 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME arrays_96 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
+RUN(NAME arrays_97 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME array_init LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 
