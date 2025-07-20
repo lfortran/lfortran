@@ -12232,6 +12232,7 @@ public:
                         this->visit_expr_wrapper(x.m_args[i], true);
                     }
                 } else {
+                    ptr_loads = ptr_loads + LLVM::is_llvm_pointer(*expr_type(x.m_args[i]));
                     this->visit_expr_wrapper(x.m_args[i], true);
                 }
                 if(!tmp->getType()->isPointerTy() ||
