@@ -2765,7 +2765,8 @@ static inline bool is_dimension_empty(ASR::dimension_t& dim) {
 
 static inline bool is_dimension_empty(ASR::dimension_t* dims, size_t n) {
     for( size_t i = 0; i < n; i++ ) {
-        if( is_dimension_empty(dims[i]) ) {
+        if( is_dimension_empty(dims[i]) || (dims[i].m_length != nullptr && dims[i].m_start == nullptr) ||
+            (dims[i].m_length == nullptr && dims[i].m_start != nullptr) ) {
             return true;
         }
     }

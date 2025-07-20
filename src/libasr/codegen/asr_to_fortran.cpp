@@ -222,7 +222,11 @@ public:
                     }
 
                     if (len.length() == 0) {
-                        bounds += ":";
+                        if ( start.length() != 0 ) {
+                            bounds += start + ":";
+                        } else {
+                            bounds += ":";
+                        }
                     } else {
                         if (start.length() == 0 || start == "1") {
                             bounds += len;
