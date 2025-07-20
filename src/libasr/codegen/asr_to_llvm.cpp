@@ -9465,6 +9465,11 @@ public:
                     visit_ArraySize(*array_size);
                     builder->CreateCall(fn, {arr, tmp, unit_val}); tmp = nullptr;
                 } else {
+                    llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(type), module.get());
+                    if (ASR::is_a<ASR::Allocatable_t>(*type)
+                        || ASR::is_a<ASR::Pointer_t>(*type)) {
+                        var_to_read_into = llvm_utils->CreateLoad2(el_type->getPointerTo(), var_to_read_into);
+                    }
                     if (ASR::is_a<ASR::String_t>(*type) && !is_string && !x.m_is_formatted) {
                         ASR::ttype_t *type32 = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4));
                         ASR::StringLen_t * strlen = ASR::down_cast2<ASR::StringLen_t>(ASR::make_StringLen_t(al,
@@ -9877,7 +9882,7 @@ public:
                 } else {
                     args.push_back(kind_val);
                     this->visit_expr_wrapper(m_values[i], true);
-                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::expr_type(m_values[i]), module.get());
+                    llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(ASRUtils::extract_type(ASRUtils::expr_type(m_values[i])), module.get());
                     llvm::Value* llvm_arg = llvm_utils->CreateAlloca(*builder, type);
                     builder->CreateStore(tmp, llvm_arg);
                     args.push_back(llvm_arg);
