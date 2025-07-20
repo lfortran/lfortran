@@ -75,12 +75,21 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
                                                     Public
                                                     Required
@@ -116,10 +125,19 @@
                                     final_logger
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Logical 4)
+                                            (Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            2 logger_type
+                                            .false.
                                         )]
                                         ()
                                         Source

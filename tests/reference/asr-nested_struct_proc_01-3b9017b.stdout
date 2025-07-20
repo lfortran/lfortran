@@ -151,12 +151,18 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Complex 4)
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 omap_map
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 omap_map
                                                     Source
                                                     Private
                                                     Required
@@ -320,12 +326,18 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Complex 4)
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 omap_map
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 omap_map
                                                     Source
                                                     Public
                                                     Required
@@ -340,10 +352,16 @@
                                     omap_i_at_rc
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Complex 4)
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
                                             []
                                             .false.
-                                            2 omap_map
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Integer 4)]
@@ -492,12 +510,23 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(StructType
+                                                            [(Complex 4)
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 integer32complex32orderedmap
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 integer32complex32orderedmap
                                                     Source
                                                     Public
                                                     Required
@@ -583,10 +612,21 @@
                                     omap_insert_key_value
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(StructType
+                                                [(Complex 4)
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
                                             []
                                             .false.
-                                            2 integer32complex32orderedmap
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Complex 4)]
@@ -612,10 +652,16 @@
                                                 (Var 10 this)
                                                 10 1_integer32complex32orderedmap_map
                                                 (StructType
-                                                    []
+                                                    [(Complex 4)
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 omap_map
+                                                    .false.
                                                 )
                                                 ()
                                             )
@@ -636,10 +682,16 @@
                                                 (Var 10 this)
                                                 10 1_integer32complex32orderedmap_map
                                                 (StructType
-                                                    []
+                                                    [(Complex 4)
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 omap_map
+                                                    .false.
                                                 )
                                                 ()
                                             ))
@@ -795,9 +847,9 @@
                                                         []
                                                         []
                                                         .true.
-                                                        2 omap_i_set
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 omap_i_set
                                                     Source
                                                     Private
                                                     Required
@@ -1109,12 +1161,54 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(StructType
+                                            [(Complex 4)
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(StructType
+                                                    [(Complex 4)
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Integer 4)
+                                            (Complex 4)]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        11 integer32complex32orderedmap
+                                        .false.
                                     )
-                                    ()
+                                    11 integer32complex32orderedmap
                                     Source
                                     Public
                                     Required

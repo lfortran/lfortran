@@ -47,12 +47,25 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Real 4)]
+                                        [(FunctionType
+                                            [(Integer 4)]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        5 test_type
+                                        .false.
                                     )
-                                    ()
+                                    5 test_type
                                     Source
                                     Public
                                     Required

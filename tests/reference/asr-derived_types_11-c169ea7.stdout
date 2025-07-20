@@ -30,10 +30,10 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
-                                            []
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                             []
                                             .true.
-                                            2 y
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -43,20 +43,20 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
-                                            []
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                             []
                                             .true.
-                                            2 y
+                                            .false.
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         []
                                         .true.
-                                        2 y
+                                        .false.
                                     )
-                                    ()
+                                    2 y
                                     Source
                                     Public
                                     Required

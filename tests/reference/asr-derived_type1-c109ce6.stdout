@@ -154,10 +154,10 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
-                                            []
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                             []
                                             .true.
-                                            2 enum_escape
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -167,20 +167,20 @@
                                             (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
                                         ))]
                                         (StructType
-                                            []
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                             []
                                             .true.
-                                            2 enum_escape
+                                            .false.
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
                                         []
                                         .true.
-                                        2 enum_escape
+                                        .false.
                                     )
-                                    ()
+                                    2 enum_escape
                                     Source
                                     Public
                                     Required

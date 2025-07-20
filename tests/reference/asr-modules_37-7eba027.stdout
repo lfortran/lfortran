@@ -74,13 +74,15 @@
                                                                     Default
                                                                     (Pointer
                                                                         (StructType
-                                                                            []
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
                                                                             []
                                                                             .true.
-                                                                            2 build_target_t
+                                                                            .false.
                                                                         )
                                                                     )
-                                                                    ()
+                                                                    2 build_target_t
                                                                     Source
                                                                     Private
                                                                     Required
@@ -102,10 +104,19 @@
                                                                 (Var 9 i)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Pointer
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                    )]
                                                                     []
                                                                     .true.
-                                                                    2 build_target_ptr
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -113,10 +124,12 @@
                                                             9 1_build_target_ptr_ptr
                                                             (Pointer
                                                                 (StructType
-                                                                    []
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
                                                                     []
                                                                     .true.
-                                                                    2 build_target_t
+                                                                    .false.
                                                                 )
                                                             )
                                                             ()
@@ -152,10 +165,12 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
                                                                         []
                                                                         .true.
-                                                                        2 string_t
+                                                                        .false.
                                                                     )
                                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                                     ())]
@@ -181,17 +196,19 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 string_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 string_t
                                                     Source
                                                     Public
                                                     Required
@@ -257,9 +274,9 @@
                                                         []
                                                         []
                                                         .true.
-                                                        2 fpm_model_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 fpm_model_t
                                                     Source
                                                     Public
                                                     Required
@@ -281,16 +298,25 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Pointer
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 build_target_ptr
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
                                                         DescriptorArray
                                                     )
-                                                    ()
+                                                    2 build_target_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -311,12 +337,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_t
                                                     Source
                                                     Public
                                                     Required
@@ -353,10 +381,19 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
-                                                []
+                                                [(Pointer
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                )]
                                                 []
                                                 .true.
-                                                2 build_target_ptr
+                                                .false.
                                             )
                                             [(()
                                             ())]
@@ -366,7 +403,7 @@
                                             []
                                             []
                                             .true.
-                                            2 fpm_model_t
+                                            .false.
                                         )
                                         (Logical 4)]
                                         ()
@@ -432,33 +469,41 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 build_target_t
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 6 ptr)
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 build_target_t
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 6 ptr)
                                                     )
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 build_target_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 build_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -551,9 +596,9 @@
                                                         []
                                                         []
                                                         .true.
-                                                        2 fpm_model_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 fpm_model_t
                                                     Source
                                                     Public
                                                     Required
@@ -577,9 +622,9 @@
                                                         []
                                                         []
                                                         .true.
-                                                        2 fpm_build_settings
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 fpm_build_settings
                                                     Source
                                                     Public
                                                     Required
@@ -602,17 +647,26 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Pointer
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 build_target_ptr
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 build_target_ptr
                                                     Source
                                                     Public
                                                     Required
@@ -630,7 +684,7 @@
                                             []
                                             []
                                             .true.
-                                            2 fpm_build_settings
+                                            .false.
                                         )]
                                         ()
                                         Source

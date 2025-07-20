@@ -33,12 +33,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -75,10 +77,12 @@
                                     (FunctionType
                                         [(String 1 () AssumedLength PointerString)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )
                                         Source
                                         Interface
@@ -115,12 +119,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -157,10 +163,12 @@
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )
                                         Source
                                         Interface
@@ -197,12 +205,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -239,10 +249,12 @@
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )
                                         Source
                                         Interface
@@ -279,12 +291,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -321,10 +335,12 @@
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )
                                         Source
                                         Interface
@@ -424,12 +440,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        8 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -466,10 +484,12 @@
                                     (FunctionType
                                         [(String 1 () AssumedLength PointerString)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            8 string_type
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -506,12 +526,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        8 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -548,10 +570,12 @@
                                     (FunctionType
                                         [(Integer 4)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            8 string_type
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -588,12 +612,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        8 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -630,10 +656,12 @@
                                     (FunctionType
                                         [(Integer 8)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            8 string_type
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -670,12 +698,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        8 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -712,10 +742,12 @@
                                     (FunctionType
                                         [(Logical 4)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            8 string_type
+                                            .false.
                                         )
                                         Source
                                         Implementation

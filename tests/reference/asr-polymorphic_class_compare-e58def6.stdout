@@ -32,12 +32,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 map_setiterator
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 map_setiterator
                                                     Source
                                                     Public
                                                     Required
@@ -58,12 +58,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 map_setiterator
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 map_setiterator
                                                     Source
                                                     Public
                                                     Required
@@ -99,16 +99,16 @@
                                     map_s_iter_equal
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 map_setiterator
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 map_setiterator
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -168,12 +168,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .false.
-                                                        2 map_setiterator
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 map_setiterator
                                                     Source
                                                     Public
                                                     Required
@@ -194,12 +194,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .false.
-                                                        2 map_setiterator
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 map_setiterator
                                                     Source
                                                     Public
                                                     Required
@@ -235,16 +235,16 @@
                                     map_s_iter_not_equal
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .false.
-                                            2 map_setiterator
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .false.
-                                            2 map_setiterator
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -383,12 +383,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        6 map_setiterator
+                                        .false.
                                     )
-                                    ()
+                                    6 map_setiterator
                                     Source
                                     Public
                                     Required
@@ -409,12 +409,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        6 map_setiterator
+                                        .false.
                                     )
-                                    ()
+                                    6 map_setiterator
                                     Source
                                     Public
                                     Required

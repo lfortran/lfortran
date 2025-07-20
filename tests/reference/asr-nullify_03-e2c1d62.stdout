@@ -190,16 +190,23 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Pointer
+                                                                (Array
+                                                                    (Real 8)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 rp1d
+                                                            .false.
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 3 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
-                                                    ()
+                                                    2 rp1d
                                                     Source
                                                     Public
                                                     Required
@@ -279,12 +286,49 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        (Pointer
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Array
+                                            (StructType
+                                                [(Pointer
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )]
                                         []
                                         .true.
-                                        5 sds
+                                        .false.
                                     )
-                                    ()
+                                    5 sds
                                     Source
                                     Public
                                     Required
@@ -316,10 +360,17 @@
                                     5 1_sds_scales
                                     (Array
                                         (StructType
-                                            []
+                                            [(Pointer
+                                                (Array
+                                                    (Real 8)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
                                             []
                                             .true.
-                                            5 rp1d
+                                            .false.
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
@@ -331,10 +382,17 @@
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
-                                    []
+                                    [(Pointer
+                                        (Array
+                                            (Real 8)
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )]
                                     []
                                     .true.
-                                    5 rp1d
+                                    .false.
                                 )
                                 ColMajor
                                 ()
