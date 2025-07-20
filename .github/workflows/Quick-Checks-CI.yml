@@ -29,7 +29,6 @@ jobs:
   Build:
     name: LFortran CI (OS=${{ matrix.os }}, LLVM=${{ matrix.llvm-version }})
     runs-on: ${{ matrix.os }}
-    continue-on-error: true
     strategy:
       fail-fast: false
       matrix:
@@ -58,13 +57,13 @@ jobs:
 
       - name: Install Windows Packages
         if: contains(matrix.os, 'windows')
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         run: |
           micromamba install m2-bison=3.0.4 m2-filesystem cmake=3.21.1 zstd-static=1.5.5 zlib=1.2.13
 
       - name: Install Linux / macOS Packages
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         run: |
           micromamba install bison=3.4 openblas=0.3.21 llvm-openmp=14.0.4 openmpi=5.0.6 zlib=1.3.1
           if [[ "${{ matrix.llvm-version }}" == "11" ]]; then
@@ -84,7 +83,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}-${{ matrix.llvm-version }}
 
       - name: Setup Platform
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         run: |
             echo "LFORTRAN_CMAKE_GENERATOR=Ninja" >> $GITHUB_ENV
             echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
@@ -93,14 +92,14 @@ jobs:
 
       # we need to run this only once for debugging purpose
       - name: Print github concurrent group name
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
         run: |
           echo "Concurrency Group: ${{ github.workflow }}-${{ github.event.number || github.sha }}"
           echo "Cancel-in-progress: ${{ github.event_name == 'pull_request' }}"
 
       - name: Build (Linux / macOS)
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             export CXXFLAGS="-Werror"
@@ -126,47 +125,47 @@ jobs:
             shell ci\build.sh
 
       - name: Test (Linux / macOS)
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             case "$OSTYPE" in darwin*) export MACOS=1;; *) export MACOS=0;; esac
             export LFORTRAN_LLVM_VERSION=${{ matrix.llvm-version }}
             export LFORTRAN_TEST_ENV_VAR='STATUS OK!'
-            # shell ci/test.sh
+            shell ci/test.sh
 
       - name: Test LFortran's Command Line Interface (Linux / macOS)
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             ./test_lfortran_cmdline
 
-      # - name: Test with specific Fortran standard
-      #   shell: bash +e -l {0}
-      #   if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
-      #   run: |
-      #       cd ./integration_tests
-      #       ./run_tests.py -b llvm --std=f23
-      #       ./run_tests.py -b llvm -f --std=f23 -nf16
+      - name: Test with specific Fortran standard
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
+        run: |
+            cd ./integration_tests
+            ./run_tests.py -b llvm --std=f23
+            ./run_tests.py -b llvm -f --std=f23 -nf16
 
-      # - name: Test (Windows)
-      #   if: contains(matrix.os, 'windows')
-      #   shell: cmd
-      #   run: |
-      #       set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
-      #       call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
-      #       call micromamba activate lf
-      #       set LFORTRAN_CMAKE_GENERATOR=Ninja
-      #       set WIN=1
-      #       set MACOS=0
-      #       set ENABLE_RUNTIME_STACKTRACE=no
-      #       call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
-      #       set CC=cl.exe
-      #       set CXX=cl.exe
-      #       set "PATH=%PATH:C:\mingw64\bin;=%"
-      #       shell ci\test.sh
+      - name: Test (Windows)
+        if: contains(matrix.os, 'windows')
+        shell: cmd
+        run: |
+            set MAMBA_INSTALL_LOCN=C:\\Users\runneradmin\micromamba
+            call %MAMBA_INSTALL_LOCN%\Scripts\activate.bat
+            call micromamba activate lf
+            set LFORTRAN_CMAKE_GENERATOR=Ninja
+            set WIN=1
+            set MACOS=0
+            set ENABLE_RUNTIME_STACKTRACE=no
+            call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+            set CC=cl.exe
+            set CXX=cl.exe
+            set "PATH=%PATH:C:\mingw64\bin;=%"
+            shell ci\test.sh
 
       - name: Install Timeout (macOS)
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         if: contains(matrix.os, 'macos')
         run: brew install coreutils
 
@@ -174,64 +173,64 @@ jobs:
       # login shells which frequently erred on ubuntu-latest since the shell was
       # not run interactively.
       - name: Disable ~/.bash_logout (Linux)
-        shell: bash +e {0}
+        shell: bash -e {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: mv -v ~/.bash_logout ~/.bash_logout.bak
 
-      # - name: LSP Test (Linux / macOS)
-      #   shell: bash +e -l {0}
-      #   if: (contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')) && contains(matrix.llvm-version, '11')
-      #   timeout-minutes: 5
-      #   env:
-      #       EXIT_SUCCESS: 0
-      #       EXIT_TIMEOUT: 124
-      #       EXIT_KILL: 137
-      #       MAX_ATTEMPTS: 3
-      #       SIGTERM_TIMEOUT: 60s
-      #       SIGKILL_TIMEOUT: 10s
-      #       PYTEST_TIMEOUT: 10
-      #   run: |
-      #       set +ex
-      #       pip install src/server/tests tests/server
-      #       timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
-      #           pytest -vv \
-      #               --showlocals \
-      #               --timeout=$PYTEST_TIMEOUT \
-      #               --execution-strategy="concurrent" \
-      #               tests/server
-      #       set +e
-      #       for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
-      #           echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
-      #           timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
-      #               pytest -vv \
-      #                   --showlocals \
-      #                   --timeout=$PYTEST_TIMEOUT \
-      #                   --execution-strategy="parallel" \
-      #                   tests/server
-      #           EXIT_CODE=$?
-      #           if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
-      #               break
-      #           fi
-      #           echo "Command failed with exit code: $EXIT_CODE" 1>&2
-      #       done
-      #       set +e
-      #       exit $EXIT_CODE
+      - name: LSP Test (Linux / macOS)
+        shell: bash -e -l {0}
+        if: (contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')) && contains(matrix.llvm-version, '11')
+        timeout-minutes: 5
+        env:
+            EXIT_SUCCESS: 0
+            EXIT_TIMEOUT: 124
+            EXIT_KILL: 137
+            MAX_ATTEMPTS: 3
+            SIGTERM_TIMEOUT: 60s
+            SIGKILL_TIMEOUT: 10s
+            PYTEST_TIMEOUT: 10
+        run: |
+            set -ex
+            pip install src/server/tests tests/server
+            timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                pytest -vv \
+                    --showlocals \
+                    --timeout=$PYTEST_TIMEOUT \
+                    --execution-strategy="concurrent" \
+                    tests/server
+            set +e
+            for (( ATTEMPT = 1; ATTEMPT <= MAX_ATTEMPTS; ATTEMPT++ )); do
+                echo "Attempt $ATTEMPT of $MAX_ATTEMPTS"
+                timeout -k $SIGKILL_TIMEOUT $SIGTERM_TIMEOUT \
+                    pytest -vv \
+                        --showlocals \
+                        --timeout=$PYTEST_TIMEOUT \
+                        --execution-strategy="parallel" \
+                        tests/server
+                EXIT_CODE=$?
+                if [ $EXIT_CODE -eq $EXIT_SUCCESS ]; then
+                    break
+                fi
+                echo "Command failed with exit code: $EXIT_CODE" 1>&2
+            done
+            set -e
+            exit $EXIT_CODE
 
       - name: Check Third Party Code Compilation - Test third party codes
-        shell: bash +e -x -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos') && always()
+        shell: bash -e -x -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             RUNNER_OS="${{matrix.os}}" FC="$(pwd)/src/bin/lfortran" ci/test_third_party_codes.sh
 
       # The below projects are tested with a higher CMake version, so replace the current installed version
       - name: Check Third Party Code Compilation - Override cmake version to 3.31.2
-        if: contains(matrix.os, 'ubuntu') && always()
+        if: contains(matrix.os, 'ubuntu')
         run: micromamba install -y -n lf cmake=3.31.2
 
       - name: Check Third Party Code Compilation - Test Examples/Project 1
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             cd ./examples/project1
             FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
@@ -239,8 +238,8 @@ jobs:
             ./project1
 
       - name: Check Third Party Code Compilation - Test Examples/Project 2
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             cd ./examples/project2
             FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
@@ -248,8 +247,8 @@ jobs:
             ./doconcurrent
 
       - name: Check Third Party Code Compilation - Test Examples/Project 3
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu')
         run: |
             cd ./examples/project3
             FC=../../src/bin/lfortran cmake . -DCMAKE_Fortran_COMPILER_WORKS=True
@@ -257,8 +256,8 @@ jobs:
             ./project3
 
       - name: Check Third Party Code Compilation - Test Lapack
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') || contains(matrix.os, 'macos')
         run: |
             export PATH="$(pwd)/src/bin:$PATH"
             git clone https://github.com/gxyd/lapack.git
@@ -273,47 +272,46 @@ jobs:
 
       # restore the version of cmake
       - name: Check Third Party Code Compilation - Restore cmake version to 3.29.1
-        if: contains(matrix.os, 'ubuntu') && always()
+        if: contains(matrix.os, 'ubuntu')
         run: micromamba install -y -n lf cmake=3.29.1
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test integration_tests with GFortran
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd integration_tests
             ./run_tests.py -b gfortran
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Debug Build Linux
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             ctest
-            # TODO: StructType - Uncomment reference tests
-            # ./run_tests.py
-            # ./run_tests.py -vh
+            ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
             ./run_tests.py -b llvm -f -nf16
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test OpenMP
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd integration_tests
             ./run_tests.py -b llvm_omp
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Fortran Backend
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd integration_tests
             ./run_tests.py -b fortran -j1
             ./run_tests.py -b fortran -f -j1
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test C/C++ Backend
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             mkdir build-kokkos
             cd build-kokkos
@@ -333,30 +331,30 @@ jobs:
             ./run_tests.py -b cpp c c_nopragma -f
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test CPP
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             shell ci/test_cpp_version.sh
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Show Node Info
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
-          set +ex
+          set -ex
           which node
           node --version
 
       - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test WASM backend
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
       # Run last. Script checks out to first commit in PR history
       - name: Check for Added Binary Files
-        shell: bash +e -l {0}
-        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20') && always()
+        shell: bash -e -l {0}
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
         run: |
           python3 check_binary_file_in_git_history.py
 
@@ -381,7 +379,7 @@ jobs:
           key: ${{ github.job }}-${{ matrix.os }}
 
       - name : Remove existing node
-        shell: bash +e -l {0}
+        shell: bash -e -l {0}
         run : |
             which node
             node -v
@@ -408,7 +406,7 @@ jobs:
       - name: Show Emscripten and Node Info
         shell: bash -l {0}
         run: |
-            set +ex
+            set -ex
             # Activate PATH and other environment variables in the current terminal
             source $HOME/ext/emsdk/emsdk_env.sh
             emcc -v
@@ -419,14 +417,14 @@ jobs:
       - name: Build to WASM
         shell: bash -l {0}
         run: |
-            set +ex
+            set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             ./build_to_wasm.sh
 
       - name: Test built lfortran.wasm
         shell: bash -l {0}
         run: |
-            set +ex
+            set -ex
             source $HOME/ext/emsdk/emsdk_env.sh # Activate Emscripten
             which node
             node -v

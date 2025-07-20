@@ -133,9 +133,8 @@ jobs:
         shell: bash -e -l {0}
         run: |
             ctest
-            # TODO: StructType - Uncomment reference tests
-            # ./run_tests.py
-            # ./run_tests.py -vh
+            ./run_tests.py
+            ./run_tests.py -vh
             cd integration_tests
             ./run_tests.py -m
             ./run_tests.py -b llvm
