@@ -9369,6 +9369,10 @@ public:
             for (size_t i=0; i<x.n_values; i++) {
                 int ptr_copy = ptr_loads;
                 ptr_loads = 0;
+                if (ASR::is_a<ASR::Allocatable_t>(*ASRUtils::expr_type(x.m_values[i])) ||
+                    ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_values[i]))) {
+                    ptr_loads++;
+                }
                 this->visit_expr(*x.m_values[i]);
                 var_to_read_into = tmp; tmp =nullptr;
                 ptr_loads = ptr_copy;
