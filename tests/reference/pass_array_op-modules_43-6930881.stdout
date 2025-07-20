@@ -29,17 +29,23 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                []
+                                                [(Integer 8)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                5 srcfile_t
+                                                .false.
                                             )
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
                                     )
-                                    ()
+                                    5 srcfile_t
                                     Source
                                     Public
                                     Required
@@ -145,17 +151,23 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Integer 8)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 srcfile_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 srcfile_t
                                                     Source
                                                     Public
                                                     Required
@@ -204,17 +216,23 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Integer 8)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 srcfile_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 srcfile_t
                                                     Source
                                                     Public
                                                     Required
@@ -231,10 +249,16 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Integer 8)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 srcfile_t
+                                                    .false.
                                                 )
                                                 [(()
                                                 ())]
@@ -309,10 +333,16 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Integer 8)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 srcfile_t
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
@@ -361,10 +391,16 @@
                                                     (Var 4 __1__libasr_index_)
                                                     ())]
                                                     (StructType
-                                                        []
+                                                        [(Integer 8)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 srcfile_t
+                                                        .false.
                                                     )
                                                     RowMajor
                                                     ()
@@ -375,10 +411,16 @@
                                                     (Var 4 __1_t)
                                                     ())]
                                                     (StructType
-                                                        []
+                                                        [(Integer 8)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 srcfile_t
+                                                        .false.
                                                     )
                                                     RowMajor
                                                     ()
@@ -437,10 +479,16 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Integer 8)
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
                                                                             []
                                                                             .true.
-                                                                            2 srcfile_t
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -464,10 +512,16 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 (Array
                                                     (StructType
-                                                        []
+                                                        [(Integer 8)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 srcfile_t
+                                                        .false.
                                                     )
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (ArraySize
@@ -508,10 +562,16 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Integer 8)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 srcfile_t
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
@@ -557,10 +617,16 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    []
+                                                                    [(Integer 8)
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
                                                                     []
                                                                     .true.
-                                                                    2 srcfile_t
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]

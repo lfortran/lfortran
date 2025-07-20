@@ -175,12 +175,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        2 complextype
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 complextype
                                                     Source
                                                     Public
                                                     Required
@@ -201,12 +202,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .false.
-                                                        2 complextype
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 complextype
                                                     Source
                                                     Public
                                                     Required
@@ -221,18 +223,20 @@
                                     integer_add_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .false.
-                                            2 complextype
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Integer 4)
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            2 complextype
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -394,12 +398,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        2 complextype
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 complextype
                                                     Source
                                                     Public
                                                     Required
@@ -420,12 +425,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .false.
-                                                        2 complextype
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 complextype
                                                     Source
                                                     Public
                                                     Required
@@ -440,18 +446,20 @@
                                     real_add_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .false.
-                                            2 complextype
+                                            .false.
                                         )
                                         (Real 4)
                                         (Real 4)
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            2 complextype
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -598,12 +606,70 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Real 4)
+                                        (Real 4)]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )
+                                        (FunctionType
+                                            [(StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Real 4)
+                                            (Real 4)
+                                            (StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        6 complextype
+                                        .false.
                                     )
-                                    ()
+                                    6 complextype
                                     Source
                                     Public
                                     Required
@@ -624,12 +690,70 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Real 4)
+                                        (Real 4)]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )
+                                        (FunctionType
+                                            [(StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Real 4)
+                                            (Real 4)
+                                            (StructType
+                                                [(Real 4)
+                                                (Real 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        6 complextype
+                                        .false.
                                     )
-                                    ()
+                                    6 complextype
                                     Source
                                     Public
                                     Required
@@ -841,10 +965,68 @@
                             [((Var 6 fpone))
                             ((Var 6 fptwo))]
                             (StructType
-                                []
-                                []
+                                [(Real 4)
+                                (Real 4)]
+                                [(FunctionType
+                                    [(StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .false.
+                                        .false.
+                                    )
+                                    (Integer 4)
+                                    (Integer 4)
+                                    (StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )]
+                                    ()
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                )
+                                (FunctionType
+                                    [(StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .false.
+                                        .false.
+                                    )
+                                    (Real 4)
+                                    (Real 4)
+                                    (StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )]
+                                    ()
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                )]
                                 .true.
-                                6 complextype
+                                .false.
                             )
                             ()
                         )

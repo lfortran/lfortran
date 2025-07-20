@@ -115,12 +115,17 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(TypeParameter
+                                                                            t
+                                                                        )
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )]
                                                                         []
                                                                         .true.
-                                                                        4 tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    4 tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -158,10 +163,15 @@
                                                     get_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(TypeParameter
+                                                                t
+                                                            )
+                                                            (TypeParameter
+                                                                t
+                                                            )]
                                                             []
                                                             .true.
-                                                            4 tuple
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
@@ -223,12 +233,17 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(TypeParameter
+                                                                            t
+                                                                        )
+                                                                        (TypeParameter
+                                                                            t
+                                                                        )]
                                                                         []
                                                                         .true.
-                                                                        4 tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    4 tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -266,10 +281,15 @@
                                                     get_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(TypeParameter
+                                                                t
+                                                            )
+                                                            (TypeParameter
+                                                                t
+                                                            )]
                                                             []
                                                             .true.
-                                                            4 tuple
+                                                            .false.
                                                         )]
                                                         (TypeParameter
                                                             t
@@ -472,12 +492,13 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
                                                                         []
                                                                         .true.
-                                                                        8 int_tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    8 int_tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -513,10 +534,11 @@
                                                     get_int_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            8 int_tuple
+                                                            .false.
                                                         )]
                                                         (Integer 4)
                                                         Source
@@ -574,12 +596,13 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Integer 4)
+                                                                        (Integer 4)]
                                                                         []
                                                                         .true.
-                                                                        8 int_tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    8 int_tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -615,10 +638,11 @@
                                                     get_int_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            8 int_tuple
+                                                            .false.
                                                         )]
                                                         (Integer 4)
                                                         Source
@@ -676,12 +700,13 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)
+                                                                        (Real 4)]
                                                                         []
                                                                         .true.
-                                                                        8 real_tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    8 real_tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -717,10 +742,11 @@
                                                     get_real_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Real 4)
+                                                            (Real 4)]
                                                             []
                                                             .true.
-                                                            8 real_tuple
+                                                            .false.
                                                         )]
                                                         (Real 4)
                                                         Source
@@ -778,12 +804,13 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)
+                                                                        (Real 4)]
                                                                         []
                                                                         .true.
-                                                                        8 real_tuple
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    8 real_tuple
                                                                     Source
                                                                     Private
                                                                     Required
@@ -819,10 +846,11 @@
                                                     get_real_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Real 4)
+                                                            (Real 4)]
                                                             []
                                                             .true.
-                                                            8 real_tuple
+                                                            .false.
                                                         )]
                                                         (Real 4)
                                                         Source
@@ -987,12 +1015,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        8 int_tuple
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 int_tuple
                                                     Source
                                                     Private
                                                     Required
@@ -1013,12 +1042,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        8 real_tuple
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 real_tuple
                                                     Source
                                                     Private
                                                     Required

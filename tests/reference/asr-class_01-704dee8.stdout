@@ -37,12 +37,49 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Real 4)]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )]
+                                            (Real 4)
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )
+                                        (FunctionType
+                                            [(StructType
+                                                [(Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        6 circle
+                                        .false.
                                     )
-                                    ()
+                                    6 circle
                                     Source
                                     Public
                                     Required
@@ -75,10 +112,47 @@
                                 (Real 4)
                             ))]
                             (StructType
-                                []
-                                []
+                                [(Real 4)]
+                                [(FunctionType
+                                    [(StructType
+                                        [(Real 4)]
+                                        []
+                                        .false.
+                                        .false.
+                                    )]
+                                    (Real 4)
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                )
+                                (FunctionType
+                                    [(StructType
+                                        [(Real 4)]
+                                        []
+                                        .false.
+                                        .false.
+                                    )]
+                                    ()
+                                    Source
+                                    Implementation
+                                    ()
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    .false.
+                                    []
+                                    .false.
+                                )]
                                 .true.
-                                6 circle
+                                .false.
                             )
                             ()
                         )
@@ -224,12 +298,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Private
                                                     Required
@@ -244,10 +318,10 @@
                                     circle_area
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 circle
+                                            .false.
                                         )]
                                         (Real 4)
                                         Source
@@ -348,12 +422,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Private
                                                     Required
@@ -368,10 +442,10 @@
                                     circle_print
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 circle
+                                            .false.
                                         )]
                                         ()
                                         Source

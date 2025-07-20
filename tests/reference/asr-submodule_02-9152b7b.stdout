@@ -85,12 +85,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        6 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -111,12 +112,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        6 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -152,16 +154,18 @@
                                     point_dist_func
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            6 point
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            6 point
+                                            .false.
                                         )]
                                         (Real 4)
                                         Source
@@ -200,12 +204,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        6 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -226,12 +231,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        6 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 point
                                                     Source
                                                     Public
                                                     Required
@@ -267,16 +273,18 @@
                                     point_dist_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            6 point
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            6 point
+                                            .false.
                                         )
                                         (Real 4)]
                                         ()
@@ -369,12 +377,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        10 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -395,12 +404,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        10 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -436,16 +446,18 @@
                                     point_dist_func
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            10 point
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            10 point
+                                            .false.
                                         )]
                                         (Real 4)
                                         Source
@@ -565,12 +577,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        10 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -591,12 +604,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)
+                                                        (Real 4)]
                                                         []
                                                         .true.
-                                                        10 point
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 point
                                                     Source
                                                     Public
                                                     Required
@@ -632,16 +646,18 @@
                                     point_dist_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            10 point
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .true.
-                                            10 point
+                                            .false.
                                         )
                                         (Real 4)]
                                         ()

@@ -72,12 +72,97 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Logical 4)
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        [(FunctionType
+                                                            [(StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            [(Logical 4)
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )
+                                                                            (Logical 4)]
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                            (String 1 () AssumedLength PointerString)
+                                                            (Allocatable
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                            )]
+                                                            ()
+                                                            Source
+                                                            Implementation
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )]
                                                         .true.
-                                                        4 dependency_tree_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -99,13 +184,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            4 error_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -115,16 +202,6 @@
                                                     ()
                                                     .false.
                                                     .false.
-                                                ),
-                                            fpm_dependency_modules_31_dependency_node_t:
-                                                (ExternalSymbol
-                                                    7
-                                                    fpm_dependency_modules_31_dependency_node_t
-                                                    9 dependency_node_t
-                                                    fpm_dependency_modules_31
-                                                    []
-                                                    dependency_node_t
-                                                    Public
                                                 ),
                                             ii:
                                                 (Variable
@@ -157,12 +234,21 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Logical 4)
+                                                        (Allocatable
+                                                            (Array
+                                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )]
                                                         []
                                                         .true.
-                                                        4 fpm_update_settings
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 fpm_update_settings
                                                     Source
                                                     Public
                                                     Required
@@ -177,10 +263,19 @@
                                     cmd_update
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Logical 4)
+                                            (Logical 4)
+                                            (Allocatable
+                                                (Array
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
                                             []
                                             .true.
-                                            4 fpm_update_settings
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -208,10 +303,17 @@
                                                         (Allocatable
                                                             (Array
                                                                 (StructType
-                                                                    []
+                                                                    [(Logical 4)
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Logical 4)]
                                                                     []
                                                                     .true.
-                                                                    7 fpm_dependency_modules_31_dependency_node_t
+                                                                    .false.
                                                                 )
                                                                 [(()
                                                                 ())]
@@ -224,10 +326,17 @@
                                                     (Var 7 ii)
                                                     ())]
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Logical 4)]
                                                         []
                                                         .true.
-                                                        7 fpm_dependency_modules_31_dependency_node_t
+                                                        .false.
                                                     )
                                                     ColMajor
                                                     ()
@@ -250,10 +359,17 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Logical 4)
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )
+                                                                            (Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )
+                                                                            (Logical 4)]
                                                                             []
                                                                             .true.
-                                                                            7 fpm_dependency_modules_31_dependency_node_t
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -266,10 +382,17 @@
                                                             (Var 7 ii)
                                                             ())]
                                                             (StructType
-                                                                []
+                                                                [(Logical 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Logical 4)]
                                                                 []
                                                                 .true.
-                                                                7 fpm_dependency_modules_31_dependency_node_t
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -712,17 +835,24 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Logical 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Logical 4)]
                                                                 []
                                                                 .true.
-                                                                9 dependency_node_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    9 dependency_node_t
                                                     Source
                                                     Public
                                                     Required
@@ -912,13 +1042,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            9 error_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    9 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -960,12 +1092,40 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Logical 4)
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Logical 4)]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        9 dependency_tree_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    9 dependency_tree_t
                                                     Source
                                                     Public
                                                     Required
@@ -980,18 +1140,48 @@
                                     update_dependency
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Logical 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Logical 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            9 dependency_tree_t
+                                            .false.
                                         )
                                         (String 1 () AssumedLength PointerString)
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                9 error_t
+                                                .false.
                                             )
                                         )]
                                         ()

@@ -74,12 +74,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 t_1
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 t_1
                                                     Source
                                                     Private
                                                     Required
@@ -94,10 +94,10 @@
                                     multiply
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 t_1
+                                            .false.
                                         )
                                         (Real 4)]
                                         (Real 4)
@@ -205,12 +205,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 t_1
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 t_1
                                                     Source
                                                     Private
                                                     Required
@@ -225,10 +225,10 @@
                                     sqrt_subtract
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 t_1
+                                            .false.
                                         )
                                         (Integer 4)]
                                         (Real 4)
@@ -414,12 +414,51 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Real 4)]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Real 4)]
+                                            (Real 4)
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )
+                                        (FunctionType
+                                            [(StructType
+                                                [(Real 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Integer 4)]
+                                            (Real 4)
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        6 t_1
+                                        .false.
                                     )
-                                    ()
+                                    6 t_1
                                     Source
                                     Public
                                     Required

@@ -1947,12 +1947,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -1973,12 +1973,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -1999,12 +1999,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2025,12 +2025,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2045,16 +2045,16 @@
                                                     __asr___instantiated_swap12
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )
                                                         (StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -2243,12 +2243,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2269,12 +2269,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2295,12 +2295,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2321,12 +2321,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -2341,16 +2341,16 @@
                                                     __asr___instantiated_swap3
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )
                                                         (StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -3111,16 +3111,16 @@
                                                                     Default
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -3225,12 +3225,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Public
                                                                     Required
@@ -3246,10 +3246,10 @@
                                                     (FunctionType
                                                         [(Array
                                                             (StructType
-                                                                []
+                                                                [(Real 4)]
                                                                 []
                                                                 .true.
-                                                                5 my_type
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
@@ -3292,10 +3292,10 @@
                                                                 (Var 25 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -3338,10 +3338,10 @@
                                                                         (Var 25 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -3372,10 +3372,10 @@
                                                                         (Var 25 last)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -3386,10 +3386,10 @@
                                                                         (Var 25 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -3415,10 +3415,10 @@
                                                                 )
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -3429,10 +3429,10 @@
                                                                 (Var 25 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -3448,10 +3448,10 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -3472,10 +3472,10 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -3559,16 +3559,16 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
-                                                    ()
+                                                    5 my_type
                                                     Source
                                                     Public
                                                     Required
@@ -3668,10 +3668,10 @@
                                                 (Var 15 i)
                                                 ())]
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 ColMajor
                                                 ()
@@ -3688,10 +3688,10 @@
                                                     ()
                                                 ))]
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 ()
                                             )
@@ -3747,10 +3747,10 @@
                                             DescriptorArray
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
@@ -3833,12 +3833,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 my_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 my_type
                                                     Source
                                                     Public
                                                     Required
@@ -3880,12 +3880,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 my_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 my_type
                                                     Source
                                                     Public
                                                     Required
@@ -3900,16 +3900,16 @@
                                     lt_my_type
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 my_type
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 my_type
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source

@@ -17,11 +17,13 @@
                                         (Pointer
                                             (Integer 4)
                                         )
+                                        ()
                                     )
                                     (PointerNullConstant
                                         (Pointer
                                             (Integer 4)
                                         )
+                                        ()
                                     )
                                     Save
                                     (Pointer
@@ -55,6 +57,7 @@
                                                 DescriptorArray
                                             )
                                         )
+                                        ()
                                     )
                                     (PointerNullConstant
                                         (Pointer
@@ -67,6 +70,7 @@
                                                 DescriptorArray
                                             )
                                         )
+                                        ()
                                     )
                                     Save
                                     (Pointer
@@ -107,6 +111,7 @@
                                                 DescriptorArray
                                             )
                                         )
+                                        ()
                                     )
                                     (PointerNullConstant
                                         (Pointer
@@ -119,6 +124,7 @@
                                                 DescriptorArray
                                             )
                                         )
+                                        ()
                                     )
                                     Save
                                     (Pointer

@@ -17,12 +17,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 x
+                                        .false.
                                     )
-                                    ()
+                                    2 x
                                     Source
                                     Public
                                     Required
@@ -126,12 +126,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        4 a
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 a
                                                     Source
                                                     Public
                                                     Required
@@ -221,12 +221,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        6 a
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 a
                                                     Source
                                                     Public
                                                     Required

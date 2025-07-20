@@ -57,12 +57,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 t_1
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 t_1
                                                     Source
                                                     Private
                                                     Required
@@ -78,10 +78,10 @@
                                     (FunctionType
                                         []
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 t_1
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -154,12 +154,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 t_1
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 t_1
                                                     Source
                                                     Private
                                                     Required
@@ -175,10 +175,10 @@
                                     (FunctionType
                                         []
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 t_1
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -292,16 +292,7 @@
                                     (SymbolTable
                                         7
                                         {
-                                            1_t_1:
-                                                (ExternalSymbol
-                                                    7
-                                                    1_t_1
-                                                    2 t_1
-                                                    derived_types_17_module_1
-                                                    []
-                                                    t_1
-                                                    Public
-                                                )
+                                            
                                         })
                                     sub_2
                                     (FunctionType
@@ -328,10 +319,10 @@
                                                 ()
                                                 []
                                                 (StructType
-                                                    []
+                                                    [(Integer 4)]
                                                     []
                                                     .true.
-                                                    7 1_t_1
+                                                    .false.
                                                 )
                                                 ()
                                                 ()
@@ -349,10 +340,10 @@
                                                 ()
                                                 []
                                                 (StructType
-                                                    []
+                                                    [(Integer 4)]
                                                     []
                                                     .true.
-                                                    7 1_t_1
+                                                    .false.
                                                 )
                                                 ()
                                                 ()

@@ -97,12 +97,13 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         []
                                         .true.
-                                        6 rectangle
+                                        .false.
                                     )
-                                    ()
+                                    6 rectangle
                                     Source
                                     Public
                                     Required
@@ -143,12 +144,40 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
-                                        []
+                                        [(Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        [(FunctionType
+                                            [(StructType
+                                                [(Integer 4)
+                                                (Logical 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            (Integer 4)
+                                            (Logical 4)
+                                            (Integer 4)
+                                            (Integer 4)]
+                                            ()
+                                            Source
+                                            Implementation
+                                            ()
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            .false.
+                                            []
+                                            .false.
+                                        )]
                                         .true.
-                                        6 shape
+                                        .false.
                                     )
-                                    ()
+                                    6 shape
                                     Source
                                     Public
                                     Required
@@ -395,12 +424,15 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Logical 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        2 shape
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 shape
                                                     Source
                                                     Public
                                                     Required
@@ -457,10 +489,13 @@
                                     initialize_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 4)
+                                            (Logical 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            2 shape
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Logical 4)

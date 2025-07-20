@@ -47,12 +47,14 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        9 fpm_new_settings
+                                        .false.
                                     )
-                                    ()
+                                    9 fpm_new_settings
                                     Source
                                     Public
                                     Required
@@ -141,12 +143,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 fpm_new_settings
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 fpm_new_settings
                                                     Source
                                                     Public
                                                     Required
@@ -161,10 +165,12 @@
                                     cmd_new
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 fpm_new_settings
+                                            .false.
                                         )]
                                         ()
                                         Source
