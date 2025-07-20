@@ -31,7 +31,7 @@ void pass_wrap_global_stmts(Allocator &al,
     char *fn_name = s.c_str(al);
     SymbolTable *fn_scope = al.make_new<SymbolTable>(unit.m_symtab);
 
-    ASR::ttype_t *type;
+    ASR::ttype_t *type = nullptr;
     Location loc = unit.base.base.loc;
     ASR::asr_t *return_var=nullptr;
     ASR::expr_t *return_var_ref=nullptr;

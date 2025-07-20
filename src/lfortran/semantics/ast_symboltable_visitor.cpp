@@ -1442,7 +1442,7 @@ public:
                         diag::Label("", {x.base.base.loc})}));
                 throw SemanticAbort();
             }
-            ASR::ttype_t *type;
+            ASR::ttype_t *type = nullptr;
             int i_kind = compiler_options.po.default_integer_kind;
             int a_kind = 4;
             int a_len = -10;

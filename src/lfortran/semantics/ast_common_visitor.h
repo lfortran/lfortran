@@ -1569,7 +1569,7 @@ public:
 
     ASR::symbol_t* declare_implicit_variable(const Location &loc,
             const std::string &var_name, ASR::intentType intent, ASR::expr_t* value = nullptr) {
-        ASR::ttype_t *type;
+        ASR::ttype_t *type = nullptr;
         char first_letter = var_name[0];
         // The default implicit typing is:
         // implicit real (a-h,o-z)
@@ -4686,7 +4686,7 @@ public:
         }
 
         AST::AttrType_t *sym_type = AST::down_cast<AST::AttrType_t>(decl_attribute);
-        ASR::ttype_t *type;
+        ASR::ttype_t *type = nullptr;
         type_declaration = nullptr;
 
         int a_kind = 4;
@@ -5274,7 +5274,7 @@ public:
             args.push_back(al, ai);
         }
 
-        ASR::ttype_t *type;
+        ASR::ttype_t *type = nullptr;
         type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(f2));
         ASR::expr_t *arr_ref_val = nullptr;
         bool all_args_eval = ASRUtils::all_args_evaluated(args);

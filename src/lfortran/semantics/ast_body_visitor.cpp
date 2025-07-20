@@ -3038,7 +3038,7 @@ public:
 
         // extract the type of var_name from symbol table
         ASR::symbol_t *sym = current_scope->resolve_symbol(var_name);
-        ASR::ttype_t *type;
+        ASR::ttype_t *type = nullptr;
 
         if (sym==nullptr) {
             if (compiler_options.implicit_typing) {
