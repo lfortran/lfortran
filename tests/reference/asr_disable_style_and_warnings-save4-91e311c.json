@@ -1,0 +1,13 @@
+{
+    "basename": "asr_disable_style_and_warnings-save4-91e311c",
+    "cmd": "lfortran --show-asr --no-style-warnings -Wno-warnings --no-color {infile} -o {outfile}",
+    "infile": "tests/save4.f90",
+    "infile_hash": "8ad16d18b9282d4bb2812bf641878b7a6738e0e34c356b94ff01ef8a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_disable_style_and_warnings-save4-91e311c.stdout",
+    "stdout_hash": "41928aaeec0ba9aba4a5d90abc61e067ad826e7d0517bb7a419a6fea",
+    "stderr": "asr_disable_style_and_warnings-save4-91e311c.stderr",
+    "stderr_hash": "3bdddd3a2a4fb1b8abedab01367690315d80eb596d97fb204e83d36b",
+    "returncode": 0
+}
