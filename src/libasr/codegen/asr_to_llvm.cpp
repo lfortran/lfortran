@@ -10964,10 +10964,16 @@ public:
                 } else {
                     llvm::Type* _type = llvm_utils->get_type_from_ttype_t_util(s_m_args0, s_m_args0_type, module.get());
                     llvm::Type* dt_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, arg_type, module.get());
+                    ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, arg_expr->base.loc,
+                                    ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg_expr)));
+                    llvm::Type* wrapped_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(arg_expr, wrapped_struct_type, module.get());
                     llvm::Value* abstract_ = llvm_utils->CreateAlloca(*builder, _type);
                     llvm::Value* polymorphic_addr = llvm_utils->create_gep2(_type, abstract_, 1);
                     builder->CreateStore(
-                        builder->CreateBitCast(llvm_utils->CreateLoad(llvm_utils->create_gep2(dt_type, dt, 1)), llvm::Type::getVoidTy(context)->getPointerTo()),
+                        builder->CreateBitCast(
+                            llvm_utils->CreateLoad2(wrapped_struct_llvm_type->getPointerTo(),
+                                                    llvm_utils->create_gep2(dt_type, dt, 1)),
+                            llvm::Type::getVoidTy(context)->getPointerTo()),
                         polymorphic_addr);
                     llvm::Value* type_id_addr = llvm_utils->create_gep2(_type, abstract_, 0);
                     if (ASR::is_a<ASR::StructType_t>(*arg_type)) {
