@@ -161,6 +161,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
+            bool is_pointer_result = ASRUtils::is_pointer(fc->m_type);
 
             ASR::expr_t* temp_result = PassUtils::create_var(result_counter++,
                 "_func_call_temp", fc->base.base.loc, ASRUtils::duplicate_type(al, fc->m_type), al, current_scope);
@@ -179,16 +180,24 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     to_be_deallocated.p, to_be_deallocated.size())));
             }
             ASR::call_arg_t result_arg;
-            result_arg.loc = temp_result->base.loc;
-            result_arg.m_value = temp_result;
+            if(is_pointer_result){
+                result_arg.loc = target->base.loc;
+                result_arg.m_value = target;
+            }
+            else{
+                result_arg.loc = temp_result->base.loc;
+                result_arg.m_value = temp_result;
+            }
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
                 fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false));
             pass_result.push_back(al, subrout_call);
-
-            ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, target->base.loc,
-                target, temp_result, nullptr, false));
-            pass_result.push_back(al, assignment_stmt);            
+ 
+            if(!is_pointer_result){
+                ASR::stmt_t* assignment_stmt = ASRUtils::STMT(ASR::make_Assignment_t(al, target->base.loc,
+                    target, temp_result, nullptr, false));
+                pass_result.push_back(al, assignment_stmt); 
+            }           
             remove_original_statement = true;
         }
 
