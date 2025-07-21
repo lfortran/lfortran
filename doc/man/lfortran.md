@@ -57,7 +57,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--symtab-only`: Only create symbol tables in ASR (skip executable stmt)
 - `--time-report`: Show compilation time report
 - `--static`: Create a static executable
-- `--no-warnings`: Turn off all warnings
+- `-Wno-warnings`: Turn off all warnings
 - `--no-error-banner`: Turn off error banner
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
