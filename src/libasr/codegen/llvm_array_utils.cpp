@@ -194,9 +194,7 @@ namespace LCompilers {
                                 dim_des_array,
                                 llvm::Type::getInt1Ty(context),
                                 llvm::Type::getInt32Ty(context)  };
-            std::string random_suffix = std::to_string(rand() % 10000);
-            std::string unique_var_name = "array_" + random_suffix;
-            llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, unique_var_name);
+            llvm::StructType* new_array_type = llvm::StructType::create(context, array_type_vec, "array");
             tkr2array[array_key] = std::make_pair(new_array_type, el_type);
             if( get_pointer ) {
                 return tkr2array[array_key].first->getPointerTo();
