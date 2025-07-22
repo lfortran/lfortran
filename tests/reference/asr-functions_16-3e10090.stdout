@@ -1244,6 +1244,30 @@
                                             ColMajor
                                         )
                                     )
+                                    (Assignment
+                                        (Var 5 indexarray)
+                                        (ArrayConstructor
+                                            [(ImpliedDoLoop
+                                                [(Var 5 i)]
+                                                (Var 5 i)
+                                                (Var 5 low)
+                                                (Var 5 high)
+                                                ()
+                                                (Integer 4)
+                                                ()
+                                            )]
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                            ()
+                                            ColMajor
+                                        )
+                                        ()
+                                        .false.
+                                    )
                                     (If
                                         ()
                                         (IntrinsicElementalFunction
