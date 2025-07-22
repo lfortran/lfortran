@@ -5,8 +5,8 @@ module class_58_mod
   end type mytype
 contains
   subroutine expect_class(x)
-    class(mytype), intent(in) :: x(:)
-    ! print *, x(1)%val   ! This can be done after StructType Refactor 
+    class(mytype), intent(inout) :: x(:)
+    x(1)%val = 7
   end subroutine expect_class
 end module class_58_mod
 
@@ -18,4 +18,5 @@ program class_58
   allocate(y(3))
   y(1)%val = 5
   call expect_class(y)
+  if (y(1)%val /= 7) error stop
 end program class_58
