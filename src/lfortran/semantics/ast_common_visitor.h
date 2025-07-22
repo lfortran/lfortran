@@ -4105,10 +4105,21 @@ public:
                     // character(*) :: x(2) = "a", as we can assign "length" to
                     // character easily
                     if (is_char_type && storage_type == ASR::storage_typeType::Parameter) {
+                        bool is_array_reshape = false;
+                        if (ASR::is_a<ASR::ArrayReshape_t>(*init_expr)) {
+                            is_array_reshape = true;
+                        }
                         ASR::String_t *lhs_type = ASR::down_cast<ASR::String_t>(
                             ASRUtils::type_get_past_array(type));
-                        ASR::String_t *rhs_type = ASR::down_cast<ASR::String_t>(
-                            ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
+                        ASR::String_t *rhs_type = nullptr;
+                        if (is_array_reshape) {
+                            ASR::ArrayReshape_t* array_reshape = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
+                            rhs_type = ASR::down_cast<ASR::String_t>(ASRUtils::type_get_past_array(array_reshape->m_type));
+                        }
+                        else {
+                            rhs_type = ASR::down_cast<ASR::String_t>(
+                                ASRUtils::type_get_past_array(ASRUtils::expr_type(value)));
+                        }
                         int64_t lhs_len, rhs_len;
                         bool is_lhs_length_constant = ASRUtils::extract_value(lhs_type->m_len, lhs_len);
                         bool is_rhs_length_constant = ASRUtils::extract_value(rhs_type->m_len, rhs_len);
@@ -4127,10 +4138,10 @@ public:
                             if((lhs_len != rhs_len)) {
                                 // Adjust character string by padding or trimming
                                 // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                if (!is_array_reshape && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
                                     value = adjust_array_character_length(value, lhs_len,
                                         rhs_len, al);
-                                } else {
+                                } else if (!is_array_reshape) {
                                     value = adjust_character_length(value, lhs_len,
                                         rhs_len, init_expr->base.loc, al);
                                 }
