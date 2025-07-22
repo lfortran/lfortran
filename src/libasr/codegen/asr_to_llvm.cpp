@@ -1336,16 +1336,6 @@ public:
         return free_fn;
     }
 
-    inline void call_lcompilers_free_strings() {
-        // if (strings_to_be_deallocated.n > 0) {
-        //     llvm::Function* free_fn = _Deallocate();
-        //     for( auto &value: strings_to_be_deallocated ) {
-        //         builder->CreateCall(free_fn, {value});
-        //     }
-        //     strings_to_be_deallocated.reserve(al, 1);
-        // }
-    }
-
     llvm::Function* _Allocate() {
         std::string func_name = "_lfortran_allocate_string";
         llvm::Function *alloc_fun = module->getFunction(func_name);
@@ -3783,7 +3773,6 @@ public:
         for( auto& value: heap_arrays ) {
             LLVM::lfortran_free(context, *module, *builder, value);
         }
-        call_lcompilers_free_strings();
 
         {
             llvm::Function *fn = module->getFunction("_lpython_free_argv");
@@ -4969,14 +4958,12 @@ public:
             for( auto& value: heap_arrays ) {
                 LLVM::lfortran_free(context, *module, *builder, value);
             }
-            call_lcompilers_free_strings();
             builder->CreateRet(ret_val2);
         } else {
             start_new_block(proc_return);
             for( auto& value: heap_arrays ) {
                 LLVM::lfortran_free(context, *module, *builder, value);
             }
-            call_lcompilers_free_strings();
             builder->CreateRetVoid();
         }
     }
@@ -7235,12 +7222,10 @@ public:
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
-            call_lcompilers_free_strings();
         }, [&]() {
             for (size_t i=0; i<x.n_orelse; i++) {
                 this->visit_stmt(*x.m_orelse[i]);
             }
-            call_lcompilers_free_strings();
         }, x.m_name, loop_or_block_end, loop_or_block_end_names);
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
@@ -7273,13 +7258,11 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         create_loop(x.m_name, [=]() {
             this->visit_expr_wrapper(x.m_test, true);
-            call_lcompilers_free_strings();
             return tmp;
         }, [&]() {
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
-            call_lcompilers_free_strings();
         });
         strings_to_be_deallocated.reserve(al, n);
         strings_to_be_deallocated.n = n;
