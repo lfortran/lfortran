@@ -188,7 +188,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
-  git checkout 135e7bae8f3f9f7d17110b56da228d80bedcf353
+  git checkout 03a7f807c9524de19feade87e51b6ae7268df47e
   cp src/mpi.f90 ../src/
   cp src/mpi_c_bindings.f90 ../src/
   cp src/mpi_constants.c ../src/
