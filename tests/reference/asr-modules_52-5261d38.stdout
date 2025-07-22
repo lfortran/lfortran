@@ -51,13 +51,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            3 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    3 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -247,13 +248,16 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            5 toml_error
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_error
                                                     Source
                                                     Public
                                                     Optional
@@ -275,13 +279,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            5 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -297,10 +302,11 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Logical 4)]
                                                 []
                                                 .true.
-                                                5 toml_table
+                                                .false.
                                             )
                                         )
                                         (Array
@@ -311,10 +317,13 @@
                                         )
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                5 toml_error
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -356,13 +365,16 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            5 toml_error
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_error
                                                     Source
                                                     Public
                                                     Optional
@@ -384,13 +396,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            5 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -427,19 +440,23 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Logical 4)]
                                                 []
                                                 .true.
-                                                5 toml_table
+                                                .false.
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                5 toml_error
+                                                .false.
                                             )
                                         )]
                                         ()

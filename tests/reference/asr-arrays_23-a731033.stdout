@@ -42,12 +42,16 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Pointer
+                                                            (String 1 () DeferredLength PointerString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 toml_context
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_context
                                                     Source
                                                     Public
                                                     Required
@@ -130,10 +134,14 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Pointer
+                                                (String 1 () DeferredLength PointerString)
+                                            )]
                                             []
                                             .true.
-                                            2 toml_context
+                                            .false.
                                         )]
                                         ()
                                         Source

@@ -60,12 +60,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -80,10 +82,12 @@
                                     len_string
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )]
                                         (Integer 4)
                                         Source
@@ -218,12 +222,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 string_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 string_type
                                                     Source
                                                     Public
                                                     Required
@@ -238,10 +244,12 @@
                                     maybe
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 string_type
+                                            .false.
                                         )]
                                         (String 1 (FunctionCall
                                             2 len_string
@@ -249,10 +257,12 @@
                                             [((FunctionParam
                                                 0
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 string_type
+                                                    .false.
                                                 )
                                                 ()
                                             ))]

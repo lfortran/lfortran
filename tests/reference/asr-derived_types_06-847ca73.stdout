@@ -75,12 +75,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        7 toml_date
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -98,10 +100,12 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            7 toml_date
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -250,12 +254,37 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        7 toml_datetime
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 toml_datetime
                                                     Source
                                                     Private
                                                     Required
@@ -296,10 +325,35 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    (Integer 4)
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            7 toml_datetime
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -325,10 +379,12 @@
                                                 12 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        7 toml_date
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -346,10 +402,12 @@
                                                 12 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        7 toml_date
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -364,10 +422,18 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            7 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -385,10 +451,18 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            7 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -448,10 +522,18 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            7 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -467,10 +549,18 @@
                                                     12 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            7 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -484,10 +574,18 @@
                                                         12 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
-                                                                []
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                7 toml_time
+                                                                .false.
                                                             )
                                                         )
                                                         ()
@@ -654,12 +752,20 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        7 toml_time
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -700,10 +806,18 @@
                                         (Integer 4)
                                         (String 1 () AssumedLength PointerString)]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            7 toml_time
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -938,12 +1052,20 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        7 toml_time
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -961,10 +1083,18 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            7 toml_time
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -1336,13 +1466,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Integer 4)
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            7 toml_date
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    7 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -1364,13 +1496,21 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            7 toml_time
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    7 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -1830,12 +1970,83 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        [(FunctionType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Integer 4)
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                (Allocatable
+                                                                    (StructType
+                                                                        [(Integer 4)
+                                                                        (Allocatable
+                                                                            (Integer 4)
+                                                                        )
+                                                                        (Integer 4)
+                                                                        (Integer 4)
+                                                                        (Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )]
+                                                            ()
+                                                            Source
+                                                            Implementation
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )]
                                                         .true.
-                                                        4 toml_datetime
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_datetime
                                                     Source
                                                     Public
                                                     Required
@@ -1851,10 +2062,81 @@
                                     (FunctionType
                                         [(String 1 () AssumedLength PointerString)
                                         (StructType
-                                            []
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    (Integer 4)
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
+                                            [(FunctionType
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (StructType
+                                                    [(Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Integer 4)
+                                                            (Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    (Allocatable
+                                                        (StructType
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )]
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )]
+                                                ()
+                                                Source
+                                                Implementation
+                                                ()
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                .false.
+                                                []
+                                                .false.
+                                            )]
                                             .true.
-                                            4 toml_datetime
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -1883,10 +2165,12 @@
                                             5 1_toml_datetime_date
                                             (Allocatable
                                                 (StructType
-                                                    []
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
                                                     []
                                                     .true.
-                                                    4 toml_date
+                                                    .false.
                                                 )
                                             )
                                             ()
@@ -1897,10 +2181,35 @@
                                             ((IntegerConstant 0 (Integer 4) Decimal))
                                             ((IntegerConstant 0 (Integer 4) Decimal))]
                                             (StructType
-                                                []
-                                                []
+                                                [(Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                [(FunctionType
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (StructType
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    ()
+                                                    Source
+                                                    Implementation
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    .false.
+                                                )]
                                                 .true.
-                                                4 toml_date
+                                                .false.
                                             )
                                             ()
                                         )

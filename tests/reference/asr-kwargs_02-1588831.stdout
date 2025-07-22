@@ -67,9 +67,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
                                                     Public
                                                     Required
@@ -108,7 +108,7 @@
                                             []
                                             []
                                             .false.
-                                            2 logger_type
+                                            .false.
                                         )
                                         (String 1 () AssumedLength PointerString)
                                         (Integer 4)]
@@ -202,9 +202,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
                                                     Public
                                                     Required
@@ -243,7 +243,7 @@
                                             []
                                             []
                                             .false.
-                                            2 logger_type
+                                            .false.
                                         )
                                         (Integer 4)
                                         (String 1 () AssumedLength PointerString)

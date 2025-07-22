@@ -87,12 +87,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Public
                                                     Required
@@ -113,12 +113,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Public
                                                     Required
@@ -133,16 +133,16 @@
                                     print_radius
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 circle
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 circle
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -204,12 +204,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        2 circle
+                                        .false.
                                     )
-                                    ()
+                                    2 circle
                                     Source
                                     Public
                                     Required
@@ -230,12 +230,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        2 circle
+                                        .false.
                                     )
-                                    ()
+                                    2 circle
                                     Source
                                     Public
                                     Required

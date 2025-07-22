@@ -21,33 +21,50 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 build_target_t
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 3 ptr)
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 build_target_t
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 3 ptr)
                                                     )
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 build_target_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 build_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -152,13 +169,18 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 build_target_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 build_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -175,10 +197,15 @@
                                         []
                                         (Pointer
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                2 build_target_t
+                                                .false.
                                             )
                                         )
                                         Source
@@ -199,12 +226,18 @@
                                         (PointerNullConstant
                                             (Pointer
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 build_target_t
+                                                    .false.
                                                 )
                                             )
+                                            (Var 5 target_ptr)
                                         )
                                     )]
                                     (Var 5 target_ptr)

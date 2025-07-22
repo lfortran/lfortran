@@ -249,16 +249,18 @@
                                     Default
                                     (Array
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            8 string_t
+                                            .false.
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         FixedSizeArray
                                     )
-                                    ()
+                                    8 string_t
                                     Source
                                     Public
                                     Required
@@ -307,10 +309,12 @@
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
                                 (StructType
-                                    []
+                                    [(Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )]
                                     []
                                     .true.
-                                    8 string_t
+                                    .false.
                                 )
                                 ColMajor
                                 ()
@@ -342,10 +346,12 @@
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
                                 (StructType
-                                    []
+                                    [(Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )]
                                     []
                                     .true.
-                                    8 string_t
+                                    .false.
                                 )
                                 ColMajor
                                 ()
@@ -431,10 +437,12 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        8 string_t
+                                        .false.
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
@@ -461,10 +469,12 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        8 string_t
+                                        .false.
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
@@ -515,10 +525,12 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        8 string_t
+                                        .false.
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
@@ -647,10 +659,12 @@
                                 DescriptorArray
                                 (Array
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        8 string_t
+                                        .false.
                                     )
                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                     (IntegerConstant 2 (Integer 4) Decimal))]
@@ -1070,16 +1084,18 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 string_t
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
                                                         DescriptorArray
                                                     )
-                                                    ()
+                                                    2 string_t
                                                     Source
                                                     Public
                                                     Required
@@ -1116,10 +1132,12 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                2 string_t
+                                                .false.
                                             )
                                             [(()
                                             ())]
@@ -1154,10 +1172,12 @@
                                                         (IntegerConstant 1 (Integer 4) Decimal)
                                                         ())]
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 string_t
+                                                            .false.
                                                         )
                                                         ColMajor
                                                         ()
@@ -1179,10 +1199,12 @@
                                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
                                                                     []
                                                                     .true.
-                                                                    2 string_t
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -1231,10 +1253,12 @@
                                                             (Var 5 i)
                                                             ())]
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 string_t
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -1256,10 +1280,12 @@
                                                                     (Var 5 i)
                                                                     ())]
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
                                                                         []
                                                                         .true.
-                                                                        2 string_t
+                                                                        .false.
                                                                     )
                                                                     ColMajor
                                                                     ()
@@ -1807,16 +1833,18 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 string_t
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
                                                         DescriptorArray
                                                     )
-                                                    ()
+                                                    2 string_t
                                                     Source
                                                     Public
                                                     Required
@@ -1832,10 +1860,12 @@
                                     (FunctionType
                                         [(Array
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                2 string_t
+                                                .false.
                                             )
                                             [(()
                                             ())]
@@ -1943,10 +1973,12 @@
                                                 (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 string_t
+                                                    .false.
                                                 )
                                                 ColMajor
                                                 ()
@@ -2013,10 +2045,12 @@
                                                                 (Var 7 i)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
                                                                     []
                                                                     .true.
-                                                                    2 string_t
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -2038,10 +2072,12 @@
                                                                         (Var 7 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
                                                                             []
                                                                             .true.
-                                                                            2 string_t
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()

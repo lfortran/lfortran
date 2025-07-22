@@ -63,12 +63,17 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        11 git_target_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    11 git_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -106,10 +111,15 @@
                                         [(String 1 () AssumedLength PointerString)
                                         (String 1 () AssumedLength PointerString)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            11 git_target_t
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -266,13 +276,18 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            4 git_target_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 git_target_t
                                                     Source
                                                     Public
                                                     Required
@@ -422,17 +437,35 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )
+                                                                        (Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .true.
+                                                                        .false.
+                                                                    )
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                4 dependency_config_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    4 dependency_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -454,13 +487,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            4 error_t
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 error_t
                                                     Source
                                                     Public
                                                     Required
@@ -502,12 +537,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)]
                                                         []
                                                         .true.
-                                                        4 toml_table
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -524,10 +559,28 @@
                                         [(Allocatable
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    4 dependency_config_t
+                                                    .false.
                                                 )
                                                 [(()
                                                 ())]
@@ -535,18 +588,20 @@
                                             )
                                         )
                                         (StructType
-                                            []
+                                            [(Logical 4)]
                                             []
                                             .true.
-                                            4 toml_table
+                                            .false.
                                         )
                                         (String 1 () AssumedLength PointerString)
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                4 error_t
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -621,12 +676,30 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        4 dependency_config_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 dependency_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -664,10 +737,28 @@
                                     new_dependency
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            4 dependency_config_t
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -689,10 +780,15 @@
                                             9 1_dependency_config_t_git
                                             (Allocatable
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    4 git_target_t
+                                                    .false.
                                                 )
                                             )
                                             ()
@@ -727,10 +823,15 @@
                                                 ()
                                             ))]
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                4 git_target_t
+                                                .false.
                                             )
                                             ()
                                             ()

@@ -322,10 +322,22 @@
                                             ColMajor
                                         ))]
                                         (StructType
-                                            []
+                                            [(Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )]
                                             []
                                             .true.
-                                            2 mytype
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -354,20 +366,44 @@
                                             ColMajor
                                         ))]
                                         (StructType
-                                            []
+                                            [(Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )
+                                            (Integer 4)
+                                            (Array
+                                                (Integer 4)
+                                                [((IntegerConstant 1 (Integer 4) Decimal)
+                                                (IntegerConstant 2 (Integer 4) Decimal))]
+                                                FixedSizeArray
+                                            )]
                                             []
                                             .true.
-                                            2 mytype
+                                            .false.
                                         )
                                     )
                                     Default
                                     (StructType
-                                        []
+                                        [(Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        (Integer 4)
+                                        (Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 2 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )]
                                         []
                                         .true.
-                                        2 mytype
+                                        .false.
                                     )
-                                    ()
+                                    2 mytype
                                     Source
                                     Public
                                     Required

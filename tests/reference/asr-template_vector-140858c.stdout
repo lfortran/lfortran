@@ -154,12 +154,20 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
                                                                         []
                                                                         .false.
-                                                                        7 intvector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    7 intvector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -174,10 +182,18 @@
                                                     __asr_push_back
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            7 intvector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -338,12 +354,47 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
+                                                                        [(FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (Array
+                                                                                        (Integer 4)
+                                                                                        [(()
+                                                                                        ())]
+                                                                                        DescriptorArray
+                                                                                    )
+                                                                                )
+                                                                                (Integer 4)]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                            (Integer 4)]
+                                                                            ()
+                                                                            Source
+                                                                            Implementation
+                                                                            ()
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )]
                                                                         .false.
-                                                                        7 intvector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    7 intvector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -386,10 +437,45 @@
                                                     __asr_resize
                                                     (FunctionType
                                                         [(StructType
-                                                            []
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
+                                                            [(FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (Array
+                                                                            (Integer 4)
+                                                                            [(()
+                                                                            ())]
+                                                                            DescriptorArray
+                                                                        )
+                                                                    )
+                                                                    (Integer 4)]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                                (Integer 4)]
+                                                                ()
+                                                                Source
+                                                                Implementation
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )]
                                                             .false.
-                                                            7 intvector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -702,12 +788,102 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
+                                                        [(FunctionType
+                                                            [(StructType
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                (Integer 4)]
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                            (Integer 4)]
+                                                            ()
+                                                            Source
+                                                            Implementation
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )
+                                                        (FunctionType
+                                                            [(StructType
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                (Integer 4)]
+                                                                [(FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (Integer 4)
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (Integer 4)]
+                                                                    ()
+                                                                    Source
+                                                                    Implementation
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )]
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                            (Integer 4)]
+                                                            ()
+                                                            Source
+                                                            Implementation
+                                                            ()
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            .false.
+                                                            []
+                                                            .false.
+                                                        )]
                                                         .true.
-                                                        7 intvector
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 intvector
                                                     Source
                                                     Private
                                                     Required
@@ -876,12 +1052,22 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
                                                                         []
                                                                         .false.
-                                                                        3 vector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    3 vector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -896,10 +1082,20 @@
                                                     push_back
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            3 vector
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
@@ -1066,12 +1262,22 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
                                                                         []
                                                                         .false.
-                                                                        3 vector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    3 vector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1116,10 +1322,20 @@
                                                     resize
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            3 vector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()

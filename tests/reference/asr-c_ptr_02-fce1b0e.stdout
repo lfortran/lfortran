@@ -325,12 +325,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(CPtr)]
                                         []
                                         .true.
-                                        2 test_obj
+                                        .false.
                                     )
-                                    ()
+                                    2 test_obj
                                     Source
                                     Public
                                     Required
@@ -403,9 +403,11 @@
                                                     Local
                                                     (PointerNullConstant
                                                         (CPtr)
+                                                        ()
                                                     )
                                                     (PointerNullConstant
                                                         (CPtr)
+                                                        ()
                                                     )
                                                     Default
                                                     (CPtr)

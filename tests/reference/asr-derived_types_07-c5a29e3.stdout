@@ -105,13 +105,57 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            [(FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )]
+                                                                ()
+                                                                Source
+                                                                Interface
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )
+                                                            (FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                                (String 1 () AssumedLength PointerString)]
+                                                                (Logical 4)
+                                                                Source
+                                                                Implementation
+                                                                ()
+                                                                .false.
+                                                                .true.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )]
                                                             .false.
-                                                            9 toml_value
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    9 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -132,12 +176,76 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            [(FunctionType
+                                                                                [(StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )]
+                                                                                ()
+                                                                                Source
+                                                                                Interface
+                                                                                ()
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                []
+                                                                                .false.
+                                                                            )
+                                                                            (FunctionType
+                                                                                [(StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                                (String 1 () AssumedLength PointerString)]
+                                                                                (Logical 4)
+                                                                                Source
+                                                                                Implementation
+                                                                                ()
+                                                                                .false.
+                                                                                .true.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                []
+                                                                                .false.
+                                                                            )]
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        9 toml_vector
+                                                        .false.
                                                     )
-                                                    ()
+                                                    9 toml_vector
                                                     Source
                                                     Public
                                                     Required
@@ -152,18 +260,126 @@
                                     find
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                [(FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )]
+                                                                    ()
+                                                                    Source
+                                                                    Interface
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )
+                                                                (FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (Logical 4)
+                                                                    Source
+                                                                    Implementation
+                                                                    ()
+                                                                    .false.
+                                                                    .true.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )]
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            9 toml_vector
+                                            .false.
                                         )
                                         (String 1 () AssumedLength PointerString)
                                         (Pointer
                                             (StructType
-                                                []
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                [(FunctionType
+                                                    [(StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )]
+                                                    ()
+                                                    Source
+                                                    Interface
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    .false.
+                                                )
+                                                (FunctionType
+                                                    [(StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .false.
+                                                        .false.
+                                                    )
+                                                    (String 1 () AssumedLength PointerString)]
+                                                    (Logical 4)
+                                                    Source
+                                                    Implementation
+                                                    ()
+                                                    .false.
+                                                    .true.
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    []
+                                                    .false.
+                                                )]
                                                 .false.
-                                                9 toml_value
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -208,10 +424,61 @@
                                                             (Allocatable
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                [(FunctionType
+                                                                                    [(StructType
+                                                                                        [(Allocatable
+                                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                                        )]
+                                                                                        []
+                                                                                        .false.
+                                                                                        .false.
+                                                                                    )]
+                                                                                    ()
+                                                                                    Source
+                                                                                    Interface
+                                                                                    ()
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    []
+                                                                                    .false.
+                                                                                )
+                                                                                (FunctionType
+                                                                                    [(StructType
+                                                                                        [(Allocatable
+                                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                                        )]
+                                                                                        []
+                                                                                        .false.
+                                                                                        .false.
+                                                                                    )
+                                                                                    (String 1 () AssumedLength PointerString)]
+                                                                                    (Logical 4)
+                                                                                    Source
+                                                                                    Implementation
+                                                                                    ()
+                                                                                    .false.
+                                                                                    .true.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    .false.
+                                                                                    []
+                                                                                    .false.
+                                                                                )]
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                        )]
                                                                         []
                                                                         .true.
-                                                                        9 toml_node
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -224,10 +491,61 @@
                                                         (Var 13 i)
                                                         ())]
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    [(FunctionType
+                                                                        [(StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )]
+                                                                        ()
+                                                                        Source
+                                                                        Interface
+                                                                        ()
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        []
+                                                                        .false.
+                                                                    )
+                                                                    (FunctionType
+                                                                        [(StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                        (String 1 () AssumedLength PointerString)]
+                                                                        (Logical 4)
+                                                                        Source
+                                                                        Implementation
+                                                                        ()
+                                                                        .false.
+                                                                        .true.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        []
+                                                                        .false.
+                                                                    )]
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                            )]
                                                             []
                                                             .true.
-                                                            9 toml_node
+                                                            .false.
                                                         )
                                                         ColMajor
                                                         ()
@@ -235,10 +553,54 @@
                                                     13 1_toml_node_val
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            [(FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )]
+                                                                ()
+                                                                Source
+                                                                Interface
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )
+                                                            (FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                                (String 1 () AssumedLength PointerString)]
+                                                                (Logical 4)
+                                                                Source
+                                                                Implementation
+                                                                ()
+                                                                .false.
+                                                                .true.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )]
                                                             .false.
-                                                            9 toml_value
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -263,10 +625,61 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    [(FunctionType
+                                                                                        [(StructType
+                                                                                            [(Allocatable
+                                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                                            )]
+                                                                                            []
+                                                                                            .false.
+                                                                                            .false.
+                                                                                        )]
+                                                                                        ()
+                                                                                        Source
+                                                                                        Interface
+                                                                                        ()
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        []
+                                                                                        .false.
+                                                                                    )
+                                                                                    (FunctionType
+                                                                                        [(StructType
+                                                                                            [(Allocatable
+                                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                                            )]
+                                                                                            []
+                                                                                            .false.
+                                                                                            .false.
+                                                                                        )
+                                                                                        (String 1 () AssumedLength PointerString)]
+                                                                                        (Logical 4)
+                                                                                        Source
+                                                                                        Implementation
+                                                                                        ()
+                                                                                        .false.
+                                                                                        .true.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        []
+                                                                                        .false.
+                                                                                    )]
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
                                                                             []
                                                                             .true.
-                                                                            9 toml_node
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -279,10 +692,61 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        [(FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )]
+                                                                            ()
+                                                                            Source
+                                                                            Interface
+                                                                            ()
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )
+                                                                        (FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (Logical 4)
+                                                                            Source
+                                                                            Implementation
+                                                                            ()
+                                                                            .false.
+                                                                            .true.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )]
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                9 toml_node
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -290,10 +754,54 @@
                                                         13 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
-                                                                []
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                [(FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )]
+                                                                    ()
+                                                                    Source
+                                                                    Interface
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )
+                                                                (FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (Logical 4)
+                                                                    Source
+                                                                    Implementation
+                                                                    ()
+                                                                    .false.
+                                                                    .true.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )]
                                                                 .false.
-                                                                9 toml_value
+                                                                .false.
                                                             )
                                                         )
                                                         ()
@@ -309,10 +817,61 @@
                                                                 (Allocatable
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Allocatable
+                                                                                (StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    [(FunctionType
+                                                                                        [(StructType
+                                                                                            [(Allocatable
+                                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                                            )]
+                                                                                            []
+                                                                                            .false.
+                                                                                            .false.
+                                                                                        )]
+                                                                                        ()
+                                                                                        Source
+                                                                                        Interface
+                                                                                        ()
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        []
+                                                                                        .false.
+                                                                                    )
+                                                                                    (FunctionType
+                                                                                        [(StructType
+                                                                                            [(Allocatable
+                                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                                            )]
+                                                                                            []
+                                                                                            .false.
+                                                                                            .false.
+                                                                                        )
+                                                                                        (String 1 () AssumedLength PointerString)]
+                                                                                        (Logical 4)
+                                                                                        Source
+                                                                                        Implementation
+                                                                                        ()
+                                                                                        .false.
+                                                                                        .true.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        .false.
+                                                                                        []
+                                                                                        .false.
+                                                                                    )]
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                            )]
                                                                             []
                                                                             .true.
-                                                                            9 toml_node
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
@@ -325,10 +884,61 @@
                                                             (Var 13 i)
                                                             ())]
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        [(FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )]
+                                                                            ()
+                                                                            Source
+                                                                            Interface
+                                                                            ()
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )
+                                                                        (FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (Logical 4)
+                                                                            Source
+                                                                            Implementation
+                                                                            ()
+                                                                            .false.
+                                                                            .true.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )]
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                9 toml_node
+                                                                .false.
                                                             )
                                                             ColMajor
                                                             ()
@@ -336,10 +946,54 @@
                                                         13 1_toml_node_val
                                                         (Allocatable
                                                             (StructType
-                                                                []
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                [(FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )]
+                                                                    ()
+                                                                    Source
+                                                                    Interface
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )
+                                                                (FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (Logical 4)
+                                                                    Source
+                                                                    Implementation
+                                                                    ()
+                                                                    .false.
+                                                                    .true.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )]
                                                                 .false.
-                                                                9 toml_value
+                                                                .false.
                                                             )
                                                         )
                                                         ()
@@ -416,12 +1070,76 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            [(FunctionType
+                                                                                [(StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )]
+                                                                                ()
+                                                                                Source
+                                                                                Interface
+                                                                                ()
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                []
+                                                                                .false.
+                                                                            )
+                                                                            (FunctionType
+                                                                                [(StructType
+                                                                                    [(Allocatable
+                                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                                    )]
+                                                                                    []
+                                                                                    .false.
+                                                                                    .false.
+                                                                                )
+                                                                                (String 1 () AssumedLength PointerString)]
+                                                                                (Logical 4)
+                                                                                Source
+                                                                                Implementation
+                                                                                ()
+                                                                                .false.
+                                                                                .true.
+                                                                                .false.
+                                                                                .false.
+                                                                                .false.
+                                                                                []
+                                                                                .false.
+                                                                            )]
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        9 toml_vector
+                                                        .false.
                                                     )
-                                                    ()
+                                                    9 toml_vector
                                                     Source
                                                     Public
                                                     Required
@@ -436,10 +1154,74 @@
                                     new_vector
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                [(FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )]
+                                                                    ()
+                                                                    Source
+                                                                    Interface
+                                                                    ()
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )
+                                                                (FunctionType
+                                                                    [(StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        []
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (Logical 4)
+                                                                    Source
+                                                                    Implementation
+                                                                    ()
+                                                                    .false.
+                                                                    .true.
+                                                                    .false.
+                                                                    .false.
+                                                                    .false.
+                                                                    []
+                                                                    .false.
+                                                                )]
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            9 toml_vector
+                                            .false.
                                         )
                                         (Integer 4)]
                                         ()
@@ -484,10 +1266,61 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    [(FunctionType
+                                                                        [(StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )]
+                                                                        ()
+                                                                        Source
+                                                                        Interface
+                                                                        ()
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        []
+                                                                        .false.
+                                                                    )
+                                                                    (FunctionType
+                                                                        [(StructType
+                                                                            [(Allocatable
+                                                                                (String 1 () DeferredLength DescriptorString)
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )
+                                                                        (String 1 () AssumedLength PointerString)]
+                                                                        (Logical 4)
+                                                                        Source
+                                                                        Implementation
+                                                                        ()
+                                                                        .false.
+                                                                        .true.
+                                                                        .false.
+                                                                        .false.
+                                                                        .false.
+                                                                        []
+                                                                        .false.
+                                                                    )]
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                            )]
                                                             []
                                                             .true.
-                                                            9 toml_node
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
@@ -536,13 +1369,57 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
+                                                            [(FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )]
+                                                                ()
+                                                                Source
+                                                                Interface
+                                                                ()
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )
+                                                            (FunctionType
+                                                                [(StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .false.
+                                                                    .false.
+                                                                )
+                                                                (String 1 () AssumedLength PointerString)]
+                                                                (Logical 4)
+                                                                Source
+                                                                Implementation
+                                                                ()
+                                                                .false.
+                                                                .true.
+                                                                .false.
+                                                                .false.
+                                                                .false.
+                                                                []
+                                                                .false.
+                                                            )]
                                                             .false.
-                                                            9 toml_value
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    9 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -593,17 +1470,68 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (StructType
+                                                                        [(Allocatable
+                                                                            (String 1 () DeferredLength DescriptorString)
+                                                                        )]
+                                                                        [(FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )]
+                                                                            ()
+                                                                            Source
+                                                                            Interface
+                                                                            ()
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )
+                                                                        (FunctionType
+                                                                            [(StructType
+                                                                                [(Allocatable
+                                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                                )]
+                                                                                []
+                                                                                .false.
+                                                                                .false.
+                                                                            )
+                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (Logical 4)
+                                                                            Source
+                                                                            Implementation
+                                                                            ()
+                                                                            .false.
+                                                                            .true.
+                                                                            .false.
+                                                                            .false.
+                                                                            .false.
+                                                                            []
+                                                                            .false.
+                                                                        )]
+                                                                        .false.
+                                                                        .false.
+                                                                    )
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                9 toml_node
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    9 toml_node
                                                     Source
                                                     Public
                                                     Required
@@ -696,12 +1624,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        6 toml_keyval
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 toml_keyval
                                                     Source
                                                     Public
                                                     Required
@@ -716,10 +1646,12 @@
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            6 toml_keyval
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -924,12 +1856,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 toml_value
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -944,10 +1878,12 @@
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            2 toml_value
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -1037,12 +1973,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 toml_value
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -1057,10 +1995,12 @@
                                     match_key
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            2 toml_value
+                                            .false.
                                         )
                                         (String 1 () AssumedLength PointerString)]
                                         (Logical 4)

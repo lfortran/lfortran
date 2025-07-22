@@ -437,17 +437,20 @@ class InvolvedSymbolsCollector:
     public ASR::BaseWalkVisitor<InvolvedSymbolsCollector>
 {
     private:
+        Allocator &al;
     public:
-        std::map<std::string, ASR::ttype_t*> &symbols;
+        std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols;
         std::map<std::string, ASR::omp_clauseType> variable_accessibility;
-        InvolvedSymbolsCollector(std::map<std::string, ASR::ttype_t*> &symbols) :
-            symbols(symbols) {}
+        InvolvedSymbolsCollector(Allocator& al_, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &symbols) :
+            al(al_), symbols(symbols) {}
+
 
         void visit_Var(const ASR::Var_t &x) {
             if(symbols.find(to_lower(ASRUtils::symbol_name(x.m_v))) != symbols.end()) {
                 return; // Already added
             }
-            symbols[to_lower(ASRUtils::symbol_name(x.m_v))] = ASRUtils::symbol_type(x.m_v);
+            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].first = ASRUtils::symbol_type(x.m_v);
+            symbols[to_lower(ASRUtils::symbol_name(x.m_v))].second = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, x.m_v));
             variable_accessibility[ASRUtils::symbol_name(x.m_v)] = ASR::omp_clauseType::OMPShared;
             return;
         }
@@ -460,13 +463,14 @@ class InvolvedSymbolsCollector:
                     // Make the bool false in that pair
                     auto it = symbols.find((to_lower(ASRUtils::symbol_name(var->m_v))));
                     if (it != symbols.end()) {
-                        ASR::ttype_t* type_val = it->second;
+                        ASR::ttype_t* type_val = it->second.first;
                         symbols.erase(it);
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = type_val;
+                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = type_val;
                     }
                 }
                 variable_accessibility[ASRUtils::symbol_name(var->m_v)] = ASR::omp_clauseType::OMPPrivate;
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
             if (ASR::is_a<ASR::Var_t>(*x.m_end)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_end);
@@ -474,13 +478,15 @@ class InvolvedSymbolsCollector:
                     // Make the bool false in that pair
                     auto it = symbols.find((to_lower(ASRUtils::symbol_name(var->m_v))));
                     if (it != symbols.end()) {
-                        ASR::ttype_t* type_val = it->second;
+                        ASR::ttype_t* type_val = it->second.first;
                         symbols.erase(it);
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = type_val;
+                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = type_val;
+                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = it->second.second;
                     }
                 }
                 variable_accessibility[ASRUtils::symbol_name(var->m_v)] = ASR::omp_clauseType::OMPPrivate;
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
             if (ASR::is_a<ASR::Var_t>(*x.m_start)) {
                 var = ASR::down_cast<ASR::Var_t>(x.m_start);
@@ -488,13 +494,16 @@ class InvolvedSymbolsCollector:
                     // Make the bool false in that pair
                     auto it = symbols.find((to_lower(ASRUtils::symbol_name(var->m_v))));
                     if (it != symbols.end()) {
-                        ASR::ttype_t* type_val = it->second;
+                        ASR::ttype_t* type_val = it->second.first;
                         symbols.erase(it);
-                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = type_val;
+                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = type_val;
+                        symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = it->second.second;
+
                     }
                 }
                 variable_accessibility[ASRUtils::symbol_name(var->m_v)] = ASR::omp_clauseType::OMPPrivate;
-                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))] = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].first = ASRUtils::symbol_type(var->m_v);
+                symbols[(to_lower(ASRUtils::symbol_name(var->m_v)))].second = &var->base;
             }
             
             return;
@@ -804,7 +813,7 @@ class ParallelRegionVisitor :
             return module_sym;
         }
 
-        std::pair<std::string, ASR::symbol_t*> create_thread_data_module(std::map<std::string, ASR::ttype_t*> &involved_symbols, const Location& loc, std::string data_struct_name = "thread_data") {
+        std::pair<std::string, ASR::symbol_t*> create_thread_data_module(std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols, const Location& loc, std::string data_struct_name = "thread_data") {
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
                 current_scope = current_scope->parent;
@@ -835,12 +844,12 @@ class ParallelRegionVisitor :
             SetChar involved_symbols_set; involved_symbols_set.reserve(al, involved_symbols.size());
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = nullptr;
-                bool is_array = ASRUtils::is_array(it.second);
-                sym_type = is_array ? b.CPtr() : it.second;
+                bool is_array = ASRUtils::is_array(it.second.first);
+                sym_type = is_array ? b.CPtr() : it.second.first;
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
                 if (is_array) {
                     // add lbound and ubound variables for array
-                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second)));
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second.first)));
                     for (size_t i = 0; i < arr_type->n_dims; i++) {
                         std::string lbound_name = "lbound_" + it.first + "_" + std::to_string(i);
                         std::string ubound_name = "ubound_" + it.first + "_" + std::to_string(i);
@@ -880,7 +889,7 @@ class ParallelRegionVisitor :
         }
 
         ASR::symbol_t* create_lcompilers_function(const Location &loc, const ASR::DoConcurrentLoop_t &do_loop,
-                    std::map<std::string, ASR::ttype_t*> &involved_symbols, std::string thread_data_module_name,
+                    std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols, std::string thread_data_module_name,
                     std::vector<ASR::symbol_t*> module_symbols) {
             SymbolTable* current_scope_copy = current_scope;
             while (current_scope->parent != nullptr) {
@@ -902,13 +911,13 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
 
             // create data variable: `type(c_ptr), value :: data`
-            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified,
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified, nullptr, 
                     ASR::abiType::BindC, true);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
-                    ASR::intentType::Local, ASR::abiType::BindC);
+                    ASR::intentType::Local, thread_data_sym, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
 
             Vec<ASR::stmt_t*> body; body.reserve(al, involved_symbols.size() + 1);
@@ -919,7 +928,7 @@ class ParallelRegionVisitor :
 
             // declare involved variables
             for (auto it: involved_symbols) {
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second, ASR::intentType::Local, ASR::abiType::BindC));
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, it.second.first, ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC));
             }
 
             unpack_data_from_thread_data(loc, involved_symbols, thread_data_module_name, tdata_expr, body);
@@ -928,12 +937,12 @@ class ParallelRegionVisitor :
             // declare start, end, num_threads, chunk, leftovers, thread_num
             // TODO: find a better way to declare these
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
-            ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* num_threads = b.Variable(current_scope, current_scope->get_unique_name("num_threads"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* chunk = b.Variable(current_scope, current_scope->get_unique_name("chunk"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* leftovers = b.Variable(current_scope, current_scope->get_unique_name("leftovers"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* num_threads = b.Variable(current_scope, current_scope->get_unique_name("num_threads"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* chunk = b.Variable(current_scope, current_scope->get_unique_name("chunk"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* leftovers = b.Variable(current_scope, current_scope->get_unique_name("leftovers"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
 
             // update all expr present in DoConcurrent to use the new symbols
             DoConcurrentStatementVisitor v(al, current_scope);
@@ -1052,7 +1061,7 @@ class ParallelRegionVisitor :
             // integer :: I = 0;
             std::vector<ASR::stmt_t*> flattened_body;
             ASR::expr_t* I = b.Variable(current_scope, "I", ASRUtils::TYPE(ASR::make_Integer_t(al, loc,
-            4)),ASR::intentType::Local, ASR::abiType::BindC);
+            4)),ASR::intentType::Local, nullptr, ASR::abiType::BindC);
 
             ASR::expr_t* temp_I = I;
             for (size_t i = 0; i < do_loop.n_head; ++i) {
@@ -1175,7 +1184,7 @@ class ParallelRegionVisitor :
             ASRUtils::ASRBuilder b(al, func->base.base.loc);
             SymbolTable* current_scope_copy = current_scope;
             current_scope = al.make_new<SymbolTable>(current_scope);
-            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, func->base.base.loc)), ASR::intentType::Unspecified, ASR::abiType::BindC, true);
+            ASR::expr_t* data_expr = b.Variable(current_scope, "data", ASRUtils::TYPE(ASR::make_CPtr_t(al, func->base.base.loc)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
             Vec<ASR::expr_t*> args; args.reserve(al, 1);
             args.push_back(al, data_expr);
             ASR::symbol_t* interface_function = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Function_t_util(al, func->base.base.loc,
@@ -1367,7 +1376,7 @@ class ParallelRegionVisitor :
             return false;
         }
 
-        void unpack_data_from_thread_data (const LCompilers::Location &loc, std::map<std::string, ASR::ttype_t*> involved_symbols, std::string thread_data_module_name, ASR::expr_t* tdata_expr, Vec<ASR::stmt_t*> &body, std::string data_root_name="thread_data") {
+        void unpack_data_from_thread_data (const LCompilers::Location &loc, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_symbols, std::string thread_data_module_name, ASR::expr_t* tdata_expr, Vec<ASR::stmt_t*> &body, std::string data_root_name="thread_data") {
 
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol(data_root_name + thread_data_module_name.substr(data_root_name.size() + 7));
             ASR::symbol_t* thread_data_ext_sym = ASRUtils::symbol_get_past_external(thread_data_sym);
@@ -1382,7 +1391,7 @@ class ParallelRegionVisitor :
                     s2c(al, it.first), ASR::accessType::Public));
                 current_scope->add_symbol(sym_name, sym);
 
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 if (!ASRUtils::is_array(sym_type)) {
                     body.push_back(al, b.Assignment(
                         b.Var(current_scope->get_symbol(it.first)),
@@ -1398,7 +1407,7 @@ class ParallelRegionVisitor :
                 ASR::symbol_t* sym = current_scope->get_symbol(sym_name);
 
                 // handle arrays
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 if (ASRUtils::is_array(sym_type)) {
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
                     Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
@@ -1432,12 +1441,12 @@ class ParallelRegionVisitor :
             }
         }
 
-        void pack_data_to_thread_data(const LCompilers::Location &loc, std::map<std::string, ASR::ttype_t*>& involved_symbols, SymbolTable* current_scope,  std::pair<std::string, ASR::symbol_t*> thread_data_module, ASR::expr_t* data_expr, std::vector<std::string>& array_variables) {
+        void pack_data_to_thread_data(const LCompilers::Location &loc, std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>& involved_symbols, SymbolTable* current_scope,  std::pair<std::string, ASR::symbol_t*> thread_data_module, ASR::expr_t* data_expr, std::vector<std::string>& array_variables) {
             ASRUtils::ASRBuilder b(al, loc);
 
             // TODO: update symbols with correct type
             for (auto it: involved_symbols) {
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
                     // everything is already handled
                     array_variables.push_back(it.first);
@@ -1497,7 +1506,8 @@ class ParallelRegionVisitor :
                         But if it is also an allocatable, we assume that user will allocate memory for it or code is incorrect.
                     */
                     if (!is_argument && !is_allocatable) pass_result_allocatable.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
-                    involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
+                    involved_symbols[it.first].first = ASRUtils::expr_type(array_expr);
+                    involved_symbols[it.first].second = array_expr;
                     array_variables.push_back(it.first);
                 }
             }
@@ -1513,7 +1523,7 @@ class ParallelRegionVisitor :
                 current_scope->add_symbol(sym_name, sym);
 
                 // handle arrays
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 if (ASRUtils::is_array(sym_type)) {
                     nested_lowered_body.push_back(b.Assignment(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, data_expr,
@@ -1564,9 +1574,9 @@ class ParallelRegionVisitor :
         }
 
         void visit_DoConcurrentLoop(const ASR::DoConcurrentLoop_t &x) {
-            std::map<std::string, ASR::ttype_t*> involved_symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_symbols;
 
-            InvolvedSymbolsCollector c(involved_symbols);
+            InvolvedSymbolsCollector c(al, involved_symbols);
             c.visit_DoConcurrentLoop(x);
             if (pass_options.enable_gpu_offloading) {
                 //
@@ -1631,8 +1641,8 @@ class ParallelRegionVisitor :
                         loc, fn_scope, s2c(al, sym_name), nullptr, 0,
                         ASR::intentType::InOut, nullptr, nullptr,
                         ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, sym_type),
-                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASRUtils::duplicate_type(al, sym_type.first),
+                        ASRUtils::get_struct_sym_from_struct_expr(sym_type.second), ASR::abiType::Source, ASR::accessType::Private,
                         ASR::presenceType::Required, false));
                     fn_scope->add_symbol(sym_name, sym);
                     fn_args.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
@@ -1665,8 +1675,8 @@ class ParallelRegionVisitor :
                         ASRUtils::make_Variable_t_util(al, loc, fnI_scope,
                         s2c(al, sym_name), nullptr, 0, ASR::intentType::InOut,
                         nullptr, nullptr, ASR::storage_typeType::Default,
-                        ASRUtils::duplicate_type(al, sym_type),
-                        nullptr, ASR::abiType::Source, ASR::accessType::Private,
+                        ASRUtils::duplicate_type(al, sym_type.first),
+                        ASRUtils::get_struct_sym_from_struct_expr(sym_type.second), ASR::abiType::Source, ASR::accessType::Private,
                         ASR::presenceType::Required, false))};
                     fnI_scope->add_symbol(sym_name, sym);
                     fnI_args.push_back(al, ASRUtils::EXPR(
@@ -1701,7 +1711,7 @@ class ParallelRegionVisitor :
             std::vector<std::string> array_variables;
             // create data variable for the thread data module
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local, thread_data_ext_sym);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
@@ -1995,12 +2005,12 @@ class ParallelRegionVisitor :
             ASRUtils::ASRBuilder b(al, loc);
             SymbolTable* parent_scope = current_scope;
             current_scope = al.make_new<SymbolTable>(parent_scope);
-            std::map<std::string, ASR::ttype_t*>& involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>>& involved_symbols = c->symbols;
             SetChar involved_symbols_set; involved_symbols_set.reserve(al, involved_symbols.size());
             
             for (auto it: involved_symbols) {
                 ASR::ttype_t* sym_type = nullptr;
-                bool is_array = ASRUtils::is_array(it.second);
+                bool is_array = ASRUtils::is_array(it.second.first);
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(current_scope_copy->resolve_symbol(it.first)));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var->m_storage == ASR::storage_typeType::Parameter);
 
@@ -2009,14 +2019,14 @@ class ParallelRegionVisitor :
                 if (is_array || is_shared) {
                     sym_type = b.CPtr();
                 } else {
-                    sym_type = it.second;
+                    sym_type = it.second.first;
                 }
 
                 b.VariableDeclaration(current_scope, it.first, sym_type, ASR::intentType::Local);
 
                 if (is_array) {
                     // Add lbound and ubound variables for arrays
-                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second)));
+                    ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(ASRUtils::type_get_past_pointer(it.second.first)));
                     for (size_t i = 0; i < arr_type->n_dims; i++) {
                         std::string lbound_name = "lbound_" + it.first + "_" + std::to_string(i);
                         std::string ubound_name = "ubound_" + it.first + "_" + std::to_string(i);
@@ -2055,7 +2065,7 @@ class ParallelRegionVisitor :
             
             // Add external symbols to struct members
             SymbolTable* thread_data_symtab = ASRUtils::symbol_symtab(thread_data_ext_sym);
-            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols = c->symbols;
             for (auto it: involved_symbols) {
                 std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
                 ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, loc,
@@ -2063,7 +2073,7 @@ class ParallelRegionVisitor :
                     s2c(al, it.first), ASR::accessType::Public));
                 current_scope->add_symbol(sym_name, sym);
 
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
                 
@@ -2082,7 +2092,7 @@ class ParallelRegionVisitor :
                 std::string sym_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_" + it.first;
                 ASR::symbol_t* sym = current_scope->get_symbol(sym_name);
 
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
 
@@ -2136,11 +2146,11 @@ class ParallelRegionVisitor :
         void pack_data_to_thread_data_omp(const LCompilers::Location &loc, SymbolTable* current_scope, std::pair<std::string, ASR::symbol_t*> thread_data_module, ASR::expr_t* data_expr, std::vector<std::string>& array_variables,  InvolvedSymbolsCollector* c) {
 
             ASRUtils::ASRBuilder b(al, loc);
-            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols = c->symbols;
 
             // Process arrays first (existing logic with some modifications)
             for (auto it: involved_symbols) {
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 if (ASR::is_a<ASR::Pointer_t>(*sym_type)) {
                     array_variables.push_back(it.first);
                     continue;
@@ -2184,7 +2194,8 @@ class ParallelRegionVisitor :
                     if (!is_argument && !is_allocatable) {
                         pass_result_allocatable.push_back(al, b.Allocate(array_expr, array_type->m_dims, array_type->n_dims));
                     }
-                    involved_symbols[it.first] = ASRUtils::expr_type(array_expr);
+                    involved_symbols[it.first].first = ASRUtils::expr_type(array_expr);
+                    involved_symbols[it.first].second = array_expr;
                     array_variables.push_back(it.first);
                 }
             }
@@ -2200,7 +2211,7 @@ class ParallelRegionVisitor :
                     s2c(al, it.first), ASR::accessType::Public));
                 current_scope->add_symbol(sym_name, sym);
 
-                ASR::ttype_t* sym_type = it.second;
+                ASR::ttype_t* sym_type = it.second.first;
                 bool is_array = ASRUtils::is_array(sym_type);
                 ASR::Variable_t* var_sym = ASR::down_cast<ASR::Variable_t>(current_scope->get_symbol(it.first));
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared && !(var_sym->m_storage == ASR::storage_typeType::Parameter);
@@ -2375,7 +2386,7 @@ class ParallelRegionVisitor :
             // Create function scope
             current_scope = al.make_new<SymbolTable>(current_scope);
             involved_symbols_collector_map[current_scope] = c;
-            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols = c->symbols;
             // load modules
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
             LCOMPILERS_ASSERT(unsupported_sym_name == "");
@@ -2391,11 +2402,11 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("thread_data" + thread_data_module_name.substr(18));
 
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
             
             // create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
-                    ASR::intentType::Local, ASR::abiType::BindC);
+                    ASR::intentType::Local, thread_data_sym, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
             tdata_expr_copy = tdata_expr;
             thread_data_sym_copy = thread_data_sym;
@@ -2411,12 +2422,12 @@ class ParallelRegionVisitor :
             // Declare involved variables with correct types
             for (auto it : involved_symbols) {
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
-                ASR::ttype_t* var_type = it.second;
+                ASR::ttype_t* var_type = it.second.first;
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASR::abiType::BindC) != nullptr);
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
             }
 
             unpack_data_from_thread_data_omp(x.base.base.loc, thread_data_module_name, tdata_expr, fn_body, c);
@@ -2565,8 +2576,8 @@ class ParallelRegionVisitor :
         }
 
         void visit_OMPParallel(const ASR::OMPRegion_t &x) {
-            std::map<std::string, ASR::ttype_t*> involved_symbols;
-            InvolvedSymbolsCollector c(involved_symbols);
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_symbols;
+            InvolvedSymbolsCollector c(al, involved_symbols);
             c.visit_OMPRegion(x);
 
             for(auto it: involved_symbols) {
@@ -2591,7 +2602,7 @@ class ParallelRegionVisitor :
             current_scope->add_symbol(ASRUtils::symbol_name(thread_data_module.second), thread_data_ext_sym);
             
             ASRUtils::ASRBuilder b(al, x.base.base.loc);
-            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local);
+            ASR::expr_t* data_expr = b.Variable(current_scope, current_scope->get_unique_name("data"), ASRUtils::make_StructType_t_util(al, x.base.base.loc, thread_data_ext_sym), ASR::intentType::Local, thread_data_ext_sym);
             LCOMPILERS_ASSERT(data_expr != nullptr);
 
             // now create a tdata (cptr)
@@ -2980,12 +2991,12 @@ class ParallelRegionVisitor :
 
             // Step 5: Declare partitioning variables (similar to visit_DoConcurrentLoop)
             ASR::ttype_t* int_type = ASRUtils::expr_type(dimension_lengths[0]);
-            ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* num_threads = b.Variable(current_scope, current_scope->get_unique_name("num_threads"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* chunk = b.Variable(current_scope, current_scope->get_unique_name("chunk"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* leftovers = b.Variable(current_scope, current_scope->get_unique_name("leftovers"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
-            ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* start = b.Variable(current_scope, current_scope->get_unique_name("start"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* end = b.Variable(current_scope, current_scope->get_unique_name("end"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* num_threads = b.Variable(current_scope, current_scope->get_unique_name("num_threads"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* chunk = b.Variable(current_scope, current_scope->get_unique_name("chunk"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* leftovers = b.Variable(current_scope, current_scope->get_unique_name("leftovers"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
+            ASR::expr_t* thread_num = b.Variable(current_scope, current_scope->get_unique_name("thread_num"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
 
 
             // Step 6: Add partitioning logic to fn_body
@@ -3012,7 +3023,7 @@ class ParallelRegionVisitor :
             
 
             // Step 7: Create flattened loop
-            ASR::expr_t* I = b.Variable(current_scope, current_scope->get_unique_name("I"), int_type, ASR::intentType::Local, ASR::abiType::BindC);
+            ASR::expr_t* I = b.Variable(current_scope, current_scope->get_unique_name("I"), int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             std::vector<ASR::stmt_t*> loop_body;
 
             // Compute original loop indices from flattened index I
@@ -3086,8 +3097,8 @@ class ParallelRegionVisitor :
             ASRUtils::ASRBuilder b(al, loc);
             
             // Collect involved symbols for the task
-            std::map<std::string, ASR::ttype_t*> task_involved_symbols;
-            InvolvedSymbolsCollector c(task_involved_symbols);
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> task_involved_symbols;
+            InvolvedSymbolsCollector c(al, task_involved_symbols);
             c.visit_OMPRegion(x);
             
             for(auto it: task_involved_symbols) {
@@ -3120,7 +3131,7 @@ class ParallelRegionVisitor :
             
             // Create task data variable
             ASR::expr_t* task_data_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data"), 
-                ASRUtils::make_StructType_t_util(al, loc, task_data_ext_sym), ASR::intentType::Local);
+                ASRUtils::make_StructType_t_util(al, loc, task_data_ext_sym), ASR::intentType::Local, task_data_ext_sym);
             
             // Create task pointer variable
             ASR::expr_t* task_ptr_expr = b.Variable(current_scope, current_scope->get_unique_name("task_data_ptr"), 
@@ -3162,7 +3173,7 @@ class ParallelRegionVisitor :
             Vec<ASR::call_arg_t> task_call_args; 
             task_call_args.reserve(al, 8);
             ASR::ttype_t *type_ = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
-            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_));
+            ASR::expr_t *tmp_1 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, loc, type_, nullptr));
             ASR::call_arg_t arg1; arg1.loc = loc; arg1.m_value = c_funloc;
             ASR::call_arg_t arg2; arg2.loc = loc; arg2.m_value = task_ptr_expr;
             ASR::call_arg_t arg3; arg3.loc = loc; arg3.m_value = tmp_1;
@@ -3233,7 +3244,7 @@ class ParallelRegionVisitor :
             // Create function scope
             current_scope = al.make_new<SymbolTable>(current_scope);
             involved_symbols_collector_map[current_scope] = c;
-            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols = c->symbols;
             
             // Load required modules
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
@@ -3250,12 +3261,12 @@ class ParallelRegionVisitor :
             
             // Create data parameter
             ASR::expr_t* data_expr = b.Variable(current_scope, "task_data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::Unspecified, nullptr, ASR::abiType::BindC, true);
             
             // Create tdata variable: `type(thread_data), pointer :: tdata`
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "task_data_ptr", 
                 ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, thread_data_sym, ASR::abiType::BindC);
                         
             Vec<ASR::stmt_t*> fn_body; 
             fn_body.reserve(al, x.n_body + 10);
@@ -3268,14 +3279,14 @@ class ParallelRegionVisitor :
 
             for (auto it : involved_symbols) {
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
-                ASR::ttype_t* var_type = it.second;
+                ASR::ttype_t* var_type = it.second.first;
                 
                 // For task constructs, shared variables should use pointer approach similar to parallel
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     // Declare as pointer for shared non-array variables
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
-                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASR::abiType::BindC) != nullptr);
+                LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
             }
             
             unpack_data_from_thread_data_omp(loc, thread_data_module_name, tdata_expr, fn_body, c, "task_data_struct");
@@ -3343,7 +3354,7 @@ class ParallelRegionVisitor :
             // Declare section_id variable for GOMP_sections_start/next
             ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
             ASR::expr_t* section_id = b.Variable(current_scope, current_scope->get_unique_name("section_id"), 
-                                                int_type, ASR::intentType::Local, ASR::abiType::BindC);
+                                                int_type, ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             
             // Call GOMP_sections_start(num_sections) and assign to section_id
             Vec<ASR::call_arg_t> start_args; start_args.reserve(al, 1);
@@ -3602,7 +3613,7 @@ class ParallelRegionVisitor :
             // Create function scope
             current_scope = al.make_new<SymbolTable>(current_scope);
             involved_symbols_collector_map[current_scope] = c;
-            std::map<std::string, ASR::ttype_t*> &involved_symbols = c->symbols;
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> &involved_symbols = c->symbols;
             
             // Load modules
             std::string unsupported_sym_name = import_all(ASR::down_cast<ASR::Module_t>(module_symbols[0]));
@@ -3625,13 +3636,13 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_sym = current_scope->get_symbol("teams_thread_data" + thread_data_module_name.substr(24));
             
             ASR::expr_t* data_expr = b.Variable(current_scope, "data", 
-                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, ASR::abiType::BindC, true);
+                ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true);
             
             // Create tdata variable
             ASR::expr_t* tdata_expr = b.Variable(current_scope, "tdata", 
                 ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, 
                     ASRUtils::make_StructType_t_util(al, loc, thread_data_sym))),
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, thread_data_sym, ASR::abiType::BindC);
             LCOMPILERS_ASSERT(tdata_expr != nullptr);
             tdata_expr_copy = tdata_expr;
             thread_data_sym_copy = thread_data_sym;
@@ -3645,12 +3656,12 @@ class ParallelRegionVisitor :
             // Declare involved variables
             for (auto it : involved_symbols) {
                 bool is_shared = c->variable_accessibility[it.first] == ASR::omp_clauseType::OMPShared;
-                ASR::ttype_t* var_type = it.second;
+                ASR::ttype_t* var_type = it.second.first;
                 if (is_shared && !ASRUtils::is_array(var_type)) {
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, loc, var_type));
                 }
                 LCOMPILERS_ASSERT(b.Variable(current_scope, it.first, var_type, 
-                    ASR::intentType::Local, ASR::abiType::BindC) != nullptr);
+                    ASR::intentType::Local, ASRUtils::get_struct_sym_from_struct_expr(it.second.second), ASR::abiType::BindC) != nullptr);
             }
             
             // Unpack data
@@ -3728,8 +3739,8 @@ class ParallelRegionVisitor :
             }
             
             // Collect involved symbols
-            std::map<std::string, ASR::ttype_t*> involved_symbols;
-            InvolvedSymbolsCollector c(involved_symbols);
+            std::map<std::string, std::pair<ASR::ttype_t*, ASR::expr_t*>> involved_symbols;
+            InvolvedSymbolsCollector c(al, involved_symbols);
             c.visit_OMPRegion(x);
             
             // Determine variable accessibility
@@ -3765,7 +3776,7 @@ class ParallelRegionVisitor :
             ASR::expr_t* data_expr = b.Variable(current_scope, 
                 current_scope->get_unique_name("teams_data"), 
                 ASRUtils::make_StructType_t_util(al, x.base.base.loc, 
-                    thread_data_ext_sym), ASR::intentType::Local);
+                    thread_data_ext_sym), ASR::intentType::Local, thread_data_ext_sym);
             LCOMPILERS_ASSERT(data_expr != nullptr);
             
             ASR::expr_t* tdata_expr = b.Variable(current_scope, 
@@ -3954,13 +3965,13 @@ class ParallelRegionVisitor :
             ASR::ttype_t* int_type = ASRUtils::expr_type(dimension_lengths[0]);
             ASR::expr_t* chunk_per_team = b.Variable(current_scope, 
                 current_scope->get_unique_name("chunk_per_team"), int_type, 
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             ASR::expr_t* team_start = b.Variable(current_scope, 
                 current_scope->get_unique_name("team_start"), int_type, 
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             ASR::expr_t* team_end = b.Variable(current_scope, 
                 current_scope->get_unique_name("team_end"), int_type, 
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             
             // Calculate team's portion
             nested_lowered_body.push_back(b.Assignment(chunk_per_team, 
@@ -3980,7 +3991,7 @@ class ParallelRegionVisitor :
             // Create distributed loop
             ASR::expr_t* I = b.Variable(current_scope, 
                 current_scope->get_unique_name("I_dist"), int_type, 
-                ASR::intentType::Local, ASR::abiType::BindC);
+                ASR::intentType::Local, nullptr, ASR::abiType::BindC);
             std::vector<ASR::stmt_t*> loop_body;
             
             // Compute original loop indices (similar to OMPDo)

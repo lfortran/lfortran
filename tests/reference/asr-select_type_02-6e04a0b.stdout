@@ -169,12 +169,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        4 color_point
+                                        .false.
                                     )
-                                    ()
+                                    4 color_point
                                     Source
                                     Public
                                     Required
@@ -195,12 +195,13 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)
+                                        (Real 4)]
                                         []
                                         .true.
-                                        4 point
+                                        .false.
                                     )
-                                    ()
+                                    4 point
                                     Source
                                     Public
                                     Required
@@ -221,12 +222,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        4 point_3d
+                                        .false.
                                     )
-                                    ()
+                                    4 point_3d
                                     Source
                                     Public
                                     Required
@@ -248,13 +249,14 @@
                                     Default
                                     (Pointer
                                         (StructType
-                                            []
+                                            [(Real 4)
+                                            (Real 4)]
                                             []
                                             .false.
-                                            4 point
+                                            .false.
                                         )
                                     )
-                                    ()
+                                    4 point
                                     Source
                                     Public
                                     Required
@@ -350,13 +352,14 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            [(Real 4)
+                                                            (Real 4)]
                                                             []
-                                                            []
-                                                            .true.
-                                                            4 point
+                                                            .false.
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 point
                                                     Source
                                                     Public
                                                     Required
@@ -444,13 +447,14 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
+                                                            [(Real 4)
+                                                            (Real 4)]
                                                             []
-                                                            []
-                                                            .true.
-                                                            4 color_point
+                                                            .false.
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 point
                                                     Source
                                                     Public
                                                     Required

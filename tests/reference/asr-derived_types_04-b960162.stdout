@@ -54,12 +54,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 8)]
                                                         []
                                                         .false.
-                                                        2 bitset_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 bitset_type
                                                     Source
                                                     Public
                                                     Required
@@ -74,10 +74,10 @@
                                     all_abstract
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 8)]
                                             []
                                             .false.
-                                            2 bitset_type
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source

@@ -55,7 +55,7 @@ namespace LCompilers {
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope);
+                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var = nullptr);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
@@ -98,7 +98,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
-            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr);
+            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr, ASR::expr_t* var=nullptr);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -664,7 +664,8 @@ namespace LCompilers {
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type);
+                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, 
+                                    ASR::Local, x->m_dt_sym, nullptr);
                 *replacer->current_expr = replacer->result_var;
             } else {
                 if( inside_symtab ) {
@@ -678,9 +679,8 @@ namespace LCompilers {
             }
 
             std::deque<ASR::symbol_t*> constructor_arg_syms;
-            ASR::StructType_t* dt_der = ASR::down_cast<ASR::StructType_t>(x->m_type);
             ASR::Struct_t* dt_dertype = ASR::down_cast<ASR::Struct_t>(
-                                            ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
+                                            ASRUtils::symbol_get_past_external(x->m_dt_sym));
             while( dt_dertype ) {
                 for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
                     constructor_arg_syms.push_front(

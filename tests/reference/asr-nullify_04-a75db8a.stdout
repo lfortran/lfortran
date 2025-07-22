@@ -85,12 +85,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
                                         []
                                         .true.
-                                        4 scaled_data_structure
+                                        .false.
                                     )
-                                    ()
+                                    4 scaled_data_structure
                                     Source
                                     Public
                                     Required
@@ -111,12 +118,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
                                         []
                                         .true.
-                                        4 scaled_data_structure
+                                        .false.
                                     )
-                                    ()
+                                    4 scaled_data_structure
                                     Source
                                     Public
                                     Required

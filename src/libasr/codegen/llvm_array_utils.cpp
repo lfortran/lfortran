@@ -1,6 +1,8 @@
+#include "libasr/asr.h"
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/asr_utils.h>
+#include "llvm_array_utils.h"
 
 namespace LCompilers {
 
@@ -176,9 +178,9 @@ namespace LCompilers {
         }
 
         llvm::Type* SimpleCMODescriptor::get_array_type
-        (ASR::ttype_t* m_type_, llvm::Type* el_type,
+        (ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Type* el_type,
         bool get_pointer) {
-            std::string array_key = ASRUtils::get_type_code(m_type_, false, false);
+            std::string array_key = ASRUtils::get_type_code(m_type_, false, false, true, expr);
             if( tkr2array.find(array_key) != tkr2array.end() ) {
                 if( get_pointer ) {
                     return tkr2array[array_key].first->getPointerTo();
@@ -323,7 +325,7 @@ namespace LCompilers {
             builder->CreateStore(arr_first, first_ptr);
         }
 
-        void SimpleCMODescriptor::fill_array_details(
+        void SimpleCMODescriptor::fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
             llvm::Value* source, llvm::Value* destination,
             ASR::ttype_t* source_type, ASR::ttype_t* destination_type, llvm::Module* module, bool ignore_data) {
             if( !ignore_data ) {
@@ -331,8 +333,8 @@ namespace LCompilers {
                 LCOMPILERS_ASSERT(false);
             }
 
-            llvm::Type *source_array_type = llvm_utils->get_type_from_ttype_t_util(source_type, module);
-            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(destination_type, module);
+            llvm::Type *source_array_type = llvm_utils->get_type_from_ttype_t_util(src_expr, source_type, module);
+            llvm::Type *dest_array_type = llvm_utils->get_type_from_ttype_t_util(dest_expr, destination_type, module);
 
             llvm::Value* source_offset_val = llvm_utils->CreateLoad2(
                 llvm::Type::getInt32Ty(context), llvm_utils->create_gep2(source_array_type, source, 1));
@@ -605,10 +607,10 @@ namespace LCompilers {
             return llvm_utils->create_gep(arr, 0);
         }
 
-        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
+        llvm::Value* SimpleCMODescriptor::get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) {
             llvm::Type* const array_desc_type = llvm_utils->arr_api->
-                get_array_type(ASRUtils::type_get_past_allocatable_pointer(arr_type),
-                    llvm_utils->get_el_type(ASRUtils::extract_type(arr_type), module), false);
+                get_array_type(arr_expr, ASRUtils::type_get_past_allocatable_pointer(arr_type),
+                    llvm_utils->get_el_type(arr_expr, ASRUtils::extract_type(arr_type), module), false);
             return llvm_utils->create_gep2(array_desc_type, arr, 0);
         }
 

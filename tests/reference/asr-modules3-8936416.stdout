@@ -47,9 +47,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        15 toml_structure
+                                                        .false.
                                                     )
-                                                    ()
+                                                    15 toml_structure
                                                     Source
                                                     Public
                                                     Required
@@ -77,7 +77,7 @@
                                             []
                                             []
                                             .false.
-                                            15 toml_structure
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -287,12 +287,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        4 toml_array
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_array
                                                     Source
                                                     Public
                                                     Required
@@ -307,10 +314,17 @@
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            4 toml_array
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -385,7 +399,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        4 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -406,7 +420,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        4 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -421,7 +435,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        4 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -457,12 +471,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .true.
-                                                        4 toml_array
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_array
                                                     Source
                                                     Public
                                                     Required
@@ -477,10 +498,17 @@
                                     new_array
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .true.
-                                            4 toml_array
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -533,10 +561,10 @@
                                                             []
                                                             []
                                                             .false.
-                                                            4 toml_ordered
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 toml_ordered
                                                     Source
                                                     Public
                                                     Required
@@ -609,12 +637,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        9 toml_value
+                                                        .false.
                                                     )
-                                                    ()
+                                                    9 toml_value
                                                     Source
                                                     Private
                                                     Required
@@ -629,10 +659,12 @@
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            9 toml_value
+                                            .false.
                                         )]
                                         ()
                                         Source

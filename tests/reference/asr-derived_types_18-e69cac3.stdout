@@ -67,12 +67,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        5 t_1
+                                        .false.
                                     )
-                                    ()
+                                    5 t_1
                                     Source
                                     Public
                                     Required
@@ -93,12 +93,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        5 t_2
+                                        .false.
                                     )
-                                    ()
+                                    5 t_2
                                     Source
                                     Public
                                     Required
@@ -128,10 +128,10 @@
                             (Var 5 type_2)
                             5 1_t_1
                             (StructType
+                                [(Integer 4)]
                                 []
-                                []
-                                .true.
-                                5 1_t_1
+                                .false.
+                                .false.
                             )
                             ()
                         )

@@ -720,7 +720,8 @@ semantic error: Shape mismatch in `allocate` statement.
 324 |     allocate(arr4(5), source=[1, 2, 3])
     |              ^^^^^^^         ^^^^^^^^^ shape mismatch in dimension 1
 
-semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.Expected type: integer[:] allocatable, but got: real.
+semantic error: Type mismatch: The `source` argument in `allocate` must have the same type as the allocated variable.
+Expected type: integer[:] allocatable, but got: real.
    --> tests/errors/continue_compilation_1.f90:325:14
     |
 325 |     allocate(arr4(5), source=v)
@@ -784,7 +785,7 @@ semantic error: Invalid syntax of derived type for array constructor
    --> tests/errors/continue_compilation_1.f90:343:12
     |
 343 |     arr = [type(MyClass) :: v1, v2, v3]
-    |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
+    |            ^^^^^^^^^^^^^ help: use just the derived type name 'ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type)', without the keyword 'type'
 
 semantic error: Class type `NonExistingType` is not defined
    --> tests/errors/continue_compilation_1.f90:345:11

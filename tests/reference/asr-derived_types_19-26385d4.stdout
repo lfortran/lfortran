@@ -23,13 +23,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)]
                                                             []
                                                             .true.
-                                                            4 child_value
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 child_value
                                                     Source
                                                     Public
                                                     Required
@@ -51,13 +51,15 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .false.
-                                                            4 toml_value
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 toml_value
                                                     Source
                                                     Public
                                                     Required

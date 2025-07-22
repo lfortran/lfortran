@@ -76,22 +76,22 @@
                                         2 base
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 base
+                                            .false.
                                         )
                                         ()
                                     )
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 base
+                                        .false.
                                     )
-                                    ()
+                                    2 base
                                     Source
                                     Public
                                     Required
@@ -113,13 +113,13 @@
                                     Default
                                     (Pointer
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .false.
-                                            2 base
+                                            .false.
                                         )
                                     )
-                                    ()
+                                    2 base
                                     Source
                                     Public
                                     Required
@@ -179,12 +179,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 child
+                                        .false.
                                     )
-                                    ()
+                                    2 child
                                     Source
                                     Public
                                     Required
@@ -211,13 +211,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)]
                                                             []
                                                             .false.
-                                                            2 base
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 base
                                                     Source
                                                     Public
                                                     Required
@@ -378,10 +378,10 @@
                                     (FunctionType
                                         [(Pointer
                                             (StructType
-                                                []
+                                                [(Integer 4)]
                                                 []
                                                 .false.
-                                                2 base
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -433,10 +433,10 @@
                             [((IntegerConstant 20 (Integer 4) Decimal))
                             ((IntegerConstant 30 (Integer 4) Decimal))]
                             (StructType
-                                []
+                                [(Integer 4)]
                                 []
                                 .true.
-                                2 child
+                                .false.
                             )
                             ()
                         )

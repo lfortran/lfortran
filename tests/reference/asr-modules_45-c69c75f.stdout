@@ -147,17 +147,49 @@
                                     (Allocatable
                                         (Array
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                7 profile_config_t
+                                                .false.
                                             )
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
                                     )
-                                    ()
+                                    7 profile_config_t
                                     Source
                                     Public
                                     Required
@@ -417,14 +449,14 @@
                                                                 []
                                                                 []
                                                                 .true.
-                                                                2 file_scope_flag
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 file_scope_flag
                                                     Source
                                                     Public
                                                     Required
@@ -644,17 +676,49 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (Array
+                                                                        (StructType
+                                                                            []
+                                                                            []
+                                                                            .true.
+                                                                            .false.
+                                                                        )
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Logical 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 profile_config_t
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 profile_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -720,10 +784,42 @@
                                         (Allocatable
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (Array
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
+                                                        )
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Logical 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
                                                     []
                                                     .true.
-                                                    2 profile_config_t
+                                                    .false.
                                                 )
                                                 [(()
                                                 ())]
@@ -758,10 +854,42 @@
                                             (Var 6 profindex)
                                             ())]
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                2 profile_config_t
+                                                .false.
                                             )
                                             ColMajor
                                             ()
@@ -851,10 +979,42 @@
                                             ((Var 6 file_scope_flags))
                                             (())]
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (Array
+                                                        (StructType
+                                                            []
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Logical 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                2 profile_config_t
+                                                .false.
                                             )
                                             ()
                                             ()
@@ -962,13 +1122,13 @@
                                                             []
                                                             []
                                                             .true.
-                                                            2 file_scope_flag
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
                                                         DescriptorArray
                                                     )
-                                                    ()
+                                                    2 file_scope_flag
                                                     Source
                                                     Public
                                                     Optional
@@ -1073,12 +1233,44 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    []
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Logical 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 profile_config_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 profile_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -1125,7 +1317,7 @@
                                                 []
                                                 []
                                                 .true.
-                                                2 file_scope_flag
+                                                .false.
                                             )
                                             [(()
                                             ())]
@@ -1133,10 +1325,42 @@
                                         )
                                         (Logical 4)]
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (Array
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Logical 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 profile_config_t
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -1255,14 +1479,14 @@
                                                                 []
                                                                 []
                                                                 .true.
-                                                                2 file_scope_flag
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    2 file_scope_flag
                                                     Source
                                                     Public
                                                     Required

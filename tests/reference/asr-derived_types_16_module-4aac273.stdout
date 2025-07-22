@@ -68,13 +68,15 @@
                                     Default
                                     (Allocatable
                                         (StructType
-                                            []
+                                            [(Logical 4)
+                                            (Real 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            5 fpm_run_settings
+                                            .false.
                                         )
                                     )
-                                    ()
+                                    5 fpm_run_settings
                                     Source
                                     Public
                                     Required
@@ -290,13 +292,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Real 4)
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            2 fpm_run_settings
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 fpm_run_settings
                                                     Source
                                                     Public
                                                     Required
@@ -312,10 +316,12 @@
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .false.
-                                                2 fpm_run_settings
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -346,10 +352,12 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                2 fpm_run_settings
+                                                .false.
                                             )
                                             ()
                                         )

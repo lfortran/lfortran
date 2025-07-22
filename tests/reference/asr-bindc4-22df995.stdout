@@ -154,9 +154,11 @@
                                     Local
                                     (PointerNullConstant
                                         (CPtr)
+                                        ()
                                     )
                                     (PointerNullConstant
                                         (CPtr)
+                                        ()
                                     )
                                     Default
                                     (CPtr)
@@ -707,6 +709,7 @@
                         (Var 2 queries)
                         (PointerNullConstant
                             (CPtr)
+                            ()
                         )
                         ()
                         .false.

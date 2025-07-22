@@ -178,10 +178,11 @@ public:
                     sub += indent + name + "->" + itr.first + " = " + mem_var_name + ";\n";
                 }
             } else if( ASR::is_a<ASR::StructType_t>(*mem_type) ) {
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(mem_type);
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
-                allocate_array_members_of_struct(struct_type_t, sub, indent, "(&(" + name + "->" + itr.first + "))");
+                // TODO: StructType
+                // ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(mem_type);
+                // ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                //     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
+                // allocate_array_members_of_struct(struct_type_t, sub, indent, "(&(" + name + "->" + itr.first + "))");
             }
         }
     }
@@ -360,8 +361,7 @@ public:
                     sub = format_type_c(dims, type_name, v.m_name, use_ref, dummy);
                 }
             } else if(ASR::is_a<ASR::StructType_t>(*t2)) {
-                ASR::StructType_t *t = ASR::down_cast<ASR::StructType_t>(t2);
-                std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
+                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                 if( is_array ) {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
@@ -432,8 +432,7 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
-                ASR::StructType_t *t = ASR::down_cast<ASR::StructType_t>(v_m_type);
-                std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
+                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                  if( is_array ) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
@@ -469,7 +468,7 @@ public:
                     } else {
                         sub += " = &" + value_var_name + ";\n";
                         ASR::Struct_t* der_type_t = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(t->m_derived_type));
+                        ASRUtils::symbol_get_past_external(v.m_type_declaration));
                         allocate_array_members_of_struct(der_type_t, sub, indent, std::string(v.m_name));
                         sub.pop_back();
                         sub.pop_back();
