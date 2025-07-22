@@ -188,7 +188,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
-  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  git checkout 135e7bae8f3f9f7d17110b56da228d80bedcf353
   cp src/mpi.f90 ../src/
   cp src/mpi_c_bindings.f90 ../src/
   cp src/mpi_constants.c ../src/
@@ -799,11 +799,11 @@ time_section "🧪 Testing fastGPT" '
 time_section "🧪 Testing FPM" '
     # TODO: regression as of `struct refactoring`
     # if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    #     git clone https://github.com/czgdp1807/fpm.git
+    #     git clone https://github.com/parth121101/fpm.git
     #     cd fpm
-    #     git fetch origin lfortran_build_4
-    #     git checkout lfortran_build_4
-    #     git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
+    #     git fetch origin update_compiler_flag
+    #     git checkout update_compiler_flag
+    #     git checkout e6409bae48514a04b29a7084a76a702d4f9d93f5
     #     export PATH="$(pwd)/../../src/bin:$PATH"
     #     ./build.sh
     # fi
