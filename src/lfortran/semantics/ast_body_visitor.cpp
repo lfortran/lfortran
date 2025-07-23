@@ -3421,8 +3421,8 @@ public:
                     }
                 }
             }
-            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
-                                        ASRUtils::expr_type(value))) {
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target), ASRUtils::expr_type(value)) &&
+                !ASRUtils::check_class_assignment_compatibility(target, value)) {
                 std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
                 std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
                 if(value->type == ASR::exprType::ArrayConstant) {

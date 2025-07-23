@@ -1715,10 +1715,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         if( !not_matching && (left_arg_type2->type == left_type2->type &&
                                                 right_arg_type2->type == right_type2->type) ) {
                             // If all are StructTypes then the Struct symbols should match
-                            if (ASR::is_a<ASR::StructType_t>(*left_type) &&
-                                ASR::is_a<ASR::StructType_t>(*right_type) &&
-                                ASR::is_a<ASR::StructType_t>(*left_arg_type) &&
-                                ASR::is_a<ASR::StructType_t>(*right_arg_type)) {
+                            if (ASR::is_a<ASR::StructType_t>(*left_type2) &&
+                                ASR::is_a<ASR::StructType_t>(*right_type2) &&
+                                ASR::is_a<ASR::StructType_t>(*left_arg_type2) &&
+                                ASR::is_a<ASR::StructType_t>(*right_arg_type2)) {
                                     
                                 ASR::Struct_t *left_sym = left_struct;
                                 ASR::Struct_t *right_sym = right_struct;
