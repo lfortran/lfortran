@@ -1279,6 +1279,25 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
     void visit_Assignment(const ASR::Assignment_t& x) {
         ASR::Assignment_t& xx = const_cast<ASR::Assignment_t&>(x);
         // e.g.; a = [b, a], where 'a' is an allocatable
+        if (ASR::is_a<ASR::FunctionCall_t>(*xx.m_value) &&
+        (ASRUtils::is_aggregate_type(ASRUtils::expr_type(xx.m_value)) ||
+         ASRUtils::is_array(ASRUtils::expr_type(xx.m_value)))) {
+
+        ASR::expr_t* temp = nullptr;
+        if (ASRUtils::is_struct(*ASRUtils::expr_type(xx.m_value))) {
+            temp = create_and_allocate_temporary_variable_for_struct(
+                xx.m_value, "_func_result_temp_", al, current_body, current_scope, exprs_with_target);
+        } else {
+            temp = create_and_allocate_temporary_variable_for_array(
+                xx.m_value, "_func_result_temp_", al, current_body, current_scope, exprs_with_target);
+        }
+        exprs_with_target[xx.m_value] = std::make_pair(temp, targetType::GeneratedTarget);
+        ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>::visit_Assignment(x);
+        exprs_with_target.erase(xx.m_value);
+        xx.m_value = temp;
+        current_body->push_back(al, ASRUtils::STMT((const ASR::asr_t*)(&xx)));
+        return;
+    }
         if (realloc_lhs && ASR::is_a<ASR::ArrayConstructor_t>(*xx.m_value) &&
             ASRUtils::is_allocatable(xx.m_target)
         ) {
