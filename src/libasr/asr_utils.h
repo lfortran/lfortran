@@ -263,7 +263,7 @@ static inline ASR::expr_t* get_past_array_physical_cast(ASR::expr_t* x) {
     if( !ASR::is_a<ASR::ArrayPhysicalCast_t>(*x) ) {
         return x;
     }
-    return ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg;
+    return get_past_array_physical_cast(ASR::down_cast<ASR::ArrayPhysicalCast_t>(x)->m_arg);
 }
 
 static inline ASR::expr_t* get_past_array_broadcast(ASR::expr_t* x) {
