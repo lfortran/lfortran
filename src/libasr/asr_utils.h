@@ -4173,6 +4173,25 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
     return types_equal(x, y, check_for_dimensions);
 }
 
+inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_t* value) {
+    ASR::ttype_t* tar_ext = ASRUtils::extract_type(ASRUtils::expr_type(target));
+    ASR::ttype_t* val_ext = ASRUtils::extract_type(ASRUtils::expr_type(value));
+    bool is_class_same = false;
+    if (ASR::is_a<ASR::StructType_t>(*tar_ext) && ASR::is_a<ASR::StructType_t>(*val_ext)) {
+        ASR::symbol_t* sym_target = ASRUtils::get_struct_sym_from_struct_expr(target);
+        sym_target = ASRUtils::symbol_get_past_external(sym_target);
+        ASR::symbol_t* sym_value = ASRUtils::get_struct_sym_from_struct_expr(value);
+        sym_value = ASRUtils::symbol_get_past_external(sym_value);
+        ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
+        ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
+        is_class_same = (sym_target == sym_value);
+        if (ASRUtils::is_class_type(tar_ext)) {
+            is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+        }
+    }
+    return is_class_same;
+}
+
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
     Location& loc, const std::function<void (const std::string &, const Location &)> err);
 
@@ -6125,12 +6144,23 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         is_method = false;
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
-
+    ASR::Function_t* func = nullptr;
+    
+    if (ASR::is_a<ASR::Function_t>(*a_name_)) {
+        func = ASR::down_cast<ASR::Function_t>(a_name_);
+    } else if (ASR::is_a<ASR::Variable_t>(*a_name_)) {
+        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type_declaration));
+    } else if (ASR::is_a<ASR::ClassProcedure_t>(*a_name_)) {
+        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::ClassProcedure_t>(a_name_)->m_proc));
+    }
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ) {
             continue;
         }
         ASR::expr_t* arg = a_args[i].m_value;
+        [[maybe_unused]] ASR::expr_t* orig_arg = func->m_args[i + is_method];
         ASR::ttype_t* arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(ASRUtils::expr_type(arg)));
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
@@ -6251,7 +6281,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type),
+                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type) || 
+                    ASRUtils::check_class_assignment_compatibility(orig_arg, arg),
                     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
                         ASRUtils::get_type_code(orig_arg_type) + ")");
             }

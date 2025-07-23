@@ -6387,7 +6387,8 @@ public:
                     }
                 }
 
-                if(!ASRUtils::check_equal_type(arg_type,orig_arg_type)){
+                if(!ASRUtils::check_equal_type(arg_type,orig_arg_type) &&
+                    !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
                     std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
                     std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
                     diag.add(Diagnostic("Type mismatch in argument at argument (" + std::to_string(i+1) +

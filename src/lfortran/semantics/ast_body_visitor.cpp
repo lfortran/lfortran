@@ -3421,36 +3421,14 @@ public:
                     }
                 }
             }
-            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
-                                        ASRUtils::expr_type(value))) {
-                ASR::ttype_t* tar_ext = ASRUtils::extract_type(ASRUtils::expr_type(target));
-                ASR::ttype_t* val_ext = ASRUtils::extract_type(ASRUtils::expr_type(value));
-                bool is_class_same = false;
-                if (ASRUtils::is_class_type(tar_ext) && ASR::is_a<ASR::StructType_t>(*val_ext)) {
-                    ASR::symbol_t* sym_target = ASRUtils::get_struct_sym_from_struct_expr(target);
-                    sym_target = ASRUtils::symbol_get_past_external(sym_target);
-                    ASR::symbol_t* sym_value = ASRUtils::get_struct_sym_from_struct_expr(value);
-                    sym_value = ASRUtils::symbol_get_past_external(sym_value);
-                    is_class_same = ASRUtils::is_parent(ASR::down_cast<ASR::Struct_t>(sym_target), 
-                                        ASR::down_cast<ASR::Struct_t>(sym_value));
-                }
-                if (!is_class_same) {
-                    std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
-                    std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
-                    if(value->type == ASR::exprType::ArrayConstant) {
-                        ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
-                        for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
-                            if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, i)), ASRUtils::expr_type(target))) {
-                                diag.semantic_error_label(
-                                    "Type mismatch in assignment, the types must be compatible",
-                                    {target->base.loc, value->base.loc},
-                                    "type mismatch (" + ltype + " and " + rtype + ")"
-                                );
-                                throw SemanticAbort();
-                            }
-                        }
-                        LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                        if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target), ASRUtils::expr_type(value)) &&
+                !ASRUtils::check_class_assignment_compatibility(target, value)) {
+                std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
+                std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
+                if(value->type == ASR::exprType::ArrayConstant) {
+                    ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
+                    for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, i)), ASRUtils::expr_type(target))) {
                             diag.semantic_error_label(
                                 "Type mismatch in assignment, the types must be compatible",
                                 {target->base.loc, value->base.loc},
@@ -3458,28 +3436,9 @@ public:
                             );
                             throw SemanticAbort();
                         }
-                    } else if(value->type == ASR::exprType::ArrayConstructor) {
-                        ASR::ArrayConstructor_t *ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
-                        for (size_t i = 0; i < ac->n_args; i++) {
-                            if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
-                                diag.semantic_error_label(
-                                    "Type mismatch in assignment, the types must be compatible",
-                                    {target->base.loc, value->base.loc},
-                                    "type mismatch (" + ltype + " and " + rtype + ")"
-                                );
-                                throw SemanticAbort();
-                            }
-                        }
-                        LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                        if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
-                            diag.semantic_error_label(
-                                "Type mismatch in assignment, the types must be compatible",
-                                {target->base.loc, value->base.loc},
-                                "type mismatch (" + ltype + " and " + rtype + ")"
-                            );
-                            throw SemanticAbort();
-                        }
-                    } else {
+                    }
+                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
                         diag.semantic_error_label(
                             "Type mismatch in assignment, the types must be compatible",
                             {target->base.loc, value->base.loc},
@@ -3487,6 +3446,34 @@ public:
                         );
                         throw SemanticAbort();
                     }
+                } else if(value->type == ASR::exprType::ArrayConstructor) {
+                    ASR::ArrayConstructor_t *ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
+                    for (size_t i = 0; i < ac->n_args; i++) {
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
+                            diag.semantic_error_label(
+                                "Type mismatch in assignment, the types must be compatible",
+                                {target->base.loc, value->base.loc},
+                                "type mismatch (" + ltype + " and " + rtype + ")"
+                            );
+                            throw SemanticAbort();
+                        }
+                    }
+                    LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
+                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
+                        diag.semantic_error_label(
+                            "Type mismatch in assignment, the types must be compatible",
+                            {target->base.loc, value->base.loc},
+                            "type mismatch (" + ltype + " and " + rtype + ")"
+                        );
+                        throw SemanticAbort();
+                    }
+                } else {
+                    diag.semantic_error_label(
+                        "Type mismatch in assignment, the types must be compatible",
+                        {target->base.loc, value->base.loc},
+                        "type mismatch (" + ltype + " and " + rtype + ")"
+                    );
+                    throw SemanticAbort();
                 }
             }
         }
