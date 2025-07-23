@@ -9,6 +9,7 @@ module class_57_mod
   end type dumper
 
   type, extends(dumper) :: wrapper
+    integer :: x
   contains 
     procedure :: dump_to_toml => dump_x
   end type
@@ -41,6 +42,11 @@ contains
     x%key = 5
   end subroutine
 
+  subroutine test_assign(self)
+    class(dumper), allocatable, intent(inout) :: self
+    self = wrapper(5)
+  end subroutine
+
 end module class_57_mod
 
 
@@ -48,6 +54,15 @@ program class_57
   use class_57_mod
   implicit none
   class(wrapper), allocatable :: temp
+  class(dumper), allocatable :: temp2
   allocate(temp)
   call temp%dump(3)
+  allocate(wrapper :: temp2)
+  call test_assign(temp2)
+  select type(temp2)
+  type is (wrapper)
+    if (temp2%x /= 5) error stop
+  class default
+    error stop
+  end select
 end program class_57
