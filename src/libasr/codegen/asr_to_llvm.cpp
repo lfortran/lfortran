@@ -10519,8 +10519,8 @@ public:
                                     && !ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value)
                                     && !ASRUtils::is_class_type(
                                         ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
-                                    tmp = convert_class_to_type(ASRUtils::EXPR(ASR::make_Var_t(
-                                        al, orig_arg->base.base.loc, &orig_arg->base)), x.m_args[i].m_value, orig_arg->m_type, tmp);
+                                    tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                                        al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                                 }
                             }
                         } else {
@@ -10776,8 +10776,8 @@ public:
                                             ASRUtils::type_get_past_allocatable(arg_type))
                                         && !ASRUtils::is_class_type(
                                             ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
-                                        value = convert_class_to_type(ASRUtils::EXPR(ASR::make_Var_t(
-                                        al, orig_arg->base.base.loc, &orig_arg->base)), x.m_args[i].m_value,
+                                        value = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
+                                        al, orig_arg->base.base.loc, &orig_arg->base)),
                                         orig_arg->m_type, value);
                                     } else {
                                         if (compiler_options.po.realloc_lhs) {
@@ -10830,7 +10830,7 @@ public:
         return args;
     }
 
-    llvm::Value *convert_class_to_type(ASR::expr_t* dest_arg, ASR::expr_t *arg, ASR::ttype_t *dest_type, llvm::Value *class_value) {
+    llvm::Value *convert_class_to_type(ASR::expr_t *arg, ASR::expr_t* dest_arg, ASR::ttype_t *dest_type, llvm::Value *class_value) {
         // if the required argument is of struct type, we need to pass
         // in the struct pointer to it
         llvm::Value *value = nullptr;
@@ -10838,7 +10838,7 @@ public:
         LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(arg_type)) &&
                           !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(dest_type)));
         if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
-            check_and_allocate(dest_arg, arg, dest_type);
+            check_and_allocate(arg, dest_arg, dest_type);
         }
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(
                                         al, arg_type->base.loc,
