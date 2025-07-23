@@ -2064,10 +2064,13 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg2 = v->m_type;
                 ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                 ASR::symbol_t* s2 = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])
-                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(sub.m_args[i]))) {
-                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(sub.m_args[i]);
-                    s2 = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                ASR::ttype_t* arg2_ext = ASRUtils::extract_type(arg2);
+                if (ASR::is_a<ASR::StructType_t>(*arg2_ext)) {
+                    if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
+                            (ASRUtils::is_array(arg2) != ASRUtils::is_array(arg1))) {
+                        return false;
+                    }
+                    s2 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                 }
                 if (s1 && s2) {
                     if (!ASRUtils::is_derived_type_similar(ASR::down_cast<ASR::Struct_t>(s1), ASR::down_cast<ASR::Struct_t>(s2))) return false;
