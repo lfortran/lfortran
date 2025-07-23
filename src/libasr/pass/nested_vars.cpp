@@ -812,8 +812,10 @@ public:
                         ASRUtils::type_get_past_allocatable_pointer(v->m_type)))) {
                     // Fix the type_declaration of variables to point to the imported Struct (as ExternalSymbol)
                     ASR::symbol_t* type_decl = v->m_type_declaration;
-                    ASR::down_cast<ASR::Variable_t>(item.second)->m_type_declaration = current_scope->get_symbol(
-                                                                                            ASRUtils::symbol_name(type_decl));
+                    if ( current_scope->get_symbol(ASRUtils::symbol_name(type_decl)) ) {
+                        ASR::down_cast<ASR::Variable_t>(item.second)->m_type_declaration = current_scope->get_symbol(
+                                                                                                ASRUtils::symbol_name(type_decl));
+                    }
                 }
             }
         }
