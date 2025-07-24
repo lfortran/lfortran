@@ -8020,6 +8020,13 @@ public:
             }
         }
 
+        if (ASRUtils::is_descriptorString(contained_type) && !ASRUtils::is_deferredLength_string(contained_type)) {
+            contained_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                                ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength,
+                                                        ASR::string_physical_typeType::DescriptorString))));
+        }
+
 
         return ASR::make_ListConstant_t(al, x.base.base.loc, args.p, args.n, 
                                         ASRUtils::TYPE(ASR::make_List_t(al, x.base.base.loc, contained_type)));

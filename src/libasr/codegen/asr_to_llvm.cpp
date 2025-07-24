@@ -1747,13 +1747,6 @@ public:
         ASR::dimension_t* m_dims_local = nullptr;
         int n_dims_local = -1, a_kind_local = -1;
 
-        if (ASRUtils::is_descriptorString(list_type->m_type) && !ASRUtils::is_deferredLength_string(list_type->m_type)) {
-            list_type->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
-                                                ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
-                                                        ASR::string_length_kindType::DeferredLength,
-                                                        ASR::string_physical_typeType::DescriptorString))));
-        }
-
         llvm::Type* llvm_el_type = llvm_utils->get_type_from_ttype_t(const_cast<ASR::expr_t*>(&x.base), list_type->m_type,
                                     nullptr, ASR::storage_typeType::Default, is_array_type_local,
                                     is_malloc_array_type_local, is_list_local, m_dims_local,
