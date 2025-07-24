@@ -57,6 +57,8 @@ private:
     bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
+    bool _inside_call = false;
+    bool _inside_array_physical_cast_type = false;
     const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
@@ -982,11 +984,14 @@ public:
             }
         }
 
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         for (size_t i=0; i<x.n_args; i++) {
             if( x.m_args[i].m_value ) {
                 visit_expr(*(x.m_args[i].m_value));
             }
         }
+        _inside_call = _inside_call_copy;
     }
 
     void visit_ArrayPhysicalCast(const ASR::ArrayPhysicalCast_t& x) {
@@ -1001,6 +1006,10 @@ public:
             require(x.m_old == ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg)),
                 "Old physical type conflicts with the physical type of argument " + std::to_string(x.m_old)
                 + " " + std::to_string(ASRUtils::extract_physical_type(ASRUtils::expr_type(x.m_arg))));
+            bool _inside_array_physical_cast_type_copy = _inside_array_physical_cast_type;
+            _inside_array_physical_cast_type = true;
+            visit_ttype(*x.m_type);
+            _inside_array_physical_cast_type = _inside_array_physical_cast_type_copy;
         }
     }
 
@@ -1106,7 +1115,10 @@ public:
             ::get_verify_function(x.m_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicElementalFunction(x);
+        _inside_call = _inside_call_copy;
     }
 
     void visit_IntrinsicArrayFunction(const ASR::IntrinsicArrayFunction_t& x) {
@@ -1118,7 +1130,10 @@ public:
             ::get_verify_function(x.m_arr_intrinsic_id);
         LCOMPILERS_ASSERT(verify_ != nullptr);
         verify_(x, diagnostics);
+        bool _inside_call_copy = _inside_call;
+        _inside_call = true;
         BaseWalkVisitor<VerifyVisitor>::visit_IntrinsicArrayFunction(x);
+        _inside_call = _inside_call_copy;
     }
 
     void visit_FunctionCall(const FunctionCall_t &x) {
@@ -1209,6 +1224,11 @@ public:
     }
 
     void visit_dimension(const dimension_t &x) {
+        if (_inside_array_physical_cast_type && !_inside_call) {
+            require_with_loc(x.m_length != nullptr && x.m_start != nullptr,
+                    "Dimensions in ArrayPhysicalCast must be present if not inside a call",
+                    x.loc);
+        }
         if (x.m_start) {
             if(check_external){
                 require_with_loc(ASRUtils::is_integer(
