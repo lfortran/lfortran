@@ -88,13 +88,13 @@ class PrintListTupleVisitor
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::PointerString));
+            ASR::string_physical_typeType::DescriptorString));
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 2,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::PointerString));
+            ASR::string_physical_typeType::DescriptorString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, loc, s2c(al, ", "), str_type_len_2));
@@ -214,13 +214,13 @@ class PrintListTupleVisitor
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::PointerString));
+            ASR::string_physical_typeType::DescriptorString));
         ASR::ttype_t *str_type_len_2 = ASRUtils::TYPE(ASR::make_String_t(
             al, loc, 1, 
             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1,
                 ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
             ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::PointerString));
+            ASR::string_physical_typeType::DescriptorString));
         ASR::expr_t *comma_space =
             ASRUtils::EXPR(ASR::make_StringConstant_t(
                 al, loc, s2c(al, ", "), str_type_len_2));

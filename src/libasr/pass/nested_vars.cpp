@@ -408,14 +408,33 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         }
                     }
                 }
-                if( (ASRUtils::is_array(var_type) && !is_pointer) ||
-                    is_allocatable ) {
+                if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                         ASRUtils::type_get_past_allocatable(var_type)));
                 }
-                if (is_allocatable && ASRUtils::is_descriptorString(var_type)) {
-                    var_type = var->m_type;
+                // Create proper string type (a ointer deferred-length string)
+                if(ASRUtils::is_string_only(var_type)){ // e.g -> `character(len=foo()) :: str`
+                    ASR::String_t* str = ASRUtils::get_string_type(var_type);
+                    if(str->m_len_kind == ASR::AssumedLength ||
+                        (str->m_len && !ASRUtils::is_value_constant(str->m_len))){
+                        var_type = 
+                            ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, str->base.base.loc,
+                                    ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, 1,
+                                        nullptr, ASR::DeferredLength, ASR::DescriptorString))));
+                    }
+                } else if(ASRUtils::is_array_of_strings(var_type)){ // e.g -> `character(len=foo()) :: str(10)`
+                    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(var_type));
+                    ASR::String_t* string_t = ASRUtils::get_string_type(var_type);
+                    if(string_t->m_len_kind == ASR::AssumedLength || (string_t->m_len && !ASRUtils::is_value_constant(string_t->m_len))){
+                        // Create a new ASR::String node, To avoid using the original one.
+                        array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, 1,
+                                            nullptr, ASR::DeferredLength, ASR::DescriptorString));
+                    }
+                }
+                if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
+                    var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
                 }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
@@ -723,11 +742,13 @@ public:
                             ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration &&
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
-                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || is_sym_allocatable_or_pointer ) {
+                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                                         target, val));
                             body.push_back(al, associate);
-                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                            // TODO : Remove the following if block (See integration test `arrays_87.f90`)
+                            if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                                is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
                                 && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
                                 associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
                                     val, target));
