@@ -819,6 +819,60 @@ public:
         return master_args;
     }
 
+    void visit_Procedure(const AST::Procedure_t &x) {
+        ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
+        if (interface_module->m_parent_module) {
+            interface_module = ASR::down_cast<ASR::Module_t>(interface_module->m_parent_module);
+        }
+
+        ASR::Function_t* proc_interface = nullptr;
+        for (auto &item : interface_module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second) && (std::string(ASR::down_cast<ASR::Function_t>(item.second)->m_name) == std::string(x.m_name))) {
+                proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
+                break;
+            }
+        }
+
+        SymbolTable* parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
+
+        for (auto &item : proc_interface->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
+                ASR::Variable_t* proc_interface_vari = ASR::down_cast<ASR::Variable_t>(item.second);
+                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(proc_interface_vari, current_scope);
+                current_scope->add_symbol(std::string(ASRUtils::symbol_name(new_sym)), new_sym);
+            }
+        }
+
+        Vec<ASR::expr_t*> new_func_args;
+        new_func_args.reserve(al, proc_interface->n_args);
+        for (size_t i=0;i<proc_interface->n_args;i++) {
+            new_func_args.push_back(al, exprstmt_duplicator.duplicate_expr(proc_interface->m_args[i]));
+        }
+        ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
+
+        tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
+                                   proc_interface->m_name,
+                                   proc_interface->m_function_signature,
+                                   nullptr, 0,
+                                   new_func_args.p,
+                                   new_func_args.size(),
+                                   nullptr, 0,
+                                   new_func_return_var,
+                                   proc_interface->m_access,
+                                   proc_interface->m_deterministic,
+                                   proc_interface->m_side_effect_free,
+                                   nullptr);
+        ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
+        ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
+        func_type->m_abi = ASR::abiType::Source;
+        func_type->m_deftype = ASR::deftypeType::Implementation;
+        parent_scope->overwrite_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
