@@ -11091,10 +11091,6 @@ public:
                 re, im, type, value);
     }
 
-    void visit_Procedure(const AST::Procedure_t&) {
-        // To Be Implemented
-    }
-
     Vec<ASR::expr_t*> visit_expr_list(AST::fnarg_t *ast_list, size_t n) {
         Vec<ASR::expr_t*> asr_list;
         asr_list.reserve(al, n);
