@@ -422,6 +422,12 @@ namespace LCompilers {
             llvm::Value* dim_des_first;
             dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
                                     llvm_utils->CreateLoad(llvm_ndims));
+
+            // If unallocated, set lower bound and size to 1.
+            // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 1));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 2));
+
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
