@@ -4813,6 +4813,10 @@ public:
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                         ASRUtils::symbol_get_past_external(x.m_symtab->resolve_symbol(variable_type_name)));
                     ASR::symbol_t* class_sym = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                    if (ASRUtils::is_allocatable(var->m_type) && ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(var->m_type))) {
+                        create_vtab = true;
+                        break;
+                    }
                     bool is_vtab_needed = false;
                     while( !is_vtab_needed && struct_type ) {
                         if( struct_type == class_sym ) {
