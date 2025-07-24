@@ -440,6 +440,10 @@ namespace LCompilers {
             llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
                 ASR::ArrayConstant_t* arrayConst_t, std::string name);
 
+            llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
+
+            llvm::Value* is_equal_descriptor_string(llvm::Value* left, llvm::Value* right);
+
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);
 
