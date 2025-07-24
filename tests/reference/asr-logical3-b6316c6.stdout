@@ -82,7 +82,7 @@
                         [(Print
                             (StringConstant
                                 "Line 1 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -91,7 +91,7 @@
                         [(Print
                             (StringConstant
                                 "Line 1 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )
@@ -107,13 +107,13 @@
                         [(Print
                             (StringConstant
                                 "Line 2 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 2 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -132,13 +132,13 @@
                         [(Print
                             (StringConstant
                                 "Line xor - Condition is true"
-                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line xor - Condition is false"
-                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 29 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -179,13 +179,13 @@
                         [(Print
                             (StringConstant
                                 "Line 3 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 3 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -204,13 +204,13 @@
                         [(Print
                             (StringConstant
                                 "Line 4 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 4 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -229,7 +229,7 @@
                         [(Print
                             (StringConstant
                                 "Line 5 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -238,7 +238,7 @@
                         [(Print
                             (StringConstant
                                 "Line 5 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )
@@ -272,13 +272,13 @@
                         [(Print
                             (StringConstant
                                 "Line 6 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 6 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -297,13 +297,13 @@
                         [(Print
                             (StringConstant
                                 "Line 7 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 7 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -322,7 +322,7 @@
                         [(Print
                             (StringConstant
                                 "Line 8 xor - Condition is true"
-                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (ErrorStop
@@ -331,7 +331,7 @@
                         [(Print
                             (StringConstant
                                 "Line 8 xor - Condition is false"
-                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )]

@@ -776,7 +776,7 @@
                                         [(Print
                                             (StringConstant
                                                 "Test failed: tmp does not match value"
-                                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
                                         (ErrorStop
@@ -1390,7 +1390,7 @@
                     (Print
                         (StringConstant
                             "Test passed"
-                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

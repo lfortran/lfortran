@@ -189,42 +189,27 @@
                                     [(Var 13 cptr)]
                                     [(Assignment
                                         (Var 13 s)
-                                        (StringPhysicalCast
-                                            (FunctionCall
-                                                2 f_string_cptr_n
+                                        (FunctionCall
+                                            2 f_string_cptr_n
+                                            ()
+                                            [((Var 13 cptr))
+                                            ((FunctionCall
+                                                13 c_strlen
                                                 ()
-                                                [((Var 13 cptr))
-                                                ((FunctionCall
-                                                    13 c_strlen
-                                                    ()
-                                                    [((Var 13 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ))]
-                                                (String 1 (FunctionCall
-                                                    13 c_strlen
-                                                    ()
-                                                    [((Var 13 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                [((Var 13 cptr))]
+                                                (Integer 8)
                                                 ()
                                                 ()
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (FunctionCall
-                                                    13 c_strlen
-                                                    ()
-                                                    [((Var 13 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
-                                            )
+                                            ))]
+                                            (String 1 (FunctionCall
+                                                13 c_strlen
+                                                ()
+                                                [((Var 13 cptr))]
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            ) ExpressionLength DescriptorString)
+                                            ()
                                             ()
                                         )
                                         ()
@@ -292,7 +277,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 15 n) ExpressionLength PointerString)
+                                                    (String 1 (Var 15 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -313,7 +298,7 @@
                                             1
                                             (Integer 8)
                                             ()
-                                        ) ExpressionLength PointerString)
+                                        ) ExpressionLength DescriptorString)
                                         Source
                                         Implementation
                                         ()
@@ -350,7 +335,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -393,7 +378,7 @@
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray

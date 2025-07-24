@@ -117,7 +117,9 @@
                             (Var 2 b)
                             (Var 2 c)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

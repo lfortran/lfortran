@@ -2034,7 +2034,7 @@
                     [(Print
                         (StringConstant
                             "test commutative"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -2042,7 +2042,7 @@
                             ()
                             [(StringConstant
                                 "plus_comm: "
-                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 plus_comm
@@ -2054,7 +2054,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2063,7 +2065,7 @@
                             ()
                             [(StringConstant
                                 "int_plus_comm: "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 int_plus_comm
@@ -2075,7 +2077,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2084,7 +2088,7 @@
                             ()
                             [(StringConstant
                                 "minus_comm: "
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 minus_comm
@@ -2096,7 +2100,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2105,7 +2111,7 @@
                             ()
                             [(StringConstant
                                 "int_minus_comm: "
-                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 int_minus_comm
@@ -2117,7 +2123,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -114,7 +114,7 @@
                                             .true.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -139,15 +139,7 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (Var 9 name)
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 () AssumedLength DescriptorString)
-                                            )
-                                            ()
-                                        )
+                                        (Var 9 name)
                                         ()
                                         .false.
                                     )
@@ -160,17 +152,9 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (StringConstant
-                                                "app"
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            ()
+                                        (StringConstant
+                                            "app"
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         ()
                                         .false.
@@ -184,17 +168,9 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (StringConstant
-                                                "main.f90"
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            ()
+                                        (StringConstant
+                                            "main.f90"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         ()
                                         .false.
@@ -409,7 +385,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -453,7 +429,7 @@
                                             .true.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -555,30 +531,11 @@
                                             ColMajor
                                             ()
                                         ))
-                                        ((StringPhysicalCast
-                                            (StructInstanceMember
-                                                (Var 10 package)
-                                                10 1_package_config_t_name
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
+                                        ((StructInstanceMember
+                                            (Var 10 package)
+                                            10 1_package_config_t_name
                                             (Allocatable
-                                                (String 1 (StringLen
-                                                    (StructInstanceMember
-                                                        (Var 10 package)
-                                                        10 1_package_config_t_name
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         ))]
@@ -715,7 +672,7 @@
                     [(Print
                         (StringConstant
                             "running modules_30 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

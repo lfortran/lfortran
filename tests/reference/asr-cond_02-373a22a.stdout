@@ -217,13 +217,13 @@
                         [(Print
                             (StringConstant
                                 "ap == bp"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "ap /= bp"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )
@@ -242,13 +242,13 @@
                         [(Print
                             (StringConstant
                                 "cp == dp"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "cp /= dp"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )
@@ -264,7 +264,7 @@
                         [(Print
                             (StringConstant
                                 "a == b"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (If
@@ -282,13 +282,13 @@
                             [(Print
                                 (StringConstant
                                     "ap == bp"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             [(Print
                                 (StringConstant
                                     "ap /= bp"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )]
@@ -315,7 +315,7 @@
                             [(Print
                                 (StringConstant
                                     "ap == cp"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )
                             (If
@@ -333,13 +333,13 @@
                                 [(Print
                                     (StringConstant
                                         "cp == dp"
-                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )]
                                 [(Print
                                     (StringConstant
                                         "cp /= dp"
-                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )]
                             )]
@@ -355,7 +355,7 @@
                                 [(Print
                                     (StringConstant
                                         "c == d"
-                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )]
                                 []

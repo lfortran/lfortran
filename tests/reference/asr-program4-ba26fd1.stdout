@@ -514,11 +514,13 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -541,11 +543,13 @@
                             ()
                             [(StringConstant
                                 "7.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -568,11 +572,13 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -595,11 +601,13 @@
                             ()
                             [(StringConstant
                                 "8.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

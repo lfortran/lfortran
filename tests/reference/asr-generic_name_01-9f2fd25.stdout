@@ -258,7 +258,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling integer_add_subrout"
-                                            (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (Assignment
@@ -481,7 +481,7 @@
                                     [(Print
                                         (StringConstant
                                             "Calling real_add_subrout"
-                                            (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (Assignment
@@ -1057,7 +1057,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -1129,7 +1131,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

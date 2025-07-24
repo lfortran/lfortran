@@ -83,7 +83,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -522,42 +522,27 @@
                                     [(Var 6 cptr)]
                                     [(Assignment
                                         (Var 6 s)
-                                        (StringPhysicalCast
-                                            (FunctionCall
-                                                4 f_string_cptr_n
+                                        (FunctionCall
+                                            4 f_string_cptr_n
+                                            ()
+                                            [((Var 6 cptr))
+                                            ((FunctionCall
+                                                6 c_strlen
                                                 ()
-                                                [((Var 6 cptr))
-                                                ((FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ))]
-                                                (String 1 (FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                [((Var 6 cptr))]
+                                                (Integer 8)
                                                 ()
                                                 ()
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
-                                            )
+                                            ))]
+                                            (String 1 (FunctionCall
+                                                6 c_strlen
+                                                ()
+                                                [((Var 6 cptr))]
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            ) ExpressionLength DescriptorString)
+                                            ()
                                             ()
                                         )
                                         ()
@@ -625,7 +610,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 8 n) ExpressionLength PointerString)
+                                                    (String 1 (Var 8 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -646,7 +631,7 @@
                                             1
                                             (Integer 8)
                                             ()
-                                        ) ExpressionLength PointerString)
+                                        ) ExpressionLength DescriptorString)
                                         Source
                                         Implementation
                                         ()
@@ -683,7 +668,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -726,7 +711,7 @@
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray

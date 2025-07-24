@@ -41,7 +41,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -93,7 +93,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -108,8 +108,8 @@
                                         })
                                     git_target_branch
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (StructType
                                             [(Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -144,15 +144,7 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (Var 13 url)
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 () AssumedLength DescriptorString)
-                                            )
-                                            ()
-                                        )
+                                        (Var 13 url)
                                         ()
                                         .false.
                                     )
@@ -165,15 +157,7 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (Var 13 branch)
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 () AssumedLength DescriptorString)
-                                            )
-                                            ()
-                                        )
+                                        (Var 13 branch)
                                         ()
                                         .false.
                                     )]
@@ -515,7 +499,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -593,7 +577,7 @@
                                             .true.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Allocatable
                                             (StructType
                                                 [(Allocatable
@@ -796,32 +780,8 @@
                                         (FunctionCall
                                             4 git_target_branch
                                             ()
-                                            [((StringPhysicalCast
-                                                (Var 9 url)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 9 url)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
-                                            ((StringPhysicalCast
-                                                (Var 9 obj)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 9 obj)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))]
+                                            [((Var 9 url))
+                                            ((Var 9 obj))]
                                             (StructType
                                                 [(Allocatable
                                                     (String 1 () DeferredLength DescriptorString)
@@ -978,7 +938,7 @@
                     [(Print
                         (StringConstant
                             "running modules_28 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

@@ -202,7 +202,7 @@
                                     [(Print
                                         (StringConstant
                                             "inside check_table"
-                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     ()
@@ -704,7 +704,7 @@
                     [(Print
                         (StringConstant
                             "running select_type4 main program"
-                            (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

@@ -480,7 +480,9 @@
                             (Var 2 x2)
                             (Var 2 x3)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -491,7 +493,9 @@
                             (Var 2 y2)
                             (Var 2 y3)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

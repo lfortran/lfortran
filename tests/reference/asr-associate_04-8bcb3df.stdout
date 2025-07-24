@@ -158,7 +158,9 @@
                                             )
                                             (Var 3 v)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -320,7 +322,9 @@
                             ()
                             [(Var 2 myreal)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

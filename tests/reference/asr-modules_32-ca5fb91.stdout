@@ -265,7 +265,7 @@
                     [(Print
                         (StringConstant
                             "running modules_32 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

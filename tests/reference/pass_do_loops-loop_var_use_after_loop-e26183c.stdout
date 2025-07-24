@@ -75,11 +75,13 @@
                                 ()
                                 [(StringConstant
                                     "In loop 1 i ="
-                                    (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 i)]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )
@@ -128,11 +130,13 @@
                             ()
                             [(StringConstant
                                 "After loop 1 i = "
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -155,7 +159,9 @@
                             ()
                             []
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -203,11 +209,13 @@
                                 ()
                                 [(StringConstant
                                     "In loop 2 i = "
-                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 i)]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )
@@ -223,7 +231,7 @@
                             [(Print
                                 (StringConstant
                                     "if (i < 2) then"
-                                    (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             [(Assignment
@@ -261,11 +269,13 @@
                             ()
                             [(StringConstant
                                 "After loop 2 i = "
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -288,7 +298,9 @@
                             ()
                             []
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -336,11 +348,13 @@
                                 ()
                                 [(StringConstant
                                     "In loop 3 i = "
-                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 i)]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )
@@ -438,11 +452,13 @@
                             ()
                             [(StringConstant
                                 "After loop 3 i = "
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -465,7 +481,9 @@
                             ()
                             []
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -513,11 +531,13 @@
                                 ()
                                 [(StringConstant
                                     "In loop 4 i = "
-                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 i)]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )
@@ -595,7 +615,7 @@
                                 [(Print
                                     (StringConstant
                                         "i - 1 /= 3"
-                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )]
                             )]
@@ -620,11 +640,13 @@
                             ()
                             [(StringConstant
                                 "After loop 4 i = "
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

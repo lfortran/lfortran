@@ -3243,11 +3243,13 @@
                                     ()
                                     [(StringConstant
                                         "Thread ID:"
-                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Var 6 tid)]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -3285,11 +3287,13 @@
                                     ()
                                     [(StringConstant
                                         "Thread ID:"
-                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Var 6 tid)]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -3327,11 +3331,13 @@
                                     ()
                                     [(StringConstant
                                         "Thread ID:"
-                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Var 6 tid)]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -3342,11 +3348,13 @@
                             ()
                             [(StringConstant
                                 "Final Thread ID:"
-                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 6 tid)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -3383,7 +3391,7 @@
                                     [(Print
                                         (StringConstant
                                             "Computing A"
-                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     ()
@@ -3419,7 +3427,7 @@
                                     [(Print
                                         (StringConstant
                                             "Computing B"
-                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     ()
@@ -3455,7 +3463,7 @@
                                     [(Print
                                         (StringConstant
                                             "Computing C"
-                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     ()

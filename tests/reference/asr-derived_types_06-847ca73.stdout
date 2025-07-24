@@ -141,7 +141,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(i4.4,\"-\",i2.2,\"-\",i2.2)"
-                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             [(StructInstanceMember
                                                 (Var 11 rhs)
@@ -162,7 +162,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )]
                                         ()
@@ -470,41 +472,11 @@
                                             )
                                             (Assignment
                                                 (Var 12 lhs)
-                                                (StringPhysicalCast
-                                                    (StringConcat
-                                                        (StringPhysicalCast
-                                                            (Var 12 lhs)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (Var 12 lhs)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (StringPhysicalCast
-                                                            (Var 12 temporary)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (Var 12 temporary)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (String 1 () ExpressionLength PointerString)
-                                                        ()
-                                                    )
-                                                    PointerString
-                                                    DescriptorString
+                                                (StringConcat
+                                                    (Var 12 lhs)
+                                                    (Var 12 temporary)
                                                     (Allocatable
-                                                        (String 1 () ExpressionLength DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -785,7 +757,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Private
@@ -804,7 +776,7 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (StructType
                                             [(Integer 4)
                                             (Allocatable
@@ -944,15 +916,7 @@
                                                 )
                                                 ()
                                             )
-                                            (StringPhysicalCast
-                                                (Var 13 zone)
-                                                PointerString
-                                                DescriptorString
-                                                (Allocatable
-                                                    (String 1 () AssumedLength DescriptorString)
-                                                )
-                                                ()
-                                            )
+                                            (Var 13 zone)
                                             ()
                                             .false.
                                         )]
@@ -1146,7 +1110,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
-                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
@@ -1175,7 +1139,9 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )]
                                             ()
@@ -1202,7 +1168,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2)"
-                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 14 rhs)
@@ -1223,7 +1189,9 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )]
                                             ()
@@ -1236,30 +1204,11 @@
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 14 rhs)
-                                                    14 1_toml_time_zone
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 14 rhs)
+                                                14 1_toml_time_zone
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 14 rhs)
-                                                            14 1_toml_time_zone
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -1269,72 +1218,26 @@
                                         )
                                         [(Assignment
                                             (Var 14 lhs)
-                                            (StringPhysicalCast
-                                                (StringConcat
-                                                    (StringPhysicalCast
-                                                        (Var 14 lhs)
-                                                        DescriptorString
-                                                        PointerString
+                                            (StringConcat
+                                                (Var 14 lhs)
+                                                (IntrinsicElementalFunction
+                                                    StringTrim
+                                                    [(StructInstanceMember
+                                                        (Var 14 rhs)
+                                                        14 1_toml_time_zone
                                                         (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 14 lhs)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
+                                                    )]
+                                                    0
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
-                                                    (IntrinsicElementalFunction
-                                                        StringTrim
-                                                        [(StringPhysicalCast
-                                                            (StructInstanceMember
-                                                                (Var 14 rhs)
-                                                                14 1_toml_time_zone
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (StructInstanceMember
-                                                                        (Var 14 rhs)
-                                                                        14 1_toml_time_zone
-                                                                        (Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )
-                                                                        ()
-                                                                    )
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )]
-                                                        0
-                                                        (String 1 (StringLen
-                                                            (StructInstanceMember
-                                                                (Var 14 rhs)
-                                                                14 1_toml_time_zone
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
-                                                            (Integer 4)
-                                                            ()
-                                                        ) ExpressionLength PointerString)
-                                                        ()
-                                                    )
-                                                    (String 1 () ExpressionLength PointerString)
                                                     ()
                                                 )
-                                                PointerString
-                                                DescriptorString
                                                 (Allocatable
-                                                    (String 1 () ExpressionLength DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1927,7 +1830,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -2060,7 +1963,7 @@
                                         })
                                     toml_raw_to_timestamp
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (StructType
                                             [(Allocatable
                                                 (StructType

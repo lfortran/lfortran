@@ -425,7 +425,9 @@
                                             ()
                                             [(Var 6 a)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -457,7 +459,9 @@
                                             ()
                                             [(Var 6 a)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]

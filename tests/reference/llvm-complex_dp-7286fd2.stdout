@@ -3,6 +3,7 @@ source_filename = "LFortran"
 
 %complex_8 = type <{ double, double }>
 %complex_4 = type <{ float, float }>
+%string_descriptor = type <{ i8*, i64 }>
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [24 x i8] c"{R8,R8},{R4,R4},{R4,R4}\00", align 1
@@ -35,8 +36,17 @@ define i32 @main(i32 %0, i8** %1) {
   store float 0x3FF0CCCCC0000000, float* %12, align 4
   %13 = load %complex_4, %complex_4* %10, align 1
   store %complex_4 %13, %complex_4* %x, align 1
-  %14 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, %complex_8* %v, %complex_4* %x, %complex_4* %zero)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %14 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([24 x i8], [24 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, %complex_8* %v, %complex_4* %x, %complex_4* %zero)
+  %15 = call i64 @_lfortran_str_len(i8* %14)
+  %16 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc = bitcast i8* %16 to %string_descriptor*
+  %17 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %14, i8** %17, align 8
+  %18 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %15, i64* %18, align 4
+  %19 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %20, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
@@ -46,7 +56,11 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i32, i32, ...)
+
+declare i64 @_lfortran_str_len(i8*)
+
+declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_printf(i8*, ...)
 

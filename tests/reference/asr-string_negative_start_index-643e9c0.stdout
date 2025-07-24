@@ -2,33 +2,21 @@
     (SymbolTable
         1
         {
-            iso_fortran_env:
-                (IntrinsicModule lfortran_intrinsic_iso_fortran_env),
-            sin_03:
+            string_negative_start_index:
                 (Program
                     (SymbolTable
                         2
                         {
-                            dp:
-                                (ExternalSymbol
-                                    2
-                                    dp
-                                    4 real64
-                                    lfortran_intrinsic_iso_fortran_env
-                                    []
-                                    real64
-                                    Public
-                                ),
-                            x:
+                            s:
                                 (Variable
                                     2
-                                    x
+                                    s
                                     []
                                     Local
                                     ()
                                     ()
                                     Default
-                                    (Real 8)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -41,22 +29,13 @@
                                     .false.
                                 )
                         })
-                    sin_03
-                    [iso_fortran_env]
+                    string_negative_start_index
+                    []
                     [(Assignment
-                        (Var 2 x)
-                        (IntrinsicElementalFunction
-                            Sin
-                            [(RealConstant
-                                1.500000
-                                (Real 8)
-                            )]
-                            0
-                            (Real 8)
-                            (RealConstant
-                                0.997495
-                                (Real 8)
-                            )
+                        (Var 2 s)
+                        (StringConstant
+                            "lfortran"
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -64,7 +43,22 @@
                     (Print
                         (StringFormat
                             ()
-                            [(Var 2 x)]
+                            [(StringConstant
+                                "s:"
+                                (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                            )
+                            (StringSection
+                                (Var 2 s)
+                                (IntegerUnaryMinus
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (Integer 4)
+                                    (IntegerConstant -1 (Integer 4) Decimal)
+                                )
+                                (IntegerConstant 4 (Integer 4) Decimal)
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                ()
+                            )]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)

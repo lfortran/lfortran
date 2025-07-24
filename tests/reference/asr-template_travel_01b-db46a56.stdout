@@ -1563,11 +1563,13 @@
                                             ()
                                             [(StringConstant
                                                 "s1="
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 12 s1)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -1576,11 +1578,13 @@
                                             ()
                                             [(StringConstant
                                                 "s2="
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 12 s2)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -1589,11 +1593,13 @@
                                             ()
                                             [(StringConstant
                                                 "i1="
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 12 i1)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -1602,11 +1608,13 @@
                                             ()
                                             [(StringConstant
                                                 "i2="
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 12 i2)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
