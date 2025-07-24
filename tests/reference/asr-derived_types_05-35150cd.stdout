@@ -60,7 +60,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -75,7 +75,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (StructType
                                             [(Allocatable
                                                 (String 1 () DeferredLength DescriptorString)
@@ -467,7 +467,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -482,7 +482,7 @@
                                         })
                                     new_string
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (StructType
                                             [(Allocatable
                                                 (String 1 () DeferredLength DescriptorString)

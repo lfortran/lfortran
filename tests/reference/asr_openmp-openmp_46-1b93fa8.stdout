@@ -3309,12 +3309,12 @@
                                             ()
                                             [(StringConstant
                                                 "Task: i = "
-                                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 2 i)
                                             (StringConstant
                                                 ", computed by thread "
-                                                (String 1 (IntegerConstant 21 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 21 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (FunctionCall
                                                 2 omp_get_thread_num
@@ -3325,7 +3325,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -3339,7 +3341,7 @@
                             [(Print
                                 (StringConstant
                                     "All tasks submitted. Waiting for completion."
-                                    (String 1 (IntegerConstant 44 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 44 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )]
@@ -3347,7 +3349,7 @@
                     (Print
                         (StringConstant
                             "Updated array:"
-                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (DoLoop
@@ -3361,12 +3363,12 @@
                                 ()
                                 [(StringConstant
                                     "array("
-                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 i)
                                 (StringConstant
                                     ") = "
-                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (ArrayItem
                                     (Var 2 array)
@@ -3378,7 +3380,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )]

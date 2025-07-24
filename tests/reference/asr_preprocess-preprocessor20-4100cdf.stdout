@@ -16,14 +16,16 @@
                             ()
                             [(StringConstant
                                 "PI: "
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (RealConstant
                                 3.140000
                                 (Real 4)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -32,7 +34,7 @@
                             ()
                             [(StringConstant
                                 "negative one: "
-                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (IntegerUnaryMinus
                                 (IntegerConstant 1 (Integer 4) Decimal)
@@ -40,7 +42,9 @@
                                 (IntegerConstant -1 (Integer 4) Decimal)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

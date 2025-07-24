@@ -3371,16 +3371,18 @@
                                         ()
                                         [(StringConstant
                                             "iy->"
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         (Var 2 iy)
                                         (StringConstant
                                             "ix->"
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         (Var 2 ix)]
                                         FormatFortran
-                                        (String 1 () ExpressionLength CString)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
                                         ()
                                     )
                                 )
@@ -3401,26 +3403,28 @@
                                                 ()
                                                 [(StringConstant
                                                     "iy->"
-                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 (Var 2 iy)
                                                 (StringConstant
                                                     "ix->"
-                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 (Var 2 ix)
                                                 (StringConstant
                                                     "iz->"
-                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 (Var 2 iz)
                                                 (StringConstant
                                                     "ik->"
-                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 (Var 2 ik)]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )
                                         )]

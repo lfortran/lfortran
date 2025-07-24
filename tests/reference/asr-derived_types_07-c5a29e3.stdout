@@ -82,7 +82,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -138,7 +138,7 @@
                                                                     .false.
                                                                     .false.
                                                                 )
-                                                                (String 1 () AssumedLength PointerString)]
+                                                                (String 1 () AssumedLength DescriptorString)]
                                                                 (Logical 4)
                                                                 Source
                                                                 Implementation
@@ -214,7 +214,7 @@
                                                                                     .false.
                                                                                     .false.
                                                                                 )
-                                                                                (String 1 () AssumedLength PointerString)]
+                                                                                (String 1 () AssumedLength DescriptorString)]
                                                                                 (Logical 4)
                                                                                 Source
                                                                                 Implementation
@@ -298,7 +298,7 @@
                                                                         .false.
                                                                         .false.
                                                                     )
-                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (String 1 () AssumedLength DescriptorString)]
                                                                     (Logical 4)
                                                                     Source
                                                                     Implementation
@@ -329,7 +329,7 @@
                                             .false.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Pointer
                                             (StructType
                                                 [(Allocatable
@@ -365,7 +365,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    (String 1 () AssumedLength PointerString)]
+                                                    (String 1 () AssumedLength DescriptorString)]
                                                     (Logical 4)
                                                     Source
                                                     Implementation
@@ -459,7 +459,7 @@
                                                                                         .false.
                                                                                         .false.
                                                                                     )
-                                                                                    (String 1 () AssumedLength PointerString)]
+                                                                                    (String 1 () AssumedLength DescriptorString)]
                                                                                     (Logical 4)
                                                                                     Source
                                                                                     Implementation
@@ -526,7 +526,7 @@
                                                                             .false.
                                                                             .false.
                                                                         )
-                                                                        (String 1 () AssumedLength PointerString)]
+                                                                        (String 1 () AssumedLength DescriptorString)]
                                                                         (Logical 4)
                                                                         Source
                                                                         Implementation
@@ -586,7 +586,7 @@
                                                                     .false.
                                                                     .false.
                                                                 )
-                                                                (String 1 () AssumedLength PointerString)]
+                                                                (String 1 () AssumedLength DescriptorString)]
                                                                 (Logical 4)
                                                                 Source
                                                                 Implementation
@@ -660,7 +660,7 @@
                                                                                             .false.
                                                                                             .false.
                                                                                         )
-                                                                                        (String 1 () AssumedLength PointerString)]
+                                                                                        (String 1 () AssumedLength DescriptorString)]
                                                                                         (Logical 4)
                                                                                         Source
                                                                                         Implementation
@@ -727,7 +727,7 @@
                                                                                 .false.
                                                                                 .false.
                                                                             )
-                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (String 1 () AssumedLength DescriptorString)]
                                                                             (Logical 4)
                                                                             Source
                                                                             Implementation
@@ -787,7 +787,7 @@
                                                                         .false.
                                                                         .false.
                                                                     )
-                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (String 1 () AssumedLength DescriptorString)]
                                                                     (Logical 4)
                                                                     Source
                                                                     Implementation
@@ -852,7 +852,7 @@
                                                                                             .false.
                                                                                             .false.
                                                                                         )
-                                                                                        (String 1 () AssumedLength PointerString)]
+                                                                                        (String 1 () AssumedLength DescriptorString)]
                                                                                         (Logical 4)
                                                                                         Source
                                                                                         Implementation
@@ -919,7 +919,7 @@
                                                                                 .false.
                                                                                 .false.
                                                                             )
-                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (String 1 () AssumedLength DescriptorString)]
                                                                             (Logical 4)
                                                                             Source
                                                                             Implementation
@@ -979,7 +979,7 @@
                                                                         .false.
                                                                         .false.
                                                                     )
-                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (String 1 () AssumedLength DescriptorString)]
                                                                     (Logical 4)
                                                                     Source
                                                                     Implementation
@@ -1108,7 +1108,7 @@
                                                                                     .false.
                                                                                     .false.
                                                                                 )
-                                                                                (String 1 () AssumedLength PointerString)]
+                                                                                (String 1 () AssumedLength DescriptorString)]
                                                                                 (Logical 4)
                                                                                 Source
                                                                                 Implementation
@@ -1192,7 +1192,7 @@
                                                                         .false.
                                                                         .false.
                                                                     )
-                                                                    (String 1 () AssumedLength PointerString)]
+                                                                    (String 1 () AssumedLength DescriptorString)]
                                                                     (Logical 4)
                                                                     Source
                                                                     Implementation
@@ -1301,7 +1301,7 @@
                                                                             .false.
                                                                             .false.
                                                                         )
-                                                                        (String 1 () AssumedLength PointerString)]
+                                                                        (String 1 () AssumedLength DescriptorString)]
                                                                         (Logical 4)
                                                                         Source
                                                                         Implementation
@@ -1402,7 +1402,7 @@
                                                                     .false.
                                                                     .false.
                                                                 )
-                                                                (String 1 () AssumedLength PointerString)]
+                                                                (String 1 () AssumedLength DescriptorString)]
                                                                 (Logical 4)
                                                                 Source
                                                                 Implementation
@@ -1505,7 +1505,7 @@
                                                                                 .false.
                                                                                 .false.
                                                                             )
-                                                                            (String 1 () AssumedLength PointerString)]
+                                                                            (String 1 () AssumedLength DescriptorString)]
                                                                             (Logical 4)
                                                                             Source
                                                                             Implementation
@@ -1671,30 +1671,11 @@
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 8 self)
-                                                    8 1_toml_value_key
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 8 self)
-                                                            8 1_toml_value_key
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -1718,30 +1699,11 @@
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 8 self)
-                                                    8 1_toml_keyval_raw
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 8 self)
+                                                8 1_toml_keyval_raw
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 8 self)
-                                                            8 1_toml_keyval_raw
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -1930,7 +1892,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -2002,7 +1964,7 @@
                                             .false.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -2022,30 +1984,11 @@
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 5 self)
-                                                    5 1_toml_value_key
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 5 self)
+                                                5 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 5 self)
-                                                            5 1_toml_value_key
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -2058,30 +2001,11 @@
                                             (StringCompare
                                                 (Var 5 key)
                                                 Eq
-                                                (StringPhysicalCast
-                                                    (StructInstanceMember
-                                                        (Var 5 self)
-                                                        5 1_toml_value_key
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                    )
-                                                    DescriptorString
-                                                    PointerString
+                                                (StructInstanceMember
+                                                    (Var 5 self)
+                                                    5 1_toml_value_key
                                                     (Allocatable
-                                                        (String 1 (StringLen
-                                                            (StructInstanceMember
-                                                                (Var 5 self)
-                                                                5 1_toml_value_key
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
-                                                            (Integer 4)
-                                                            ()
-                                                        ) ExpressionLength PointerString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )

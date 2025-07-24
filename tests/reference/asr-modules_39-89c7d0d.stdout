@@ -49,7 +49,7 @@
                     (Print
                         (StringConstant
                             "executing modules_39"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 ),
@@ -85,55 +85,24 @@
                                     [(SubroutineCall
                                         2 filewrite
                                         ()
-                                        [((StringPhysicalCast
-                                            (FunctionCall
-                                                2 join_path
-                                                ()
-                                                [((StringConstant
-                                                    "build"
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                ))
-                                                ((StringConstant
-                                                    ".gitignore"
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                ))
-                                                (())
-                                                (())
-                                                (())]
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
+                                        [((FunctionCall
+                                            2 join_path
+                                            ()
+                                            [((StringConstant
+                                                "build"
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            ((StringConstant
+                                                ".gitignore"
+                                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            (())
+                                            (())
+                                            (())]
                                             (Allocatable
-                                                (String 1 (StringLen
-                                                    (FunctionCall
-                                                        2 join_path
-                                                        ()
-                                                        [((StringConstant
-                                                            "build"
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                        ))
-                                                        ((StringConstant
-                                                            ".gitignore"
-                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                        ))
-                                                        (())
-                                                        (())
-                                                        (())]
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
+                                            ()
                                             ()
                                         ))
                                         ((ArrayPhysicalCast
@@ -141,17 +110,17 @@
                                                 1
                                                 ["*"]
                                                 (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 1 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    PointerToDataArray
                                                 )
                                                 ColMajor
                                             )
-                                            FixedSizeArray
+                                            PointerToDataArray
                                             DescriptorArray
                                             (Array
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 DescriptorArray
@@ -213,7 +182,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -238,7 +207,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -253,9 +222,9 @@
                                         })
                                     filewrite
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Array
-                                            (String 1 () AssumedLength PointerString)
+                                            (String 1 () AssumedLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -296,7 +265,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -317,7 +286,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -338,7 +307,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -359,7 +328,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -380,7 +349,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -418,11 +387,11 @@
                                         })
                                     join_path
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
                                         )

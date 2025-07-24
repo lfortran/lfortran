@@ -1,4 +1,4 @@
-semantic error: Character dummy argument `c` must be of constant length of one or assumed length, unless it has assumed shape or assumed rank in a BIND(C) procedure
+semantic error: c_char should have a length of 1
   --> tests/errors/continue_compilation_1.f90:57:9
    |
 57 |         character(len=2, kind=c_char), intent(in) :: c

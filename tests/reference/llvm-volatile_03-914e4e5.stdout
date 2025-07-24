@@ -1,24 +1,26 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@volatile_03.y = internal global i8* null
-@0 = private unnamed_addr constant [2 x i8] c"2\00", align 1
+%string_descriptor = type <{ i8*, i64 }>
+
+@y_data = private global [2 x i8] c"2\00"
+@y = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @y_data, i32 0, i32 0), i64 1 }>
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %x = alloca i8*, align 8
-  %2 = call i8* @_lfortran_malloc(i32 2)
-  call void @_lfortran_string_init(i64 2, i8* %2)
-  store i8* %2, i8** %x, align 8
-  %3 = load volatile i8*, i8** %x, align 8
-  %4 = call i8* @_lfortran_malloc(i32 2)
-  call void @_lfortran_string_init(i64 2, i8* %4)
-  store i8* %4, i8** @volatile_03.y, align 8
-  call void @_lfortran_strcpy_pointer_string(i8** @volatile_03.y, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %5 = load i8*, i8** @volatile_03.y, align 8
-  %6 = load i8*, i8** %x, align 8
-  call void @_lfortran_strcpy_pointer_string(i8** @volatile_03.y, i8* %6)
+  %2 = call i8* @_lfortran_malloc(i64 16)
+  %x = bitcast i8* %2 to %string_descriptor*
+  store %string_descriptor zeroinitializer, %string_descriptor* %x, align 1
+  %3 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 1
+  store i64 1, i64* %3, align 4
+  %4 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %5 = call i8* @_lfortran_malloc(i64 2)
+  call void @_lfortran_string_init(i64 2, i8* %5)
+  store i8* %5, i8** %4, align 8
+  %6 = getelementptr %string_descriptor, %string_descriptor* %x, i32 0, i32 0
+  %7 = load i8*, i8** %6, align 8
+  call void @_lfortran_strcpy(i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 0), i64* getelementptr inbounds (%string_descriptor, %string_descriptor* @y, i32 0, i32 1), i8 0, i8 0, i8* %7, i64 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -28,10 +30,10 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lfortran_malloc(i32)
+declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_string_init(i64, i8*)
 
-declare void @_lfortran_strcpy_pointer_string(i8**, i8*)
+declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 declare void @_lpython_free_argv()

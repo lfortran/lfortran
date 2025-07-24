@@ -2695,7 +2695,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -2710,7 +2710,7 @@
                                         })
                                     f_string
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -2730,10 +2730,18 @@
                                         (FunctionCall
                                             2 f_string0
                                             ()
-                                            [((StringConcat
-                                                (Var 53 s)
-                                                (Var 2 c_null_char)
-                                                (String 1 () ExpressionLength PointerString)
+                                            [((StringPhysicalCast
+                                                (StringConcat
+                                                    (Var 53 s)
+                                                    (Var 2 c_null_char)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    ()
+                                                )
+                                                DescriptorString
+                                                CChar
+                                                (String 1 () ImplicitLength CChar)
                                                 ()
                                             ))]
                                             (Integer 4)
@@ -2784,7 +2792,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)
                                                     ()
                                                     BindC
                                                     Public
@@ -2799,7 +2807,7 @@
                                         })
                                     f_string0
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength CChar)]
                                         (Integer 4)
                                         BindC
                                         Interface

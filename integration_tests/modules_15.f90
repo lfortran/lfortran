@@ -228,9 +228,13 @@ call sub_int_doublearray(n, X64, r64)
 print *, r64
 if (abs(r64 - 6.6_dp) > 1e-10_dp) error stop
 
+print *, f_string("123")
 if (f_string("123") /= 3) error stop
+print *, f_string("abcde")
 if (f_string("abcde") /= 5) error stop
+print *, f_string(" ")
 if (f_string(" ") /= 1) error stop
+print *, f_string("")
 if (f_string("") /= 0) error stop
 
 ! Calling Fortran code from C

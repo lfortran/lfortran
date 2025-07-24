@@ -178,6 +178,11 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
         visit_ArrayOp(x);
     }
 
+    void visit_StringConcat(const ASR::StringConcat_t& x){
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StringConcat(x);
+        visit_ArrayOp(x);
+    }
+
     void visit_LogicalBinOp(const ASR::LogicalBinOp_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_LogicalBinOp(x);
         visit_ArrayOp(x);
@@ -874,6 +879,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 al, loc, realloc_var, builder.i32(i + 1), int32, nullptr));
             realloc_dims.push_back(al, realloc_dim);
         }
+        ASR::expr_t* realloc_str_len {};
+        if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
+            ASR::expr_t* len_value{}; // Compile-Time Length
+            int64_t len {};
+            if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                len_value = builder.i32(len);
+            }
+            realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                al, loc, realloc_var, int32, len_value));
+        }
 
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
@@ -881,7 +897,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_a = target;
         alloc_arg.m_dims = realloc_dims.p;
         alloc_arg.n_dims = realloc_dims.size();
-        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_len_expr = realloc_str_len;
         alloc_arg.m_type = nullptr;
         alloc_arg.m_sym_subclass = nullptr;
         alloc_args.push_back(al, alloc_arg);
@@ -1008,7 +1024,6 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.reserve(al, 2);
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
-
         generate_loop(x, vars, fix_type_args, loc);
     }
 

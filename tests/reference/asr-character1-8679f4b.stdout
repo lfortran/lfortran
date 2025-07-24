@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 () AssumedLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -31,7 +31,7 @@
                         })
                     xerror
                     (FunctionType
-                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
+                        [(String 1 () AssumedLength DescriptorString)]
                         ()
                         Source
                         Implementation
@@ -50,7 +50,7 @@
                         (StringItem
                             (Var 2 mess)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ()
                         )
                     )

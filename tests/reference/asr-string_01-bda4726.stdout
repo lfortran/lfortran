@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "Dominic"
-                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "Dominic"
-                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -42,11 +42,13 @@
                             ()
                             [(StringConstant
                                 "My name is "
-                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 my_name)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

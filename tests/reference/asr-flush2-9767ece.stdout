@@ -27,7 +27,7 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         (StringConstant
                             "file_01_data.txt"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         ()

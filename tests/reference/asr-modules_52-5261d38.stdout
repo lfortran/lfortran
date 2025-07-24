@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () DeferredLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -124,7 +124,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 () DeferredLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -221,7 +221,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -310,7 +310,7 @@
                                             )
                                         )
                                         (Array
-                                            (String 1 () AssumedLength PointerString)
+                                            (String 1 () AssumedLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray

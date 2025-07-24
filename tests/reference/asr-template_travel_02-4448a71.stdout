@@ -531,11 +531,13 @@
                                             ()
                                             [(StringConstant
                                                 "s="
-                                                (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 24 s)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]

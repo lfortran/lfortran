@@ -59,7 +59,7 @@
                                                         }
                                                     },
                                                     "len_kind": "ExpressionLength",
-                                                    "physical_type": "PointerString"
+                                                    "physical_type": "DescriptorString"
                                                 },
                                                 "loc": {
                                                     "first": 59,

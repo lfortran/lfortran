@@ -85,7 +85,7 @@ namespace LCompilers {
         if (!fn_printf) {
             llvm::FunctionType *function_type = llvm::FunctionType::get(
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
-                    {llvm::Type::getInt8Ty(context)->getPointerTo(),
+                    {llvm::Type::getInt8Ty(context)->getPointerTo(), llvm::Type::getInt64Ty(context),
                     llvm::Type::getInt8Ty(context)->getPointerTo(),
                     llvm::Type::getInt32Ty(context),
                     llvm::Type::getInt32Ty(context)}, true);
@@ -93,54 +93,6 @@ namespace LCompilers {
                     llvm::Function::ExternalLinkage, "_lcompilers_string_format_fortran", &module);
         }
         return builder.CreateCall(fn_printf, args);
-    }
-
-    static inline llvm::Value* lfortran_str_copy(llvm::Value* dest, llvm::Value *src, bool is_allocatable,
-        llvm::Module &module, llvm::IRBuilder<> &builder, llvm::LLVMContext &context, llvm::Type* string_descriptor ) {
-        if(!is_allocatable){
-            std::string runtime_func_name = "_lfortran_strcpy_pointer_string";
-            llvm::Function *fn = module.getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context),
-                        {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
-                            llvm::Type::getInt8Ty(context)->getPointerTo()
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module);
-            }
-            return builder.CreateCall(fn, {dest, src});
-        } else {
-            std::string runtime_func_name = "_lfortran_strcpy_descriptor_string";
-            llvm::Value *src_char_ptr, *dest_char_ptr, *string_size, *string_capacity;
-            std::vector<llvm::Value*> idx {
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
-                llvm::ConstantInt::get(context, llvm::APInt(32, 0))};
-            // Fetch char* from `src` and `dest` + Fetch string_size, string_capacity from `dest`
-            dest_char_ptr = builder.CreateGEP(string_descriptor, dest, idx);
-            src_char_ptr = builder.CreateLoad(llvm::Type::getInt8Ty(context)->getPointerTo(),
-                builder.CreateGEP(string_descriptor, src, idx));
-            idx[1] = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
-            string_size = builder.CreateGEP(string_descriptor, dest, idx);
-            idx[1] = llvm::ConstantInt::get(context, llvm::APInt(32, 2));
-            string_capacity =  builder.CreateGEP(string_descriptor, dest, idx);
-            llvm::Function *fn = module.getFunction(runtime_func_name);
-            if (!fn) {
-                llvm::FunctionType *function_type = llvm::FunctionType::get(
-                        llvm::Type::getVoidTy(context),
-                        {
-                            llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
-                            llvm::Type::getInt8Ty(context)->getPointerTo(),
-                            llvm::Type::getInt64Ty(context)->getPointerTo(),
-                            llvm::Type::getInt64Ty(context)->getPointerTo()
-                        }, false);
-                fn = llvm::Function::Create(function_type,
-                        llvm::Function::ExternalLinkage, runtime_func_name, module);
-            }
-            return builder.CreateCall(fn, {dest_char_ptr, src_char_ptr, string_size, string_capacity});
-        }
-
     }
 
     static inline void print_error(llvm::LLVMContext &context, llvm::Module &module,
@@ -208,10 +160,10 @@ namespace LCompilers {
                    ASR::is_a<ASR::StructType_t>(*asr_type) ||
                    ASR::is_a<ASR::Dict_t>(*asr_type);
         }
-        static inline bool is_llvm_pointer(const ASR::ttype_t& asr_type) {
-            return ( ASR::is_a<ASR::Pointer_t>(asr_type) ||
-                   ASR::is_a<ASR::Allocatable_t>(asr_type) );
-        }
+        // Check if type is represented as a pointer to the backend type.
+        // e.g. -> `i64*`
+        bool is_llvm_pointer(const ASR::ttype_t& asr_type);
+
     }
 
     class LLVMList;
@@ -251,6 +203,8 @@ namespace LCompilers {
             LLVMSetInterface* set_api_sc;
 
             CompilerOptions &compiler_options;
+            std::map<uint64_t, llvm::Value*> &llvm_symtab; // llvm_symtab_value
+
 
             llvm::StructType *complex_type_4, *complex_type_8;
             llvm::StructType *complex_type_4_ptr, *complex_type_8_ptr;
@@ -267,7 +221,7 @@ namespace LCompilers {
                 CompilerOptions &compiler_options_,
                 std::unordered_map<std::uint32_t, std::unordered_map<std::string, llvm::Type*>>& arr_arg_type_cache_,
                 std::map<std::string, std::pair<llvm::Type*, llvm::Type*>>& fname2arg_type_,
-                std::map<llvm::Value *, llvm::Type *> &ptr_type_);
+                std::map<llvm::Value *, llvm::Type *> &ptr_type_, std::map<uint64_t, llvm::Value*> &llvm_symtab_);
 
             llvm::Value* create_gep(llvm::Value* ds, int idx);
             llvm::Value* create_gep(llvm::Value* ds, llvm::Value* idx);
@@ -293,6 +247,7 @@ namespace LCompilers {
             llvm::Value* CreateInBoundsGEP(llvm::Value *x, std::vector<llvm::Value *> &idx);
             llvm::Value* CreateInBoundsGEP2(llvm::Type *t, llvm::Value *x,
                 std::vector<llvm::Value *> &idx);
+            llvm::Value* CreateInBoundsGEP2(ASR::ttype_t *t, llvm::Value *x, std::vector<llvm::Value *> &idx);
 
             llvm::AllocaInst* CreateAlloca(llvm::Type* type,
                 llvm::Value* size=nullptr, std::string Name="",
@@ -302,6 +257,7 @@ namespace LCompilers {
                 bool is_llvm_ptr=false);
 
             llvm::Type* getIntType(int a_kind, bool get_pointer=false);
+            llvm::Function* _Deallocate();
 
             void start_new_block(llvm::BasicBlock *bb);
 
@@ -319,18 +275,170 @@ namespace LCompilers {
             void string_init(llvm::Value* arg_size, llvm::Value* arg_string);
 
             /*
-             * Allocate heap memory for string.
-             * Fill string with empty characters.
+                * Checker for the desired type while operating on array of strings.
+                To make sure of consistency while working, to avoid llvm IR opaque errors.
+                * Only functional when llvm_versions < 17
+                * Try to only use with debug mode only.
             */
-            void initialize_string_heap(llvm::Value* str, llvm::Value* len);
-            void initialize_string_heap(llvm::Value* str, int64_t len);
+            bool is_proper_array_of_strings_llvm_var(ASR::ttype_t* type, llvm::Value* str);
+
+            /*
+                * Checker for the desired type while operating on strings.
+                To make sure of consistency while working, to avoid llvm IR opaque errors.
+                * Only functional when llvm_versions < 17
+                * Try to only use with debug mode only.
+            */
+            bool is_proper_string_llvm_variable(ASR::String_t* str_type, llvm::Value* str);
+
+            /*
+             * Allocate heap memory for string.
+            */
+            void set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
 
             /*
              * Allocate stack memory for string.
-             * Fill string with empty characters.
             */
-            void initialize_string_stack(llvm::Value* str, llvm::Value* len){(void)str;(void)len;throw LCompilersException("Not Implemented Yet");};
-            void initialize_string_stack(llvm::Value* str, int64_t len){(void)str;(void)len;throw LCompilersException("Not Implemented Yet");};
+            void initialize_string_stack(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
+
+            /*
+                Create a string based on the physical type.
+                It's not resposbile of setting up the string.
+            */
+            llvm::Value* create_string(ASR::String_t* str, std::string name);
+            /*
+             * Create an empty string descriptor with
+             * {data = nullptr, length = 0}
+            */
+            llvm::Value* create_empty_string_descriptor(std::string name = "");
+
+            /*
+                Creates a string descriptor and sets data and length
+                based on the passed arguments.
+            */
+            llvm::Value* create_string_descriptor(llvm::Value* data, llvm::Value* len, std::string name = "");
+
+            /* 
+                Creates a string_descriptor.
+                Only allocates it, does not set data or length.
+            */
+            llvm::Value* create_string_descriptor(std::string name);
+
+            llvm::Value* get_string_data(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_data=false);
+            llvm::Value* get_string_length(ASR::String_t* str_type, llvm::Value* str, bool get_pointer_to_len=false);
+
+            // Gets string's length and data
+            std::pair<llvm::Value*, llvm::Value*> get_string_length_data(ASR::String_t* str_type, llvm::Value* str,
+                bool get_pointer_to_data=false, bool get_pointer_to_len=false);
+            
+
+            /*
+                Calculates the pointer position, And return pointer to it.
+            */
+            llvm::Value* get_string_element_in_array_(ASR::String_t* str_type, llvm::Value* data, llvm::Value* arr_idx);
+            /*
+                Gets the desired string element within array
+            */
+            llvm::Value* get_string_element_in_array(ASR::String_t* str_type, llvm::Value* array_ptr/*PointerToDataArray*/, llvm::Value* arr_idx);
+
+            /*
+                Corresponds to the process of allocating a string.
+                e.g. --> `allocate(character(10) :: str)`
+                - If deferred length, Use desired amount passed by user.
+                - If not deferred length, Use length set by user while declaration.
+                - If deferred length, set the desired amount as the current length.
+                - If not deferred length, Keep the length set by the user while declaration.
+            */
+            void allocate_allocatable_string(ASR::String_t* str_type,llvm::Value* str, llvm::Value* amount_to_allocate);
+
+            /*
+                Corresponds to the process of allocating an array of strings.
+                e.g. --> `allocate(character(10) :: str(7))`
+                - If deferred length, Use desired amount passed by user.
+                - If not deferred length, Use length set by user while declaration.
+                - If deferred length, set the desired amount as the current length.
+                - If not deferred length, Keep the length set by the user while declaration.
+            */
+            void allocate_allocatable_array_of_strings(ASR::String_t* str_type, llvm::Value* str,
+                llvm::Value* string_length_to_allocate, llvm::Value* array_size_to_allocte, bool realloc = false);
+            
+            /*
+                Gets the whole memory size needed for array of strings.
+                It works only for compile-time arraysize + compile-time string length
+            */
+            llvm::Value* get_stringArray_whole_size(ASR::ttype_t* type);
+
+            /*
+                Allocate the memory needed for an array of strings (on heap), and sets it.
+                e.g. --> `character(100) :: arr_of_strings(7)`
+                Length is not this function's responsibility.
+            */
+            void set_array_of_strings_memory_on_heap(ASR::String_t* str_type,llvm::Value* str, 
+                llvm::Value* str_len, llvm::Value* array_size, bool realloc = false);
+
+            /*
+                Allocate the memory needed for an array of strings (on stack)
+                e.g. --> `character(100) :: arr_of_strings(7)`
+                Length is not this function's responsibility.
+            */
+            void set_array_of_strings_memory_on_stack(ASR::String_t* str_type,llvm::Value* str, llvm::Value* str_len, llvm::Value* array_size);
+
+            /*
+                - Gets the llvm Variable for different strings representations (standalone or array)
+                    e.g. --> (character, allocatable-character, array of strings, etc.)
+                - Returns a pointer to the string container
+                    e.g. --> (string_descriptor*, array_descriptor*, i8**)
+            */
+            llvm::Value* fetch_string_llvm_var(ASR::Variable_t* x);
+
+            /*
+                * Gets the data pointer of an array of strings
+                  based on the physicalType.
+                * e.g. --> `character(100) :: arr_of_strings(7)`
+                  Returns `i8*`
+            */
+            llvm::Value* get_stringArray_data(ASR::ttype_t* type, llvm::Value* arr_ptr);
+            
+            /*
+                * Gets string length of array of strings
+                  based on the physicalType.
+                * e.g. --> `character(100) :: arr_of_strings(7)`
+                * Returns `int64`
+            */
+            llvm::Value* get_stringArray_length(ASR::ttype_t* type, llvm::Value* arr_ptr);
+
+            /*
+                Frees Strings.
+                whether it is a single string or an array of strings.
+            */
+            void free_strings(ASR::expr_t* expr, llvm::Value* tmp);
+
+            /*
+                *String copying src into destination,
+                using runtime function.
+            */
+            llvm::Value* lfortran_str_copy(
+                llvm::Value* dest, llvm::Value *src,
+                ASR::String_t* dest_str_type, ASR::String_t* src_str_type,
+                bool is_dest_allocatable);
+
+            // Handles string literals ==> e.g. `print *, "HelloWorld"`
+            llvm::Value* declare_string_constant(const ASR::StringConstant_t* str_const);
+
+            llvm::Value* declare_constant_stringArray(Allocator &al, const ASR::ArrayConstant_t* arr_const);
+            /*
+                Declare + Setup
+                string in the global scope of the llvm module.
+            */
+            llvm::Value* declare_global_string(ASR::String_t* str, std::string initial_data, bool is_const, std::string name = "",
+                llvm::GlobalValue::LinkageTypes linkage = llvm::GlobalValue::PrivateLinkage);
+            
+            /*
+                * Sets up the global array of strings that's not allocatable.
+                * Depends on the fact that PoitnerToDataArray physicalType for strings
+                    is the same representation as the string PhysicalType  
+            */
+            llvm::Value* handle_global_nonallocatable_stringArray(Allocator& al, ASR::Array_t* array_t,
+                ASR::ArrayConstant_t* arrayConst_t, std::string name);
 
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);
@@ -359,6 +467,8 @@ namespace LCompilers {
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);
 
             llvm::Type* getComplexType(int a_kind, bool get_pointer=false);
+            // Returns LLVM Type Based On String's PhysicalType
+            llvm::Type* get_StringType(ASR::ttype_t* type);
 
             llvm::Type* get_el_type(ASR::expr_t* expr, ASR::ttype_t* m_type_, llvm::Module* module);
 
@@ -393,7 +503,8 @@ namespace LCompilers {
             void set_set_api(ASR::Set_t* set_type);
 
             void deepcopy(ASR::expr_t* src_expr, llvm::Value* src, llvm::Value* dest,
-                ASR::ttype_t* asr_type, llvm::Module* module,
+                ASR::ttype_t* asr_dest_type,
+                ASR::ttype_t* asr_src_type, llvm::Module* module,
                 std::map<std::string, std::map<std::string, int>>& name2memidx);
 
             llvm::Value* convert_kind(llvm::Value* val, llvm::Type* target_type);

@@ -16,38 +16,40 @@
                             ()
                             [(IntegerConstant 1 (Integer 4) Decimal)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "__VERSION__ present"
-                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 19 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_MAJOR__ present"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_MINOR__ present"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
                         (StringConstant
                             "__LFORTRAN_PATCHLEVEL__ present"
-                            (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
                         (StringConstant
                             "tests/preprocessor8.f90"
-                            (String 1 (IntegerConstant 23 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 23 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -55,7 +57,9 @@
                             ()
                             [(IntegerConstant 19 (Integer 4) Decimal)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -64,7 +68,9 @@
                             ()
                             [(IntegerConstant 20 (Integer 4) Decimal)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

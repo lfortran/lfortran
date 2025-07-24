@@ -409,7 +409,9 @@
                             ()
                             [(Var 2 output_min)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -479,7 +481,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -502,7 +504,9 @@
                             ()
                             [(Var 2 output_min0)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -541,7 +545,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -569,7 +573,9 @@
                             ()
                             [(Var 2 output_amin0)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -631,7 +637,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -659,7 +665,9 @@
                             ()
                             [(Var 2 output_min1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -698,7 +706,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -721,7 +729,9 @@
                             ()
                             [(Var 2 output_amin1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -783,7 +793,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -806,7 +816,9 @@
                             ()
                             [(Var 2 output_dmin1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -876,7 +888,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -904,7 +916,9 @@
                             ()
                             [(Var 2 output_min_different_kinds)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -969,7 +983,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
