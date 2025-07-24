@@ -556,13 +556,13 @@ RUN(NAME arrays_op_17 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArr
 RUN(NAME arrays_op_16 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray
     EXTRA_ARGS --realloc-lhs fortran)
-RUN(NAME arrays_op_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran NO_FAST)
+RUN(NAME arrays_op_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray
     EXTRA_ARGS --realloc-lhs)
 RUN(NAME arrays_op_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
-RUN(NAME arrays_op_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran NO_FAST)
-RUN(NAME arrays_op_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran NO_FAST)
+RUN(NAME arrays_op_23 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
+RUN(NAME arrays_op_24 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_26 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_27 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
 RUN(NAME arrays_op_28 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvmStackArray fortran)
