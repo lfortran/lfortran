@@ -5127,9 +5127,17 @@ public:
                 }
             }
         } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
-            return ASRUtils::TYPE(ASR::make_List_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
+            ASR::ttype_t* type = determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
-                    is_argument))); 
+                    is_argument);
+
+            // Implicitly consider deferred length descriptor string as allocatable
+            if (ASRUtils::is_deferredLength_string(type) && ASRUtils::is_descriptorString(type))
+                type = determine_type(loc, sym, sym_type->m_attr,
+                                is_pointer, true, dims, var_sym, type_declaration, abi,
+                                is_argument);
+
+            return ASRUtils::TYPE(ASR::make_List_t(al, loc, type)); 
         }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
             return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,

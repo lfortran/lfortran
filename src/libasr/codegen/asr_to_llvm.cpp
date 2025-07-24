@@ -1746,6 +1746,14 @@ public:
         bool is_list_local = false;
         ASR::dimension_t* m_dims_local = nullptr;
         int n_dims_local = -1, a_kind_local = -1;
+
+        if (ASRUtils::is_descriptorString(list_type->m_type) && !ASRUtils::is_deferredLength_string(list_type->m_type)) {
+            list_type->m_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, ASRUtils::TYPE(
+                                                ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength,
+                                                        ASR::string_physical_typeType::DescriptorString))));
+        }
+
         llvm::Type* llvm_el_type = llvm_utils->get_type_from_ttype_t(const_cast<ASR::expr_t*>(&x.base), list_type->m_type,
                                     nullptr, ASR::storage_typeType::Default, is_array_type_local,
                                     is_malloc_array_type_local, is_list_local, m_dims_local,
@@ -1754,6 +1762,7 @@ public:
         int32_t type_size = -1;
         if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
+            ASRUtils::is_allocated_descriptor_string(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
@@ -1773,6 +1782,38 @@ public:
             this->visit_expr(*x.m_args[i]);
             llvm::Value* item = tmp;
             llvm::Value* pos = llvm::ConstantInt::get(context, llvm::APInt(32, i));
+
+            ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
+            if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
+                // Handle String constants - Allocate them on heap
+                LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
+                llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+                llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                      llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                            llvm_utils->create_gep2(string_descriptor, item, 1)));
+
+                llvm_utils->deepcopy(const_cast<ASR::expr_t*>(&x.base), item, temp_str, list_type->m_type, 
+                                     list_type->m_type, module.get(), name2memidx);
+                list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item, list_type->m_type,
+                                 false, module.get(), name2memidx);
+                continue;
+            } else if (ASRUtils::is_descriptorString(arg_type) && ASRUtils::is_deferredLength_string(arg_type)) {
+                // Handle String variables - Deep copy on heap
+                LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor);
+                llvm::Value* item_ptr = llvm_utils->CreateAlloca(string_descriptor, nullptr, "item_ptr");
+                builder->CreateStore(item, item_ptr);
+                llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+                llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                      llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                            llvm_utils->create_gep2(string_descriptor, item_ptr, 1)));
+
+                llvm_utils->deepcopy(const_cast<ASR::expr_t*>(&x.base), item_ptr, temp_str, list_type->m_type, 
+                                     list_type->m_type, module.get(), name2memidx);
+                list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item_ptr, list_type->m_type,
+                                 false, module.get(), name2memidx);
+                continue;
+            }
+
             list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item, list_type->m_type,
                                  false, module.get(), name2memidx);
         }
@@ -1968,7 +2009,31 @@ public:
         llvm::Value *item = tmp;
         ptr_loads = ptr_loads_copy;
 
-        list_api->append(x.m_a, plist, item, asr_list->m_type, module.get(), name2memidx);
+        ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_ele);
+        
+        if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
+            // Handle String constants - Allocate them on heap
+            LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
+            llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+            llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                  llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                        llvm_utils->create_gep2(string_descriptor, item, 1)));
+            llvm_utils->deepcopy(x.m_a, item, temp_str, asr_list->m_type, asr_list->m_type, 
+                                 module.get(), name2memidx);
+            list_api->append(x.m_a, plist, temp_str, asr_list->m_type, module.get(), name2memidx);
+        } else if (ASRUtils::is_descriptorString(arg_type) && ASRUtils::is_deferredLength_string(arg_type)) {
+            // Handle String variables - Deep copy on heap
+            LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
+            llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+            llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                  llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                        llvm_utils->create_gep2(string_descriptor, item, 1)));
+            llvm_utils->deepcopy(x.m_a, item, temp_str, arg_type, asr_list->m_type, 
+                                 module.get(), name2memidx);
+            list_api->append(x.m_a, plist, temp_str, asr_list->m_type, module.get(), name2memidx);
+        } else {
+            list_api->append(x.m_a, plist, item, asr_list->m_type, module.get(), name2memidx);
+        }
     }
 
     void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {

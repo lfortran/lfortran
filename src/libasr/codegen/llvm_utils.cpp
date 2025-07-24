@@ -1,10 +1,6 @@
-#include "libasr/asr.h"
-#include <libasr/assert.h>
 #include <libasr/codegen/llvm_utils.h>
 #include <libasr/codegen/llvm_array_utils.h>
 #include <libasr/asr_utils.h>
-#include <llvm/IR/Type.h>
-#include "llvm_utils.h"
 
 namespace LCompilers {
 
@@ -742,6 +738,7 @@ namespace LCompilers {
                 int32_t type_size = -1;
                 if( LLVM::is_llvm_struct(asr_list->m_type) ||
                     ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
+                    ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -1008,6 +1005,7 @@ namespace LCompilers {
                     int32_t type_size = -1;
                     if( LLVM::is_llvm_struct(asr_list->m_type) ||
                         ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
+                        ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
                         ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                         llvm::DataLayout data_layout(module->getDataLayout());
                         type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -1261,6 +1259,7 @@ namespace LCompilers {
                 int32_t type_size = -1;
                 if( LLVM::is_llvm_struct(asr_list->m_type) ||
                     ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
+                    ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -2383,6 +2382,138 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
     return nullptr;
 
 }
+
+    llvm::Value* LLVMUtils::is_equal_pointer_string(llvm::Value* left, llvm::Value* right) {
+        str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
+        llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
+                                                    llvm::APInt(8, '\0'));
+        llvm::Value* idx = str_cmp_itr;
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)),
+            idx);
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+        // head
+        start_new_block(loophead);
+        {
+            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+            llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+                llvm::Type::getInt8Ty(context), left, i));
+            llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+                llvm::Type::getInt8Ty(context), right, i));
+            llvm::Value *cond = builder->CreateAnd(
+                builder->CreateICmpNE(l, null_char),
+                builder->CreateICmpNE(r, null_char)
+            );
+            cond = builder->CreateAnd(cond, builder->CreateICmpEQ(l, r));
+            builder->CreateCondBr(cond, loopbody, loopend);
+        }
+
+        // body
+        start_new_block(loopbody);
+        {
+            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+            i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                    llvm::APInt(32, 1)));
+            LLVM::CreateStore(*builder, i, idx);
+        }
+
+        builder->CreateBr(loophead);
+
+        // end
+        start_new_block(loopend);
+        llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+        llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), left, i));
+        llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), right, i));
+        return builder->CreateICmpEQ(l, r);
+    }
+
+    llvm::Value* LLVMUtils::is_equal_descriptor_string(llvm::Value* left, llvm::Value* right) {
+        if (left->getType() == string_descriptor) {
+            llvm::Value* tmp = CreateAlloca(string_descriptor);
+            builder->CreateStore(left, tmp);
+            left = tmp;
+        }
+
+        if (right->getType() == string_descriptor) {
+            llvm::Value* tmp = CreateAlloca(string_descriptor);
+            builder->CreateStore(right, tmp);
+            right = tmp;
+        }
+
+        llvm::Value* left_string_body = CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                           create_gep2(string_descriptor, left, 0));
+        llvm::Value* left_string_size = CreateLoad2(llvm::Type::getInt64Ty(context),
+                                           create_gep2(string_descriptor, left, 1));
+        llvm::Value* right_string_body = CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                           create_gep2(string_descriptor, right, 0));
+        llvm::Value* right_string_size = CreateLoad2(llvm::Type::getInt64Ty(context),
+                                           create_gep2(string_descriptor, right, 1));
+
+        llvm::Value *cond = builder->CreateICmpEQ(left_string_size, right_string_size);
+        llvm::Function *fn = builder->GetInsertBlock()->getParent();
+        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
+        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
+        builder->CreateCondBr(cond, thenBB, elseBB);
+        builder->SetInsertPoint(thenBB);
+
+        str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
+
+        llvm::Value* idx = str_cmp_itr;
+        LLVM::CreateStore(*builder,
+            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)),
+            idx);
+        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
+        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
+        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+
+        // head
+        start_new_block(loophead);
+        {
+            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+            llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+                llvm::Type::getInt8Ty(context), left_string_body, i));
+            llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+                llvm::Type::getInt8Ty(context), right_string_body, i));
+            llvm::Value* cond = builder->CreateICmpEQ(l, r);
+            llvm::Value* i_64 = builder->CreateZExt(i, llvm::Type::getInt64Ty(context));
+            cond = builder->CreateAnd(cond, builder->CreateICmpSLE(i_64, left_string_size));
+            builder->CreateCondBr(cond, loopbody, loopend);
+        }
+
+        // body
+        start_new_block(loopbody);
+        {
+            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+            i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
+                                    llvm::APInt(32, 1)));
+            LLVM::CreateStore(*builder, i, idx);
+        }
+
+        builder->CreateBr(loophead);
+
+        // end
+        start_new_block(loopend);
+        builder->CreateBr(mergeBB);
+
+        start_new_block(elseBB);
+        builder->CreateBr(mergeBB);
+
+        start_new_block(mergeBB);
+        llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
+        llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), left_string_body, i));
+        llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
+            llvm::Type::getInt8Ty(context), right_string_body, i));
+        return builder->CreateAnd(builder->CreateICmpEQ(l, r), builder->CreateICmpEQ(left_string_size, right_string_size));
+    }
+
+
     llvm::Value* LLVMUtils::is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                               llvm::Module* module, ASR::ttype_t* asr_type) {
         switch( asr_type->type ) {
@@ -2398,52 +2529,11 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 return builder->CreateFCmpOEQ(left, right);
             }
             case ASR::ttypeType::String: {
-                str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
-                llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
-                                                            llvm::APInt(8, '\0'));
-                llvm::Value* idx = str_cmp_itr;
-                LLVM::CreateStore(*builder,
-                    llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)),
-                    idx);
-                llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-                llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-                llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
-
-                // head
-                start_new_block(loophead);
-                {
-                    llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-                    llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                        llvm::Type::getInt8Ty(context), left, i));
-                    llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                        llvm::Type::getInt8Ty(context), right, i));
-                    llvm::Value *cond = builder->CreateAnd(
-                        builder->CreateICmpNE(l, null_char),
-                        builder->CreateICmpNE(r, null_char)
-                    );
-                    cond = builder->CreateAnd(cond, builder->CreateICmpEQ(l, r));
-                    builder->CreateCondBr(cond, loopbody, loopend);
-                }
-
-                // body
-                start_new_block(loopbody);
-                {
-                    llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-                    i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                            llvm::APInt(32, 1)));
-                    LLVM::CreateStore(*builder, i, idx);
-                }
-
-                builder->CreateBr(loophead);
-
-                // end
-                start_new_block(loopend);
-                llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-                llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                    llvm::Type::getInt8Ty(context), left, i));
-                llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                    llvm::Type::getInt8Ty(context), right, i));
-                return builder->CreateICmpEQ(l, r);
+                ASR::string_physical_typeType string_type = ASR::down_cast<ASR::String_t>(asr_type)->m_physical_type;
+                if (string_type == ASR::string_physical_typeType::CChar)
+                    return is_equal_pointer_string(left, right);
+                else 
+                    return is_equal_descriptor_string(left, right);
             }
             case ASR::ttypeType::Tuple: {
                 ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);
@@ -2454,6 +2544,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(asr_type);
                 return list_api->check_list_equality(left, right, list_type->m_type,
                                                      context, builder, module);
+            }
+            case ASR::ttypeType::Allocatable: {
+                ASR::ttype_t* contained_type = ASR::down_cast<ASR::Allocatable_t>(asr_type)->m_type;
+                if (ASR::is_a<ASR::String_t>(*contained_type))
+                    return is_equal_by_value(left, right, module, contained_type);
+                
+                throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for Allocatable " +
+                                          ASRUtils::type_to_str_python(contained_type));
             }
             default: {
                 throw LCompilersException("LLVMUtils::is_equal_by_value isn't implemented for " +
@@ -3134,7 +3232,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // will be deep copied and rest will be shallow copied. The importance of this case
         // can be figured out by goind through, integration_tests/test_list_06.py and
         // integration_tests/test_list_07.py.
-        if( LLVM::is_llvm_struct(element_type) ) {
+        if( LLVM::is_llvm_struct(element_type) || ASRUtils::is_allocated_descriptor_string(element_type) ) {
             builder->CreateStore(copy_data, get_pointer_to_list_data_using_type(list_type, dest));
             // TODO: Should be created outside the user loop and not here.
             // LLVMList should treat them as data members and create them
@@ -3514,7 +3612,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                               llvm::Value* item, ASR::ttype_t* asr_type,
                               bool enable_bounds_checking, llvm::Module* module,
                               std::map<std::string, std::map<std::string, int>>& name2memidx) {
-        std::string el_type_code = ASRUtils::get_type_code(ASRUtils::extract_type(asr_type));
+        std::string el_type_code = ASRUtils::get_type_code(asr_type);
         llvm::Type* list_type = llvm_utils->list_api->get_list_type(nullptr, el_type_code, 0);
         if( enable_bounds_checking ) {
             check_index_within_bounds_using_type(list_type, list, pos, module);
