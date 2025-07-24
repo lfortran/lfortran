@@ -10557,15 +10557,6 @@ public:
             throw SemanticAbort();
         }
 
-        // If there is a variable with the same name as the operator
-        if (!ASR::is_a<ASR::CustomOperator_t>(*operator_sym)) {
-            diag.add(Diagnostic(
-                "`" + op + "` is not an operator",
-                Level::Error, Stage::Semantic, {Label("", {loc})}
-            ));
-            throw SemanticAbort();
-        }
-
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(operator_sym);
         ASR::ttype_t* left_type = ASRUtils::expr_type(first_operand);
         ASR::ttype_t* right_type = nullptr;
