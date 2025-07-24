@@ -20,7 +20,7 @@ contains
 
    function generate_key(i) result(key)
       integer, intent(in) :: i
-      character(len=:) :: key
+      character(len=:), allocatable :: key
       _lfortran_dict(integer, character(len=:)) :: i2d
       integer :: mod_, key_digits, digit
       i2d = _lfortran_dict_constant(0, "a", 1, "b", 2, "c", 3, "d", 4, "e", 5, "f", 6, "g", 7, "h", 8, "i", 9, "j")
@@ -37,7 +37,7 @@ contains
 
    subroutine test_dict()
       type(_lfortran_dict(character(len=:), integer(8))) :: number2cpi
-      character(len=:) :: key
+      character(len=:),allocatable :: key
       integer :: i, size, cd, size1
       integer(8) :: val
 
