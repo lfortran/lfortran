@@ -5,7 +5,7 @@ real :: x(10, 10), sx(10, 10)
 x = 2.0
 sx = softmax(x)
 print *, sx
-if( any(sx - 0.1 > 1e-6) ) error stop
+if( any(abs(sx - 0.1) > 1e-6) ) error stop
 
 contains
 

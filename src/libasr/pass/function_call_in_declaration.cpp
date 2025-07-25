@@ -722,9 +722,11 @@ public:
             ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            } else {
+                return;
             }
         } else {
-            LCompilersException("Visiting FunctionType should happen inside a function scope\n");
+            return;
         }
 
         ASR::ttype_t* return_var_type = x.m_return_var_type;
