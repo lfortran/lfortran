@@ -2305,7 +2305,13 @@ public:
         loc.first = 1;
         loc.last = 1;
         Str s;
-        s.from_str_view(proc.first);
+
+        // Append "~~" to the begining of any custom defined operator
+        std::string new_operator_name = proc.first;
+        if (should_change_custom_op_name(proc.first)) {
+          new_operator_name = "~~" + new_operator_name;
+        }
+        s.from_str_view(new_operator_name);
         char *generic_name = s.c_str(al);
         Vec<ASR::symbol_t*> symbols;
         symbols.reserve(al, proc.second.size());
@@ -2335,7 +2341,7 @@ public:
         }
         ASR::asr_t *v = ASR::make_CustomOperator_t(al, loc, current_scope,
                             generic_name, symbols.p, symbols.size(), access);
-        current_scope->add_or_overwrite_symbol(proc.first, ASR::down_cast<ASR::symbol_t>(v));
+        current_scope->add_or_overwrite_symbol(new_operator_name, ASR::down_cast<ASR::symbol_t>(v));
     }
 
     void add_overloaded_procedures() {
@@ -3281,6 +3287,11 @@ public:
                     case AST::use_symbolType::DefinedOperator: {
                         remote_sym = AST::down_cast<AST::DefinedOperator_t>(
                             x.m_symbols[i])->m_opName;
+
+                        // Append "~~" to the begining of any custom defined operator
+                        if (should_change_custom_op_name(remote_sym)) {
+                            remote_sym = "~~" + remote_sym;
+                        }
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
@@ -3370,6 +3381,11 @@ public:
                     case AST::use_symbolType::DefinedOperator: {
                         remote_sym = AST::down_cast<AST::DefinedOperator_t>(
                             x.m_symbols[i])->m_opName;
+
+                        // Append "~~" to the begining of any custom defined operator
+                        if (should_change_custom_op_name(remote_sym)) {
+                            remote_sym = "~~" + remote_sym;
+                        }
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {

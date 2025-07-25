@@ -10520,8 +10520,6 @@ public:
 
     void visit_DefTOp(ASR::expr_t* first_operand, ASR::expr_t* second_operand, const std::string op, const Location loc) {
         bool is_binary = (second_operand != nullptr);
-        ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(op));
-        ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         ASR::Struct_t *first_struct = nullptr;
         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(first_operand))) {
@@ -10531,6 +10529,15 @@ public:
                 )
             );
         }
+
+        std::string new_op = op;
+
+        // Append "~~" to the begining of any custom defined operator, that is not inside a struct
+        if (should_change_custom_op_name(op) && first_struct == nullptr) {
+            new_op = "~~" + op;
+        }
+        ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(new_op));
+        ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
 
         if (first_struct != nullptr && operator_sym == nullptr) {
             operator_sym = first_struct->m_symtab->resolve_symbol("~def_op~" + op);
@@ -10597,7 +10604,7 @@ public:
             if (current_scope->resolve_symbol(func_name)) {
                 matched_func_name = func_name;
             } else {
-                matched_func_name = func_name + "@" + std::string(to_lower(op));
+                matched_func_name = func_name + "@" + std::string(to_lower(new_op));
             }
 
             ASR::symbol_t* a_name = current_scope->resolve_symbol(matched_func_name);
@@ -11568,6 +11575,17 @@ public:
                 throw SemanticAbort();
             }
         }
+    }
+
+    // check if we should append "~~" to an operator name
+    bool should_change_custom_op_name(const std::string &op) {
+        static const std::string operator_chars = "+-*/~<=>";
+
+        if (op.find_first_of(operator_chars) != std::string::npos) {
+            return false;
+        }
+
+        return true;
     }
 };
 
