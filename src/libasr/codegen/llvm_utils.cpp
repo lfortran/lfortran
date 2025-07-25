@@ -2213,11 +2213,17 @@ namespace LCompilers {
         switch(str->m_len_kind){
             case ASR::DeferredLength:{
                 string_constant = llvm::ConstantPointerNull::get(character_type);
-                LCOMPILERS_ASSERT_MSG(initial_data.size() == 0, "Handle this")
+                LCOMPILERS_ASSERT_MSG(
+                    initial_data.size() == 0,
+                    "Can't declare global-allocatable-string variable with initial value"
+                )
                 break;
             }
             case ASR::ExpressionLength:{
-                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len), "Handle this case");
+                LCOMPILERS_ASSERT_MSG(
+                    ASRUtils::is_value_constant(str->m_len),
+                    "Global variable should have constant-compile-time known length"
+                );
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len + 1 /*null-char*/);
                 // [len x i8] c "DATA HERE\00"
