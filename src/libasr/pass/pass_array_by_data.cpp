@@ -718,6 +718,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     return;
                 }
             }
+
+            // Currently we don't transform class procedure functions
+            if (ASR::is_a<ASR::ClassProcedure_t>(*subrout_sym)) {
+                subrout_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::symbol_get_past_ClassProcedure(subrout_sym));
+                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                not_to_be_erased.insert(subrout_sym);
+                return;
+            }
             if( !can_edit_call(x.m_args, x.n_args) ) {
                 not_to_be_erased.insert(subrout_sym);
                 return ;
