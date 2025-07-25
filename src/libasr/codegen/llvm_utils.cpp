@@ -738,7 +738,7 @@ namespace LCompilers {
                 int32_t type_size = -1;
                 if( LLVM::is_llvm_struct(asr_list->m_type) ||
                     ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
-                    ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
+                    ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -1005,7 +1005,7 @@ namespace LCompilers {
                     int32_t type_size = -1;
                     if( LLVM::is_llvm_struct(asr_list->m_type) ||
                         ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
-                        ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
+                        ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                         ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                         llvm::DataLayout data_layout(module->getDataLayout());
                         type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -1259,7 +1259,7 @@ namespace LCompilers {
                 int32_t type_size = -1;
                 if( LLVM::is_llvm_struct(asr_list->m_type) ||
                     ASR::is_a<ASR::String_t>(*asr_list->m_type) ||
-                    ASRUtils::is_allocated_descriptor_string(asr_list->m_type) ||
+                    ASRUtils::is_allocatable_descriptor_string(asr_list->m_type) ||
                     ASR::is_a<ASR::Complex_t>(*asr_list->m_type) ) {
                     llvm::DataLayout data_layout(module->getDataLayout());
                     type_size = data_layout.getTypeAllocSize(el_llvm_type);
@@ -3232,7 +3232,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         // will be deep copied and rest will be shallow copied. The importance of this case
         // can be figured out by goind through, integration_tests/test_list_06.py and
         // integration_tests/test_list_07.py.
-        if( LLVM::is_llvm_struct(element_type) || ASRUtils::is_allocated_descriptor_string(element_type) ) {
+        if( LLVM::is_llvm_struct(element_type) || ASRUtils::is_allocatable_descriptor_string(element_type) ) {
             builder->CreateStore(copy_data, get_pointer_to_list_data_using_type(list_type, dest));
             // TODO: Should be created outside the user loop and not here.
             // LLVMList should treat them as data members and create them

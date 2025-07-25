@@ -3296,7 +3296,7 @@ static inline bool is_deferredLength_string(ASR::ttype_t* t){
     return false;
 }
 
-static inline bool is_allocated_descriptor_string(ASR::ttype_t* t) {
+static inline bool is_allocatable_descriptor_string(ASR::ttype_t* t) {
     if (!ASR::is_a<ASR::Allocatable_t>(*t))
         return false;
 

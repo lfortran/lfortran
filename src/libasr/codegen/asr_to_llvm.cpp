@@ -1755,7 +1755,7 @@ public:
         int32_t type_size = -1;
         if( ASR::is_a<ASR::String_t>(*list_type->m_type) ||
             LLVM::is_llvm_struct(list_type->m_type) ||
-            ASRUtils::is_allocated_descriptor_string(list_type->m_type) ||
+            ASRUtils::is_allocatable_descriptor_string(list_type->m_type) ||
             ASR::is_a<ASR::Complex_t>(*list_type->m_type) ) {
             llvm::DataLayout data_layout(module->getDataLayout());
             type_size = data_layout.getTypeAllocSize(llvm_el_type);
