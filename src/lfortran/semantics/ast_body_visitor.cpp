@@ -2692,6 +2692,45 @@ public:
         current_scope = old_scope;
     }
 
+    void visit_Procedure(const AST::Procedure_t &x) {
+        SymbolTable* old_scope = current_scope;
+        ASR::symbol_t* t = current_scope->get_symbol(to_lower(x.m_name));
+        starting_m_body = x.m_body;
+        starting_n_body = x.n_body;
+
+        ASR::Function_t* v = ASR::down_cast<ASR::Function_t>(t);
+        current_scope = v->m_symtab;
+
+        Vec<ASR::stmt_t*> body;
+        body.reserve(al, x.n_body);
+        if (data_structure.size()>0) {
+            for(auto it: data_structure) {
+                body.push_back(al, it);
+            }
+        }
+        data_structure.clear();
+        SetChar current_function_dependencies_copy = current_function_dependencies;
+        current_function_dependencies.clear(al);
+        transform_stmts(body, x.n_body, x.m_body);
+        handle_format();
+        SetChar func_deps;
+        func_deps.from_pointer_n_copy(al, v->m_dependencies, v->n_dependencies);
+        for( auto& itr: current_function_dependencies ) {
+            func_deps.push_back(al, s2c(al, itr));
+        }
+        current_function_dependencies = current_function_dependencies_copy;
+        v->m_body = body.p;
+        v->n_body = body.size();
+        v->m_dependencies = func_deps.p;
+        v->n_dependencies = func_deps.size();
+
+        starting_m_body = nullptr;
+        starting_n_body = 0;
+        remove_common_variable_declarations(current_scope);
+        current_scope = old_scope;
+        tmp = nullptr;
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
     // TODO: add SymbolTable::lookup_symbol(), which will automatically return
     // an error
