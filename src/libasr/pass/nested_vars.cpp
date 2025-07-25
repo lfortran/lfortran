@@ -189,6 +189,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope, it is a
                 // "needed global" since we need to be able to access it from the
                 // nested procedure.
@@ -257,10 +258,6 @@ public:
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         ASR::BaseExprReplacer<ReplacerNestedVars>::replace_ArrayPhysicalCast(x);
         x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-    }
-
-    void replace_Array(ASR::Array_t* /*x*/) {
-        return ;
     }
 
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
@@ -620,10 +617,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
 
         ASRUtils::Call_t_body(al, xx.m_name, xx.m_args, xx.n_args, x.m_dt,
             nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
-    }
-
-    void visit_Array(const ASR::Array_t& /*x*/) {
-        return ;
     }
 
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
