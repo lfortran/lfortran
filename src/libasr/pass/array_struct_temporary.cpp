@@ -348,7 +348,7 @@ bool set_allocation_size(
             if( ASRUtils::is_allocatable(type) ) {
                 return false;
             }
-            if (PassUtils::is_elemental(function_call->m_name)) {
+            if (ASRUtils::is_elemental(function_call->m_name)) {
                 set_allocation_size_elemental_function(al, loc, function_call, allocate_dims,
                     len_allocte_expr);
                 break;
@@ -1618,7 +1618,7 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
 
     template <typename T>
     void visit_Call(const T& x, const std::string& name_hint) {
-        LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
+        // LCOMPILERS_ASSERT(!x.m_dt || !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt)));
         Vec<ASR::call_arg_t> x_m_args; x_m_args.reserve(al, x.n_args);
         ASR::expr_t **orig_args = nullptr;
         if (ASR::is_a<ASR::Function_t>(*x.m_name)) {
@@ -1837,7 +1837,7 @@ class ReplaceExprWithTemporary: public ASR::BaseExprReplacer<ReplaceExprWithTemp
     }
 
     void replace_FunctionCall(ASR::FunctionCall_t* x) {
-        if( PassUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
+        if( ASRUtils::is_elemental(x->m_name) && !ASR::is_a<ASR::StructType_t>(*x->m_type)) {
             // ASR::Function_t* f = ASR::down_cast<ASR::Function_t>(x->m_name);
             // std::cout << f << "\n";
             return ;
@@ -2642,7 +2642,7 @@ class VerifySimplifierASROutput:
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         visit_Call(x);
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             check_if_linked_to_target(x.base, x.m_type);
         }
     }

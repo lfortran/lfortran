@@ -6353,12 +6353,16 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 }
 
 static inline bool is_elemental(ASR::symbol_t* x) {
-    x = ASRUtils::symbol_get_past_external(x);
-    if( !ASR::is_a<ASR::Function_t>(*x) ) {
+    ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
+    if (ASR::is_a<ASR::ClassProcedure_t>(*proc)) {
+        proc = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc);
+    }
+    if( !ASR::is_a<ASR::Function_t>(*proc) ) {
         return false;
     }
     return ASRUtils::get_FunctionType(
-        ASR::down_cast<ASR::Function_t>(x))->m_elemental;
+        ASR::down_cast<ASR::Function_t>(proc))->m_elemental;
 }
 
 static inline ASR::asr_t* make_FunctionCall_t_util(
