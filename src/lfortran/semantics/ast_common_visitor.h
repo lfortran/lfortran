@@ -10539,8 +10539,8 @@ public:
         std::string new_op = op;
 
         // Append "~~" to the begining of any custom defined operator, that is not inside a struct
-        if (should_change_custom_op_name(op) && first_struct == nullptr) {
-            new_op = "~~" + op;
+        if (first_struct == nullptr) {
+            new_op = update_custom_op_name(new_op);
         }
         ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(new_op));
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
@@ -11579,15 +11579,15 @@ public:
         }
     }
 
-    // check if we should append "~~" to an operator name
-    bool should_change_custom_op_name(const std::string &op) {
-        static const std::string operator_chars = "+-*/~<=>";
-
-        if (op.find_first_of(operator_chars) != std::string::npos) {
-            return false;
+    // check if the operator name need to be updated or not, and return it
+    std::string update_custom_op_name(const std::string &op) {
+        // if operator name start with (contain) "~", it is already distinct so return it as it is
+        if (op.find_first_of("~") != std::string::npos) {
+            return op;
         }
 
-        return true;
+        // make custom operators names distinct by appending "~~" to the begining of their names
+        return "~~" + op;
     }
 };
 

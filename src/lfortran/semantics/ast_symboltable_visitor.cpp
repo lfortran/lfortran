@@ -2361,10 +2361,8 @@ public:
         Str s;
 
         // Append "~~" to the begining of any custom defined operator
-        std::string new_operator_name = proc.first;
-        if (should_change_custom_op_name(proc.first)) {
-          new_operator_name = "~~" + new_operator_name;
-        }
+        std::string new_operator_name = update_custom_op_name(proc.first);
+
         s.from_str_view(new_operator_name);
         char *generic_name = s.c_str(al);
         Vec<ASR::symbol_t*> symbols;
@@ -3343,9 +3341,7 @@ public:
                             x.m_symbols[i])->m_opName;
 
                         // Append "~~" to the begining of any custom defined operator
-                        if (should_change_custom_op_name(remote_sym)) {
-                            remote_sym = "~~" + remote_sym;
-                        }
+                        remote_sym = update_custom_op_name(remote_sym);
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
@@ -3437,9 +3433,7 @@ public:
                             x.m_symbols[i])->m_opName;
 
                         // Append "~~" to the begining of any custom defined operator
-                        if (should_change_custom_op_name(remote_sym)) {
-                            remote_sym = "~~" + remote_sym;
-                        }
+                        remote_sym = update_custom_op_name(remote_sym);
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
