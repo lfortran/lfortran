@@ -2202,21 +2202,18 @@ namespace LCompilers {
         }
         return global_arraystring;
     }
-
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name, 
         llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
         int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-        initial_data.resize(len,' '); // Pad 
+        
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
         llvm::Constant* string_constant;
         // setup global string constant (llvm array of i8)
         switch(str->m_len_kind){
             case ASR::DeferredLength:{
                 string_constant = llvm::ConstantPointerNull::get(character_type);
-                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len) || 
-                    str->m_len_kind == ASR::DeferredLength,
-                    "Handle this case");
+                LCOMPILERS_ASSERT_MSG(initial_data.size() == 0, "Handle this")
                 break;
             }
             case ASR::ExpressionLength:{
@@ -2224,7 +2221,12 @@ namespace LCompilers {
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len + 1 /*null-char*/);
                 // [len x i8] c "DATA HERE\00"
-                llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data, true);
+                llvm::Constant* const_data_as_array {};
+                {
+                    std::string initial_data_padded = std::string(initial_data);
+                    initial_data_padded.resize(len,' ');
+                    const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data_padded, true);
+                }
                 // global [len x i8] c "DATA HERE\00"
                 llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                     *module,
