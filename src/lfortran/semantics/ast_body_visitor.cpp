@@ -1708,6 +1708,14 @@ public:
                                         stat, errmsg, source)));
             // Pushing assignment statements to source
             for (size_t i = 0; i < alloc_args_vec.n ; i++) {
+                if (!ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a)))) {
+                    ASR::stmt_t* assign_stmt = ASRUtils::STMT(
+                        ASRUtils::make_Assignment_t_util(
+                            al, x.base.base.loc, alloc_args_vec[i].m_a, source, nullptr, compiler_options.po.realloc_lhs
+                        )
+                    );
+                    current_body->push_back(al, assign_stmt);
+                }
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
                 ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
                 if (!ASRUtils::check_equal_type(source_type, var_type)) {
