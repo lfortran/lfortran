@@ -744,11 +744,13 @@
                                             ()
                                             [(StringConstant
                                                 "The result is"
-                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 8 n)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]

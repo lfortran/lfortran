@@ -55,7 +55,7 @@ contains
    subroutine test_list_02_string()
       type(_lfortran_list(character(len=:))) :: x, y
       character(len=:), allocatable :: string
-      character(len=:) :: buffer
+      character(len=:), allocatable :: buffer
       integer :: i, imod
 
       do i = 0, 49

@@ -1,15 +1,20 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
-@0 = private unnamed_addr constant [19 x i8] c"echo \22Hello World\22\00", align 1
-@1 = private unnamed_addr constant [3 x i8] c"ls\00", align 1
+%string_descriptor = type <{ i8*, i64 }>
 
-define void @_lcompilers_execute_command_line_(i8** %command, i1* %wait) {
+@string_const_data = private constant [19 x i8] c"echo \22Hello World\22\00"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([19 x i8], [19 x i8]* @string_const_data, i32 0, i32 0), i64 18 }>
+@string_const_data.1 = private constant [3 x i8] c"ls\00"
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([3 x i8], [3 x i8]* @string_const_data.1, i32 0, i32 0), i64 2 }>
+
+define void @_lcompilers_execute_command_line_(%string_descriptor* %command, i1* %wait) {
 .entry:
   %_lcompilers_exit_status = alloca i32, align 4
-  %0 = load i8*, i8** %command, align 8
-  %1 = call i32 @_lfortran_exec_command(i8* %0)
-  store i32 %1, i32* %_lcompilers_exit_status, align 4
+  %0 = getelementptr %string_descriptor, %string_descriptor* %command, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = call i32 @_lfortran_exec_command(i8* %1)
+  store i32 %2, i32* %_lcompilers_exit_status, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -18,12 +23,13 @@ return:                                           ; preds = %.entry
 
 declare i32 @_lfortran_exec_command(i8*)
 
-define void @_lcompilers_execute_command_line_1(i8** %command, i1* %wait) {
+define void @_lcompilers_execute_command_line_1(%string_descriptor* %command, i1* %wait) {
 .entry:
   %_lcompilers_exit_status = alloca i32, align 4
-  %0 = load i8*, i8** %command, align 8
-  %1 = call i32 @_lfortran_exec_command(i8* %0)
-  store i32 %1, i32* %_lcompilers_exit_status, align 4
+  %0 = getelementptr %string_descriptor, %string_descriptor* %command, i32 0, i32 0
+  %1 = load i8*, i8** %0, align 8
+  %2 = call i32 @_lfortran_exec_command(i8* %1)
+  store i32 %2, i32* %_lcompilers_exit_status, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -32,17 +38,13 @@ return:                                           ; preds = %.entry
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
-  %call_arg_value3 = alloca i1, align 1
-  %call_arg_value2 = alloca i8*, align 8
   %call_arg_value1 = alloca i1, align 1
-  %call_arg_value = alloca i8*, align 8
+  %call_arg_value = alloca i1, align 1
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  store i8* getelementptr inbounds ([19 x i8], [19 x i8]* @0, i32 0, i32 0), i8** %call_arg_value, align 8
+  store i1 true, i1* %call_arg_value, align 1
+  call void @_lcompilers_execute_command_line_(%string_descriptor* @string_const, i1* %call_arg_value)
   store i1 true, i1* %call_arg_value1, align 1
-  call void @_lcompilers_execute_command_line_(i8** %call_arg_value, i1* %call_arg_value1)
-  store i8* getelementptr inbounds ([3 x i8], [3 x i8]* @1, i32 0, i32 0), i8** %call_arg_value2, align 8
-  store i1 true, i1* %call_arg_value3, align 1
-  call void @_lcompilers_execute_command_line_1(i8** %call_arg_value2, i1* %call_arg_value3)
+  call void @_lcompilers_execute_command_line_1(%string_descriptor* @string_const.2, i1* %call_arg_value1)
   call void @_lpython_free_argv()
   br label %return
 

@@ -27,10 +27,10 @@
                                         2 y
                                         [((StringConstant
                                             "\\"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         ))]
                                         (StructType
-                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
                                             []
                                             .true.
                                             .false.
@@ -40,10 +40,10 @@
                                         2 y
                                         [((StringConstant
                                             "\\"
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         ))]
                                         (StructType
-                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
+                                            [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
                                             []
                                             .true.
                                             .false.
@@ -51,7 +51,7 @@
                                     )
                                     Parameter
                                     (StructType
-                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)]
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
                                         []
                                         .true.
                                         .false.
@@ -76,29 +76,29 @@
                                     (StringConcat
                                         (StringConstant
                                             "lf"
-                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         (StructInstanceMember
                                             (Var 2 type_y)
                                             2 1_y_backslash
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             (StringConstant
                                                 "\\"
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
-                                        (String 1 (IntegerConstant 3 (Integer 8) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 3 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "lf\\"
-                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
                                         "lf\\"
-                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -123,14 +123,14 @@
                                                     Local
                                                     (StringConstant
                                                         "\\"
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     )
                                                     (StringConstant
                                                         "\\"
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     )
                                                     Save
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -216,16 +216,16 @@
                             (StructInstanceMember
                                 (Var 4 type_y)
                                 4 1_y_backslash
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 (StringConstant
                                     "\\"
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )
                             NotEq
                             (StringConstant
                                 "\\"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Logical 4)
                             (LogicalConstant
@@ -245,7 +245,7 @@
                             NotEq
                             (StringConstant
                                 "lf\\"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Logical 4)
                             ()

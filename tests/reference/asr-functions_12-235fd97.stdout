@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -67,7 +67,7 @@
                                                         (Var 3 string)
                                                         (Integer 4)
                                                         ()
-                                                    ) ExpressionLength PointerString)
+                                                    ) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -121,7 +121,7 @@
                                         })
                                     decodebase
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Logical 4)
                                         Source
                                         Implementation

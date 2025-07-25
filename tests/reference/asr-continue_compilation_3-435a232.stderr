@@ -181,12 +181,6 @@ semantic error: Binary numeric operators cannot be used on strings
 144 |     print *, "a" + "b"
     |              ^^^^^^^^^ help: use '//' for string concatenation
 
-semantic error: The first index in string section is less than 1
-   --> tests/errors/continue_compilation_3.f90:147:19
-    |
-147 |     print*, "s:", s(-1:4)
-    |                   ^^^^^^^ 
-
 semantic error: Substring `start` is less than one
    --> tests/errors/continue_compilation_3.f90:149:13
     |

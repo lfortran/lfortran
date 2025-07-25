@@ -40,20 +40,22 @@
                         [(StringFormat
                             (StringConstant
                                 "(a)"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(StringConstant
                                 "Some text: "
-                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )]
                         ()
                         (StringConstant
                             ""
-                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .true.
@@ -76,11 +78,13 @@
                             ()
                             [(StringConstant
                                 "Got: "
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

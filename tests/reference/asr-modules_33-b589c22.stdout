@@ -289,7 +289,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -392,7 +392,7 @@
                                             .false.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
                                         (Allocatable
                                             (StructType
@@ -960,7 +960,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1063,7 +1063,7 @@
                                             .false.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Allocatable
                                             (StructType
                                                 [(Allocatable
@@ -1332,7 +1332,7 @@
                                                                 .false.
                                                                 .false.
                                                             )
-                                                            (String 1 () AssumedLength PointerString)
+                                                            (String 1 () AssumedLength DescriptorString)
                                                             (Logical 4)
                                                             (Allocatable
                                                                 (StructType
@@ -1391,7 +1391,7 @@
                                                                 .false.
                                                                 .false.
                                                             )
-                                                            (String 1 () AssumedLength PointerString)
+                                                            (String 1 () AssumedLength DescriptorString)
                                                             (Allocatable
                                                                 (StructType
                                                                     [(Allocatable
@@ -1780,7 +1780,7 @@
                                                                     .false.
                                                                     .false.
                                                                 )
-                                                                (String 1 () AssumedLength PointerString)
+                                                                (String 1 () AssumedLength DescriptorString)
                                                                 (Logical 4)
                                                                 (Allocatable
                                                                     (StructType
@@ -1839,7 +1839,7 @@
                                                                     .false.
                                                                     .false.
                                                                 )
-                                                                (String 1 () AssumedLength PointerString)
+                                                                (String 1 () AssumedLength DescriptorString)
                                                                 (Allocatable
                                                                     (StructType
                                                                         [(Allocatable
@@ -2061,7 +2061,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     (Logical 4)
                                                     (Allocatable
                                                         (StructType
@@ -2120,7 +2120,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -2332,7 +2332,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     (Logical 4)
                                                     (Allocatable
                                                         (StructType
@@ -2391,7 +2391,7 @@
                                                         .false.
                                                         .false.
                                                     )
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     (Allocatable
                                                         (StructType
                                                             [(Allocatable
@@ -2476,7 +2476,7 @@
                     [(Print
                         (StringConstant
                             "running modules_33 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

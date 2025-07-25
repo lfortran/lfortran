@@ -1305,6 +1305,7 @@ static inline bool is_intrinsic_procedure(const T *fn) {
 }
 
 static inline bool is_intrinsic_symbol(const ASR::symbol_t *fn) {
+    if(!fn) return false;
     const ASR::symbol_t *sym = fn;
     ASR::Module_t *m = get_sym_module0(sym);
     if (m != nullptr) {
@@ -1783,12 +1784,23 @@ static inline bool extract_value(ASR::expr_t* value_expr, T& value) {
         }
         case ASR::exprType::RealConstant: {
             ASR::RealConstant_t* const_real = ASR::down_cast<ASR::RealConstant_t>(value_expr);
-            value = (T) const_real->m_r;
+            if constexpr (std::is_same<T, double>::value){
+                value = (T) const_real->m_r;
+            }
             break;
         }
         case ASR::exprType::LogicalConstant: {
             ASR::LogicalConstant_t* const_logical = ASR::down_cast<ASR::LogicalConstant_t>(value_expr);
-            value = (T) const_logical->m_value;
+            if constexpr (std::is_same<T, bool>::value){
+                value = (T) const_logical->m_value;
+            }
+            break;
+        }
+        case ASR::exprType::StringConstant:{
+            ASR::StringConstant_t* const_string = ASR::down_cast<ASR::StringConstant_t>(value_expr);
+            if constexpr (std::is_same<T, char*>::value){
+                value = (T) const_string->m_s;
+            }
             break;
         }
         case ASR::exprType::Var: {
@@ -2982,7 +2994,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
             physical_type = ASR::array_physical_typeType::PointerToDataArray;
         } else {
             if( ASRUtils::is_fixed_size_array(m_dims, n_dims) ) {
-                if( is_argument ) {
+                if( is_argument || (type && ASRUtils::is_character(*type)) ) {
                     physical_type = ASR::array_physical_typeType::PointerToDataArray;
                 } else {
                     physical_type = ASR::array_physical_typeType::FixedSizeArray;
@@ -2994,6 +3006,10 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
             }
         }
     }
+
+    // Compile-time-know-size Array of strings must be `PointerToDataArray` physical type
+    if(type && is_character(*type) && (physical_type == ASR::FixedSizeArray)){physical_type = ASR::PointerToDataArray;}
+
     return ASRUtils::TYPE(ASR::make_Array_t(
         al, loc, type, m_dims, n_dims, physical_type));
 }
@@ -3195,6 +3211,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                 physical_type, override_physical_type);
             if( override_physical_type &&
                 (physical_type == ASR::array_physical_typeType::FixedSizeArray ||
+                (physical_type == ASR::array_physical_typeType::PointerToDataArray && 
+                dims != nullptr) || 
                 (physical_type == ASR::array_physical_typeType::StringArraySinglePointer &&
                 dims != nullptr) ) ) {
                 return dup_type;
@@ -3303,46 +3321,41 @@ static inline bool is_descriptorString(ASR::ttype_t* t){
         extract_type(t))->m_physical_type == ASR::string_physical_typeType::DescriptorString;
 }
 
-// Create `StringPhysicalCast` node from  `PointerString` --> `DescriptorString`.
-static inline ASR::expr_t* cast_string_pointer_to_descriptor(Allocator& al, ASR::expr_t* string){
-    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
-        !is_descriptorString(expr_type(string)));
-    ASR::ttype_t* string_type = ASRUtils::expr_type(string);
-    ASR::ttype_t* stringDescriptor_type = ASRUtils::duplicate_type(al,
-        ASRUtils::extract_type(string_type));
-    ASR::down_cast<ASR::String_t>(stringDescriptor_type)->m_physical_type = ASR::string_physical_typeType::DescriptorString;
-    ASR::ttype_t* alloctable_stringDescriptor_type = ASRUtils::TYPE(
-        ASR::make_Allocatable_t(al, string->base.loc, stringDescriptor_type));
-    // Create pointerString to descriptorString cast node
-    ASR::expr_t* ptr_to_desc_string_cast = ASRUtils::EXPR(
-        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
-        ASR::string_physical_typeType::PointerString, ASR::string_physical_typeType::DescriptorString,
-        alloctable_stringDescriptor_type, nullptr));
-    return ptr_to_desc_string_cast;
+static inline bool is_deferredLength_string(ASR::ttype_t* t){
+    ASR::ttype_t* type = ASRUtils::extract_type(t);
+    if(ASR::is_a<ASR::String_t>(*type)){
+        return ASR::down_cast<ASR::String_t>(type)->m_len_kind == ASR::DeferredLength;
+    }
+    return false;
 }
 
-// Create `StringPhysicalCast` node from `DescriptorString` --> `PointerString`.
-static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR::expr_t* string){
-    LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)) &&
-    is_descriptorString(expr_type(string)));
-    // Create string type with `PointerString` physical type + StringLen expression as size.
-    ASR::ttype_t* stringPointer_type =
-        ASRUtils::TYPE(ASR::make_String_t(al, string->base.loc, 1,
-            ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
-                ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 4)), nullptr)), 
-            ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::PointerString));
-    if(ASR::is_a<ASR::Allocatable_t>(*expr_type(string))){
-        stringPointer_type = ASRUtils::TYPE(
-            ASR::make_Allocatable_t(al, string->base.loc, stringPointer_type));
-    }
-    // Create descriptorString to pointerString cast node
-    ASR::expr_t* des_to_ptr_string_cast = ASRUtils::EXPR(
-        ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
-        ASR::string_physical_typeType::DescriptorString, ASR::string_physical_typeType::PointerString,
-        stringPointer_type, nullptr));
-    return des_to_ptr_string_cast;
+
+static inline ASR::String_t* get_string_type(ASR::ttype_t* s){
+    LCOMPILERS_ASSERT(is_character(*s))
+    return ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(s));
 }
+
+static inline ASR::String_t* get_string_type(ASR::expr_t* s){
+    LCOMPILERS_ASSERT(is_character(*expr_type(s)))
+    return ASR::down_cast<ASR::String_t>(extract_type(expr_type(s)));
+}
+
+/*
+    Checks if type is a string.
+    If array of strings, Returns false.
+*/
+static inline bool is_string_only(ASR::ttype_t* type){
+    return ASR::is_a<ASR::String_t>(*type_get_past_allocatable_pointer(type));
+}
+
+/*
+    Check if type is an array of strings
+*/
+static inline bool is_array_of_strings(ASR::ttype_t* type){
+    return is_array(type) &&
+           ASR::is_a<ASR::String_t>(*extract_type(type));
+}
+
 /*
  * Makes sure to cast the string to the required physical type.
  * If the string is already of the required physical type, it returns the same string
@@ -3351,25 +3364,23 @@ static inline ASR::expr_t* cast_string_descriptor_to_pointer(Allocator& al, ASR:
 static inline ASR::expr_t* create_string_physical_cast(Allocator& al, ASR::expr_t* string, ASR::string_physical_typeType to){
     LCOMPILERS_ASSERT(is_character(*ASRUtils::expr_type(string)))
     ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(expr_type(string)));
-    if(to == str_type->m_physical_type){return string;}
-
-    ASR::ttype_t* cast_expr_type = ASRUtils::duplicate_type(al, (ASR::ttype_t*)str_type);
-    ASR::down_cast<ASR::String_t>(cast_expr_type)->m_physical_type = to;
-    if(to == ASR::string_physical_typeType::PointerString){
-        ASR::expr_t* str_len = 
-            ASRUtils::EXPR(ASR::make_StringLen_t(al, string->base.loc, string, 
-                ASRUtils::TYPE(ASR::make_Integer_t(al, string->base.loc, 8)), nullptr));
-        ASR::down_cast<ASR::String_t>(cast_expr_type)->m_len = str_len;
-    } else if (to == ASR::string_physical_typeType::DescriptorString || 
-               to == ASR::string_physical_typeType::CString) {
-    } else {
-        LCompilersException("Not implemented");
-    }
-
+    LCOMPILERS_ASSERT(to != str_type->m_physical_type)
+    ASR::ttype_t* cast_expr_type = ASRUtils::TYPE(
+        ASR::make_String_t(al, string->base.loc,
+            1, nullptr,
+            ASR::ImplicitLength, to));
+            
     return ASRUtils::EXPR(
         ASR::make_StringPhysicalCast_t(al, string->base.loc , string,
         str_type->m_physical_type, to, cast_expr_type, nullptr));
 }
+static inline bool is_character_phsyical_types_matched(ASR::ttype_t* x, ASR::ttype_t* y){
+    LCOMPILERS_ASSERT(ASR::is_a<ASR::String_t>(*x) && ASR::is_a<ASR::String_t>(*y));
+    ASR::String_t* x_str = ASR::down_cast<ASR::String_t>(x);
+    ASR::String_t* y_str = ASR::down_cast<ASR::String_t>(y);
+    return x_str->m_physical_type == y_str->m_physical_type;
+}
+
 
 static inline ASR::ttype_t* duplicate_type_with_empty_dims(Allocator& al, ASR::ttype_t* t,
     ASR::array_physical_typeType physical_type=ASR::array_physical_typeType::DescriptorArray,
@@ -3417,7 +3428,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_String_t(al, loc,
                         tnew->m_kind, tnew->m_len, 
                         tnew->m_len_kind,
-                        ASR::string_physical_typeType::PointerString));
+                        ASR::string_physical_typeType::DescriptorString));
         }
         case ASR::ttypeType::StructType: {
             ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
@@ -5581,6 +5592,10 @@ static inline bool is_allocatable(ASR::ttype_t* type) {
     return ASR::is_a<ASR::Allocatable_t>(*type);
 }
 
+static inline bool is_allocatable_or_pointer(ASR::ttype_t* type) {
+    return is_allocatable(type) || is_pointer(type);
+}
+
 static inline void import_struct_t(Allocator& al,
     const Location& loc, ASR::ttype_t*& var_type,
     ASR::intentType intent, SymbolTable* current_scope, ASR::expr_t* var) {
@@ -5628,7 +5643,7 @@ static inline void import_struct_t(Allocator& al,
                 ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0,
                     ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::PointerString));
+                ASR::string_physical_typeType::DescriptorString));
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);
@@ -5899,7 +5914,9 @@ inline ASR::expr_t* fetch_ArrayConstant_value_helper(Allocator &al, const Locati
         }
         case ASR::ttypeType::String: {
             ASR::String_t* char_type = ASR::down_cast<ASR::String_t>(type);
-            int len = -1; len = ASRUtils::extract_value(char_type->m_len, len)? len : 0;
+            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(char_type->m_len))
+            int len {};
+            ASRUtils::extract_value(char_type->m_len, len);
             char* data_char = (char*)data;
             std::string str = std::string(data_char + i*len, len);
             value = EXPR(ASR::make_StringConstant_t(al, loc,
@@ -6105,7 +6122,7 @@ inline ASR::asr_t* make_ArrayConstructor_t_util(Allocator &al, const Location &a
             int len;
             if(!ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type_->m_type)->m_len, len)){LCOMPILERS_ASSERT(false);}
             n_data = curr_idx * len;
-        }
+        }   
         value = ASRUtils::EXPR(ASR::make_ArrayConstant_t(al, a_loc, n_data, data, new_type, a_storage_format));
     }
 
@@ -6121,13 +6138,14 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
 static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     ASR::expr_t** a_args, size_t n_args){
     LCOMPILERS_ASSERT(n_args > 0);
-    if(n_args == 1 && ASR::is_a<ASR::String_t>(*ASRUtils::expr_type(a_args[0]))){
+    if(n_args == 1 && ASRUtils::is_character(*ASRUtils::expr_type(a_args[0]))){
         return ASR::make_Print_t(al, loc, a_args[0]);
     } else {
-        ASR::ttype_t *char_type = ASRUtils::TYPE(ASR::make_String_t(
-            al, loc, 1, nullptr,
-            ASR::string_length_kindType::ExpressionLength,
-            ASR::string_physical_typeType::CString));
+        ASR::ttype_t *char_type = ASRUtils::TYPE(
+            ASR::make_Allocatable_t(al, loc, ASRUtils::TYPE(ASR::make_String_t(
+                al, loc, 1, nullptr,
+                ASR::string_length_kindType::DeferredLength,
+                ASR::string_physical_typeType::DescriptorString))));
         return ASR::make_Print_t(al, loc,
             ASRUtils::EXPR(ASR::make_StringFormat_t(al, loc, nullptr, a_args,n_args,
             ASR::string_format_kindType::FormatFortran, char_type, nullptr)));
@@ -6166,10 +6184,12 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         ASR::ttype_t* orig_arg_type = ASRUtils::type_get_past_allocatable(
             ASRUtils::type_get_past_pointer(func_type->m_arg_types[i + is_method]));
         // cast string source based on the dest
-        if( ASRUtils::is_character(*orig_arg_type) &&
-            !ASRUtils::is_descriptorString(orig_arg_type) &&
-            ASRUtils::is_descriptorString(ASRUtils::expr_type(a_args[i].m_value))){
-            a_args[i].m_value = ASRUtils::cast_string_descriptor_to_pointer(al, a_args[i].m_value);
+        if( ASRUtils::is_string_only(orig_arg_type) &&
+            ASRUtils::is_string_only(arg_type) &&
+            !is_character_phsyical_types_matched(orig_arg_type, arg_type)){
+            arg = a_args[i].m_value = 
+                create_string_physical_cast(al, arg, 
+                    get_string_type(orig_arg_type)->m_physical_type);
         }
         if( !ASRUtils::is_intrinsic_symbol(a_name_) &&
             !(ASRUtils::is_class_type(ASRUtils::type_get_past_array(arg_type)) ||
@@ -6454,13 +6474,13 @@ static inline ASR::asr_t* make_StringFormat_t_util(Allocator &al, const Location
                 *ASRUtils::extract_type(fmt_str->m_type))) {
             ASR::String_t* str_type = ASR::down_cast<ASR::String_t>(
                 ASRUtils::extract_type(fmt_str->m_type));
-            if (str_type->m_physical_type != ASR::string_physical_typeType::PointerString) {
+            if (str_type->m_physical_type != ASR::string_physical_typeType::DescriptorString) {
                 a_fmt = ASRUtils::EXPR(ASR::make_StringPhysicalCast_t(
                     al,
                     a_fmt->base.loc,
                     a_fmt,
                     str_type->m_physical_type,
-                    ASR::string_physical_typeType::PointerString,
+                    ASR::string_physical_typeType::DescriptorString,
                     a_type,
                     nullptr));
             }

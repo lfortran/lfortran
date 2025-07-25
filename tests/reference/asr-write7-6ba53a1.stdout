@@ -101,7 +101,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -143,7 +143,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -164,7 +164,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -233,7 +233,7 @@
                                             .false.
                                         )
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Array
                                             (Integer 4)
                                             [(()
@@ -241,7 +241,7 @@
                                             DescriptorArray
                                         )
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -308,7 +308,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -373,7 +373,7 @@
                                         )
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation

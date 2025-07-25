@@ -284,13 +284,15 @@ template <typename T>
 void set_allocation_size_elemental_function(
     Allocator& al, const Location& loc,
     T* elemental_function,
-    Vec<ASR::dimension_t>& allocate_dims
+    Vec<ASR::dimension_t>& allocate_dims,
+    ASR::expr_t* &len_allocate_expr
 ) {
     ASR::expr_t* int32_one = ASRUtils::EXPR(ASR::make_IntegerConstant_t(
                 al, loc, 1, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4))));
     size_t n_dims = ASRUtils::extract_n_dims_from_ttype(elemental_function->m_type);
     allocate_dims.reserve(al, n_dims);
     ASR::expr_t* first_array_arg = get_first_array_function_args(elemental_function);
+    // Set allocate_dims
     for( size_t i = 0; i < n_dims; i++ ) {
         ASR::dimension_t allocate_dim;
         allocate_dim.loc = loc;
@@ -303,13 +305,19 @@ void set_allocation_size_elemental_function(
         allocate_dim.m_length = size_i_1;
         allocate_dims.push_back(al, allocate_dim);
     }
+    // Set len_allocate_expr ( e.g. `allocate(character(5) :: arr(10))` )
+    if( ASRUtils::is_character(*ASRUtils::expr_type(first_array_arg)) ) {
+        ASRUtils::ASRBuilder b(al, loc);
+        len_allocate_expr = b.StringLen(first_array_arg);
+    }
 }
 
 bool set_allocation_size(
     Allocator& al, ASR::expr_t* value,
     ASR::expr_t* temporary_var,
     Vec<ASR::dimension_t>& allocate_dims,
-    size_t target_n_dims, bool& add_allocated_check
+    size_t target_n_dims, bool& add_allocated_check,
+    ASR::expr_t* &len_allocte_expr /*Strings Allocation*/
 ) {
     if ( !ASRUtils::is_array(ASRUtils::expr_type(value)) ) {
         return false;
@@ -341,7 +349,8 @@ bool set_allocation_size(
                 return false;
             }
             if (PassUtils::is_elemental(function_call->m_name)) {
-                set_allocation_size_elemental_function(al, loc, function_call, allocate_dims);
+                set_allocation_size_elemental_function(al, loc, function_call, allocate_dims,
+                    len_allocte_expr);
                 break;
             }
             ASRUtils::ExprStmtDuplicator duplicator(al);
@@ -539,7 +548,7 @@ bool set_allocation_size(
             ASR::IntrinsicElementalFunction_t* intrinsic_elemental_function =
                 ASR::down_cast<ASR::IntrinsicElementalFunction_t>(value);
             set_allocation_size_elemental_function(al, loc, intrinsic_elemental_function,
-                        allocate_dims);
+                        allocate_dims, len_allocte_expr);
             break;
         }
         case ASR::exprType::IntrinsicArrayFunction: {
@@ -882,8 +891,9 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     Vec<ASR::dimension_t> allocate_dims;
     size_t target_n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(temporary_var));
     bool add_allocated_check = false;
+    ASR::expr_t* len_allocate_expr {};
     if( !set_allocation_size(al, value, temporary_var, allocate_dims,
-                             target_n_dims, add_allocated_check) ) {
+                             target_n_dims, add_allocated_check, len_allocate_expr) ) {
         return ;
     }
     LCOMPILERS_ASSERT(target_n_dims == allocate_dims.size());
@@ -893,7 +903,7 @@ void insert_allocate_stmt_for_array(Allocator& al, ASR::expr_t* temporary_var,
     alloc_arg.m_a = temporary_var;
     alloc_arg.m_dims = allocate_dims.p;
     alloc_arg.n_dims = allocate_dims.size();
-    alloc_arg.m_len_expr = nullptr;
+    alloc_arg.m_len_expr = len_allocate_expr;
     alloc_arg.m_type = nullptr;
     alloc_arg.m_sym_subclass = nullptr;
     alloc_args.push_back(al, alloc_arg);
@@ -1674,7 +1684,8 @@ class ArgSimplifier: public ASR::CallReplacerOnExpressionsVisitor<ArgSimplifier>
         replace_expr_with_temporary_variable(xx.m_array, x.m_array, "_array_reshape_array", true);
         if( ASRUtils::is_fixed_size_array(ASRUtils::expr_type(xx.m_array)) &&
             ASRUtils::extract_physical_type(xx.m_type) !=
-            ASR::array_physical_typeType::FixedSizeArray ) {
+            ASR::array_physical_typeType::FixedSizeArray &&
+            !ASRUtils::is_array_of_strings(ASRUtils::expr_type(xx.m_array))) {
             xx.m_type = ASRUtils::duplicate_type(al, xx.m_type, nullptr,
                 ASR::array_physical_typeType::FixedSizeArray, true);
         }

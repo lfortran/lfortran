@@ -918,62 +918,14 @@
                                         (FunctionCall
                                             2 new_profile
                                             ()
-                                            [((StringPhysicalCast
-                                                (Var 6 profile_name)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 profile_name)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
-                                            ((StringPhysicalCast
-                                                (Var 6 compiler_name)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 compiler_name)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
+                                            [((Var 6 profile_name))
+                                            ((Var 6 compiler_name))
                                             ((Var 6 os_type))
-                                            ((StringPhysicalCast
-                                                (Var 6 flags)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 flags)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
+                                            ((Var 6 flags))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(StringPhysicalCast
-                                                        (Var 6 flags)
-                                                        DescriptorString
-                                                        PointerString
-                                                        (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 6 flags)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 6 flags)]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -986,35 +938,11 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((StringPhysicalCast
-                                                (Var 6 c_flags)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 c_flags)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
+                                            ((Var 6 c_flags))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(StringPhysicalCast
-                                                        (Var 6 c_flags)
-                                                        DescriptorString
-                                                        PointerString
-                                                        (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 6 c_flags)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 6 c_flags)]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -1027,35 +955,11 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((StringPhysicalCast
-                                                (Var 6 cxx_flags)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 cxx_flags)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
+                                            ((Var 6 cxx_flags))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(StringPhysicalCast
-                                                        (Var 6 cxx_flags)
-                                                        DescriptorString
-                                                        PointerString
-                                                        (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 6 cxx_flags)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 6 cxx_flags)]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -1068,35 +972,11 @@
                                                 (Logical 4)
                                                 ()
                                             ))
-                                            ((StringPhysicalCast
-                                                (Var 6 link_time_flags)
-                                                DescriptorString
-                                                PointerString
-                                                (Allocatable
-                                                    (String 1 (StringLen
-                                                        (Var 6 link_time_flags)
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
-                                                )
-                                                ()
-                                            ))
+                                            ((Var 6 link_time_flags))
                                             ((LogicalBinOp
                                                 (IntrinsicImpureFunction
                                                     Allocated
-                                                    [(StringPhysicalCast
-                                                        (Var 6 link_time_flags)
-                                                        DescriptorString
-                                                        PointerString
-                                                        (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 6 link_time_flags)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
-                                                        )
-                                                        ()
-                                                    )]
+                                                    [(Var 6 link_time_flags)]
                                                     0
                                                     (Logical 4)
                                                     ()
@@ -1207,7 +1087,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1228,7 +1108,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1249,7 +1129,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1301,7 +1181,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1469,7 +1349,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1569,7 +1449,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1584,16 +1464,16 @@
                                         })
                                     new_profile
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
                                         (Array
                                             (StructType

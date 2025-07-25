@@ -136,7 +136,7 @@
                                                                 .false.
                                                                 .false.
                                                             )
-                                                            (String 1 () AssumedLength PointerString)
+                                                            (String 1 () AssumedLength DescriptorString)
                                                             (Allocatable
                                                                 (StructType
                                                                     [(Allocatable
@@ -238,7 +238,7 @@
                                                         (Logical 4)
                                                         (Allocatable
                                                             (Array
-                                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                                 [(()
                                                                 ())]
                                                                 DescriptorArray
@@ -267,7 +267,7 @@
                                             (Logical 4)
                                             (Allocatable
                                                 (Array
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     [(()
                                                     ())]
                                                     DescriptorArray
@@ -294,93 +294,13 @@
                                     [(SubroutineCall
                                         7 1_update_dependency
                                         7 1_update
-                                        [((StringPhysicalCast
-                                            (StructInstanceMember
-                                                (ArrayItem
-                                                    (StructInstanceMember
-                                                        (Var 7 deps)
-                                                        7 1_dependency_tree_t_dep
-                                                        (Allocatable
-                                                            (Array
-                                                                (StructType
-                                                                    [(Logical 4)
-                                                                    (Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )
-                                                                    (Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )
-                                                                    (Logical 4)]
-                                                                    []
-                                                                    .true.
-                                                                    .false.
-                                                                )
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
-                                                        )
-                                                        ()
-                                                    )
-                                                    [(()
-                                                    (Var 7 ii)
-                                                    ())]
-                                                    (StructType
-                                                        [(Logical 4)
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        (Logical 4)]
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )
-                                                    ColMajor
-                                                    ()
-                                                )
-                                                7 1_dependency_config_t_name
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
-                                            (Allocatable
-                                                (String 1 (StringLen
-                                                    (StructInstanceMember
-                                                        (ArrayItem
-                                                            (StructInstanceMember
-                                                                (Var 7 deps)
-                                                                7 1_dependency_tree_t_dep
-                                                                (Allocatable
-                                                                    (Array
-                                                                        (StructType
-                                                                            [(Logical 4)
-                                                                            (Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )
-                                                                            (Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )
-                                                                            (Logical 4)]
-                                                                            []
-                                                                            .true.
-                                                                            .false.
-                                                                        )
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
-                                                                )
-                                                                ()
-                                                            )
-                                                            [(()
-                                                            (Var 7 ii)
-                                                            ())]
+                                        [((StructInstanceMember
+                                            (ArrayItem
+                                                (StructInstanceMember
+                                                    (Var 7 deps)
+                                                    7 1_dependency_tree_t_dep
+                                                    (Allocatable
+                                                        (Array
                                                             (StructType
                                                                 [(Logical 4)
                                                                 (Allocatable
@@ -394,18 +314,35 @@
                                                                 .true.
                                                                 .false.
                                                             )
-                                                            ColMajor
-                                                            ()
+                                                            [(()
+                                                            ())]
+                                                            DescriptorArray
                                                         )
-                                                        7 1_dependency_config_t_name
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
                                                     )
-                                                    (Integer 4)
                                                     ()
-                                                ) ExpressionLength PointerString)
+                                                )
+                                                [(()
+                                                (Var 7 ii)
+                                                ())]
+                                                (StructType
+                                                    [(Logical 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Logical 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                ColMajor
+                                                ()
+                                            )
+                                            7 1_dependency_config_t_name
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         ))
@@ -565,7 +502,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -1070,7 +1007,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -1173,7 +1110,7 @@
                                             .false.
                                             .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Allocatable
                                             (StructType
                                                 [(Allocatable
@@ -1285,7 +1222,7 @@
                     [(Print
                         (StringConstant
                             "running modules_31 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

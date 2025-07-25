@@ -156,7 +156,9 @@
                                                             ()
                                                             [(Var 4 z)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -165,7 +167,9 @@
                                                             ()
                                                             [(Var 3 y)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -174,7 +178,9 @@
                                                             ()
                                                             [(Var 3 yy)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -289,7 +295,7 @@
                                     (Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (Assignment

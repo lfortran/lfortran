@@ -1,6 +1,8 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%string_descriptor = type <{ i8*, i64 }>
+
 @bindc3.idx = internal global i32 1
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [10 x i8] c"CPtr,CPtr\00", align 1
@@ -24,18 +26,36 @@ define i32 @main(i32 %0, i8** %1) {
   %5 = bitcast i16* %4 to void*
   %6 = alloca void*, align 8
   store void* %5, void** %6, align 8
-  %7 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, void** %6, void** %queries)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %7 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, void** %6, void** %queries)
+  %8 = call i64 @_lfortran_str_len(i8* %7)
+  %9 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc = bitcast i8* %9 to %string_descriptor*
+  %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %7, i8** %10, align 8
+  %11 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %8, i64* %11, align 4
+  %12 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %13 = load i8*, i8** %12, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
   store i16* %y1, i16** %x, align 8
-  %8 = load i16*, i16** %x, align 8
-  %9 = bitcast i16* %8 to void*
-  %10 = alloca void*, align 8
-  store void* %9, void** %10, align 8
-  %11 = bitcast i16* %y1 to void*
-  %12 = alloca void*, align 8
-  store void* %11, void** %12, align 8
-  %13 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, void** %10, void** %12)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %13, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %14 = load i16*, i16** %x, align 8
+  %15 = bitcast i16* %14 to void*
+  %16 = alloca void*, align 8
+  store void* %15, void** %16, align 8
+  %17 = bitcast i16* %y1 to void*
+  %18 = alloca void*, align 8
+  store void* %17, void** %18, align 8
+  %19 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([10 x i8], [10 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, void** %16, void** %18)
+  %20 = call i64 @_lfortran_str_len(i8* %19)
+  %21 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc2 = bitcast i8* %21 to %string_descriptor*
+  %22 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
+  store i8* %19, i8** %22, align 8
+  %23 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
+  store i64 %20, i64* %23, align 4
+  %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
+  %25 = load i8*, i8** %24, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %25, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
   call void @_lpython_free_argv()
   br label %return
 
@@ -45,7 +65,11 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i32, i32, ...)
+
+declare i64 @_lfortran_str_len(i8*)
+
+declare i8* @_lfortran_malloc(i64)
 
 declare void @_lfortran_printf(i8*, ...)
 

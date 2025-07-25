@@ -1,10 +1,13 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%string_descriptor = type <{ i8*, i64 }>
+
 @0 = private unnamed_addr constant [2 x i8] c" \00", align 1
 @1 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@2 = private unnamed_addr constant [12 x i8] c"Hello World\00", align 1
-@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data = private constant [12 x i8] c"Hello World\00"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([12 x i8], [12 x i8]* @string_const_data, i32 0, i32 0), i64 11 }>
+@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -17,7 +20,8 @@ define i32 @main(i32 %0, i8** %1) {
   %3 = alloca i32*, align 8
   store i32* null, i32** %3, align 8
   %4 = load i32*, i32** %3, align 8
-  call void (i32, i32*, i8*, ...) @_lfortran_file_write(i32 %2, i32* %4, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([12 x i8], [12 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0))
+  %5 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void (i32, i32*, i8*, i64, ...) @_lfortran_file_write(i32 %2, i32* %4, i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i64 4, i8* %5, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -27,6 +31,6 @@ return:                                           ; preds = %.entry
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lfortran_file_write(i32, i32*, i8*, ...)
+declare void @_lfortran_file_write(i32, i32*, i8*, i64, ...)
 
 declare void @_lpython_free_argv()

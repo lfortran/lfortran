@@ -344,30 +344,11 @@
                                         ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 6 self)
-                                                    6 1_toml_value_key
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 6 self)
+                                                6 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 6 self)
-                                                            6 1_toml_value_key
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]

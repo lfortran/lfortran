@@ -1,1 +1,1 @@
-Runtime Error : RHS allocatable-character variable must be allocated before assignment.
+LFORTRAN ERROR: Run-time Error : Copying from unallocated RHS string

@@ -250,7 +250,9 @@
                                                             ()
                                                             [(Var 6 ii)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -817,7 +819,7 @@
                     [(Print
                         (StringConstant
                             "running modules_34 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

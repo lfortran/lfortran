@@ -334,12 +334,27 @@
                                                             ],
                                                             "kind": "FormatFortran",
                                                             "type": {
-                                                                "node": "String",
+                                                                "node": "Allocatable",
                                                                 "fields": {
-                                                                    "kind": 1,
-                                                                    "len": [],
-                                                                    "len_kind": "ExpressionLength",
-                                                                    "physical_type": "CString"
+                                                                    "type": {
+                                                                        "node": "String",
+                                                                        "fields": {
+                                                                            "kind": 1,
+                                                                            "len": [],
+                                                                            "len_kind": "DeferredLength",
+                                                                            "physical_type": "DescriptorString"
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 98,
+                                                                            "last": 115,
+                                                                            "first_filename": "tests/modules_10.f90",
+                                                                            "first_line": 5,
+                                                                            "first_column": 9,
+                                                                            "last_filename": "tests/modules_10.f90",
+                                                                            "last_line": 5,
+                                                                            "last_column": 26
+                                                                        }
+                                                                    }
                                                                 },
                                                                 "loc": {
                                                                     "first": 98,

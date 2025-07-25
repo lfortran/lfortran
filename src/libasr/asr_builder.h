@@ -109,7 +109,11 @@ class ASRBuilder {
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
                             al, loc, x, int32)),\
                             ASR::string_length_kindType::ExpressionLength,\
-                            ASR::string_physical_typeType::PointerString))
+                            ASR::string_physical_typeType::DescriptorString))
+    #define allocatable_deferred_string() ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,\
+                                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,\
+                            ASR::string_length_kindType::DeferredLength,\
+                            ASR::string_physical_typeType::DescriptorString))))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -162,8 +166,23 @@ class ASRBuilder {
 
     ASR::ttype_t* String(ASR::expr_t* len,
         ASR::string_length_kindType len_kind, 
-        ASR::string_physical_typeType physical_type = ASR::PointerString){
-        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len, len_kind, physical_type));
+        ASR::string_physical_typeType physical_type = ASR::DescriptorString) {
+        if(!(
+                (len_kind == ASR::AssumedLength && !len) || 
+                (len_kind == ASR::DeferredLength && !len) ||
+                (len_kind == ASR::ExpressionLength && len)
+            )){
+            throw LCompilersException("Invalid String Node Status");
+        }
+
+        if(physical_type == ASR::CChar){
+            int64_t len_const;
+            if(!is_value_constant(len, len_const))
+                LCompilersException("Invalid String Node Status");
+        }
+
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len,
+            len_kind, physical_type));
     }
 
     ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
@@ -299,11 +318,21 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
-        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), character(-2), nullptr));
+        int64_t start_const, end_const;
+        ASR::ttype_t* string_type {};
+        LCOMPILERS_ASSERT(start && end)
+        if( ASRUtils::is_value_constant(start, start_const) &&
+            ASRUtils::is_value_constant(end, end_const)){
+            string_type = character(end_const - start_const + 1);
+        } else {
+            string_type = String(Add(Sub(end, start),i_t(1, expr_type(start))),
+                ASR::string_length_kindType::ExpressionLength);
+        }
+        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
 
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
-        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(-2), nullptr));
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(1), nullptr));
     }
 
     inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {
@@ -1224,13 +1253,19 @@ class ASRBuilder {
         e.g. -> `subroutine(arg1, arg2) bind(c)`
     */
     ASR::symbol_t* create_c_subroutine_interface(std::string &c_func_name, SymbolTable* fn_symtab,
-        Vec<ASR::ttype_t*> &parameter_types, const std::vector<std::string> &parameter_names){
+        Vec<ASR::ttype_t*> &parameter_types, const std::vector<std::string> &parameter_names, 
+        std::vector<bool> is_parameter_value = {}/*Does parameter have `value` attribute*/){
+        LCOMPILERS_ASSERT(parameter_types.size() == parameter_names.size())
+        LCOMPILERS_ASSERT( is_parameter_value.empty() ||
+            (parameter_types.size() == is_parameter_value.size()))
+
         SymbolTable* symTable = al.make_new<SymbolTable>(fn_symtab /*parent*/);
         Vec<ASR::expr_t*> parameters; parameters.reserve(al, parameter_types.size());
         for (size_t i = 0; i < parameter_types.size(); i++) {
             parameters.push_back(al, Variable(symTable,
                 parameter_names[i] + std::to_string(i), parameter_types[i],
-                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, false));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC,
+                is_parameter_value.empty() ? false : is_parameter_value[i]));
         }
         SetChar dep; dep.reserve(al, 1);
         Vec<ASR::stmt_t*> body; body.reserve(al, 1);

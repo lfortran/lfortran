@@ -221,11 +221,13 @@
                             ()
                             [(StringConstant
                                 "Printed using subroutine call: "
-                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 5 dummy)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -248,11 +250,13 @@
                             ()
                             [(StringConstant
                                 "Printed using entry statement: "
-                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 31 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 5 dummy)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

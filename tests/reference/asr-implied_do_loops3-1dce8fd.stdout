@@ -286,7 +286,7 @@
                     [(Print
                         (StringConstant
                             "Loop 1"
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -327,14 +327,16 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 2"
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -390,14 +392,16 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop 3"
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -453,14 +457,16 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop4"
-                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -522,14 +528,16 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Print
                         (StringConstant
                             "Loop5"
-                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -591,7 +599,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

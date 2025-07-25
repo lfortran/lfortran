@@ -6,7 +6,7 @@ array = 3.0
 
 output = attention(10, 10, 10, array)
 print *, output
-if( any(output - 8.52982235 > 1e-6) ) error stop
+if( any(abs(output - 8.52982235) > 1e-6) ) error stop
 
 contains
 

@@ -200,7 +200,9 @@
                             (Var 2 boz_5)
                             (Var 2 boz_6)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

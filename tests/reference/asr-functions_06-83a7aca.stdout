@@ -35,14 +35,14 @@
                                     Local
                                     (StringConstant
                                         "  abc"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "  abc"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -76,7 +76,7 @@
                                 (Var 6 string)
                                 (Integer 4)
                                 ()
-                            ) ExpressionLength PointerString)
+                            ) ExpressionLength DescriptorString)
                             ()
                             ()
                         )
@@ -102,7 +102,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -127,7 +129,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -202,7 +206,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -217,14 +221,14 @@
                                         })
                                     int_return
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Array
                                             (Integer 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -342,7 +346,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -357,14 +361,14 @@
                                         })
                                     real_return
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Array
                                             (Real 4)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (StringLen
                                                 (FunctionParam
                                                     0
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                 )
                                                 (Integer 4)
@@ -438,7 +442,7 @@
                                                         (Var 3 s)
                                                         (Integer 4)
                                                         ()
-                                                    ) ExpressionLength PointerString)
+                                                    ) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -459,7 +463,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -474,16 +478,16 @@
                                         })
                                     trim_wrapper
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (String 1 (StringLen
                                             (FunctionParam
                                                 0
-                                                (String 1 () AssumedLength PointerString)
+                                                (String 1 () AssumedLength DescriptorString)
                                                 ()
                                             )
                                             (Integer 4)
                                             ()
-                                        ) ExpressionLength PointerString)
+                                        ) ExpressionLength DescriptorString)
                                         Source
                                         Implementation
                                         ()
@@ -503,7 +507,9 @@
                                             StringTrim
                                             [(Var 3 s)]
                                             0
-                                            (String 1 () AssumedLength PointerString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                         ()

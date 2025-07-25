@@ -2064,14 +2064,19 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 ASR::ttype_t *arg2 = v->m_type;
                 ASR::symbol_t* s1 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(args[i].m_value));
                 ASR::symbol_t* s2 = nullptr;
-                if (ASR::is_a<ASR::Var_t>(*sub.m_args[i])
-                    && ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(sub.m_args[i]))) {
-                    ASR::Variable_t* var = ASRUtils::EXPR2VAR(sub.m_args[i]);
-                    s2 = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                ASR::ttype_t* arg2_ext = ASRUtils::extract_type(arg2);
+                bool is_elemental = ASRUtils::get_FunctionType(sub)->m_elemental;
+                if (ASR::is_a<ASR::StructType_t>(*arg2_ext)) {
+                    if ((ASRUtils::is_allocatable(arg2) && !ASRUtils::is_allocatable(arg1)) ||
+                            (ASRUtils::is_array(arg2) && !ASRUtils::is_array(arg1)) ||
+                            (!is_elemental && !ASRUtils::is_array(arg2) && ASRUtils::is_array(arg1))) {
+                        return false;
+                    }
+                    s2 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(sub.m_args[i]));
                 }
                 if (s1 && s2) {
                     if (!ASRUtils::is_derived_type_similar(ASR::down_cast<ASR::Struct_t>(s1), ASR::down_cast<ASR::Struct_t>(s2))) return false;
-                } else if (!types_equal(arg1, arg2, !ASRUtils::get_FunctionType(sub)->m_elemental)) {
+                } else if (!types_equal(arg1, arg2, !is_elemental)) {
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
@@ -2418,7 +2423,7 @@ void make_ArrayBroadcast_t_util(Allocator& al, const Location& loc,
             ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims) <= 256 ) {
             ASR::ttype_t* value_type = ASRUtils::TYPE(ASR::make_Array_t(al, loc,
                 ASRUtils::type_get_past_array(ASRUtils::expr_type(expr2)), dims.p, dims.size(),
-                is_value_character_array && !ASRUtils::is_value_constant(expr2) ? ASR::array_physical_typeType::StringArraySinglePointer: ASR::array_physical_typeType::FixedSizeArray));
+                is_value_character_array ? ASR::array_physical_typeType::PointerToDataArray: ASR::array_physical_typeType::FixedSizeArray));
             Vec<ASR::expr_t*> values;
             values.reserve(al, ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims));
             for( int64_t i = 0; i < ASRUtils::get_fixed_size_of_array(expr1_mdims, expr1_ndims); i++ ) {

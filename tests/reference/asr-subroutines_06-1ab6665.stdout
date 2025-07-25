@@ -270,7 +270,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -291,7 +291,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -312,7 +312,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -348,11 +348,11 @@
                                         })
                                     error_handler
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -377,7 +377,9 @@
                                             [(Var 6 error)
                                             (Var 6 status)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -422,7 +424,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -443,7 +445,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -464,7 +466,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -500,11 +502,11 @@
                                         })
                                     error_handler~genericprocedure
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Interface

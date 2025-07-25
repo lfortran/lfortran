@@ -63,7 +63,7 @@
                                         [(Print
                                             (StringConstant
                                                 "x is 1"
-                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )]
                                         []
@@ -110,7 +110,7 @@
                         [(Print
                             (StringConstant
                                 "y is 1"
-                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []

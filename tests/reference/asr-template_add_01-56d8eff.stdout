@@ -1018,7 +1018,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (FunctionCall
                                                 10 add_real
@@ -1030,7 +1030,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -1091,7 +1093,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (FunctionCall
                                                 10 add_integer
@@ -1103,7 +1105,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )

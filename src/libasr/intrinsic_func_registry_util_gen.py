@@ -187,7 +187,7 @@ intrinsic_funcs_args = {
     "Repeat": [
         {
             "args": [("char", "int")],
-            "ret_type_arg_idx": 0
+            "return": "allocatable_deferred_string()"
         }
     ],
     "StringContainsSet": [
@@ -870,7 +870,7 @@ intrinsic_funcs_args = {
     "StringTrim": [
         {
             "args": [("char",)],
-            "ret_type_arg_idx": 0
+            "return" : "allocatable_deferred_string()"
         }
     ],
 }
