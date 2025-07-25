@@ -2108,6 +2108,7 @@ class ParallelRegionVisitor :
                     // Handle arrays (existing logic)
                     ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_pointer(sym_type));
                     Vec<ASR::expr_t*> size_args; size_args.reserve(al, array_type->n_dims);
+                    Vec<ASR::expr_t*> lbounds; lbounds.reserve(al, array_type->n_dims);
                     
                     for (size_t i = 0; i < array_type->n_dims; i++) {
                         std::string ubound_name = std::string(ASRUtils::symbol_name(thread_data_sym)) + "_ubound_" + it.first + "_" + std::to_string(i);
@@ -2126,17 +2127,21 @@ class ParallelRegionVisitor :
                         ASR::expr_t* lbound = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
                             lbound_sym, ASRUtils::symbol_type(lbound_sym), nullptr));
                         size_args.push_back(al, b.Add(b.Sub(ubound, lbound), b.i32(1)));
+                        lbounds.push_back(al, lbound);
                     }
                     
                     ASR::expr_t* shape = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
                         size_args.p, size_args.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
+                    ASR::expr_t* lbounds_constructor = ASRUtils::EXPR(ASRUtils::make_ArrayConstructor_t_util(al, loc,
+                        lbounds.p, lbounds.n, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)), ASR::arraystorageType::ColMajor));
                     
                     // call c_f_pointer(tdata%<sym>, <sym>, [ubound-lbound+1])
                     body.push_back(al, b.CPtrToPointer(
                         ASRUtils::EXPR(ASR::make_StructInstanceMember_t(al, loc, tdata_expr,
                         sym, ASRUtils::symbol_type(sym), nullptr)),
                         b.Var(current_scope->get_symbol(it.first)),
-                        shape
+                        shape,
+                        lbounds_constructor
                     ));
                 } else if (is_shared) {
                     // Handle shared non-array variables using CPtr approach
