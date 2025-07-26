@@ -838,21 +838,25 @@ public:
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
-
-        for (auto &item : proc_interface->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t* proc_interface_vari = ASR::down_cast<ASR::Variable_t>(item.second);
-                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(proc_interface_vari, current_scope);
-                current_scope->add_symbol(std::string(ASRUtils::symbol_name(new_sym)), new_sym);
-            }
-        }
-
+        symbol_duplicator.duplicate_SymbolTable(proc_interface->m_symtab, current_scope);
         Vec<ASR::expr_t*> new_func_args;
         new_func_args.reserve(al, proc_interface->n_args);
         for (size_t i=0;i<proc_interface->n_args;i++) {
             new_func_args.push_back(al, exprstmt_duplicator.duplicate_expr(proc_interface->m_args[i]));
         }
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
+            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                try {
+                    visit_unit_decl2(*x.m_decl[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            is_Function = false;
+        }
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
