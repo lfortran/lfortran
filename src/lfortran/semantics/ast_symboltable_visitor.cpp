@@ -838,15 +838,7 @@ public:
 
         ASRUtils::SymbolDuplicator symbol_duplicator(al);
         ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
-
-        for (auto &item : proc_interface->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::Variable_t>(*item.second)) {
-                ASR::Variable_t* proc_interface_vari = ASR::down_cast<ASR::Variable_t>(item.second);
-                ASR::symbol_t* new_sym = symbol_duplicator.duplicate_Variable(proc_interface_vari, current_scope);
-                current_scope->add_symbol(std::string(ASRUtils::symbol_name(new_sym)), new_sym);
-            }
-        }
-
+        symbol_duplicator.duplicate_SymbolTable(proc_interface->m_symtab, current_scope);
         Vec<ASR::expr_t*> new_func_args;
         new_func_args.reserve(al, proc_interface->n_args);
         for (size_t i=0;i<proc_interface->n_args;i++) {
