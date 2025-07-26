@@ -92,6 +92,15 @@ public:
             } case (ASR::binopType::Pow) : {
                 last_expr_precedence = Precedence::Pow;
                 return "**";
+            } case (ASR::binopType::BitOr) : {
+                last_expr_precedence = Precedence::Or;
+                return " .or. ";
+            } case (ASR::binopType::BitAnd) : {
+                last_expr_precedence = Precedence::And;
+                return " .and. ";
+            } case (ASR::binopType::BitXor) : {
+                last_expr_precedence = Precedence::Eqv;
+                return " .eqv. ";
             } default : {
                 throw LCompilersException("Binop type not implemented");
             }
