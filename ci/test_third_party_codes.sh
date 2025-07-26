@@ -195,13 +195,13 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   cd ..
 
   print_subsection "Building with default flags"
-  FC="$FC --cpp -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  FC="$FC --cpp -DOPEN_MPI=yes --no-array-bounds-checking" ./build_and_run_lfortran.sh
 
   print_subsection "Building with optimization flags"
-  # FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  # FC="$FC --cpp --fast --skip-pass=dead_code_removal --no-array-bounds-checking -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building POT3D in separate compilation mode"
-  FC="$FC --cpp --separate-compilation -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  FC="$FC --cpp --separate-compilation --no-array-bounds-checking -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_success "Done with POT3D"
   cd ..
@@ -225,7 +225,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop --no-array-bounds-checking -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -236,7 +236,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop --no-array-bounds-checking -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -276,7 +276,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git checkout a252989e64b3f8d5d2f930dca18411c104ea85f8
 
   print_subsection "Building project"
-  FC=$FC make
+  FC="$FC --realloc-lhs" make
 
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
@@ -320,7 +320,7 @@ time_section "🧪 Testing Numerical Methods Fortran" '
   git clean -dfx
   print_subsection "Building Numerical Methods Fortran with separate compilation"
 
-  FC="$FC --separate-compilation" make
+  FC="$FC --realloc-lhs --separate-compilation" make
   run_test test_fix_point.exe
   run_test test_integrate_one.exe
   run_test test_linear.exe
@@ -609,17 +609,17 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -630,17 +630,17 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
 '
 
 ##########################
@@ -687,7 +687,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -712,7 +712,7 @@ time_section "🧪 Testing fastGPT" '
         git checkout -t origin/lf6
         git checkout bc04dbf476b6173b0bb945ff920119ffaf4a290d
         echo $CONDA_PREFIX
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS .
         make
         ls -l ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
         file ./gpt2 ./chat ./test_basic_input ./test_chat ./test_more_inputs
@@ -733,7 +733,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf
         cd lf
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -745,7 +745,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-goc
         cd lf-goc
-        FC="$FC --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --separate-compilation --rtlib" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -756,7 +756,7 @@ time_section "🧪 Testing fastGPT" '
 
         mkdir lf-fast
         cd lf-fast
-        FC="$FC --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -770,7 +770,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf
         git clean -dfx
-        FC=$FC CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Debug ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -780,7 +780,7 @@ time_section "🧪 Testing fastGPT" '
 
         cd lf-fast
         git clean -dfx
-        FC="$FC --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
+        FC="$FC --realloc-lhs --no-array-bounds-checking --fast" CMAKE_PREFIX_PATH=$CONDA_PREFIX cmake -DFASTGPT_BLAS=OpenBLAS -DCMAKE_BUILD_TYPE=Release ..
         make VERBOSE=1
         ln -s ../model.dat .
         ./gpt2
@@ -822,7 +822,7 @@ time_section "🧪 Testing stdlib" '
     micromamba install -c conda-forge fypp
 
     git clean -fdx
-    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs"
+    FC=$FC cmake . -DTEST_DRIVE_BUILD_TESTING=OFF -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-array-bounds-checking"
     make -j8
     ctest
 '
@@ -837,15 +837,15 @@ time_section "🧪 Testing SNAP" '
     git checkout lf11
     git checkout 169a9216f2c922e94065a519efbb0a6c8b55149e
     cd ./src
-    make -j8 FORTRAN=$FC FFLAGS= MPI=no OPENMP=no
+    make -j8 FORTRAN=$FC FFLAGS="--no-array-bounds-checking" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 
     make clean
-    make -j8 FORTRAN=$FC FFLAGS="--separate-compilation" MPI=no OPENMP=no
+    make -j8 FORTRAN=$FC FFLAGS="--separate-compilation --no-array-bounds-checking" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 
     make clean
-    make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
+    make -j8 FORTRAN=$FC FFLAGS="--fast --no-array-bounds-checking" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
 
