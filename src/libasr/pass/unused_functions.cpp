@@ -173,7 +173,7 @@ public:
         }
     }
 
-    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
         const ASR::symbol_t *s = ASRUtils::symbol_get_past_external(x.m_proc);
         if (ASR::is_a<ASR::Function_t>(*s)) {
             ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(s);

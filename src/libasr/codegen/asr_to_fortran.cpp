@@ -688,7 +688,7 @@ public:
         if (class_procedure_order.size() > 0) r += "contains\n";
         for (auto &item : class_procedure_order) {
             ASR::symbol_t* class_procedure_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::ClassProcedure_t>(*class_procedure_sym)) {
+            if (is_a<ASR::StructMethodDeclaration_t>(*class_procedure_sym)) {
                 visit_symbol(*class_procedure_sym);
                 r += src;
             }
@@ -784,7 +784,7 @@ public:
         src = r;
     }
 
-    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
         std::string r = indent;
         r += "procedure";
         if (x.m_is_deferred) {

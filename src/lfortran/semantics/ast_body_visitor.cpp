@@ -3984,8 +3984,8 @@ public:
                                             diags.diagnostics.begin(), diags.diagnostics.end());
                     throw SemanticAbort();
                 }
-            } else if (ASR::is_a<ASR::ClassProcedure_t>(*f2)) {
-                ASR::ClassProcedure_t* f3 = ASR::down_cast<ASR::ClassProcedure_t>(f2);
+            } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f2)) {
+                ASR::StructMethodDeclaration_t* f3 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f2);
                 ASR::symbol_t* f4 = f3->m_proc;
                 bool is_nopass = f3->m_is_nopass;
                 if (!ASR::is_a<ASR::Function_t>(*f4)) {
@@ -4026,8 +4026,8 @@ public:
             bool is_class_procedure = false;
             for (size_t i = 0; i < f3->n_procs && !function_found; i++) {
                 ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(f3->m_procs[i]);
-                if (ASR::is_a<ASR::ClassProcedure_t>(*f4)) {
-                    ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
+                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
+                    ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
                     f4 = f5->m_proc;
                     is_nopass = f5->m_is_nopass;
                     is_class_procedure = true;
@@ -4273,7 +4273,7 @@ public:
                                         ASRUtils::type_get_past_pointer(ASRUtils::expr_type(v_expr)), scope);
                         final_sym = ASRUtils::import_class_procedure(al, x.base.base.loc,
                             final_sym, current_scope);
-                        ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(final_sym));
+                        ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(final_sym));
                         Location l = x.base.base.loc;
                         // TODO: Add error message here
                         if (ASRUtils::select_func_subrout(cp->m_proc, args_with_mdt, l,
@@ -4321,7 +4321,7 @@ public:
                     p->m_procs[idx], current_scope);
                 break;
             }
-            case (ASR::symbolType::ClassProcedure) : {
+            case (ASR::symbolType::StructMethodDeclaration) : {
                 final_sym = original_sym;
                 original_sym = nullptr;
                 break;
@@ -4377,8 +4377,8 @@ public:
                     } else {
                         final_sym = current_scope->get_symbol(local_sym);
                     }
-                } else if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
-                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(final_sym);
+                } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
+                    ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym);
                     nopass = class_proc->m_is_nopass;
                     final_sym = original_sym;
                     original_sym = nullptr;
@@ -4398,7 +4398,7 @@ public:
                     original_sym = nullptr;
                 } else {
                     if (!ASR::is_a<ASR::Function_t>(*final_sym) &&
-                        !ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+                        !ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
                         diag.add(Diagnostic(
                             "ExternalSymbol must point to a Subroutine",
                             Level::Error, Stage::Semantic, {
