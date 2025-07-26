@@ -2398,7 +2398,9 @@ public:
                 // If object is Real, set current_variable_type to Real
                 // This type flag is passed to Visit_BOZ, 
                 // so that Real Values are correctly decoded from BOZ String
-                if (ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) {
+                if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) 
+                    && (value_index<(data_stmt_set->n_value)) &&
+                    ((data_stmt_set->m_value[value_index]->type == LFortran::AST::exprType::BOZ))) {
                     current_variable_type_ = array_item_expr->m_type;
                 }
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
