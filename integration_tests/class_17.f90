@@ -47,7 +47,7 @@ program class_17
     obj_pass%value = 42
 
     ! below tests show different calls to the same
-    ! GenericProcedure (actually the same ClassProcedure)
+    ! GenericProcedure (actually the same StructMethodDeclaration)
     ! case 1. passed as argument
     call obj_pass%set_value(45)
     print *, "obj_pass%value: ", obj_pass%value
@@ -60,7 +60,7 @@ program class_17
 
     obj_no_pass%value = 42
     ! below tests show different calls to the same
-    ! GenericProcedure (actually the same ClassProcedure)
+    ! GenericProcedure (actually the same StructMethodDeclaration)
     ! case 1. both are arguments
     call obj_no_pass%set_value(obj_no_pass, 5)
     print *, "obj_no_pass%value: ", obj_no_pass%value
@@ -84,7 +84,7 @@ program class_17
 
     value = 10
     ! below tests show different calls to the same
-    ! GenericProcedure (actually the same ClassProcedure),
+    ! GenericProcedure (actually the same StructMethodDeclaration),
     ! which accepts only one argument
     ! case 1. passed as argument
     call obj_no_pass%set_value(value)
