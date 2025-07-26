@@ -390,8 +390,8 @@ class CCPPDSUtils {
             return printFuncs[type_code];
         }
 
-        std::string get_struct_deepcopy(ASR::expr_t* expr, std::string value, std::string target) {
-            std::string func = get_struct_deepcopy_func(expr);
+        std::string get_struct_deepcopy(Allocator& al, ASR::expr_t* expr, std::string value, std::string target) {
+            std::string func = get_struct_deepcopy_func(al, expr);
             return func + "(" + value + ", " + target + ");";
         }
 
@@ -605,10 +605,10 @@ class CCPPDSUtils {
             return typecodeToDSfuncs[list_type_code]["list_deepcopy"];
         }
 
-        std::string get_struct_deepcopy_func(ASR::expr_t* struct_expr) {
+        std::string get_struct_deepcopy_func(Allocator& al, ASR::expr_t* struct_expr) {
             std::string struct_type_code = CUtils::get_struct_type_code(struct_expr);
             if( typecodeToDSfuncs.find(struct_type_code) == typecodeToDSfuncs.end() ) {
-                struct_deepcopy(struct_expr);
+                struct_deepcopy(al, struct_expr);
             }
             return typecodeToDSfuncs[struct_type_code]["struct_deepcopy"];
         }
@@ -834,7 +834,7 @@ class CCPPDSUtils {
             generated_code += indent + "}\n\n";
         }
 
-        void struct_deepcopy(ASR::expr_t* struct_expr) {
+        void struct_deepcopy(Allocator& al, ASR::expr_t* struct_expr) {
             ASR::ttype_t* struct_type_asr = ASRUtils::expr_type(struct_expr);
             ASR::Struct_t* struct_t = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(struct_expr)));
             std::string struct_type_code = CUtils::get_struct_type_code(struct_expr);
@@ -848,7 +848,6 @@ class CCPPDSUtils {
                                 + struct_type_str + "* dest)";
             func_decls += "inline " + signature + ";\n";
             std::string tmp_generated = indent + signature + " {\n";
-            Allocator al(4*1024);
             for(size_t i=0; i < struct_t->n_members; i++) {
                 std::string mem_name = std::string(struct_t->m_members[i]);
                 ASR::symbol_t* member = struct_t->m_symtab->get_symbol(mem_name);
@@ -856,7 +855,7 @@ class CCPPDSUtils {
                 ASR::ttype_t* member_type_asr = ASRUtils::expr_type(member_expr);
                 if( CUtils::is_non_primitive_DT(member_type_asr) ||
                     ASR::is_a<ASR::String_t>(*member_type_asr) ) {
-                    tmp_generated += indent + tab + get_struct_deepcopy(member_expr, "&(src->" + mem_name + ")",
+                    tmp_generated += indent + tab + get_struct_deepcopy(al, member_expr, "&(src->" + mem_name + ")",
                                  "&(dest->" + mem_name + ")") + ";\n";
                 } else if( ASRUtils::is_array(member_type_asr) ) {
                     ASR::dimension_t* m_dims = nullptr;
@@ -867,7 +866,7 @@ class CCPPDSUtils {
                         tmp_generated += indent + tab + "memcpy(dest->" + mem_name + ", src->" + mem_name +
                                             ", " + array_size + ");\n";
                     } else {
-                        tmp_generated += indent + tab + get_struct_deepcopy(member_expr, "src->" + mem_name,
+                        tmp_generated += indent + tab + get_struct_deepcopy(al, member_expr, "src->" + mem_name,
                                             "dest->" + mem_name) + ";\n";
                     }
                 } else {

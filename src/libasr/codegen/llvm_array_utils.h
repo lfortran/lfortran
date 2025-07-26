@@ -142,7 +142,7 @@ namespace LCompilers {
                     llvm::Module* module, bool reserve_data_memory=true) = 0;
 
                 virtual
-                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+                void fill_array_details(Allocator& al, ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data) = 0;
 
@@ -207,7 +207,7 @@ namespace LCompilers {
                 * Uses ASR type to get the corresponding LLVM type
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
+                llvm::Value* get_pointer_to_data(Allocator& al, ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module) = 0;
 
                 /*
                 * Returns offset in the input
@@ -294,7 +294,7 @@ namespace LCompilers {
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false) = 0;
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp) = 0;
+                llvm::Value* get_is_allocated_flag(Allocator& al, llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp) = 0;
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type) = 0;
@@ -378,13 +378,13 @@ namespace LCompilers {
                 llvm::Type* create_dimension_descriptor_array_type();
 
                 virtual
-                void fill_array_details(
+                void fill_array_details( 
                     llvm::Value* arr, llvm::Type* llvm_data_type, int n_dims,
                     std::vector<std::pair<llvm::Value*, llvm::Value*>>& llvm_dims,
                     llvm::Module* module, bool reserve_data_memory=true);
 
                 virtual
-                void fill_array_details(ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
+                void fill_array_details(Allocator& al, ASR::expr_t* src_expr, ASR::expr_t* dest_expr,
                     llvm::Value* source, llvm::Value* destination,
                     ASR::ttype_t* source_array_type, ASR::ttype_t* dest_array_type, llvm::Module* module, bool ignore_data);
 
@@ -434,7 +434,7 @@ namespace LCompilers {
                  * Used arr_type to get the corresponding llvm::Type (LLVM 17+).
                 */
                 virtual
-                llvm::Value* get_pointer_to_data(ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
+                llvm::Value* get_pointer_to_data(Allocator& al, ASR::expr_t* arr_expr, ASR::ttype_t* arr_type, llvm::Value* arr, llvm::Module* module);
 
                 virtual
                 llvm::Value* get_rank(llvm::Value* arr, bool get_pointer=false);
@@ -481,7 +481,7 @@ namespace LCompilers {
                     bool polymorphic=false, llvm::Type* polymorphic_type=nullptr, bool is_unbounded_pointer_to_data = false);
 
                 virtual
-                llvm::Value* get_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp);
+                llvm::Value* get_is_allocated_flag(Allocator& al, llvm::Value* array, llvm::Type* llvm_data_type, ASR::expr_t* array_exp);
 
                 virtual
                 void reset_is_allocated_flag(llvm::Value* array, llvm::Type* llvm_data_type);
