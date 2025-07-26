@@ -684,7 +684,7 @@
                                                     .false.
                                                 ),
                                             initialize:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     initialize
                                                     ()
