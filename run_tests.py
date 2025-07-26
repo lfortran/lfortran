@@ -241,7 +241,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_no_warnings",
-            "lfortran --show-asr --no-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-asr -Wno-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
@@ -251,7 +251,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_disable_style_and_warnings",
-            "lfortran --show-asr --no-style-warnings --no-warnings --no-color {infile} -o {outfile}",
+            "lfortran --show-asr --no-style-warnings -Wno-warnings --no-color {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,

@@ -64,7 +64,7 @@ namespace LCompilers::CommandLineInterface {
 
         // LFortran specific options
         // Warning-related flags
-        app.add_flag("--no-warnings", compiler_options.no_warnings, "Turn off all warnings")->group(group_warning_options);
+        app.add_flag("-Wno-warnings", compiler_options.no_warnings, "Turn off all warnings")->group(group_warning_options);
         app.add_flag("--no-style-warnings", compiler_options.disable_style, "Turn off style suggestions")->group(group_warning_options);
         app.add_flag("--no-error-banner", compiler_options.no_error_banner, "Turn off error banner")->group(group_warning_options);
         app.add_option("--error-format", compiler_options.error_format, "Control how errors are produced (human, short)")->capture_default_str()->group(group_warning_options);

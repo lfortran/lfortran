@@ -93,7 +93,7 @@ compilation options, output options, link options and so on.
 
 * `--error-format <value>`, Control how errors are produced (human, short)
 * `--no-error-banner`, Turn off error banner
-* `--no-warnings`, Turn off all warnings
+* `-Wno-warnings`, Turn off all warnings
 * `-S`, Emit assembly, do not assemble or link
 * `--time-report`, Show compilation time report
 * `-v`, Be more verbose

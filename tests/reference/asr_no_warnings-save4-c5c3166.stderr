@@ -10,3 +10,8 @@ style suggestion: Use '==' instead of '.eq.'
 10 |         if (x .eq. 1) then
    |               ^^^^ help: write this as '=='
 
+warning: Assuming implicit save attribute for variable declaration
+ --> tests/save4.f90:9:20
+  |
+9 |         integer :: x = 5
+  |                    ^^^^^ help: add explicit save attribute or parameter attribute or initialize in a separate statement

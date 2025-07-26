@@ -181,14 +181,13 @@ time_section "🧪 Testing fortran_mpi" '
 '
 
 time_section "🧪 Testing POT3D with fortran_mpi" '
-  git clone https://github.com/gxyd/pot3d.git
-  cd pot3d
-  git checkout -t origin/lf_hdf5_fortranMPI_namelist_global_workarounds
-  git checkout 9bf5d4784581ce83e2df13b828de86950ba88902
+  git clone https://github.com/parth121101/POT3D.git
+  cd POT3D
+  git checkout 3ed36e285343a65f8faa38c7e92846538c3aa8e6
 
   git clone https://github.com/lfortran/fortran_mpi
   cd fortran_mpi
-  git checkout 31033d3c8af32c4c99fac803c161e6731bc39a78
+  git checkout 03a7f807c9524de19feade87e51b6ae7268df47e
   cp src/mpi.f90 ../src/
   cp src/mpi_c_bindings.f90 ../src/
   cp src/mpi_constants.c ../src/
@@ -205,7 +204,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
 
   print_success "Done with POT3D"
   cd ..
-  rm -rf pot3d
+  rm -rf POT3D
 '
 
 
@@ -225,7 +224,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --realloc-lhs -Wno-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -236,7 +235,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs -Wno-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -799,11 +798,11 @@ time_section "🧪 Testing fastGPT" '
 time_section "🧪 Testing FPM" '
     # TODO: regression as of `struct refactoring`
     # if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    #     git clone https://github.com/czgdp1807/fpm.git
+    #     git clone https://github.com/parth121101/fpm.git
     #     cd fpm
-    #     git fetch origin lfortran_build_4
-    #     git checkout lfortran_build_4
-    #     git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
+    #     git fetch origin update_compiler_flag
+    #     git checkout update_compiler_flag
+    #     git checkout e6409bae48514a04b29a7084a76a702d4f9d93f5
     #     export PATH="$(pwd)/../../src/bin:$PATH"
     #     ./build.sh
     # fi
