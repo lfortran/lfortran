@@ -6975,7 +6975,7 @@ public:
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
-                !ASRUtils::is_character(*expr_type(x))) {
+                (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
                 tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
