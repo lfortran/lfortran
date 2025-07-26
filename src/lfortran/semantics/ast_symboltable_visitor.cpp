@@ -2761,7 +2761,7 @@ public:
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
-                ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
+                ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
                     is_deferred, is_nopass);
@@ -2779,7 +2779,7 @@ public:
                 ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
                 if (st->m_access != ASR::accessType::Private) {
                     for (auto &x: st->m_symtab->get_scope()) {
-                        if (ASR::is_a<ASR::ClassProcedure_t>(*x.second)) {
+                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*x.second)) {
                             indirect_public_symbols.insert(x.first);
                         }
                     }

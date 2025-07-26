@@ -777,7 +777,7 @@
                                                     .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     11
                                                     to_string
                                                     ()

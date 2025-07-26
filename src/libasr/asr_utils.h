@@ -147,10 +147,10 @@ static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
     }
 }
 
-static inline ASR::symbol_t* symbol_get_past_ClassProcedure(ASR::symbol_t* f){
+static inline ASR::symbol_t* symbol_get_past_StructMethodDeclaration(ASR::symbol_t* f){
     LCOMPILERS_ASSERT(f != nullptr);
-    if(ASR::is_a<ASR::ClassProcedure_t>(*f)){
-        ASR::symbol_t* func = ASR::down_cast<ASR::ClassProcedure_t>(f)->m_proc;
+    if(ASR::is_a<ASR::StructMethodDeclaration_t>(*f)){
+        ASR::symbol_t* func = ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_proc;
         LCOMPILERS_ASSERT(func != nullptr);
         return func;
     }
@@ -186,10 +186,10 @@ static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
     } else if( ASR::is_a<ASR::Variable_t>(*a_name_) ) {
         func_type = ASR::down_cast<ASR::FunctionType_t>(
             ASR::down_cast<ASR::Variable_t>(a_name_)->m_type);
-    } else if( ASR::is_a<ASR::ClassProcedure_t>(*a_name_) ) {
+    } else if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_) ) {
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
             ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::ClassProcedure_t>(a_name_)->m_proc));
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name_)->m_proc));
         func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
     } else {
         LCOMPILERS_ASSERT(false);
@@ -458,7 +458,7 @@ static inline std::string symbol_type_name(const ASR::symbol_t &s)
         case ASR::symbolType::Enum: return "Enum";
         case ASR::symbolType::Union: return "Union";
         case ASR::symbolType::Variable: return "Variable";
-        case ASR::symbolType::ClassProcedure: return "ClassProcedure";
+        case ASR::symbolType::StructMethodDeclaration: return "StructMethodDeclaration";
         case ASR::symbolType::AssociateBlock: return "AssociateBlock";
         case ASR::symbolType::Block: return "Block";
         case ASR::symbolType::Requirement: return "Requirement";
@@ -649,8 +649,8 @@ static inline std::string symbol_to_str_fortran(const ASR::symbol_t &s) {
             res += "end interface";
             return res;
         }
-        case ASR::symbolType::ClassProcedure: {
-            const ASR::ClassProcedure_t *cp = ASR::down_cast<ASR::ClassProcedure_t>(&s);
+        case ASR::symbolType::StructMethodDeclaration: {
+            const ASR::StructMethodDeclaration_t *cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(&s);
             return "procedure " + std::string(cp->m_name) + "  ! class-bound";
         }
         case ASR::symbolType::AssociateBlock: {
@@ -788,8 +788,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_name;
         }
-        case ASR::symbolType::ClassProcedure: {
-            return ASR::down_cast<ASR::ClassProcedure_t>(f)->m_name;
+        case ASR::symbolType::StructMethodDeclaration: {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_name;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_name;
@@ -813,8 +813,8 @@ static inline char *symbol_name(const ASR::symbol_t *f)
 static inline bool get_class_proc_nopass_val(ASR::symbol_t* func_sym) {
     func_sym = ASRUtils::symbol_get_past_external(func_sym);
     bool nopass = false;
-    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
-        nopass = ASR::down_cast<ASR::ClassProcedure_t>(func_sym)->m_is_nopass;
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
+        nopass = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym)->m_is_nopass;
     }
     return nopass;
 }
@@ -1126,8 +1126,8 @@ static inline SymbolTable *symbol_parent_symtab(const ASR::symbol_t *f)
         case ASR::symbolType::ExternalSymbol: {
             return ASR::down_cast<ASR::ExternalSymbol_t>(f)->m_parent_symtab;
         }
-        case ASR::symbolType::ClassProcedure: {
-            return ASR::down_cast<ASR::ClassProcedure_t>(f)->m_parent_symtab;
+        case ASR::symbolType::StructMethodDeclaration: {
+            return ASR::down_cast<ASR::StructMethodDeclaration_t>(f)->m_parent_symtab;
         }
         case ASR::symbolType::CustomOperator: {
             return ASR::down_cast<ASR::CustomOperator_t>(f)->m_parent_symtab;
@@ -1183,9 +1183,9 @@ static inline SymbolTable *symbol_symtab(const ASR::symbol_t *f)
             return nullptr;
             //throw LCompilersException("ExternalSymbol does not have a symtab");
         }
-        case ASR::symbolType::ClassProcedure: {
+        case ASR::symbolType::StructMethodDeclaration: {
             return nullptr;
-            //throw LCompilersException("ClassProcedure does not have a symtab");
+            //throw LCompilersException("StructMethodDeclaration does not have a symtab");
         }
         case ASR::symbolType::AssociateBlock: {
             return ASR::down_cast<ASR::AssociateBlock_t>(f)->m_symtab;
@@ -3048,8 +3048,8 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                 );
             }
             member_types.push_back(al, var->m_type);
-        } else if (ASR::is_a<ASR::ClassProcedure_t>(*sym.second)) {
-            ASR::ClassProcedure_t* c_proc = ASR::down_cast<ASR::ClassProcedure_t>(
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym.second)) {
+            ASR::StructMethodDeclaration_t* c_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(
                 ASRUtils::symbol_get_past_external(sym.second));
             member_function_types.push_back(
                 al, ASR::down_cast<ASR::Function_t>(c_proc->m_proc)->m_function_signature);
@@ -4212,9 +4212,9 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const std::function<void (const std::string &, const Location &)> err,
     bool raise_error=true) {
     for (size_t i=0; i < p.n_procs; i++) {
-        if( ASR::is_a<ASR::ClassProcedure_t>(*p.m_procs[i]) ) {
-            ASR::ClassProcedure_t *clss_fn
-                = ASR::down_cast<ASR::ClassProcedure_t>(p.m_procs[i]);
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
+            ASR::StructMethodDeclaration_t *clss_fn
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
             const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
             if( select_func_subrout(proc, args, loc, err) ) {
                 return i;
@@ -6169,9 +6169,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     } else if (ASR::is_a<ASR::Variable_t>(*a_name_)) {
         func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
             ASR::down_cast<ASR::Variable_t>(a_name_)->m_type_declaration));
-    } else if (ASR::is_a<ASR::ClassProcedure_t>(*a_name_)) {
+    } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_)) {
         func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::ClassProcedure_t>(a_name_)->m_proc));
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name_)->m_proc));
     }
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ) {
@@ -6354,9 +6354,9 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
 
 static inline bool is_elemental(ASR::symbol_t* x) {
     ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
-    if (ASR::is_a<ASR::ClassProcedure_t>(*proc)) {
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
         proc = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc);
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
     }
     if( !ASR::is_a<ASR::Function_t>(*proc) ) {
         return false;
