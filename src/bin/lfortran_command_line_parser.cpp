@@ -40,27 +40,32 @@ namespace LCompilers::CommandLineInterface {
         std::string group_mangling_options = "Mangling Options";
         std::string group_miscellaneous_options = "Miscellaneous Options";
         std::string group_lsp_options = "LSP Options";
+        std::string group_default_options = "Common Options";
+
+        app.set_help_flag();
+        app.add_flag("--help", "Print this help message and exit");
 
         // Standard options compatible with gfortran, gcc or clang
         // We follow the established conventions
-        app.add_option("files", opts.arg_files, "Source files");
-        app.add_flag("-S", opts.arg_S, "Emit assembly, do not assemble or link");
-        app.add_flag("-c", opts.arg_c, "Compile and assemble, do not link");
-        app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into");
-        app.add_flag("-v", opts.arg_v, "Be more verbose");
-        app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link");
-        app.add_option("-l", opts.arg_l, "Link library option")->allow_extra_args(false);
-        app.add_option("-L", opts.arg_L, "Library path option")->allow_extra_args(false);
-        app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false);
-        app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files");
-        app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information");
+        app.add_option("files", opts.arg_files, "Source files")->group(group_default_options);
+        app.add_flag("-S", opts.arg_S, "Emit assembly, do not assemble or link")->group(group_default_options);
+        app.add_flag("-c", opts.arg_c, "Compile and assemble, do not link")->group(group_default_options);
+        app.add_option("-o", compiler_options.arg_o, "Specify the file to place the compiler's output into")->group(group_default_options);
+        app.add_flag("-v", opts.arg_v, "Be more verbose")->group(group_default_options);
+        app.add_flag("-E", opts.arg_E, "Preprocess only; do not compile, assemble or link")->group(group_default_options);
+        // app.add_flag("--help", "Print this help message and exit")->group(group_default_options);
+        app.add_flag("--version", opts.arg_version, "Display compiler version information")->group(group_default_options);
+        app.add_option("-l", opts.arg_l, "Link library option")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-L", opts.arg_L, "Library path option")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-I", compiler_options.po.include_dirs, "Include path")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-J", compiler_options.po.mod_files_dir, "Where to save mod files")->group(group_default_options);
+        app.add_flag("-g", compiler_options.emit_debug_info, "Compile with debugging information")->group(group_default_options);
         app.add_flag("--debug-with-line-column", compiler_options.emit_debug_line_column,
-            "Convert the linear location info into line + column in the debugging information");
-        app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false);
-        app.add_flag("--version", opts.arg_version, "Display compiler version information");
-        app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false);
-        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false);
-        app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false);
+            "Convert the linear location info into line + column in the debugging information")->group(group_default_options);
+        app.add_option("-D", compiler_options.c_preprocessor_defines, "Define <macro>=<value> (or 1 if <value> omitted)")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-W", opts.linker_flags, "Linker flags")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-f", opts.f_flags, "All `-f*` flags (only -fPIC & -fdefault-integer-8 supported for now)")->allow_extra_args(false)->group(group_default_options);
+        app.add_option("-O", opts.O_flags, "Optimization level (ignored for now)")->allow_extra_args(false)->group(group_default_options);
 
         // LFortran specific options
         // Warning-related flags
@@ -206,6 +211,59 @@ namespace LCompilers::CommandLineInterface {
             app.parse(argc, argv);
         } else {
             app.parse(args);
+        }
+
+        std::string help_group;
+        for (int i = 1; i < argc; ++i) {
+            std::string arg = argv[i];
+            if (arg == "--help" || arg == "-h") {
+                std::cout << "Usage: lfortran [options] file...\n";
+                for (const auto* opt : app.get_options([&](const CLI::Option* o) {
+                    return o->get_group() == group_default_options;
+                })) {
+                    std::cout << "  " << opt->get_name() << "\t" << opt->get_description() << std::endl;
+                }
+                std::cout << "  --help=<category>\tDisplay options for a specific category (e.g., warnings, language, preprocessing, output, pass, backend, symbol, mangling, misc, lsp)\n";
+                std::exit(0);
+            } else if (arg.rfind("--help=", 0) == 0) {
+                help_group = arg.substr(7);
+                break;
+            }
+        }
+        if (!help_group.empty()) {
+            std::string group_name;
+            if (help_group == "warnings") {
+                group_name = group_warning_options;
+            } else if (help_group == "language") {
+                group_name = group_language_options;
+            } else if (help_group == "preprocessing") {
+                group_name = group_preprocessing_options;
+            } else if (help_group == "output") {
+                group_name = group_output_debugging_options;
+            } else if (help_group == "pass") {
+                group_name = group_pass_transformation_options;
+            } else if (help_group == "backend") {
+                group_name = group_backend_codegen_options;
+            } else if (help_group == "symbol") {
+                group_name = group_symbol_lookup_options;
+            } else if (help_group == "mangling") {
+                group_name = group_mangling_options;
+            } else if (help_group == "misc") {
+                group_name = group_miscellaneous_options;
+            } else if (help_group == "lsp") {
+                group_name = group_lsp_options;
+            } else {
+                std::cerr << "Unknown help category: " << help_group << std::endl;
+                std::cerr << "Available categories: warnings, language, preprocessing, output, pass, backend, symbol, mangling, misc, lsp" << std::endl;
+                std::exit(1); 
+            }
+            std::cout << group_name << ":\n";
+            for (const auto* opt : app.get_options([&group_name](const CLI::Option* o) {
+                    return o->get_group() == group_name;
+                })) {
+                std::cout << "  " << opt->get_name() << "\t" << opt->get_description() << std::endl;
+            }
+            std::exit(0);
         }
 
         if (opts.arg_standard == "" || opts.arg_standard == "lf") {
