@@ -846,6 +846,18 @@ public:
         }
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
 
+        for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
+            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                try {
+                    visit_unit_decl2(*x.m_decl[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            is_Function = false;
+        }
+
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
                                    proc_interface->m_function_signature,
