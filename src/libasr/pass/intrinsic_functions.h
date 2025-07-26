@@ -2352,116 +2352,6 @@ namespace Xor {
 
 } // namespace Xor
 
-namespace Ibclr {
-
-    static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t result;
-        if ( val2 < 0 ) {
-            diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
-        }
-        result = val1 & ~(1 << val2);
-        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Ibclr(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibclr_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
-        auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = ibclr(x, y)
-        * r = x & ~( 1 << y )
-        */
-        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type)))));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace Ibclr
-
-namespace Ibset {
-
-    static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        int64_t result;
-        if ( val2 < 0 ) {
-            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
-        }
-        result = val1 | (1 << val2);
-        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Ibset(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_ibset_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
-        auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = ibset(x, y)
-        * r = x | ( 1 << y )
-        */
-        body.push_back(al, b.Assignment(result, b.Or(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), return_type))));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace Ibset
-
-namespace Btest {
-
-    static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
-        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
-        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
-        bool result;
-        if ( val2 < 0 ) {
-            diag.semantic_error_label("`pos` argument of `btest` intrinsic must be non-negative", {loc}, "");
-        }
-        if ((val1 & (1 << val2)) == 0) result = false;
-        else result = true;
-        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
-    }
-
-    static inline ASR::expr_t* instantiate_Btest(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_btest_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        fill_func_arg("y", arg_types[1]);
-        auto result = declare(fn_name, return_type, ReturnVar);
-        /*
-        * r = btest(x, y)
-        * r = (( x  & ( 1 << y )) == 0) ? .false. : .true.
-        */
-        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(args[1], arg_types[0]), arg_types[0])), b.i_t(0, arg_types[0])), {
-            b.Assignment(result, b.bool_t(0, return_type))
-        }, {
-            b.Assignment(result, b.bool_t(1, return_type))
-        }));
-
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace Btest
-
 namespace Ibits {
 
     static ASR::expr_t *eval_Ibits(Allocator &al, const Location &loc,
@@ -3434,6 +3324,162 @@ namespace Mod {
     }
 
 } // namespace Mod
+
+namespace Ibclr {
+
+    static ASR::expr_t *eval_Ibclr(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibclr` intrinsic must be non-negative", {loc}, "");
+        }
+        result = val1 & ~(1 << val2);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Ibclr(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_ibclr_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = ibclr(x, y)
+        * r = x & ~( 1 << y )
+        */
+        // Determine the number of bits for the given kind (4 -> 32, 8 -> 64)
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        int bit_size = 8 * kind;
+        auto bit_size_expr = b.i_t(bit_size, arg_types[1]); // type of y
+        // Step 1: y mod bit_size
+        ASR::expr_t* mod_expr = Mod::MOD(b, args[1], bit_size_expr, scope);
+        // Step 2: if mod_expr < 0, then mod_expr + bit_size, else mod_expr
+        auto normalized_y = declare("normalized_y", arg_types[1], Local);
+        body.push_back(al,
+            b.If(b.Lt(mod_expr, b.i_t(0, arg_types[1])), {
+                b.Assignment(normalized_y, b.Add(mod_expr, bit_size_expr))
+            }, {
+                b.Assignment(normalized_y, mod_expr)
+            })
+        );
+        body.push_back(al, b.Assignment(result, b.And(args[0], b.Not(b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(normalized_y, arg_types[0]), return_type)))));
+
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Ibclr
+
+namespace Ibset {
+
+    static ASR::expr_t *eval_Ibset(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        int64_t result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `ibset` intrinsic must be non-negative", {loc}, "");
+        }
+        result = val1 | (1 << val2);
+        return make_ConstantWithType(make_IntegerConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Ibset(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_ibset_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = ibset(x, y)
+        * r = x | ( 1 << y )
+        */
+        // Determine the number of bits for the given kind (4 -> 32, 8 -> 64)
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        int bit_size = 8 * kind;
+        auto bit_size_expr = b.i_t(bit_size, arg_types[1]); // type of y
+        // Step 1: y mod bit_size
+        ASR::expr_t* mod_expr = Mod::MOD(b, args[1], bit_size_expr, scope);
+        // Step 2: if mod_expr < 0, then mod_expr + bit_size, else mod_expr
+        auto normalized_y = declare("normalized_y", arg_types[1], Local);
+        body.push_back(al,
+            b.If(b.Lt(mod_expr, b.i_t(0, arg_types[1])), {
+                b.Assignment(normalized_y, b.Add(mod_expr, bit_size_expr))
+            }, {
+                b.Assignment(normalized_y, mod_expr)
+            })
+        );
+        // Step 3: result = x | (1 << normalized_y)
+        body.push_back(al, b.Assignment(result, b.Or(args[0],
+            b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(normalized_y, arg_types[0]), return_type))));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Ibset
+
+namespace Btest {
+
+    static ASR::expr_t *eval_Btest(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& diag) {
+        int64_t val1 = ASR::down_cast<ASR::IntegerConstant_t>(args[0])->m_n;
+        int64_t val2 = ASR::down_cast<ASR::IntegerConstant_t>(args[1])->m_n;
+        bool result;
+        if ( val2 < 0 ) {
+            diag.semantic_error_label("`pos` argument of `btest` intrinsic must be non-negative", {loc}, "");
+        }
+        if ((val1 & (1 << val2)) == 0) result = false;
+        else result = true;
+        return make_ConstantWithType(make_LogicalConstant_t, result, t1, loc);
+    }
+
+    static inline ASR::expr_t* instantiate_Btest(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_btest_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        fill_func_arg("y", arg_types[1]);
+        auto result = declare(fn_name, return_type, ReturnVar);
+        /*
+        * r = btest(x, y)
+        * r = (( x  & ( 1 << y )) == 0) ? .false. : .true.
+        */
+        // Determine the number of bits for the given kind (4 -> 32, 8 -> 64)
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        int bit_size = 8 * kind;
+        auto bit_size_expr = b.i_t(bit_size, arg_types[1]); // type of y
+        // Step 1: y mod bit_size
+        ASR::expr_t* mod_expr = Mod::MOD(b, args[1], bit_size_expr, scope);
+        // Step 2: if mod_expr < 0, then mod_expr + bit_size, else mod_expr
+        auto normalized_y = declare("normalized_y", arg_types[1], Local);
+        body.push_back(al,
+            b.If(b.Lt(mod_expr, b.i_t(0, arg_types[1])), {
+                b.Assignment(normalized_y, b.Add(mod_expr, bit_size_expr))
+            }, {
+                b.Assignment(normalized_y, mod_expr)
+            })
+        );
+        // Step 3: result = x | (1 << normalized_y)
+        body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(normalized_y, arg_types[0]), arg_types[0])), b.i_t(0, arg_types[0])), {
+            b.Assignment(result, b.bool_t(0, return_type))
+        }, {
+            b.Assignment(result, b.bool_t(1, return_type))
+        }));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+
+} // namespace Btest
 
 namespace Popcnt {
 
