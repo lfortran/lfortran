@@ -3415,7 +3415,6 @@ namespace Ibset {
                 b.Assignment(normalized_y, mod_expr)
             })
         );
-        // Step 3: result = x | (1 << normalized_y)
         body.push_back(al, b.Assignment(result, b.Or(args[0],
             b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(normalized_y, arg_types[0]), return_type))));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
@@ -3467,7 +3466,6 @@ namespace Btest {
                 b.Assignment(normalized_y, mod_expr)
             })
         );
-        // Step 3: result = x | (1 << normalized_y)
         body.push_back(al, b.If(b.Eq(b.And(args[0], b.BitLshift(b.i_t(1, arg_types[0]), b.i2i_t(normalized_y, arg_types[0]), arg_types[0])), b.i_t(0, arg_types[0])), {
             b.Assignment(result, b.bool_t(0, return_type))
         }, {
