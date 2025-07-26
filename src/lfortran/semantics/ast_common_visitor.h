@@ -2218,6 +2218,10 @@ public:
                 Because for arrays of larger size, the current implementation
                 of data statement is not efficient.
             */
+            // Get the Type of Object
+            // If object is Real, set current_variable_type to Real
+            // This type flag is passed to Visit_BOZ, 
+            // so that Real Values are correctly decoded from BOZ String
             if ((is_real) && ((a->m_value[curr_value]->type == LFortran::AST::exprType::BOZ))) {
                 current_variable_type_ = array_type->m_type;
             }
@@ -2261,6 +2265,11 @@ public:
             }
             curr_value += size_of_array;
             for (int j=0; j < size_of_array; j++) {
+                // Get the Type of Object
+                // If object is Real, set current_variable_type to Real
+                // This type flag is passed to Visit_BOZ, 
+                // so that Real Values are correctly decoded from BOZ String
+                // Else, set to default type, to cover Complex Values Cases
                 if ((is_real) && (j<((int) a->n_value)) &&
                     ((a->m_value[j]->type == LFortran::AST::exprType::BOZ))) {
                     current_variable_type_ = array_type->m_type;
