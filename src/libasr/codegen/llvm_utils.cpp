@@ -2715,7 +2715,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
                         // If member is allocatable string, we need to check if it is allocated before copying
-                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) &&
+                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
                             ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),
