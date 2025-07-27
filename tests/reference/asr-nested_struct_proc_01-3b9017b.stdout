@@ -131,7 +131,7 @@
                                                     Public
                                                 ),
                                             insert_key_value:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     8
                                                     insert_key_value
                                                     ()
@@ -803,7 +803,7 @@
                                                     Public
                                                 ),
                                             at_rc:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     7
                                                     at_rc
                                                     ()

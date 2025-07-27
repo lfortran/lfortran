@@ -1735,7 +1735,7 @@
                                         7
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     7
                                                     destroy
                                                     ()
@@ -2037,7 +2037,7 @@
                                         3
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     destroy
                                                     ()
@@ -2071,7 +2071,7 @@
                                                     .false.
                                                 ),
                                             match_key:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     match_key
                                                     ()

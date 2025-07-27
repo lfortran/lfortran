@@ -125,7 +125,7 @@
                                         12
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     12
                                                     destroy
                                                     ()
@@ -446,7 +446,7 @@
                                         14
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     14
                                                     destroy
                                                     ()
@@ -602,7 +602,7 @@
                                         5
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     destroy
                                                     ()

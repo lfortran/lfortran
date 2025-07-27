@@ -18,7 +18,7 @@ and `source` of type expression.
 `args` contains the arrays to be allocated.
 `stat` is a variable to receive the status integer (success/failure).
 `errmsg` is variable to receive error message.
-`source` contains the source location.
+`source` contains the source location. `source` will not do a copy, it will only use it for a runtime decision how to allocate.
 
 ### Return values
 

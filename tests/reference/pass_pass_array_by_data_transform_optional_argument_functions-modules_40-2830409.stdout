@@ -467,7 +467,7 @@
                                         4
                                         {
                                             parse_select:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     4
                                                     parse_select
                                                     ()

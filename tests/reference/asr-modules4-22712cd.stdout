@@ -125,7 +125,7 @@
                                         17
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     17
                                                     destroy
                                                     ()
@@ -508,7 +508,7 @@
                                         5
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     destroy
                                                     ()
@@ -811,7 +811,7 @@
                                         21
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     21
                                                     destroy
                                                     ()
@@ -863,7 +863,7 @@
                                         22
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     22
                                                     destroy
                                                     ()
@@ -992,7 +992,7 @@
                                         10
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     destroy
                                                     ()

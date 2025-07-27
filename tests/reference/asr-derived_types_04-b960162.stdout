@@ -106,7 +106,7 @@
                                         3
                                         {
                                             all:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     all
                                                     self

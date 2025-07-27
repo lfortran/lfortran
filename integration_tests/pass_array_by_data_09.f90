@@ -29,7 +29,7 @@ module pass_array_by_data_09_mod
     contains
 
     subroutine ffo(dummy) 
-        class(tt), intent(in):: dummy ! This shouldn't idenify this function `ffo` as classProcedure. It's a normal function.
+        class(tt), intent(in):: dummy ! This shouldn't idenify this function `ffo` as StructMethodDeclaration. It's a normal function.
         integer :: r
         integer, dimension(5) :: rr
         rr = [1,2,3,4,5]

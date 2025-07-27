@@ -95,7 +95,7 @@
                                         9
                                         {
                                             f:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     9
                                                     f
                                                     ()

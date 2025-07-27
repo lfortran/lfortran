@@ -628,7 +628,7 @@
                                                     Public
                                                 ),
                                             add_project:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     add_project
                                                     ()
@@ -639,7 +639,7 @@
                                                     .false.
                                                 ),
                                             add_project_dependencies:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     add_project_dependencies
                                                     ()
@@ -785,7 +785,7 @@
                                                     Public
                                                 ),
                                             update_dependency:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     update_dependency
                                                     ()

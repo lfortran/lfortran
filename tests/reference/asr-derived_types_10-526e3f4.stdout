@@ -133,7 +133,7 @@
                                                     Public
                                                 ),
                                             plus:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     4
                                                     plus
                                                     ()
@@ -144,7 +144,7 @@
                                                     .false.
                                                 ),
                                             proc:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     4
                                                     proc
                                                     ()
@@ -181,7 +181,7 @@
                                                     .false.
                                                 ),
                                             unary:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     4
                                                     unary
                                                     ()

@@ -278,7 +278,7 @@
                                         3
                                         {
                                             add_log_file:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     add_log_file
                                                     self
@@ -289,7 +289,7 @@
                                                     .false.
                                                 ),
                                             log_io_error:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     log_io_error
                                                     self

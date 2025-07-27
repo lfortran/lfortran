@@ -13,7 +13,7 @@
                                         3
                                         {
                                             pwf:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     pwf
                                                     ()
@@ -24,7 +24,7 @@
                                                     .false.
                                                 ),
                                             pwunf:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     pwunf
                                                     ()

@@ -34,7 +34,7 @@ symbol
         expr? symbolic_value, expr? value, storage_type storage, ttype type,
         abi abi, access access, presence presence, bool value_attr)
     | ClassType(symbol_table symtab, identifier name, abi abi, access access)
-    | ClassProcedure(symbol_table parent_symtab, identifier name,
+    | StructMethodDeclaration(symbol_table parent_symtab, identifier name,
     identifier?
         self_argument, identifier proc_name, symbol proc, abi abi)
     | AssociateBlock(symbol_table symtab, identifier name, stmt* body)
@@ -126,7 +126,7 @@ Symbols in LFortran are:
 7. DerivedType
 8. Variable
 9. ClassType
-10. ClassProcedure
+10. StructMethodDeclaration
 11. AssociateBlock
 12. Block
 13. Requirement
@@ -777,7 +777,7 @@ ASR:
 )
 ```
 
-Example of ClassProcedure:
+Example of StructMethodDeclaration:
 
 ```fortran
 module bitset
@@ -882,7 +882,7 @@ ASR:
                                         3
                                         {
                                             all:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     all
                                                     all_abstract

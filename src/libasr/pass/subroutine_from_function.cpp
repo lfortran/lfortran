@@ -193,7 +193,7 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     }
                 }
             }
-            if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
+            if( ASRUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
             Vec<ASR::call_arg_t> s_args;

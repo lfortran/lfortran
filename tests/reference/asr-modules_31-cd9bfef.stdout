@@ -873,7 +873,7 @@
                                                     Public
                                                 ),
                                             update_dependency:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     12
                                                     update_dependency
                                                     ()

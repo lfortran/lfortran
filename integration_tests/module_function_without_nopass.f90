@@ -1,5 +1,5 @@
 !> This test file makes sure that optional arguments
-!> are passed correctly for ClassProcedure with/without nopass
+!> are passed correctly for StructMethodDeclaration with/without nopass
 module modules_module_function_without_nopass
     implicit none
     private

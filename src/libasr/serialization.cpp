@@ -121,7 +121,7 @@ public:
                 READ_SYMBOL_CASE(ExternalSymbol)
                 READ_SYMBOL_CASE(Struct)
                 READ_SYMBOL_CASE(Variable)
-                READ_SYMBOL_CASE(ClassProcedure)
+                READ_SYMBOL_CASE(StructMethodDeclaration)
                 default : throw LCompilersException("Symbol type not supported");
             }
             symtab->add_symbol(symbol_name, s);
@@ -146,7 +146,7 @@ public:
                 INSERT_SYMBOL_CASE(ExternalSymbol)
                 INSERT_SYMBOL_CASE(Struct)
                 INSERT_SYMBOL_CASE(Variable)
-                INSERT_SYMBOL_CASE(ClassProcedure)
+                INSERT_SYMBOL_CASE(StructMethodDeclaration)
                 default : throw LCompilersException("Symbol type not supported");
             }
         }

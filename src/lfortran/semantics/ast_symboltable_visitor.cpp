@@ -819,6 +819,64 @@ public:
         return master_args;
     }
 
+    void visit_Procedure(const AST::Procedure_t &x) {
+        ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
+        if (interface_module->m_parent_module) {
+            interface_module = ASR::down_cast<ASR::Module_t>(interface_module->m_parent_module);
+        }
+
+        ASR::Function_t* proc_interface = nullptr;
+        for (auto &item : interface_module->m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Function_t>(*item.second) && (std::string(ASR::down_cast<ASR::Function_t>(item.second)->m_name) == std::string(x.m_name))) {
+                proc_interface = ASR::down_cast<ASR::Function_t>(item.second);
+                break;
+            }
+        }
+
+        SymbolTable* parent_scope = current_scope;
+        current_scope = al.make_new<SymbolTable>(parent_scope);
+
+        ASRUtils::SymbolDuplicator symbol_duplicator(al);
+        ASRUtils::ExprStmtWithScopeDuplicator exprstmt_duplicator(al, current_scope);
+        symbol_duplicator.duplicate_SymbolTable(proc_interface->m_symtab, current_scope);
+        Vec<ASR::expr_t*> new_func_args;
+        new_func_args.reserve(al, proc_interface->n_args);
+        for (size_t i=0;i<proc_interface->n_args;i++) {
+            new_func_args.push_back(al, exprstmt_duplicator.duplicate_expr(proc_interface->m_args[i]));
+        }
+        ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
+
+        for (size_t i=0; i<x.n_decl; i++) {
+            is_Function = true;
+            if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
+                try {
+                    visit_unit_decl2(*x.m_decl[i]);
+                } catch (SemanticAbort &e) {
+                    if ( !compiler_options.continue_compilation ) throw e;
+                }
+            }
+            is_Function = false;
+        }
+
+        tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
+                                   proc_interface->m_name,
+                                   proc_interface->m_function_signature,
+                                   nullptr, 0,
+                                   new_func_args.p,
+                                   new_func_args.size(),
+                                   nullptr, 0,
+                                   new_func_return_var,
+                                   proc_interface->m_access,
+                                   proc_interface->m_deterministic,
+                                   proc_interface->m_side_effect_free,
+                                   nullptr);
+        ASR::Function_t* new_func = ASR::down_cast<ASR::Function_t>(ASR::down_cast<ASR::symbol_t>(tmp));
+        ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(new_func->m_function_signature);
+        func_type->m_abi = ASR::abiType::Source;
+        func_type->m_deftype = ASR::deftypeType::Implementation;
+        parent_scope->overwrite_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+    }
+
     void visit_Subroutine(const AST::Subroutine_t &x) {
         in_Subroutine = true;
         SetChar current_function_dependencies_copy = current_function_dependencies;
@@ -2307,10 +2365,8 @@ public:
         Str s;
 
         // Append "~~" to the begining of any custom defined operator
-        std::string new_operator_name = proc.first;
-        if (should_change_custom_op_name(proc.first)) {
-          new_operator_name = "~~" + new_operator_name;
-        }
+        std::string new_operator_name = update_custom_op_name(proc.first);
+
         s.from_str_view(new_operator_name);
         char *generic_name = s.c_str(al);
         Vec<ASR::symbol_t*> symbols;
@@ -2705,7 +2761,7 @@ public:
                 if (!is_nopass) {
                     ensure_matching_types_for_pass_obj_dum_arg(func, pass_arg_name, clss_sym, loc);
                 }
-                ASR::asr_t *v = ASR::make_ClassProcedure_t(al, loc,
+                ASR::asr_t *v = ASR::make_StructMethodDeclaration_t(al, loc,
                     clss->m_symtab, name, pass_arg_name,
                     proc_name, proc_sym, ASR::abiType::Source,
                     is_deferred, is_nopass);
@@ -2723,7 +2779,7 @@ public:
                 ASR::Struct_t *st = ASR::down_cast<ASR::Struct_t>(item.second);
                 if (st->m_access != ASR::accessType::Private) {
                     for (auto &x: st->m_symtab->get_scope()) {
-                        if (ASR::is_a<ASR::ClassProcedure_t>(*x.second)) {
+                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*x.second)) {
                             indirect_public_symbols.insert(x.first);
                         }
                     }
@@ -3289,9 +3345,7 @@ public:
                             x.m_symbols[i])->m_opName;
 
                         // Append "~~" to the begining of any custom defined operator
-                        if (should_change_custom_op_name(remote_sym)) {
-                            remote_sym = "~~" + remote_sym;
-                        }
+                        remote_sym = update_custom_op_name(remote_sym);
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {
@@ -3383,9 +3437,7 @@ public:
                             x.m_symbols[i])->m_opName;
 
                         // Append "~~" to the begining of any custom defined operator
-                        if (should_change_custom_op_name(remote_sym)) {
-                            remote_sym = "~~" + remote_sym;
-                        }
+                        remote_sym = update_custom_op_name(remote_sym);
                         break;
                     }
                     case AST::use_symbolType::UseWrite: {

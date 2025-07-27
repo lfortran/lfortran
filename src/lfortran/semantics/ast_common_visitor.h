@@ -5976,16 +5976,23 @@ public:
         }
     }
 
-    ASR::asr_t* create_ClassProcedure(const Location &loc,
+    ASR::asr_t* create_StructMethodDeclaration(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
                 AST::keyword_t* m_kwargs, size_t n_kwargs,
                  size_t n_member, ASR::symbol_t *v,
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
+        ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
+
+        if (!v_class_proc->m_is_nopass) {
+            ASR::call_arg_t self_arg;
+            self_arg.loc = v_expr->base.loc;
+            self_arg.m_value = v_expr;
+            args.push_front(al, self_arg);  // push self arg in case of class procedure
+        }
         ASR::expr_t* first_array_arg = ASRUtils::find_first_array_arg_if_elemental(func, args);
         if (first_array_arg) {
             ASR::dimension_t* array_dims;
@@ -6115,10 +6122,10 @@ public:
 
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym, current_scope);
-                final_sym = ASR::down_cast<ASR::ClassProcedure_t>(final_sym)->m_proc;
+                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym)->m_proc;
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -6526,7 +6533,6 @@ public:
         ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
         legacy_array_sections_helper(v, args, loc);
         validate_create_function_arguments(args, v);
-
         return ASRUtils::make_FunctionCall_t_util(al, loc, v, nullptr,
             args.p, args.size(), return_type, value, nullptr);
     }
@@ -9730,14 +9736,14 @@ public:
                     bool is_class_procedure = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
                         ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
-                        if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
+                        if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::StructMethodDeclaration_t>(*f4) ) {
                             diag.add(Diagnostic(std::string(ASRUtils::symbol_name(f4)) +
                             " is not a function.",
                             Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                             throw SemanticAbort();
                         }
-                        if (ASR::is_a<ASR::ClassProcedure_t>(*f4)) {
-                            ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
+                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
+                            ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
                             f4 = f5->m_proc;
                             is_nopass = f5->m_is_nopass;
                             is_class_procedure = true;
@@ -9838,8 +9844,8 @@ public:
                                                     x.m_keywords, x.n_keywords, v);
                 break;
             }
-            case(ASR::symbolType::ClassProcedure):
-                tmp = create_ClassProcedure(x.base.base.loc, x.m_args, x.n_args,
+            case(ASR::symbolType::StructMethodDeclaration):
+                tmp = create_StructMethodDeclaration(x.base.base.loc, x.m_args, x.n_args,
                                 x.m_keywords, x.n_keywords, x.n_member, v, v_expr);
                 break;
             default: {
@@ -10548,8 +10554,8 @@ public:
         std::string new_op = op;
 
         // Append "~~" to the begining of any custom defined operator, that is not inside a struct
-        if (should_change_custom_op_name(op) && first_struct == nullptr) {
-            new_op = "~~" + op;
+        if (first_struct == nullptr) {
+            new_op = update_custom_op_name(new_op);
         }
         ASR::symbol_t* op_sym = current_scope->resolve_symbol(to_lower(new_op));
         ASR::symbol_t* operator_sym = ASRUtils::symbol_get_past_external(op_sym);
@@ -10580,9 +10586,9 @@ public:
         bool matched = false;
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i])) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[i])->m_proc);
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc);
             } else {
                 proc = gen_proc->m_procs[i];
             }
@@ -11058,10 +11064,6 @@ public:
         }
         tmp = ASR::make_ComplexConstructor_t(al, x.base.base.loc,
                 re, im, type, value);
-    }
-
-    void visit_Procedure(const AST::Procedure_t&) {
-        // To Be Implemented
     }
 
     Vec<ASR::expr_t*> visit_expr_list(AST::fnarg_t *ast_list, size_t n) {
@@ -11592,15 +11594,15 @@ public:
         }
     }
 
-    // check if we should append "~~" to an operator name
-    bool should_change_custom_op_name(const std::string &op) {
-        static const std::string operator_chars = "+-*/~<=>";
-
-        if (op.find_first_of(operator_chars) != std::string::npos) {
-            return false;
+    // check if the operator name need to be updated or not, and return it
+    std::string update_custom_op_name(const std::string &op) {
+        // if operator name start with (contain) "~", it is already distinct so return it as it is
+        if (op.find_first_of("~") != std::string::npos) {
+            return op;
         }
 
-        return true;
+        // make custom operators names distinct by appending "~~" to the begining of their names
+        return "~~" + op;
     }
 };
 

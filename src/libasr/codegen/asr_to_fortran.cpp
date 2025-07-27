@@ -92,6 +92,15 @@ public:
             } case (ASR::binopType::Pow) : {
                 last_expr_precedence = Precedence::Pow;
                 return "**";
+            } case (ASR::binopType::BitOr) : {
+                last_expr_precedence = Precedence::Or;
+                return " .or. ";
+            } case (ASR::binopType::BitAnd) : {
+                last_expr_precedence = Precedence::And;
+                return " .and. ";
+            } case (ASR::binopType::BitXor) : {
+                last_expr_precedence = Precedence::Eqv;
+                return " .eqv. ";
             } default : {
                 throw LCompilersException("Binop type not implemented");
             }
@@ -688,7 +697,7 @@ public:
         if (class_procedure_order.size() > 0) r += "contains\n";
         for (auto &item : class_procedure_order) {
             ASR::symbol_t* class_procedure_sym = x.m_symtab->get_symbol(item);
-            if (is_a<ASR::ClassProcedure_t>(*class_procedure_sym)) {
+            if (is_a<ASR::StructMethodDeclaration_t>(*class_procedure_sym)) {
                 visit_symbol(*class_procedure_sym);
                 r += src;
             }
@@ -784,7 +793,7 @@ public:
         src = r;
     }
 
-    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
         std::string r = indent;
         r += "procedure";
         if (x.m_is_deferred) {

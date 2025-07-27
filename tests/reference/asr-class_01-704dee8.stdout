@@ -197,7 +197,7 @@
                                         3
                                         {
                                             area:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     area
                                                     ()
@@ -208,7 +208,7 @@
                                                     .false.
                                                 ),
                                             print:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     print
                                                     ()

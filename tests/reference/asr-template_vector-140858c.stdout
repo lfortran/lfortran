@@ -722,7 +722,7 @@
                                                                     .false.
                                                                 ),
                                                             push_back:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     8
                                                                     push_back
                                                                     ()
@@ -733,7 +733,7 @@
                                                                     .false.
                                                                 ),
                                                             resize:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     8
                                                                     resize
                                                                     ()
@@ -1623,7 +1623,7 @@
                                                                     .false.
                                                                 ),
                                                             push_back:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     4
                                                                     push_back
                                                                     ()
@@ -1634,7 +1634,7 @@
                                                                     .false.
                                                                 ),
                                                             resize:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     4
                                                                     resize
                                                                     ()

@@ -1300,7 +1300,7 @@
                                                     .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     8
                                                     to_string
                                                     rhs
@@ -1425,7 +1425,7 @@
                                                     .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     9
                                                     to_string
                                                     rhs
@@ -1548,7 +1548,7 @@
                                                     .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     to_string
                                                     rhs

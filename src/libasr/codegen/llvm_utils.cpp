@@ -2201,29 +2201,37 @@ namespace LCompilers {
         }
         return global_arraystring;
     }
-
     llvm::Value* LLVMUtils::declare_global_string(
         ASR::String_t* str, std::string initial_data, bool is_const, std::string name, 
         llvm::GlobalValue::LinkageTypes linkage /*default is private*/){
         int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
-        initial_data.resize(len,' '); // Pad 
+        
         llvm::Constant* len_constant = llvm::ConstantInt::get(context, llvm::APInt(64, len));
         llvm::Constant* string_constant;
         // setup global string constant (llvm array of i8)
         switch(str->m_len_kind){
             case ASR::DeferredLength:{
                 string_constant = llvm::ConstantPointerNull::get(character_type);
-                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len) || 
-                    str->m_len_kind == ASR::DeferredLength,
-                    "Handle this case");
+                LCOMPILERS_ASSERT_MSG(
+                    initial_data.size() == 0,
+                    "Can't declare global-allocatable-string variable with initial value"
+                )
                 break;
             }
             case ASR::ExpressionLength:{
-                LCOMPILERS_ASSERT_MSG(ASRUtils::is_value_constant(str->m_len), "Handle this case");
+                LCOMPILERS_ASSERT_MSG(
+                    ASRUtils::is_value_constant(str->m_len),
+                    "Global variable should have constant-compile-time known length"
+                );
                 // Type -> [len x i8]
                 llvm::ArrayType *char_array_type = llvm::ArrayType::get(llvm::Type::getInt8Ty(context), len + 1 /*null-char*/);
                 // [len x i8] c "DATA HERE\00"
-                llvm::Constant *const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data, true);
+                llvm::Constant* const_data_as_array {};
+                {
+                    std::string initial_data_padded = std::string(initial_data);
+                    initial_data_padded.resize(len,' ');
+                    const_data_as_array = llvm::ConstantDataArray::getString(context, initial_data_padded, true);
+                }
                 // global [len x i8] c "DATA HERE\00"
                 llvm::GlobalVariable *global_string_as_array = new llvm::GlobalVariable(
                     *module,
@@ -2813,7 +2821,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                         llvm::Value* is_allocated = llvm::ConstantInt::get(llvm::Type::getInt1Ty(context), 1);
 
                         // If member is allocatable string, we need to check if it is allocated before copying
-                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) &&
+                        if (ASRUtils::is_allocatable(ASRUtils::symbol_type(mem_sym)) && !ASRUtils::is_array(ASRUtils::symbol_type(mem_sym)) &&
                             ASR::is_a<ASR::String_t>(*ASRUtils::extract_type(ASRUtils::symbol_type(mem_sym)))) {
                             std::vector<llvm::Value*> idx_vec = {
                                 llvm::ConstantInt::get(context, llvm::APInt(32, 0)),

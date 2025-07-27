@@ -42,7 +42,7 @@
                                                     .false.
                                                 ),
                                             integer_add_subrout:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     integer_add_subrout
                                                     ()
@@ -74,7 +74,7 @@
                                                     .false.
                                                 ),
                                             real_add_subrout:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     real_add_subrout
                                                     ()

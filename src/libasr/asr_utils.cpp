@@ -100,9 +100,9 @@ std::vector<std::string> determine_class_procedure_declaration_order(
     std::map<std::string, std::vector<std::string>> func_dep_graph;
     ASR::symbol_t *sym;
     for( auto itr: symtab->get_scope() ) {
-        if( ASR::is_a<ASR::ClassProcedure_t>(*itr.second) ) {
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*itr.second) ) {
             std::vector<std::string> deps;
-            ASR::symbol_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(itr.second)->m_proc;
+            ASR::symbol_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(itr.second)->m_proc;
             if (ASR::is_a<ASR::Function_t>(*cp)) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(cp);
                 for( size_t i = 0; i < func->n_dependencies; i++ ) {
@@ -1154,9 +1154,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for( size_t i = 0; i < gen_proc->n_procs && !found; i++ ) {
             ASR::symbol_t* proc;
-            if ( ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i]) ) {
+            if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i]) ) {
                 proc =  ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(
                     gen_proc->m_procs[i])->m_proc);
             } else {
                 proc = gen_proc->m_procs[i];
@@ -1337,8 +1337,8 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
                     current_module_dependencies, asr, err);
                 break;
             }
-            case ASR::symbolType::ClassProcedure: {
-                ASR::ClassProcedure_t* class_procedure_t = ASR::down_cast<ASR::ClassProcedure_t>(proc);
+            case ASR::symbolType::StructMethodDeclaration: {
+                ASR::StructMethodDeclaration_t* class_procedure_t = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
                 process_overloaded_unary_minus_function(class_procedure_t->m_proc,
                     operand, operand_type, found, al, curr_scope, loc,
                     current_function_dependencies, current_module_dependencies, asr, err);
@@ -1499,9 +1499,9 @@ bool use_overloaded_assignment(ASR::expr_t* target, ASR::expr_t* value,
                         loc, expr_dt, err);
                     break;
                 }
-                case ASR::symbolType::ClassProcedure: {
-                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc;
+                case ASR::symbolType::StructMethodDeclaration: {
+                    ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
                     process_overloaded_assignment_function(proc_func, target, value, target_type,
                         value_type, found, al, target->base.loc, value->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
@@ -1594,9 +1594,9 @@ bool use_overloaded_file_read_write(std::string &read_write, Vec<ASR::expr_t*> a
                         loc, expr_dt, err);
                     break;
                 }
-                case ASR::symbolType::ClassProcedure: {
-                    ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(proc);
-                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::ClassProcedure_t>(proc)->m_proc;
+                case ASR::symbolType::StructMethodDeclaration: {
+                    ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc);
+                    ASR::symbol_t* proc_func = ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc;
                     process_overloaded_read_write_function(read_write, proc_func, args, arg_type,
                         found, al, args[0]->base.loc, curr_scope,
                         current_function_dependencies, current_module_dependencies, asr, proc_func, loc,
@@ -1667,14 +1667,16 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         }
         for( size_t i = 0; i < op_overloading_procs.size() && !found; i++ ) {
             ASR::symbol_t* proc;
-            if ( ASR::is_a<ASR::ClassProcedure_t>(*op_overloading_procs[i]) ) {
-                ASR::ClassProcedure_t* cp = ASR::down_cast<ASR::ClassProcedure_t>(op_overloading_procs[i]);
+            ASR::symbol_t* orig_proc = ASRUtils::symbol_get_past_external(op_overloading_procs[i]);
+            if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*op_overloading_procs[i]) ) {
+                ASR::StructMethodDeclaration_t* cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(op_overloading_procs[i]);
                 if (cp->m_parent_symtab->get_counter() != left_struct->m_symtab->get_counter()) {
                     // It may be overided in the derived class
                     ASR::Struct_t* temp_struct = left_struct;
                     while (temp_struct->m_parent) {
                         if (temp_struct->m_symtab->get_symbol(cp->m_name) != nullptr) {
-                            cp = ASR::down_cast<ASR::ClassProcedure_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
+                            cp = ASR::down_cast<ASR::StructMethodDeclaration_t>(temp_struct->m_symtab->get_symbol(cp->m_name));
+                            orig_proc = temp_struct->m_symtab->get_symbol(cp->m_name);
                             break;
                         }
                         temp_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(temp_struct->m_parent));
@@ -1735,22 +1737,20 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                             }
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
-                            a_args.reserve(al, 2);
+                            a_args.reserve(al, 1);
                             ASR::call_arg_t left_call_arg, right_call_arg;
-                            left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
-                            a_args.push_back(al, left_call_arg);
+                            ASR::expr_t* self_arg = nullptr;
+                            if (i < n_interface_proc) {
+                                left_call_arg.loc = left->base.loc, left_call_arg.m_value = left;
+                                a_args.push_back(al, left_call_arg);
+                            }
                             right_call_arg.loc = right->base.loc, right_call_arg.m_value = right;
                             a_args.push_back(al, right_call_arg);
                             std::string func_name = to_lower(func->m_name);
                             if (i >= n_interface_proc) {
-                                matched_func_name = "1_" + std::string(left_struct->m_name) + "_" + func_name;
-                                if (!curr_scope->resolve_symbol(matched_func_name)) {
-                                    ASR::symbol_t* mem_es = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al,
-                                        loc, curr_scope, s2c(al, matched_func_name), proc,
-                                        ASRUtils::symbol_name(ASRUtils::get_asr_owner(proc)),
-                                        nullptr, 0, s2c(al, func_name), ASR::accessType::Public));
-                                    curr_scope->add_symbol(matched_func_name, mem_es);
-                                }
+                                ASR::symbol_t* mem_ext = import_class_procedure(al, loc, orig_proc, curr_scope);
+                                matched_func_name = ASRUtils::symbol_name(mem_ext);
+                                self_arg = left;
                             } else if( curr_scope->resolve_symbol(func_name) ) {
                                 matched_func_name = func_name;
                             } else {
@@ -1780,11 +1780,11 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                                 ADD_ASR_DEPENDENCIES_WITH_NAME(curr_scope, a_name, current_function_dependencies, s2c(al, matched_func_name));
                             }
                             ASRUtils::insert_module_dependency(a_name, al, current_module_dependencies);
-                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al);
+                            ASRUtils::set_absent_optional_arguments_to_null(a_args, func, al, self_arg);
                             asr = ASRUtils::make_FunctionCall_t_util(al, loc, a_name, sym,
-                                                            a_args.p, 2,
+                                                            a_args.p, a_args.n,
                                                             return_type,
-                                                            nullptr, nullptr
+                                                            nullptr, self_arg
                                                             );
                         }
                     }
@@ -1823,9 +1823,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
         ASR::CustomOperator_t* gen_proc = ASR::down_cast<ASR::CustomOperator_t>(orig_sym);
         for (size_t i = 0; i < gen_proc->n_procs && !found; i++) {
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i])) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[i])->m_proc);
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc);
             } else {
                 proc = ASRUtils::symbol_get_past_external(gen_proc->m_procs[i]);
             }
@@ -2275,13 +2275,13 @@ ASR::asr_t* make_Cast_t_value(Allocator &al, const Location &a_loc,
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope) {
-    if( original_sym && (ASR::is_a<ASR::ClassProcedure_t>(*original_sym) ||
+    if( original_sym && (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym) ||
         (ASR::is_a<ASR::Variable_t>(*original_sym) &&
          ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(original_sym)))) ) {
         std::string class_proc_name;
-        // ClassProcedure name might be same if the procedure is overridden, use proc_name instead
-        if (ASR::is_a<ASR::ClassProcedure_t>(*original_sym)) {
-            class_proc_name = std::string(ASR::down_cast<ASR::ClassProcedure_t>(original_sym)->m_proc_name);
+        // StructMethodDeclaration name might be same if the procedure is overridden, use proc_name instead
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*original_sym)) {
+            class_proc_name = std::string(ASR::down_cast<ASR::StructMethodDeclaration_t>(original_sym)->m_proc_name);
         } else {
             class_proc_name = ASRUtils::symbol_name(original_sym);
         }

@@ -344,7 +344,7 @@
                                         3
                                         {
                                             eval_1d:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     eval_1d
                                                     ()

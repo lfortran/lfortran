@@ -95,7 +95,7 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
     }
@@ -133,11 +133,12 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_FunctionCall(x);
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
+        if( (x.m_dt && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt))) ||
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
@@ -1028,7 +1029,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
         const Location loc = x.base.base.loc;

@@ -40,15 +40,6 @@ namespace LCompilers {
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
-        static inline bool is_elemental(ASR::symbol_t* x) {
-            x = ASRUtils::symbol_get_past_external(x);
-            if( !ASR::is_a<ASR::Function_t>(*x) ) {
-                return false;
-            }
-            return ASRUtils::get_FunctionType(
-                ASR::down_cast<ASR::Function_t>(x))->m_elemental;
-        }
-
         bool is_args_contains_allocatable(ASR::expr_t* x);
         void fix_dimension(ASR::Cast_t* x, ASR::expr_t* arg_expr);
 

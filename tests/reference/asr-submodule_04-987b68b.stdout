@@ -97,7 +97,7 @@
                                         3
                                         {
                                             map_entry:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     map_entry
                                                     ()

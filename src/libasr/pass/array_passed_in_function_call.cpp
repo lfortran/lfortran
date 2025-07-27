@@ -320,7 +320,7 @@ public:
                 if( ASRUtils::is_allocatable(type) ) {
                     return false;
                 }
-                if (PassUtils::is_elemental(function_call->m_name)) {
+                if (ASRUtils::is_elemental(function_call->m_name)) {
                     set_allocation_size_elemental_function(al, loc, function_call, allocate_dims);
                     break;
                 }
