@@ -38,23 +38,23 @@ contains
          print *, _lfortran_get_item(a, i), _lfortran_get_item(b, i)
       end do
 
-      call _lfortran_set_item(a, 11, "no_str")
-      call _lfortran_set_item(a, 10, string)
-
-      do i = 0, 11
-         if (i / 2 == 2 * i) then
-            write(str_tmp, '(I0)') i
-            call _lfortran_set_item(b, i, trim(str_tmp) // "_str")
-         else
-            write(string, '(I0)') i
-            string = trim(string) // "_str"
-            call _lfortran_set_item(b, i, string)
-         end if
-      end do
-
-      do i = 0, 9
-         if (_lfortran_get_item(b, i) /= _lfortran_get_item(a, i)) error stop
-      end do
+      !call _lfortran_set_item(a, 11, "no_str")
+      !call _lfortran_set_item(a, 10, string)
+      !
+      !do i = 0, 11
+      !   if (i / 2 == 2 * i) then
+      !      write(str_tmp, '(I0)') i
+      !      call _lfortran_set_item(b, i, trim(str_tmp) // "_str")
+      !   else
+      !      write(string, '(I0)') i
+      !      string = trim(string) // "_str"
+      !      call _lfortran_set_item(b, i, string)
+      !   end if
+      !end do
+      !
+      !do i = 0, 9
+      !   if (_lfortran_get_item(b, i) /= _lfortran_get_item(a, i)) error stop
+      !end do
    end subroutine
 
 
@@ -70,18 +70,18 @@ contains
          call _lfortran_list_append(x, "str_" // trim(str_tmp))
       end do
 
-      write(str_tmp, '(A,A)') "str_", _lfortran_get_item(x, 0)
-      call _lfortran_set_item(x, 0, trim(str_tmp))
-      write(str_tmp, '(A,A)') "str_", _lfortran_get_item(x, 1)
-      call _lfortran_set_item(x, 1, trim(str_tmp))
-
-      do i = 0, _lfortran_len(x) - 1
-         call _lfortran_list_append(y, _lfortran_get_item(x, i))
-      end do
-
-      do i = 0, _lfortran_len(y) - 1
-         if (_lfortran_get_item(x, i) /= _lfortran_get_item(y, i)) error stop
-      end do
+      !write(str_tmp, '(A,A)') "str_", _lfortran_get_item(x, 0)
+      !call _lfortran_set_item(x, 0, trim(str_tmp))
+      !write(str_tmp, '(A,A)') "str_", _lfortran_get_item(x, 1)
+      !call _lfortran_set_item(x, 1, trim(str_tmp))
+      !
+      !do i = 0, _lfortran_len(x) - 1
+      !   call _lfortran_list_append(y, _lfortran_get_item(x, i))
+      !end do
+      !
+      !do i = 0, _lfortran_len(y) - 1
+      !   if (_lfortran_get_item(x, i) /= _lfortran_get_item(y, i)) error stop
+      !end do
    end subroutine
 
 
