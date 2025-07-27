@@ -3801,6 +3801,14 @@ public:
                         throw SemanticAbort();
                     }
 
+                    // Implicitly consider deferred length descriptor string as allocatable
+                    if (ASRUtils::is_character(*contained_type) && 
+                        !ASRUtils::is_allocatable(contained_type))
+                        contained_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, x.base.base.loc, 
+                                            ASRUtils::TYPE(ASR::make_String_t(al, x.base.base.loc, 1, nullptr, 
+                                                                ASR::string_length_kindType::DeferredLength, 
+                                                                ASR::string_physical_typeType::DescriptorString))));
+
                     return ASRUtils::make_Assignment_t_util(al, x.base.base.loc, 
                                         ASRUtils::EXPR(ASR::make_ListItem_t(al, x.base.base.loc, args[0], args[1],
                                                              contained_type, nullptr)), 

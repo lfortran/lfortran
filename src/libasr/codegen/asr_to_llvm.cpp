@@ -6558,6 +6558,28 @@ public:
                 value = llvm_utils->CreateLoad2(llvm::Type::getInt8Ty(context), value);
                 builder->CreateStore(value, target);
             } else {
+                if (ASR::is_a<ASR::ListItem_t>(*x.m_target)) {
+                    if (value->getType() == llvm_utils->string_descriptor->getPointerTo()) {
+                        llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+                        llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                              llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                                    llvm_utils->create_gep2(string_descriptor, value, 1)));
+                        llvm_utils->deepcopy(nullptr, value, temp_str, target_type, 
+                                             target_type, module.get(), name2memidx);
+                        value = temp_str;
+                    } else if (value->getType() == llvm_utils->string_descriptor) {
+                        llvm::Value* item_ptr = llvm_utils->CreateAlloca(string_descriptor, nullptr, "item_ptr");
+                        builder->CreateStore(value, item_ptr);
+                        llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
+                        llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
+                                                              llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
+                                                                    llvm_utils->create_gep2(string_descriptor, item_ptr, 1)));
+
+                        llvm_utils->deepcopy(nullptr, item_ptr, temp_str, target_type, 
+                                             target_type, module.get(), name2memidx);
+                        value = temp_str;
+                    }
+                }
                 llvm_utils->lfortran_str_copy(target, value,
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_target_type)),
                     ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_value_type)),
