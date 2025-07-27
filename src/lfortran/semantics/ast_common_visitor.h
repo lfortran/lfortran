@@ -725,7 +725,9 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
           right_type2->type != ASR::ttypeType::Complex) &&
          x.m_op != AST::cmpopType::Eq && x.m_op != AST::cmpopType::NotEq) &&
          (left_type2->type != ASR::ttypeType::String ||
-          right_type2->type != ASR::ttypeType::String))
+          right_type2->type != ASR::ttypeType::String) &&
+         (left_type2->type != ASR::ttypeType::UnsignedInteger &&
+          right_type2->type != ASR::ttypeType::UnsignedInteger ))
          && overloaded == nullptr) {
         diag.add(diag::Diagnostic(
             "Compare: only Integer or Real can be on the LHS and RHS. "
@@ -787,6 +789,8 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
     }
     if (ASRUtils::is_integer(*dest_type)) {
         asr = ASR::make_IntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
+    } else if (ASRUtils::is_unsigned_integer(*dest_type)) {
+        asr = ASR::make_UnsignedIntegerCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     } else if (ASRUtils::is_real(*dest_type)) {
         asr = ASR::make_RealCompare_t(al, x.base.base.loc, left, asr_op, right, type, value);
     } else if (ASRUtils::is_complex(*dest_type)) {
@@ -4963,6 +4967,8 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
+            } else if (derived_type_name == "uint") {
+                return ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
             }
 
             ASR::symbol_t* v = current_scope->resolve_symbol(derived_type_name);
@@ -7457,6 +7463,35 @@ public:
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
+    ASR::asr_t* create_LFUintConst(const AST::FuncCallOrArray_t& x) {
+        if (x.n_args != 1 || x.n_keywords > 0) {
+            diag.add(Diagnostic("_lfortran_uint expects exactly one argument, got " +
+                                std::to_string(x.n_args) + " arguments instead.",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+
+            throw SemanticAbort();
+        }
+
+        AST::expr_t* source = x.m_args[0].m_end;
+        this->visit_expr(*source);
+        ASR::expr_t* arg = ASRUtils::EXPR(tmp);
+        ASR::ttype_t* type = ASRUtils::expr_type(arg);
+
+        if (ASR::is_a<ASR::Integer_t>(*type)) {
+            return ASRUtils::make_Cast_t_value(al, x.base.base.loc, arg, 
+                                ASR::cast_kindType::IntegerToUnsignedInteger, ASRUtils::TYPE(
+                                ASR::make_UnsignedInteger_t(al, x.base.base.loc, 4)));
+        } else if (ASR::is_a<ASR::UnsignedInteger_t>(*type)) {
+            return (ASR::asr_t*) arg;
+        } else {
+            std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_uint is not supported yet",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
+
+    }
+
     ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
@@ -8838,7 +8873,9 @@ public:
             } else if( startswith(var_name, "_lfortran_") ) {
                 // LFortran specific
                 
-                if ( var_name == "_lfortran_len")
+                if ( var_name == "_lfortran_uint")
+                    tmp = create_LFUintConst(x);
+                else if ( var_name == "_lfortran_len")
                     tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_get_item")
                     tmp = create_LFGetItem(x);
@@ -10151,6 +10188,16 @@ public:
             ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
             value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
             asr = ASR::make_IntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
+
+        } else if (ASRUtils::is_unsigned_integer(*dest_type)) {
+
+            if (ASRUtils::expr_value(left) != nullptr && ASRUtils::expr_value(right) != nullptr ) {
+                value = visit_BinOp_helper(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, x.base.base.loc, dest_type);
+            }
+
+            ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, left, right);
+            value = value ? value : extract_value(ASRUtils::expr_value(left), ASRUtils::expr_value(right), op, dest_type, x.base.base.loc);
+            asr = ASR::make_UnsignedIntegerBinOp_t(al, x.base.base.loc, left, op, right, dest_type, value);
 
         } else if (ASRUtils::is_real(*dest_type)) {
 
