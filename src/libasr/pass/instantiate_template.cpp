@@ -342,7 +342,7 @@ public:
         context_map[x->m_name] = new_sym_name;
 
         for (auto const &sym_pair: x->m_symtab->get_scope()) {
-            if (ASR::is_a<ASR::ClassProcedure_t>(*sym_pair.second)) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym_pair.second)) {
                 duplicate_symbol(sym_pair.second);
             }
         }
@@ -371,8 +371,8 @@ public:
                 new_symbol = duplicate_ExternalSymbol(ASR::down_cast<ASR::ExternalSymbol_t>(x));
                 break;
             }
-            case ASR::symbolType::ClassProcedure: {
-                new_symbol = duplicate_ClassProcedure(ASR::down_cast<ASR::ClassProcedure_t>(x));
+            case ASR::symbolType::StructMethodDeclaration: {
+                new_symbol = duplicate_StructMethodDeclaration(ASR::down_cast<ASR::StructMethodDeclaration_t>(x));
                 break;
             }
             default: {
@@ -437,15 +437,15 @@ public:
             x->m_module_name, x->m_scope_names, x->n_scope_names, x->m_original_name, x->m_access));
     }
 
-    // ASR::symbol_t* duplicate_ClassProcedure(ASR::symbol_t *s) {
-    ASR::symbol_t* duplicate_ClassProcedure(ASR::ClassProcedure_t *x) {
+    // ASR::symbol_t* duplicate_StructMethodDeclaration(ASR::symbol_t *s) {
+    ASR::symbol_t* duplicate_StructMethodDeclaration(ASR::StructMethodDeclaration_t *x) {
         std::string new_cp_name = func_scope->get_unique_name("__asr_" + new_sym_name + "_" + x->m_name, false);
         ASR::symbol_t *cp_proc = template_scope->get_symbol(x->m_name);
         SymbolInstantiator cp_t(al, context_map, type_subs, symbol_subs,
             func_scope, template_scope, new_cp_name);
         ASR::symbol_t *new_cp_proc = cp_t.instantiate_symbol(cp_proc);
 
-        ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ClassProcedure_t(
+        ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, current_scope, x->m_name, x->m_self_argument,
             s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
         current_scope->add_symbol(x->m_name, new_x);
@@ -1141,9 +1141,9 @@ public:
                 ASR::ExternalSymbol_t* x = ASR::down_cast<ASR::ExternalSymbol_t>(sym);
                 return instantiate_ExternalSymbol(x);
             }
-            case (ASR::symbolType::ClassProcedure) : {
-                ASR::ClassProcedure_t* x = ASR::down_cast<ASR::ClassProcedure_t>(sym);
-                return instantiate_ClassProcedure(x);
+            case (ASR::symbolType::StructMethodDeclaration) : {
+                ASR::StructMethodDeclaration_t* x = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                return instantiate_StructMethodDeclaration(x);
             }
             case (ASR::symbolType::CustomOperator) : {
                 ASR::CustomOperator_t* x = ASR::down_cast<ASR::CustomOperator_t>(sym);
@@ -1164,7 +1164,7 @@ public:
         std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
         for (auto &sym_pair: x->m_symtab->get_scope()) {
             // instatiate variables first as they might be used in the
-            // instantiation of other symbols like ClassProcedure
+            // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                     ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
@@ -1307,7 +1307,7 @@ public:
         std::vector<std::pair<std::string, ASR::symbol_t*>> instantiation_vector;
         for (auto &sym_pair: x->m_symtab->get_scope()) {
             // instatiate variables first as they might be used in the
-            // instantiation of other symbols like ClassProcedure
+            // instantiation of other symbols like StructMethodDeclaration
             if (ASR::is_a<ASR::Variable_t>(*sym_pair.second)) {
                 SymbolInstantiator t(al, new_scope, type_subs, symbol_subs,
                     ASRUtils::symbol_name(sym_pair.second), sym_pair.second);
@@ -1356,7 +1356,7 @@ public:
         return target_scope->get_symbol(x->m_name);
     }
 
-    ASR::symbol_t* instantiate_ClassProcedure(ASR::ClassProcedure_t* x) {
+    ASR::symbol_t* instantiate_StructMethodDeclaration(ASR::StructMethodDeclaration_t* x) {
         std::string new_cp_name = target_scope->parent->get_unique_name("__asr_" + std::string(x->m_name), false);
         ASR::symbol_t* cp_proc = x->m_proc;
 
@@ -1364,7 +1364,7 @@ public:
         ASR::symbol_t* new_cp_proc = t.instantiate();
         symbol_subs[ASRUtils::symbol_name(cp_proc)] = new_cp_proc;
 
-        ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_ClassProcedure_t(
+        ASR::symbol_t *new_x = ASR::down_cast<ASR::symbol_t>(ASR::make_StructMethodDeclaration_t(
             al, x->base.base.loc, target_scope, x->m_name, x->m_self_argument,
             s2c(al, new_cp_name), new_cp_proc, x->m_abi, x->m_is_deferred, x->m_is_nopass));
         target_scope->add_symbol(x->m_name, new_x);
@@ -1494,10 +1494,10 @@ public:
                 instantiate_Struct(x);
                 break;
             }
-            case (ASR::symbolType::ClassProcedure) : {
-                LCOMPILERS_ASSERT(ASR::is_a<ASR::ClassProcedure_t>(*new_sym));
-                ASR::ClassProcedure_t* x = ASR::down_cast<ASR::ClassProcedure_t>(sym);
-                instantiate_ClassProcedure(x);
+            case (ASR::symbolType::StructMethodDeclaration) : {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::StructMethodDeclaration_t>(*new_sym));
+                ASR::StructMethodDeclaration_t* x = ASR::down_cast<ASR::StructMethodDeclaration_t>(sym);
+                instantiate_StructMethodDeclaration(x);
                 break;
             }
             case (ASR::symbolType::ExternalSymbol) : {
@@ -1578,8 +1578,8 @@ public:
         }
     }
 
-    void instantiate_ClassProcedure(ASR::ClassProcedure_t* x) {
-        ASR::ClassProcedure_t* new_c = ASR::down_cast<ASR::ClassProcedure_t>(new_sym);
+    void instantiate_StructMethodDeclaration(ASR::StructMethodDeclaration_t* x) {
+        ASR::StructMethodDeclaration_t* new_c = ASR::down_cast<ASR::StructMethodDeclaration_t>(new_sym);
 
         ASR::symbol_t* new_proc = new_c->m_proc;
         ASR::symbol_t* proc = x->m_proc;

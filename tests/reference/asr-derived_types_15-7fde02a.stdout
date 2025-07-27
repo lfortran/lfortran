@@ -318,7 +318,7 @@
                                                     .false.
                                                 ),
                                             multiply:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     multiply
                                                     ()
@@ -329,7 +329,7 @@
                                                     .false.
                                                 ),
                                             sqrt_subtract:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     sqrt_subtract
                                                     ()
