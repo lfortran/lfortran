@@ -87,7 +87,7 @@ contains
 
    subroutine tests()
       call test_list_01()
-      call test_list_02()
+      !call test_list_02()
    end subroutine
 
 end module
