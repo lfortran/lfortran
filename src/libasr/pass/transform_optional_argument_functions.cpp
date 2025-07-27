@@ -76,6 +76,9 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present)) {
+            if (!ASR::is_a<ASR::Var_t>(*x->m_args[0])) {
+                return;
+            }
             ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
             size_t i;
             for( i = 0; i < f->n_args; i++ ) {
@@ -87,9 +90,11 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
                 }
             }
 
-            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
-                                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
-            return;
+            if (i < f->n_args) {
+                *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
+                                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
+                return;
+            }
         }
         for (size_t i = 0; i < x->n_args; i++) {
             ASR::expr_t** current_expr_copy_12 = current_expr;
