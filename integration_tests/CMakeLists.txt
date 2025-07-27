@@ -2537,3 +2537,6 @@ RUN(NAME lp_dict_test_04_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 # LFortran extensions (union)
 RUN(NAME lp_union_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME lp_union_test_02 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+
+# LFortran extensions (unsigned int)
+RUN(NAME lp_unsigned_test LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
