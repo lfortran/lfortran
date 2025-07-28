@@ -7485,7 +7485,7 @@ public:
             return (ASR::asr_t*) arg;
         } else {
             std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(arg));
-            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_uint is not supported yet",
+            diag.add(Diagnostic("Argument of type '" + arg_type_str + "' for _lfortran_unsigned is not supported yet",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
@@ -8873,7 +8873,7 @@ public:
             } else if( startswith(var_name, "_lfortran_") ) {
                 // LFortran specific
                 
-                if ( var_name == "_lfortran_uint")
+                if ( var_name == "_lfortran_unsigned")
                     tmp = create_unsigned_const(x);
                 else if ( var_name == "_lfortran_len")
                     tmp = create_LFLen(x);

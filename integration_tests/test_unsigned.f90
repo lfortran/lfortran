@@ -1,4 +1,4 @@
-program lp_unsigned_test
+program unsigned_test
 
     implicit none
 
@@ -10,24 +10,24 @@ program lp_unsigned_test
     y = 1
 
     do i = 1, 30
-        x = x * _lfortran_uint(2)
+        x = x * _lfortran_unsigned(2)
         y = y * 2
-        if ( x < _lfortran_uint(0) ) error stop 
+        if ( x < _lfortran_unsigned(0) ) error stop 
         if ( y < 0 )  error stop 
     end do
 
-    x = x * _lfortran_uint(2)
+    x = x * _lfortran_unsigned(2)
     y = y * 2
-    if ( x < _lfortran_uint(0) ) error stop 
+    if ( x < _lfortran_unsigned(0) ) error stop 
     if ( y > 0 )  error stop 
 
 
-    x = x * _lfortran_uint(2)
+    x = x * _lfortran_unsigned(2)
     y = y * 2
-    if ( x /= _lfortran_uint(0) ) error stop 
+    if ( x /= _lfortran_unsigned(0) ) error stop 
     if ( y /= 0 )  error stop 
 
     
 
-end program lp_unsigned_test
+end program unsigned_test
 
