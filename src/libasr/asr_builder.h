@@ -70,13 +70,25 @@ class ASRBuilder {
 
     #define declare(var_name, type, intent)                                     \
         b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
+    
+    #define declare_struct_type(var_name, type, intent, m_arg)                   \
+        b.Variable(fn_symtab, var_name, type, ASR::intentType::intent,           \
+            ASRUtils::get_struct_sym_from_struct_expr(m_arg))
 
     #define fill_func_arg(arg_name, type) {                                     \
         auto arg = declare(arg_name, type, In);                                 \
         args.push_back(al, arg); }
 
+    #define fill_func_arg_struct_type(arg_name, type, m_arg) {                         \
+        auto arg = declare_struct_type(arg_name, type, In, m_arg);                                 \
+        args.push_back(al, arg); }
+
     #define fill_func_arg_sub(arg_name, type, intent) {                                     \
         auto arg = declare(arg_name, type, intent);                                 \
+        args.push_back(al, arg); }
+
+    #define fill_func_arg_sub_struct_type(arg_name, type, intent, m_arg) {                                     \
+        auto arg = declare_struct_type(arg_name, type, intent, m_arg);                                 \
         args.push_back(al, arg); }
 
     #define make_ASR_Function_t(name, symtab, dep, args, body, return_var, abi,     \

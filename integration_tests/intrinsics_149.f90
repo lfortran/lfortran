@@ -1,4 +1,7 @@
 program intrinsics_149
+type :: my_type
+    integer :: a
+end type
 integer :: vector(2)  = [1, 1]
 logical :: mask(2,2)
 integer :: field(2,2), unity(2,2)
@@ -25,6 +28,10 @@ complex :: field_c(2, 4), unity_c(2, 4)
 integer, parameter :: unity_comp(4) = unpack([1, 2, 3, 4], [.true., .false., .true., .false.], [5, 6, 7, 8])
 real, parameter :: unity_comp_r(4) = unpack([23.12, 23.12, 23.12, 23.12], [.false., .true., .true., .false.],&
     [681.31, 681.31, 681.31, 681.31])
+
+type(my_type), dimension(4) :: struct_field
+type(my_type), dimension(2) :: struct_vec
+type(my_type) :: struct_res(4)
 
 print *, unity_comp
 if (sum(unity_comp) /= 17) error stop
@@ -78,5 +85,12 @@ unity_c = unpack(vector_c, mask_c, field_c)
 print *, unity_c
 print *, abs(sum(unity_c))
 if (abs(abs(sum(unity_c)) - 467.586426) > 1e-8) error stop
+
+struct_vec(1)%a = 10
+struct_vec(2)%a = 20
+struct_field = [ my_type(1), my_type(2), my_type(3), my_type(4) ]
+struct_res = unpack(struct_vec, mask_, struct_field)
+if (struct_res(1)%a /= 10 .or. struct_res(3)%a /= 20) error stop
+if (struct_res(2)%a /= 2 .or. struct_res(4)%a /= 4) error stop
 
 end program
