@@ -2004,7 +2004,7 @@ public:
         visit_expr_load_wrapper(x.m_pos, 1, true);
         llvm::Value *pos = tmp;
 
-        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.enable_bounds_checking, module.get(),
+        tmp = list_api->read_item_using_ttype(el_type, plist, pos, compiler_options.bounds_checking, module.get(),
                 (LLVM::is_llvm_struct(el_type) || ptr_loads == 0));
     }
 
@@ -2033,7 +2033,7 @@ public:
         } else {
             llvm_utils->set_dict_api(dict_type);
             tmp = llvm_utils->dict_api->read_item(x.m_a, pdict, key, module.get(), dict_type,
-                                    compiler_options.enable_bounds_checking,
+                                    compiler_options.bounds_checking,
                                     LLVM::is_llvm_struct(dict_type->m_value_type));
         }
     }
@@ -2810,7 +2810,7 @@ public:
 #endif
             }
             llvm::Type* type = llvm_utils->get_type_from_ttype_t_util(x.m_v, ASRUtils::extract_type(x_mv_type), module.get());
-            if (compiler_options.enable_bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
+            if (compiler_options.bounds_checking && ASRUtils::is_allocatable(x_mv_type)) {
                 llvm::Value* is_allocated = arr_descr->get_is_allocated_flag(array, type, x.m_v);
                 llvm::Value* cond = builder->CreateNot(is_allocated);
                 llvm_utils->generate_runtime_error(cond,
@@ -2874,7 +2874,7 @@ public:
                                                     array_t->m_physical_type == ASR::array_physical_typeType::PointerToDataArray,
                                                     is_fixed_size, llvm_diminfo.p, is_polymorphic,
                                                     current_select_type_block_type, false,
-                                                    compiler_options.enable_bounds_checking, array_name);
+                                                    compiler_options.bounds_checking, array_name);
             }
         }
         if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) && !ASRUtils::is_class_type(x.m_type) ) {
@@ -6445,7 +6445,7 @@ public:
                 this->visit_expr_wrapper(asr_target0->m_pos, true);
                 llvm::Value* pos = tmp;
 
-                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.enable_bounds_checking,
+                target = list_api->read_item_using_ttype(asr_target0->m_type, list, pos, compiler_options.bounds_checking,
                                              module.get(), true);
             }
         } else {
@@ -11540,7 +11540,7 @@ public:
         }
 
         // Generate runtime error if array arguments' shape doesn't match
-        if (compiler_options.enable_bounds_checking) {
+        if (compiler_options.bounds_checking) {
             bounds_check_call(x);
         }
 
@@ -12111,7 +12111,7 @@ public:
         }
 
         // Generate runtime error if array arguments' shape doesn't match
-        if (compiler_options.enable_bounds_checking) {
+        if (compiler_options.bounds_checking) {
             bounds_check_call(x);
         }
 
