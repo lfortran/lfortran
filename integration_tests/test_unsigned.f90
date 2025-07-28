@@ -3,7 +3,7 @@ program lp_unsigned_test
     implicit none
 
     ! 4 byte unsigned int 
-    type(uint) :: x
+    type(unsigned) :: x
     integer(kind=4)    :: y
     integer :: i
     x = 1

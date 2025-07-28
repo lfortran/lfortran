@@ -4967,7 +4967,7 @@ public:
                 sym_type->m_type = AST::decl_typeType::TypeCharacter;
                 return determine_type(loc, sym, decl_attribute, is_pointer,
                     is_allocatable, dims, var_sym, type_declaration, abi, is_argument);
-            } else if (derived_type_name == "uint") {
+            } else if (derived_type_name == "unsigned") {
                 return ASRUtils::TYPE(ASR::make_UnsignedInteger_t(al, loc, 4));
             }
 
@@ -7463,9 +7463,9 @@ public:
         return ASR::make_ArrayIsContiguous_t(al, x.base.base.loc, array, a_type, nullptr);
     }
 
-    ASR::asr_t* create_LFUintConst(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_unsigned_const(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
-            diag.add(Diagnostic("_lfortran_uint expects exactly one argument, got " +
+            diag.add(Diagnostic("_lfortran_unsigned expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
 
@@ -8874,7 +8874,7 @@ public:
                 // LFortran specific
                 
                 if ( var_name == "_lfortran_uint")
-                    tmp = create_LFUintConst(x);
+                    tmp = create_unsigned_const(x);
                 else if ( var_name == "_lfortran_len")
                     tmp = create_LFLen(x);
                 else if ( var_name == "_lfortran_get_item")
