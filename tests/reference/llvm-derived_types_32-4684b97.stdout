@@ -139,6 +139,7 @@ return:                                           ; preds = %.entry
 
 define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val, %string_descriptor* %string) {
 .entry:
+  %string_ret_const = alloca %string_descriptor, align 8
   %0 = call i8* @_lfortran_malloc(i64 16)
   %buffer = bitcast i8* %0 to %string_descriptor*
   store %string_descriptor zeroinitializer, %string_descriptor* %buffer, align 1
@@ -168,15 +169,14 @@ define void @__module_testdrive_derived_types_32_real_dp_to_string(double* %val,
   %15 = load i8*, i8** %14, align 8
   call void (i8**, i8, i8, i64*, i32*, i8*, i64, ...) @_lfortran_string_write(i8** %4, i8 0, i8 0, i64* %5, i32* %7, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @2, i32 0, i32 0), i64 2, i8* %15)
   %16 = call %string_descriptor @_lcompilers_trim_str(%string_descriptor* %buffer)
-  %17 = alloca %string_descriptor, align 8
-  store %string_descriptor %16, %string_descriptor* %17, align 1
-  %18 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
-  %19 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 1
-  %20 = getelementptr %string_descriptor, %string_descriptor* %17, i32 0, i32 0
-  %21 = load i8*, i8** %20, align 8
-  %22 = getelementptr %string_descriptor, %string_descriptor* %17, i32 0, i32 1
-  %23 = load i64, i64* %22, align 4
-  call void @_lfortran_strcpy(i8** %18, i64* %19, i8 1, i8 1, i8* %21, i64 %23)
+  store %string_descriptor %16, %string_descriptor* %string_ret_const, align 1
+  %17 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 0
+  %18 = getelementptr %string_descriptor, %string_descriptor* %string, i32 0, i32 1
+  %19 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 0
+  %20 = load i8*, i8** %19, align 8
+  %21 = getelementptr %string_descriptor, %string_descriptor* %string_ret_const, i32 0, i32 1
+  %22 = load i64, i64* %21, align 4
+  call void @_lfortran_strcpy(i8** %17, i64* %18, i8 1, i8 1, i8* %20, i64 %22)
   br label %return
 
 return:                                           ; preds = %.entry
