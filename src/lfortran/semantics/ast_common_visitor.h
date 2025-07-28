@@ -2197,41 +2197,11 @@ public:
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
-<<<<<<< Updated upstream
         //printf("a->m_value[] type: %d\n", (*a->m_value[curr_value]).type);
         ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
         bool is_real = 0;
         if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
             is_real = 1;
-=======
-        // Get the Type of Array
-        // If object is Real, set current_variable_type to Real
-        // This type flag is passed to Visit_BOZ, 
-        // so that Real Values are correctly decoded from BOZ String
-
-        /*
-        {
-        const static data_stmt_setType class_type = data_stmt_setType::DataStmtSet;
-        typedef data_stmt_set_t parent_type;
-        data_stmt_set_t base;
-        expr_t** m_object; size_t n_object; // Sequence
-        expr_t** m_value; size_t n_value; // Sequence
-        };
-        struct DataStmtSet_t // Constructor
-        struct expr_t // Sum
-        {
-            const static astType class_type = astType::expr;
-            ast_t base;
-            exprType type;
-        };
-        */
-        
-    
-        printf("a->m_value[] type: %d\n", (*a->m_value[curr_value]).type);
-        ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
-        if (ASR::is_a<ASR::Real_t>(*array_type->m_type)) {
-            current_variable_type_ = array_type->m_type;
->>>>>>> Stashed changes
         }
         if (check_equal_value(a->m_value, a->n_value)) {
             /*
@@ -2437,13 +2407,9 @@ public:
                 // If object is Real, set current_variable_type to Real
                 // This type flag is passed to Visit_BOZ, 
                 // so that Real Values are correctly decoded from BOZ String
-<<<<<<< Updated upstream
                 if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) 
                     && (value_index<(data_stmt_set->n_value)) &&
                     ((data_stmt_set->m_value[value_index]->type == LFortran::AST::exprType::BOZ))) {
-=======
-                if (ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) {
->>>>>>> Stashed changes
                     current_variable_type_ = array_item_expr->m_type;
                 }
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
