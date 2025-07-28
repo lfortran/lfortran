@@ -3905,7 +3905,7 @@ public:
                         item.second);
                 ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(v->m_function_signature);
                 if (x.m_parent_module && func_type->m_module) {
-                    ASR::Module_t* parent_module = ASR::down_cast<ASR::Module_t>(x.m_parent_module);
+                    ASR::Module_t* parent_module = ASR::down_cast<ASR::Module_t>(ASRUtils::symbol_get_past_external(x.m_parent_module));
                     mangle_prefix = "__module_" + std::string(parent_module->m_name) + "_";
                 }
                 instantiate_function(*v);

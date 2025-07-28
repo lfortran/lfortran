@@ -263,7 +263,7 @@ public:
         generic_procedures.clear();
         ASR::asr_t *tmp0 = nullptr;
         if( x.class_type == AST::modType::Submodule ) {
-            ASR::symbol_t* submod_parent = (ASR::symbol_t*)(ASRUtils::load_module(al, global_scope,
+            ASR::Module_t* submod_parent = ASRUtils::load_module(al, global_scope,
                                                 parent_name, x.base.base.loc, false,
                                                 compiler_options.po, true,
                                                 [&](const std::string &msg, const Location &loc) {
@@ -271,15 +271,20 @@ public:
                                                         msg, diag::Level::Error, diag::Stage::Semantic, {
                                                             diag::Label("", {loc})}));
                                                     throw SemanticAbort();}, lm, compiler_options.separate_compilation
-                                                ));
+                                                );
+            ASR::symbol_t* external_sym = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(al, submod_parent->base.base.loc,
+                                                                                                   current_scope->parent, submod_parent->m_name, 
+                                                                                                   (ASR::symbol_t*)submod_parent, submod_parent->m_name,
+                                                                                                   nullptr, 0, submod_parent->m_name, ASR::accessType::Public
+                                                                                                  ));
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
                                                 /* a_name */ s2c(al, to_lower(x.m_name)),
                                                 nullptr,
                                                 0,
-                                                submod_parent,
+                                                external_sym,
                                                 false, false);
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
+            ASR::Module_t *m = submod_parent;
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
@@ -417,6 +422,20 @@ public:
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
+        }
+        for (size_t i=0;i<compiler_options.arg_submodules.size();i++) {
+            std::string submodule_name = compiler_options.arg_submodules[i];
+            submodule_name.erase(submodule_name.size() - 4);
+            SymbolTable *tu_symtab = current_scope->get_global_scope();
+            ASR::Module_t* submodule = ASRUtils::load_module(al, tu_symtab, submodule_name, x.base.base.loc,
+                                                                false, compiler_options.po, true,
+                                                                [&](const std::string &msg, const Location &loc) {
+                                                                    diag.add(diag::Diagnostic(
+                                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                                            diag::Label("", {loc})}));
+                                                                    throw SemanticAbort();
+                                                                }, lm, false
+                                                            );
         }
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
