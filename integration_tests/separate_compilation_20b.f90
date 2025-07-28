@@ -4,7 +4,8 @@ implicit none
 contains
 
     module procedure error_stop
-        code = 3
+        integer, parameter :: i = 3
+        code = i
     end procedure
 
 end submodule f18estop_separate_compilation_20

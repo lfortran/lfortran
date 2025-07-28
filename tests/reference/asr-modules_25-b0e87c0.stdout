@@ -179,7 +179,7 @@
                                                     .false.
                                                 ),
                                             next_token:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     next_token
                                                     ()
@@ -572,7 +572,7 @@
                                                     .false.
                                                 ),
                                             next_token:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     next_token
                                                     ()

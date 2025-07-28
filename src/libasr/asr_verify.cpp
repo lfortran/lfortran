@@ -400,25 +400,25 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
-    void visit_ClassProcedure(const ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const StructMethodDeclaration_t &x) {
         require(x.m_name != nullptr,
-            "The ClassProcedure::m_name cannot be nullptr");
+            "The StructMethodDeclaration::m_name cannot be nullptr");
         require(x.m_proc != nullptr,
-            "The ClassProcedure::m_proc cannot be nullptr");
+            "The StructMethodDeclaration::m_proc cannot be nullptr");
         require(x.m_proc_name != nullptr,
-            "The ClassProcedure::m_proc_name cannot be nullptr");
+            "The StructMethodDeclaration::m_proc_name cannot be nullptr");
 
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
-            "ClassProcedure::m_parent_symtab cannot be nullptr");
+            "StructMethodDeclaration::m_parent_symtab cannot be nullptr");
         require(symtab->get_symbol(std::string(x.m_name)) != nullptr,
-            "ClassProcedure '" + std::string(x.m_name) + "' not found in parent_symtab symbol table");
+            "StructMethodDeclaration '" + std::string(x.m_name) + "' not found in parent_symtab symbol table");
         symbol_t *symtab_sym = symtab->get_symbol(std::string(x.m_name));
         const symbol_t *current_sym = &x.base;
         require(symtab_sym == current_sym,
-            "ClassProcedure's parent symbol table does not point to it");
+            "StructMethodDeclaration's parent symbol table does not point to it");
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
-            "ClassProcedure::m_parent_symtab must be present in the ASR ("
+            "StructMethodDeclaration::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
 
         ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(x.m_proc);
@@ -538,7 +538,7 @@ public:
         std::vector<std::string> struct_dependencies;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
-            if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
+            if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::Struct_t>(*a.second) ||
                 ASR::is_a<ASR::Union_t>(*a.second) ||
@@ -1017,8 +1017,8 @@ public:
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
-                        ASR::is_a<ASR::ClassProcedure_t>(*s),
-                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+                        ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
             }
         }
 
@@ -1167,7 +1167,7 @@ public:
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
-                    ASR::is_a<ASR::ClassProcedure_t>(*fn),
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }
 

@@ -346,8 +346,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     bool is_nopass { false };
     bool is_class_procedure { false };
-    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
-        ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
+        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
         func_sym = class_proc->m_proc;
         is_nopass = class_proc->m_is_nopass;
         is_class_procedure = true;
@@ -372,7 +372,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         return false;
     }
 
-    // when `func` is a ClassProcedure **without** nopass, then the
+    // when `func` is a StructMethodDeclaration **without** nopass, then the
     // first argument of FunctionType is "this" (i.e. the class instance)
     // which is depicted in `func.n_args` while isn't depicted in
     // `x.n_args` (as it only represents the "FunctionCall" arguments)
@@ -511,7 +511,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     // new_args.size() is either
     //      - equal to func->n_args
-    //      - one less than func->n_args (in case of ClassProcedure without nopass)
+    //      - one less than func->n_args (in case of StructMethodDeclaration without nopass)
     LCOMPILERS_ASSERT(func->n_args == new_args.size() + is_method);
     return true;
 }

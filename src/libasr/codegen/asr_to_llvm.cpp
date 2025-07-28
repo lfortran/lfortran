@@ -4156,7 +4156,7 @@ public:
                 if (name2memidx[struct_type_name].find(item.first) == name2memidx[struct_type_name].end()) {
                     continue;
                 }
-                if( ASR::is_a<ASR::ClassProcedure_t>(*sym) ||
+                if( ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ||
                     ASR::is_a<ASR::GenericProcedure_t>(*sym) ||
                     ASR::is_a<ASR::Union_t>(*sym) ||
                     ASR::is_a<ASR::Struct_t>(*sym) ||
@@ -6975,7 +6975,7 @@ public:
             x->type == ASR::exprType::StructInstanceMember ) {
             if( load_ref &&
                 !ASRUtils::is_value_constant(ASRUtils::expr_value(x)) &&
-                !ASRUtils::is_character(*expr_type(x))) {
+                (ASRUtils::is_array(expr_type(x)) || !ASRUtils::is_character(*expr_type(x)))) {
                 llvm::Type* x_llvm_type = llvm_utils->get_type_from_ttype_t_util(x, ASRUtils::expr_type(x), module.get());
                 tmp = llvm_utils->CreateLoad2(x_llvm_type, tmp, is_volatile);
             }
@@ -10658,8 +10658,8 @@ public:
             if( func_subrout->type == ASR::symbolType::Function ) {
                 ASR::Function_t* func = down_cast<ASR::Function_t>(func_subrout);
                 set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
-            } else if( func_subrout->type == ASR::symbolType::ClassProcedure ) {
-                ASR::ClassProcedure_t* clss_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_subrout);
+            } else if( func_subrout->type == ASR::symbolType::StructMethodDeclaration ) {
+                ASR::StructMethodDeclaration_t* clss_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_subrout);
                 if( clss_proc->m_proc->type == ASR::symbolType::Function ) {
                     ASR::Function_t* func = down_cast<ASR::Function_t>(clss_proc->m_proc);
                     set_func_subrout_params(func, x_abi, m_h, orig_arg, orig_arg_name, orig_arg_intent, i + is_method);
@@ -11407,9 +11407,9 @@ public:
         std::string proc_sym_name = "";
         bool is_runtime_polymorphism = false;
         bool is_nopass = false;
-        if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
-            ASR::ClassProcedure_t* class_proc =
-                ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            ASR::StructMethodDeclaration_t* class_proc =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             is_runtime_polymorphism = ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(x.m_dt)));
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
@@ -11419,9 +11419,9 @@ public:
         llvm::Value* pass_arg = nullptr;
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
-        } else if (ASR::is_a<ASR::ClassProcedure_t>(*proc_sym)) {
-            ASR::ClassProcedure_t *clss_proc = ASR::down_cast<
-                ASR::ClassProcedure_t>(proc_sym);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
+            ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
+                ASR::StructMethodDeclaration_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
             self_argument = clss_proc->m_self_argument;
             proc_sym = clss_proc->m_proc;
@@ -11739,12 +11739,12 @@ public:
                 ASRUtils::is_parent(dt_sym_type, a_dt)) ) {
                 for( auto& item2: item.second ) {
                     if( item2.first == current_scope ) {
-                        // Find the Struct symbol to which the ClassProcedure belongs
+                        // Find the Struct symbol to which the StructMethodDeclaration belongs
                         bool found = false;
                         while (a_dt) {
                             for (auto &member : a_dt->m_symtab->get_scope()) {
-                                if (ASR::is_a<ASR::ClassProcedure_t>(*member.second)) {
-                                    ASR::ClassProcedure_t *proc_s = ASR::down_cast<ASR::ClassProcedure_t>(member.second);
+                                if (ASR::is_a<ASR::StructMethodDeclaration_t>(*member.second)) {
+                                    ASR::StructMethodDeclaration_t *proc_s = ASR::down_cast<ASR::StructMethodDeclaration_t>(member.second);
                                     if (proc_s->m_name == proc_sym_name) {
                                         found = true;
                                         break;
@@ -11813,7 +11813,7 @@ public:
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
                 
                 ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
-                ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc);
+                ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
                 if (!class_proc->m_is_nopass) {
                     // add the self argument only when the class procedure has the `pass` attribute
                     llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
@@ -11925,7 +11925,7 @@ public:
                 std::vector<llvm::Value*> args;
                 ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(type_sym);
                 ASR::symbol_t* s_class_proc = struct_type_t->m_symtab->resolve_symbol(proc_sym_name);
-                ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(s_class_proc);
+                ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(s_class_proc);
                 if (!class_proc->m_is_nopass) {
                     // add the self argument only when the class procedure has the `pass` attribute
                     llvm::Type* target_dt_type = llvm_utils->getStructType(struct_type_t, module.get(), true);
@@ -11994,9 +11994,9 @@ public:
         std::string proc_sym_name = "";
         bool is_deferred = false;
         bool is_nopass = false;
-        if( ASR::is_a<ASR::ClassProcedure_t>(*proc_sym) ) {
-            ASR::ClassProcedure_t* class_proc =
-                ASR::down_cast<ASR::ClassProcedure_t>(proc_sym);
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym) ) {
+            ASR::StructMethodDeclaration_t* class_proc =
+                ASR::down_cast<ASR::StructMethodDeclaration_t>(proc_sym);
             is_deferred = class_proc->m_is_deferred;
             proc_sym_name = class_proc->m_name;
             is_nopass = class_proc->m_is_nopass;
@@ -12010,9 +12010,9 @@ public:
         std::string self_argument = "";
         if (ASR::is_a<ASR::Function_t>(*proc_sym)) {
             s = ASR::down_cast<ASR::Function_t>(proc_sym);
-        } else if (ASR::is_a<ASR::ClassProcedure_t>(*proc_sym)) {
-            ASR::ClassProcedure_t *clss_proc = ASR::down_cast<
-                ASR::ClassProcedure_t>(proc_sym);
+        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc_sym)) {
+            ASR::StructMethodDeclaration_t *clss_proc = ASR::down_cast<
+                ASR::StructMethodDeclaration_t>(proc_sym);
             s = ASR::down_cast<ASR::Function_t>(clss_proc->m_proc);
             if (clss_proc->m_self_argument) {
                 self_argument = std::string(clss_proc->m_self_argument);

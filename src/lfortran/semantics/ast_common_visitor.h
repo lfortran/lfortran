@@ -6040,14 +6040,14 @@ public:
         }
     }
 
-    ASR::asr_t* create_ClassProcedure(const Location &loc,
+    ASR::asr_t* create_StructMethodDeclaration(const Location &loc,
                 AST::fnarg_t* m_args, size_t n_args,
                 AST::keyword_t* m_kwargs, size_t n_kwargs,
                  size_t n_member, ASR::symbol_t *v,
                     ASR::expr_t *v_expr) {
         Vec<ASR::call_arg_t> args;
         visit_expr_list(m_args, n_args, args);
-        ASR::ClassProcedure_t *v_class_proc = ASR::down_cast<ASR::ClassProcedure_t>(ASRUtils::symbol_get_past_external(v));
+        ASR::StructMethodDeclaration_t *v_class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(ASRUtils::symbol_get_past_external(v));
         ASR::ttype_t *type = nullptr;
         ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(v_class_proc->m_proc);
 
@@ -6186,10 +6186,10 @@ public:
 
             ASR::ttype_t *type = nullptr;
             ASR::symbol_t *cp_s = nullptr;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*final_sym)) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*final_sym)) {
                 cp_s = ASRUtils::import_class_procedure(al, x.base.base.loc,
                     final_sym, current_scope);
-                final_sym = ASR::down_cast<ASR::ClassProcedure_t>(final_sym)->m_proc;
+                final_sym = ASR::down_cast<ASR::StructMethodDeclaration_t>(final_sym)->m_proc;
             }
             LCOMPILERS_ASSERT(ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(final_sym)))
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(final_sym));
@@ -9793,14 +9793,14 @@ public:
                     bool is_class_procedure = false;
                     for( int i = 0; i < (int) gp->n_procs; i++ ) {
                         ASR::symbol_t* f4 = ASRUtils::symbol_get_past_external(gp->m_procs[i]);
-                        if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::ClassProcedure_t>(*f4) ) {
+                        if( !ASR::is_a<ASR::Function_t>(*f4) && !ASR::is_a<ASR::StructMethodDeclaration_t>(*f4) ) {
                             diag.add(Diagnostic(std::string(ASRUtils::symbol_name(f4)) +
                             " is not a function.",
                             Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
                             throw SemanticAbort();
                         }
-                        if (ASR::is_a<ASR::ClassProcedure_t>(*f4)) {
-                            ASR::ClassProcedure_t* f5 = ASR::down_cast<ASR::ClassProcedure_t>(f4);
+                        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*f4)) {
+                            ASR::StructMethodDeclaration_t* f5 = ASR::down_cast<ASR::StructMethodDeclaration_t>(f4);
                             f4 = f5->m_proc;
                             is_nopass = f5->m_is_nopass;
                             is_class_procedure = true;
@@ -9901,8 +9901,8 @@ public:
                                                     x.m_keywords, x.n_keywords, v);
                 break;
             }
-            case(ASR::symbolType::ClassProcedure):
-                tmp = create_ClassProcedure(x.base.base.loc, x.m_args, x.n_args,
+            case(ASR::symbolType::StructMethodDeclaration):
+                tmp = create_StructMethodDeclaration(x.base.base.loc, x.m_args, x.n_args,
                                 x.m_keywords, x.n_keywords, x.n_member, v, v_expr);
                 break;
             default: {
@@ -10643,9 +10643,9 @@ public:
         bool matched = false;
         for (size_t i = 0; i < gen_proc->n_procs; ++i) {
             ASR::symbol_t* proc;
-            if (ASR::is_a<ASR::ClassProcedure_t>(*gen_proc->m_procs[i])) {
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*gen_proc->m_procs[i])) {
                 proc = ASRUtils::symbol_get_past_external(
-                    ASR::down_cast<ASR::ClassProcedure_t>(gen_proc->m_procs[i])->m_proc);
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(gen_proc->m_procs[i])->m_proc);
             } else {
                 proc = gen_proc->m_procs[i];
             }
