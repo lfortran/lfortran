@@ -1178,6 +1178,7 @@ RUN(NAME intrinsics_388 LABELS gfortran llvm) # execute_command_line
 RUN(NAME intrinsics_389 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # loc
 RUN(NAME intrinsics_390 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # c_f_ptr
 RUN(NAME intrinsics_391 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # sum, selected_real_kind, minloc, merge
+RUN(NAME intrinsics_392 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
 
 RUN(NAME la_constants LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # LAPACK constants
 
@@ -1708,6 +1709,7 @@ RUN(NAME string_63 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_64 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_65 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME string_66 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME string_67 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME nested_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME nested_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
@@ -2538,3 +2540,6 @@ RUN(NAME lp_dict_test_04_ LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 # LFortran extensions (union)
 RUN(NAME lp_union_test_01 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
 RUN(NAME lp_union_test_02 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+
+# LFortran extensions (unsigned int)
+RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 

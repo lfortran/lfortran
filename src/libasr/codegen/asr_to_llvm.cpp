@@ -12195,7 +12195,12 @@ public:
             // The convention we use is that any strings is a pointer to the underlying physicalType
             // Example of StringPhysicalTypes -> `string_descriptor*`, `i8*`
             if(ASRUtils::is_string_only(return_var_type0)){ 
-                llvm::Value* string_ptr = llvm_utils->CreateAlloca(*builder, llvm_utils->get_StringType(return_var_type0));
+                // Make sure to use `alloca` at the entry point.
+                llvm::Value* string_ptr = llvm_utils->CreateAlloca(
+                                            llvm_utils->get_StringType(return_var_type0),
+                                            nullptr,
+                                            "string_ret_const"
+                                        );
                 builder->CreateStore(tmp, string_ptr);
                 tmp = string_ptr;
             }
