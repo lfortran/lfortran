@@ -7415,17 +7415,61 @@ public:
                 }
             }
         } else {
-            // otherwise empty dimensions
-            dims.reserve(al, n_dims_array_reshape);
-            for (size_t i=0; i < n_dims_array_reshape; i++) {
-                ASR::dimension_t dim;
-                dim.loc = loc;
-                dim.m_start = nullptr;
-                dim.m_length = nullptr;
-                dims.push_back(al, dim);
-            }
-        }
+            ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4));
 
+            for (size_t i = 0; i < n_dims_array_reshape; i++) {
+                ASR::Var_t* v = ASR::down_cast<ASR::Var_t>(newshape);
+                ASR::symbol_t* v_sym = ASRUtils::symbol_get_past_external(v->m_v);
+                if (v_sym->type == ASR::symbolType::Variable) {
+                    // We assume we're indexing the 1D shape variable with `i+1`
+                    ASR::expr_t* index
+                        = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, i + 1, int_type));
+
+                    Vec<ASR::array_index_t> args;
+                    args.reserve(al, 1);
+                    ASR::array_index_t ai;
+                    ai.loc = loc;
+                    ai.m_left = nullptr;
+                    ai.m_right = index;
+                    ai.m_step = nullptr;
+                    args.push_back(al, ai);
+
+                    // Now create the ArrayRef (ArrayItem_t)
+                    ASR::expr_t* shape_ref = ASRUtils::EXPR(
+                        ASRUtils::make_ArrayItem_t_util(al,
+                                                        loc,
+                                                        newshape,
+                                                        args.p,
+                                                        args.size(),
+                                                        int_type,
+                                                        ASR::arraystorageType::ColMajor,
+                                                        nullptr));
+
+                    // Push this into dimension vector
+                    ASR::dimension_t dim;
+                    dim.loc = loc;
+                    dim.m_start = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, int_type));
+                    dim.m_length = shape_ref;
+                    dims.push_back(al, dim);
+                }
+            }
+            // // otherwise empty dimensions
+            // for (size_t i=0; i < n_dims_array_reshape; i++) {
+            //     ASR::dimension_t dim;
+            //     dim.loc = loc;
+            //     dim.m_start = nullptr;
+            //     dim.m_length = nullptr;
+            //     dims.push_back(al, dim);
+            // }
+        }
+        // ASR::ttype_t* arr_element_type = ASRUtils::extract_type(ASRUtils::expr_type(array));
+        // reshape_ttype
+        //     = ASRUtils::TYPE(ASR::make_Array_t(al,
+        //                                        loc,
+        //                                        arr_element_type,
+        //                                        dims.p,
+        //                                        dims.n,
+        //                                        ASR::array_physical_typeType::FixedSizeArray));
         reshape_ttype = ASRUtils::duplicate_type(al, reshape_ttype, &dims, array_physical_type, true);
         newshape = ASRUtils::cast_to_descriptor(al, newshape);
         // TODO: 'value' is assigned as nullptr always to ArrayReshape, when both
