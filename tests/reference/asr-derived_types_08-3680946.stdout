@@ -148,32 +148,7 @@
                                         (Logical 4)
                                         (Integer 4)
                                         (Integer 4)]
-                                        [(FunctionType
-                                            [(StructType
-                                                [(Integer 4)
-                                                (Logical 4)
-                                                (Integer 4)
-                                                (Integer 4)]
-                                                []
-                                                .false.
-                                                .false.
-                                            )
-                                            (Integer 4)
-                                            (Logical 4)
-                                            (Integer 4)
-                                            (Integer 4)]
-                                            ()
-                                            Source
-                                            Implementation
-                                            ()
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            []
-                                            .false.
-                                        )]
+                                        []
                                         .true.
                                         .false.
                                     )

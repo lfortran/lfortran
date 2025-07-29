@@ -188,25 +188,7 @@
                                                         [(Allocatable
                                                             (StructType
                                                                 []
-                                                                [(FunctionType
-                                                                    [(StructType
-                                                                        []
-                                                                        []
-                                                                        .false.
-                                                                        .false.
-                                                                    )]
-                                                                    (Logical 4)
-                                                                    Source
-                                                                    Implementation
-                                                                    ()
-                                                                    .false.
-                                                                    .true.
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    []
-                                                                    .false.
-                                                                )]
+                                                                []
                                                                 .false.
                                                                 .false.
                                                             )
@@ -233,25 +215,7 @@
                                             [(Allocatable
                                                 (StructType
                                                     []
-                                                    [(FunctionType
-                                                        [(StructType
-                                                            []
-                                                            []
-                                                            .false.
-                                                            .false.
-                                                        )]
-                                                        (Logical 4)
-                                                        Source
-                                                        Implementation
-                                                        ()
-                                                        .false.
-                                                        .true.
-                                                        .false.
-                                                        .false.
-                                                        .false.
-                                                        []
-                                                        .false.
-                                                    )]
+                                                    []
                                                     .false.
                                                     .false.
                                                 )
@@ -288,25 +252,7 @@
                                                 (Allocatable
                                                     (StructType
                                                         []
-                                                        [(FunctionType
-                                                            [(StructType
-                                                                []
-                                                                []
-                                                                .false.
-                                                                .false.
-                                                            )]
-                                                            (Logical 4)
-                                                            Source
-                                                            Implementation
-                                                            ()
-                                                            .false.
-                                                            .true.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )]
+                                                        []
                                                         .false.
                                                         .false.
                                                     )
@@ -360,25 +306,7 @@
                                                     (Allocatable
                                                         (StructType
                                                             []
-                                                            [(FunctionType
-                                                                [(StructType
-                                                                    []
-                                                                    []
-                                                                    .false.
-                                                                    .false.
-                                                                )]
-                                                                (Logical 4)
-                                                                Source
-                                                                Implementation
-                                                                ()
-                                                                .false.
-                                                                .true.
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                []
-                                                                .false.
-                                                            )]
+                                                            []
                                                             .false.
                                                             .false.
                                                         )

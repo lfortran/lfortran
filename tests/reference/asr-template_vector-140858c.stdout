@@ -363,34 +363,7 @@
                                                                             )
                                                                         )
                                                                         (Integer 4)]
-                                                                        [(FunctionType
-                                                                            [(StructType
-                                                                                [(Allocatable
-                                                                                    (Array
-                                                                                        (Integer 4)
-                                                                                        [(()
-                                                                                        ())]
-                                                                                        DescriptorArray
-                                                                                    )
-                                                                                )
-                                                                                (Integer 4)]
-                                                                                []
-                                                                                .false.
-                                                                                .false.
-                                                                            )
-                                                                            (Integer 4)]
-                                                                            ()
-                                                                            Source
-                                                                            Implementation
-                                                                            ()
-                                                                            .false.
-                                                                            .false.
-                                                                            .false.
-                                                                            .false.
-                                                                            .false.
-                                                                            []
-                                                                            .false.
-                                                                        )]
+                                                                        []
                                                                         .false.
                                                                         .false.
                                                                     )
@@ -446,34 +419,7 @@
                                                                 )
                                                             )
                                                             (Integer 4)]
-                                                            [(FunctionType
-                                                                [(StructType
-                                                                    [(Allocatable
-                                                                        (Array
-                                                                            (Integer 4)
-                                                                            [(()
-                                                                            ())]
-                                                                            DescriptorArray
-                                                                        )
-                                                                    )
-                                                                    (Integer 4)]
-                                                                    []
-                                                                    .false.
-                                                                    .false.
-                                                                )
-                                                                (Integer 4)]
-                                                                ()
-                                                                Source
-                                                                Implementation
-                                                                ()
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                []
-                                                                .false.
-                                                            )]
+                                                            []
                                                             .false.
                                                             .false.
                                                         )
@@ -797,89 +743,7 @@
                                                             )
                                                         )
                                                         (Integer 4)]
-                                                        [(FunctionType
-                                                            [(StructType
-                                                                [(Allocatable
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
-                                                                )
-                                                                (Integer 4)]
-                                                                []
-                                                                .false.
-                                                                .false.
-                                                            )
-                                                            (Integer 4)]
-                                                            ()
-                                                            Source
-                                                            Implementation
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )
-                                                        (FunctionType
-                                                            [(StructType
-                                                                [(Allocatable
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
-                                                                )
-                                                                (Integer 4)]
-                                                                [(FunctionType
-                                                                    [(StructType
-                                                                        [(Allocatable
-                                                                            (Array
-                                                                                (Integer 4)
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                        )
-                                                                        (Integer 4)]
-                                                                        []
-                                                                        .false.
-                                                                        .false.
-                                                                    )
-                                                                    (Integer 4)]
-                                                                    ()
-                                                                    Source
-                                                                    Implementation
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    []
-                                                                    .false.
-                                                                )]
-                                                                .false.
-                                                                .false.
-                                                            )
-                                                            (Integer 4)]
-                                                            ()
-                                                            Source
-                                                            Implementation
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )]
+                                                        []
                                                         .true.
                                                         .false.
                                                     )
