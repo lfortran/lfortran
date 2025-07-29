@@ -6496,12 +6496,17 @@ public:
             bool is_value_descriptor_based_array = (value_ptype == ASR::array_physical_typeType::DescriptorArray);
             llvm::Type* target_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, ASRUtils::extract_type(target_type), module.get());
             llvm::Type* value_el_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, ASRUtils::extract_type(value_type), module.get());
-            llvm::Type* value_og_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
-            llvm::Type* target_og_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+            llvm::errs() << "Value Element Type: "; value->getType()->print(llvm::errs()); llvm::errs() << "\n";
+            llvm::errs() << "Target Element Type: "; target->getType()->print(llvm::errs()); llvm::errs() << "\n";
             if( is_value_fixed_sized_array && is_target_fixed_sized_array ) {
-                value = llvm_utils->create_gep(value, 0);
-                target = llvm_utils->create_gep(target, 0);
                 ASR::dimension_t* asr_dims = nullptr;
+                ASRUtils::extract_dimensions_from_ttype(value_type, asr_dims);
+                size_t req = asr_dims->loc.last - asr_dims->loc.first;
+                llvm::Type* value_og_type = llvm::ArrayType::get(value_el_type, req);
+                llvm::Type* target_og_type = llvm::ArrayType::get(target_el_type, req);
+                value = llvm_utils->create_gep2(value_og_type, value, 0);
+                target = llvm_utils->create_gep2(target_og_type, target, 0);
+                asr_dims = nullptr;
                 size_t asr_n_dims = ASRUtils::extract_dimensions_from_ttype(target_type, asr_dims);
                 int64_t size = ASRUtils::get_fixed_size_of_array(asr_dims, asr_n_dims);
                 llvm::DataLayout data_layout(module->getDataLayout());
@@ -6531,9 +6536,13 @@ public:
                     ASRUtils::type_get_past_allocatable_pointer(target_type),
                     module.get());
 #endif
+                ASR::dimension_t* asr_dims = nullptr;
+                ASRUtils::extract_dimensions_from_ttype(value_type, asr_dims);
+                size_t req = asr_dims->loc.last - asr_dims->loc.first;
+                llvm::Type* value_og_type = llvm::ArrayType::get(value_el_type, req);
                 llvm::Value* llvm_size = arr_descr->get_array_size(target, nullptr, 4);
                 target = llvm_utils->CreateLoad2(target_el_type->getPointerTo(), arr_descr->get_pointer_to_data(target));
-                value = llvm_utils->create_gep(value, 0);
+                value = llvm_utils->create_gep2(value_og_type, value, 0);
                 llvm::DataLayout data_layout(module->getDataLayout());
                 uint64_t data_size = data_layout.getTypeAllocSize(value_el_type);
                 llvm_size = builder->CreateMul(llvm_size,
