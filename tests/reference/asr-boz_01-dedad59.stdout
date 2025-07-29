@@ -69,69 +69,6 @@
                                     ()
                                     .false.
                                     .false.
-                                ),
-                            boz_4:
-                                (Variable
-                                    2
-                                    boz_4
-                                    []
-                                    Local
-                                    (IntegerConstant 93 (Integer 4) Binary)
-                                    (IntegerConstant 93 (Integer 4) Binary)
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            boz_5:
-                                (Variable
-                                    2
-                                    boz_5
-                                    []
-                                    Local
-                                    (IntegerConstant 1255 (Integer 4) Octal)
-                                    (IntegerConstant 1255 (Integer 4) Octal)
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
-                                ),
-                            boz_6:
-                                (Variable
-                                    2
-                                    boz_6
-                                    []
-                                    Local
-                                    (IntegerConstant 2748 (Integer 4) Hex)
-                                    (IntegerConstant 2748 (Integer 4) Hex)
-                                    Default
-                                    (Integer 4)
-                                    ()
-                                    Source
-                                    Public
-                                    Required
-                                    .false.
-                                    .false.
-                                    .false.
-                                    ()
-                                    .false.
-                                    .false.
                                 )
                         })
                     boz_01
@@ -172,33 +109,12 @@
                         ()
                         .false.
                     )
-                    (Assignment
-                        (Var 2 boz_4)
-                        (IntegerConstant 93 (Integer 4) Binary)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 boz_5)
-                        (IntegerConstant 1255 (Integer 4) Octal)
-                        ()
-                        .false.
-                    )
-                    (Assignment
-                        (Var 2 boz_6)
-                        (IntegerConstant 2748 (Integer 4) Hex)
-                        ()
-                        .false.
-                    )
                     (Print
                         (StringFormat
                             ()
                             [(Var 2 boz_1)
                             (Var 2 boz_2)
-                            (Var 2 boz_3)
-                            (Var 2 boz_4)
-                            (Var 2 boz_5)
-                            (Var 2 boz_6)]
+                            (Var 2 boz_3)]
                             FormatFortran
                             (Allocatable
                                 (String 1 () DeferredLength DescriptorString)

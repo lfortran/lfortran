@@ -2201,6 +2201,12 @@ public:
 
     void handle_array_data_stmt(const AST::DataStmt_t &x, AST::DataStmtSet_t* a, ASR::ttype_t* obj_type, ASR::expr_t* object, size_t &curr_value) {
         ASR::Array_t* array_type = ASR::down_cast<ASR::Array_t>(obj_type);
+        //printf("a->m_value[] type: %d\n", (*a->m_value[curr_value]).type);
+        ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+        bool is_real = 0;
+        if (ASR::is_a<ASR::Real_t>(*array_type->m_type)){
+            is_real = 1;
+        }
         if (check_equal_value(a->m_value, a->n_value)) {
             /*
                 Case:
@@ -2216,8 +2222,16 @@ public:
                 Because for arrays of larger size, the current implementation
                 of data statement is not efficient.
             */
+            // Get the Type of Object
+            // If object is Real, set current_variable_type to Real
+            // This type flag is passed to Visit_BOZ, 
+            // so that Real Values are correctly decoded from BOZ String
+            if ((is_real) && ((a->m_value[curr_value]->type == LFortran::AST::exprType::BOZ))) {
+                current_variable_type_ = array_type->m_type;
+            }
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
+            current_variable_type_ = temp_current_variable_type_;
             if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
                 diag.add(Diagnostic(
                     "Type mismatch during data initialization",
@@ -2255,6 +2269,18 @@ public:
             }
             curr_value += size_of_array;
             for (int j=0; j < size_of_array; j++) {
+                // Get the Type of Object
+                // If object is Real, set current_variable_type to Real
+                // This type flag is passed to Visit_BOZ, 
+                // so that Real Values are correctly decoded from BOZ String
+                // Else, set to default type, to cover Complex Values Cases
+                if ((is_real) && (j<((int) a->n_value)) &&
+                    ((a->m_value[j]->type == LFortran::AST::exprType::BOZ))) {
+                    current_variable_type_ = array_type->m_type;
+                }
+                else{
+                    current_variable_type_ = temp_current_variable_type_;
+                }
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
                 if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
@@ -2278,6 +2304,7 @@ public:
                 }
 
             }
+            current_variable_type_ = temp_current_variable_type_;
             Vec<ASR::dimension_t> dims;
             dims.reserve(al, 1);
             ASR::dimension_t dim; dim.m_length = nullptr; dim.m_start = nullptr;
@@ -2379,8 +2406,19 @@ public:
                     }
                 }
                 ASR::expr_t* target = ASRUtils::EXPR((ASR::asr_t*) array_item_expr);
+                ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+                // Get the Type of Object
+                // If object is Real, set current_variable_type to Real
+                // This type flag is passed to Visit_BOZ, 
+                // so that Real Values are correctly decoded from BOZ String
+                if ((ASR::is_a<ASR::Real_t>(*array_item_expr->m_type)) 
+                    && (value_index<(data_stmt_set->n_value)) &&
+                    ((data_stmt_set->m_value[value_index]->type == LFortran::AST::exprType::BOZ))) {
+                    current_variable_type_ = array_item_expr->m_type;
+                }
                 this->visit_expr(*data_stmt_set->m_value[value_index++]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
+                current_variable_type_ = temp_current_variable_type_;
                 ASRUtils::make_ArrayBroadcast_t_util(al, data_stmt.base.base.loc, target, value);
                 ASR::stmt_t* assignStatement = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, data_stmt.base.base.loc,
                                                                                     target, value, nullptr, compiler_options.po.realloc_lhs)
