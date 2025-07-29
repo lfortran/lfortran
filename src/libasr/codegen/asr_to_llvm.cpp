@@ -12083,18 +12083,6 @@ public:
                 throw CodeGenError("FunctionCall: StructType symbol type not supported");
             }
         }
-        if( ASRUtils::is_intrinsic_function2(s) ) {
-            std::string symbol_name = ASRUtils::symbol_name(x.m_name);
-            if( startswith(symbol_name, "_bitwise_xor") ) {
-                return ;
-            }
-            if( startswith(symbol_name, "_bitwise_and") ) {
-                return ;
-            }
-            if( startswith(symbol_name, "_bitwise_or") ) {
-                return ;
-            }
-        }
 
         bool intrinsic_function = ASRUtils::is_intrinsic_function2(s);
         uint32_t h;
