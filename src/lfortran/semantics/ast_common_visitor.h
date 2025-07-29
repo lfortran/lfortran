@@ -8235,7 +8235,7 @@ public:
                     diag::Label("", {x.base.base.loc})}));
             throw SemanticAbort();
         }
-        if( ASR::is_a<ASR::Complex_t>(*ASRUtils::expr_type(x_)) ) {
+        if( ASRUtils::is_complex(*ASRUtils::expr_type(x_)) ) {
             if( y_ != nullptr ) {
                 diag.add(diag::Diagnostic(
                     "The first argument of `cmplx` intrinsic"
