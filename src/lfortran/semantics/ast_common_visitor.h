@@ -6690,9 +6690,13 @@ public:
             ASR::symbol_t* member = nullptr;
             while( par_der_type != nullptr && member == nullptr ) {
                 scope = par_der_type->m_symtab;
-                member = par_der_type->m_symtab->resolve_symbol(var_name);
+                member = par_der_type->m_symtab->get_symbol(var_name);
                 if( par_der_type->m_parent != nullptr ) {
-                    par_der_type = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(par_der_type->m_parent));
+                    ASR::symbol_t* parent_sym = ASRUtils::symbol_get_past_external(par_der_type->m_parent);
+                    par_der_type = ASR::down_cast<ASR::Struct_t>(parent_sym);
+                    if (par_der_type->m_name == var_name) {    // if the parent type is the member itself
+                        member = parent_sym;
+                    }
                 } else {
                     par_der_type = nullptr;
                 }
