@@ -856,10 +856,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
     void insert_realloc_for_target(ASR::expr_t* target, ASR::expr_t* value, Vec<ASR::expr_t**>& vars) {
         ASR::ttype_t* target_type = ASRUtils::expr_type(target);
         bool array_copy = ASR::is_a<ASR::Var_t>(*value) && ASR::is_a<ASR::Var_t>(*target);
-        if (!realloc_lhs) {
-            return;
-        }
-        if( (!ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
+        if( (realloc_lhs == false || !ASRUtils::is_allocatable(target_type) || vars.size() == 1) &&
             !(array_copy && ASRUtils::is_allocatable(target_type)) ) {
             return ;
         }
