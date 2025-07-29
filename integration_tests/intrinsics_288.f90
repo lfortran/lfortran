@@ -1,6 +1,8 @@
 program intrinsics_288
 	implicit none
-
+	type :: my_type
+		integer :: a
+	end type
     integer, dimension(3) :: source1 = [1, 2, 3]
 	real, dimension(3) :: source2 = [1.0, 2.0, 3.0]
 	logical, dimension(3) :: source3 = [.true., .false., .true.]
@@ -20,6 +22,9 @@ program intrinsics_288
     logical, dimension(2) :: result7
 	real :: rl = 1.0
     real, dimension(2) :: result8
+	type(my_type) :: source6(2)
+	type(my_type) :: result9(2,3)
+	integer :: i, j
 
     result = spread(source, dim=2, ncopies=2)
     print *, result
@@ -77,4 +82,14 @@ program intrinsics_288
     print *, result8
     if ( abs(result8(1) - 1.0) > 1e-6 .or. abs(result8(2) - 1.0) > 1e-6 ) error stop
 
+	do i = 1, 2
+		source6(i)%a = i
+	end do
+
+	result9 = spread(source6, dim=2, ncopies=3)
+	do i = 1, 2
+		do j = 1, 3
+			if (result9(i,j)%a /= i) error stop
+		end do
+  end do
 end program
