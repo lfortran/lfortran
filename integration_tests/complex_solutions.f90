@@ -11,7 +11,9 @@ program complex_solutions
       val = exp(arg*x)
 
       if (abs(real(val) - rhs) > tol .or. abs(aimag(val)) > tol) then
-         error stop "Integration test failed for k=" // trim(adjustl(itoa(k)))
+         print *, "Integration test failed for k=", k
+         error stop 1
+
       end if
    end do
 
