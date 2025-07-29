@@ -88,6 +88,51 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
             pass_result.n = 0;
             pass_result.reserve(al, 0);
         }
+   
+        /*
+        Used in Assignments like:
+        type :: base
+           integer :: a
+           integer :: b
+        end type base
+        type, extends(base) :: derived
+           integer :: c
+        end type derived
+        type(derived) :: d
+        d%base = base(1, 2)
+        */
+        bool is_parent_struct_member(ASR::expr_t* &value, ASR::Struct_t* &struct_member) {
+            if (ASR::is_a<ASR::StructInstanceMember_t>(*value)) {
+                ASR::StructInstanceMember_t* value_sim = ASR::down_cast<ASR::StructInstanceMember_t>(value);
+                if (ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(value_sim->m_m))) {
+                    ASR::Struct_t* member_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(value_sim->m_m));
+                    ASR::Struct_t* value_struct = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(value_sim->m_v)));
+                    if (ASRUtils::is_parent(member_struct, value_struct)) {
+                        struct_member = member_struct;
+                        value = value_sim->m_v;
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        // transforms 'd%base = base(1, 2)' ==> 'd%a = 1, d%b = 2'
+        void insert_struct_members_assignments(ASR::expr_t* target_mv, ASR::expr_t* value_mv, ASR::Struct_t* struct_t) {
+            for (size_t i = 0; i < struct_t->n_members; i++) {
+                ASR::symbol_t* member = struct_t->m_symtab->get_symbol(struct_t->m_members[i]);
+                member = ASRUtils::import_struct_instance_member(al, member, current_scope);
+                ASR::expr_t* target_sim = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                    al, target_mv->base.loc, target_mv, member, ASRUtils::symbol_type(member), nullptr));
+                ASR::expr_t* value_sim = ASRUtils::EXPR(ASR::make_StructInstanceMember_t(
+                    al, value_mv->base.loc, value_mv, member, ASRUtils::symbol_type(member), nullptr));
+                ASR::stmt_t* assign_stmt = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, target_sim->base.loc,
+                    target_sim, value_sim, nullptr, replacer.realloc_lhs));
+                pass_result.push_back(al, assign_stmt);
+            }
+        }
 
         void visit_Variable(const ASR::Variable_t& /*x*/) {
             // Do nothing, already handled in init_expr pass
@@ -112,6 +157,15 @@ class StructConstructorVisitor : public ASR::CallReplacerOnExpressionsVisitor<St
             current_expr = const_cast<ASR::expr_t**>(&(x.m_value));
             this->call_replacer();
             current_expr = current_expr_copy_9;
+
+            ASR::Struct_t* struct_t = nullptr;
+            ASR::expr_t* target_expr = x.m_target;
+            ASR::expr_t* value_expr = x.m_value;
+            if (is_parent_struct_member(target_expr, struct_t) ||
+                is_parent_struct_member(value_expr, struct_t)) {
+                remove_original_statement = true;
+                insert_struct_members_assignments(target_expr, value_expr, struct_t);
+            }
             if( !remove_original_statement ) {
                 this->visit_expr(*x.m_value);
             }
