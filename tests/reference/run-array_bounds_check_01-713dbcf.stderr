@@ -1,3 +1,0 @@
-Runtime error: Array '__libasr__created__var__0__array_constant_' index out of bounds.
-
-Tried to access index 4 of dimension 1, but valid range is 1 to 3.
