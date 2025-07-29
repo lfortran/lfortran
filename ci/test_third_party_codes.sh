@@ -1,5 +1,5 @@
 #!/bin/bash
-set -e  # Exit immediately on any error
+set -ex  # Exit immediately on any error
 
 # Default to gfortran if FC is not set
 : "${FC:=gfortran}"
