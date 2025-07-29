@@ -10833,8 +10833,11 @@ public:
             tmp = ASR::make_StringConcat_t(al, x.base.base.loc, left, right, dest_type,
                                     value);
         } else {
-            ASR::symbol_t* sym = current_scope->resolve_symbol(intrinsic_op_name);
+            // resolve the intrinsic_op_name to get it's symbol
+            ASR::symbol_t* sym = resolve_custom_operator(intrinsic_op_name, left);
+
             LCOMPILERS_ASSERT(ASR::is_a<ASR::CustomOperator_t>(*ASRUtils::symbol_get_past_external(sym)));
+
             ASR::CustomOperator_t* custom_op = ASR::down_cast<ASR::CustomOperator_t>(
                 ASRUtils::symbol_get_past_external(sym));
             Vec<ASR::call_arg_t> args; args.reserve(al, 2);
@@ -10847,8 +10850,18 @@ public:
                         diag.add(Diagnostic(msg, Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }, true);
-            ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(
-                ASRUtils::symbol_get_past_external(custom_op->m_procs[i]));
+
+            ASR::Function_t* func = nullptr;
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*custom_op->m_procs[i])) {
+                ASR::StructMethodDeclaration_t* temp_struct_method =
+                    ASR::down_cast<ASR::StructMethodDeclaration_t>(custom_op->m_procs[i]);
+                func = ASR::down_cast<ASR::Function_t>(temp_struct_method->m_proc);
+
+            } else {
+                func = ASR::down_cast<ASR::Function_t>(
+                    ASRUtils::symbol_get_past_external(custom_op->m_procs[i]));
+            }
+
             ASR::ttype_t* return_type = ASRUtils::get_FunctionType(func)->m_return_var_type;
             return_type = handle_return_type(return_type, x.base.base.loc, args, func);
             ASR::symbol_t* v = custom_op->m_procs[i];
@@ -11639,6 +11652,30 @@ public:
 
         // make custom operators names distinct by appending "~~" to the begining of their names
         return "~~" + op;
+    }
+
+    ASR::symbol_t* resolve_custom_operator(const std::string& intrinsic_op_name, ASR::expr_t* x) {
+        ASR::symbol_t* sym = current_scope->resolve_symbol(intrinsic_op_name);
+        if (sym != nullptr)
+            return sym;
+
+        ASR::symbol_t* left_symbol = nullptr;
+
+        if (ASR::is_a<ASR::FunctionCall_t>(*x)) {
+            ASR::FunctionCall_t* left_function_call = ASR::down_cast<ASR::FunctionCall_t>(x);
+            ASR::Function_t* left_function = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(left_function_call->m_name));
+            left_symbol = ASRUtils::get_struct_sym_from_struct_expr(left_function->m_return_var);
+        } else if (ASR::is_a<ASR::StructConstructor_t>(*x)) {
+            ASR::StructConstructor_t* left_struct_constructor = ASR::down_cast<ASR::StructConstructor_t>(x);
+            left_symbol = ASRUtils::symbol_get_past_external(left_struct_constructor->m_dt_sym);
+        } else if (ASR::is_a<ASR::Var_t>(*x)) {
+            left_symbol = ASRUtils::get_struct_sym_from_struct_expr(x);
+        }
+
+        ASR::Struct_t* left_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(left_symbol));
+        sym = left_struct->m_symtab->resolve_symbol(intrinsic_op_name);
+
+        return sym;
     }
 };
 
