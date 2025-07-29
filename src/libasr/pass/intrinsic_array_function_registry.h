@@ -2089,7 +2089,12 @@ namespace Spread {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_spread");
-        fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            fill_func_arg_struct_type("source", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
         int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
@@ -2111,7 +2116,12 @@ namespace Spread {
 
         diag::Diagnostics diag;
 
-        ASR::expr_t *result = declare("result", return_type, Out);
+        ASR::expr_t *result;
+        if (is_struct_type_arg) {
+            result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", return_type, Out);
+        }
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
@@ -4990,7 +5000,12 @@ namespace Pack {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t overload_id) {
         declare_basic_variables("_lcompilers_pack");
-        fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            fill_func_arg_struct_type("array", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[1]));
         if (overload_id == 3) {
             fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[2]));
@@ -5002,7 +5017,12 @@ namespace Pack {
                         ASRUtils::type_get_past_allocatable(return_type)),
                 ASR::array_physical_typeType::DescriptorArray, true);
         }
-        ASR::expr_t *result = declare("result", ret_type, Out);
+        ASR::expr_t *result;
+        if (is_struct_type_arg) {
+            result = declare_struct_type("result", ret_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", ret_type, Out);
+        }
         args.push_back(al, result);
         /*
             For array of rank 2, the following code is generated:
@@ -5329,10 +5349,25 @@ namespace Unpack {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_unpack");
-        fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_vec = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        bool is_struct_type_field = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[2]));
+        if (is_struct_type_vec) {
+            fill_func_arg_struct_type("vector", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[1]));
-        fill_func_arg("field", duplicate_type_with_empty_dims(al, arg_types[2]));
-        ASR::expr_t *result = declare("result", return_type, Out);
+        if (is_struct_type_field) {
+            fill_func_arg_struct_type("field", duplicate_type_with_empty_dims(al, arg_types[2]), m_args[2].m_value);
+        } else {
+            fill_func_arg("field", duplicate_type_with_empty_dims(al, arg_types[2]));
+        }
+        ASR::expr_t *result;
+        if (is_struct_type_vec) {
+            result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", return_type, Out);
+        }
         args.push_back(al, result);
         /*
             For array of rank 2, the following code is generated:

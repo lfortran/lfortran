@@ -1,6 +1,9 @@
 program intrinsics_147
+  type :: my_type
+     integer :: a
+  end type
   integer :: m(5)
-  integer :: res
+  integer :: res, i
   double precision :: n(5)
   double precision :: res_d
   real :: res_r
@@ -9,6 +12,9 @@ program intrinsics_147
   logical :: a(5)
   real :: vector(7)
   complex :: p(2)
+  type(my_type), allocatable :: struct_packed(:)
+  type(my_type) :: struct_arr(5)
+
 
   vector = [5.0, 6.0, 3.0, 4.0, 0.0, 13.0, 29.0]
   m = [1, 0, 0, 2, 99]
@@ -62,4 +68,15 @@ program intrinsics_147
   res_r = abs(sum(pack(p, .true., [(123.123, 9814.14), (-124151.41, 414.1)])))
   print *, res_r
   if (abs(res_r - 5.83095169) > 1e-8) error stop
+
+  do i = 1, 5
+    struct_arr(i)%a = i
+  end do
+  a = [.true., .false., .true., .false., .true.]
+  allocate(struct_packed(count(a)))
+  struct_packed = pack(struct_arr, a)
+  if (size(struct_packed) /= 3) error stop
+  if (struct_packed(1)%a /= 1) error stop
+  if (struct_packed(2)%a /= 3) error stop
+  if (struct_packed(3)%a /= 5) error stop
 end program

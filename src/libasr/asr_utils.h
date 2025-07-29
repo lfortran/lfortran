@@ -4203,6 +4203,20 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
     return is_class_same;
 }
 
+static inline bool is_elemental(ASR::symbol_t* x) {
+    ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
+        proc = ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
+    }
+    if( !ASR::is_a<ASR::Function_t>(*proc) ) {
+        return false;
+    }
+    return ASRUtils::get_FunctionType(
+        ASR::down_cast<ASR::Function_t>(proc))->m_elemental;
+}
+
+
 bool select_func_subrout(const ASR::symbol_t* proc, const Vec<ASR::call_arg_t>& args,
     Location& loc, const std::function<void (const std::string &, const Location &)> err);
 
@@ -4212,6 +4226,26 @@ int select_generic_procedure(const Vec<ASR::call_arg_t> &args,
     const std::function<void (const std::string &, const Location &)> err,
     bool raise_error=true) {
     for (size_t i=0; i < p.n_procs; i++) {
+        if (is_elemental(p.m_procs[i])) {     // Prioritize direct arg matching, then look for elemental
+            continue;
+        }
+        if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
+            ASR::StructMethodDeclaration_t *clss_fn
+                = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
+            const ASR::symbol_t *proc = ASRUtils::symbol_get_past_external(clss_fn->m_proc);
+            if( select_func_subrout(proc, args, loc, err) ) {
+                return i;
+            }
+        } else {
+            if( select_func_subrout(p.m_procs[i], args, loc, err) ) {
+                return i;
+            }
+        }
+    }
+    for (size_t i=0; i < p.n_procs; i++) {
+        if (!is_elemental(p.m_procs[i])) {
+            continue;
+        }
         if( ASR::is_a<ASR::StructMethodDeclaration_t>(*p.m_procs[i]) ) {
             ASR::StructMethodDeclaration_t *clss_fn
                 = ASR::down_cast<ASR::StructMethodDeclaration_t>(p.m_procs[i]);
@@ -6350,19 +6384,6 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             }
         }
     }
-}
-
-static inline bool is_elemental(ASR::symbol_t* x) {
-    ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
-    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
-        proc = ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::StructMethodDeclaration_t>(proc)->m_proc);
-    }
-    if( !ASR::is_a<ASR::Function_t>(*proc) ) {
-        return false;
-    }
-    return ASRUtils::get_FunctionType(
-        ASR::down_cast<ASR::Function_t>(proc))->m_elemental;
 }
 
 static inline ASR::asr_t* make_FunctionCall_t_util(

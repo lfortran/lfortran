@@ -1154,9 +1154,19 @@ namespace MoveAlloc {
             Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
 
         std::string new_name = "_lcompilers_move_alloc_" + type_to_str_fortran(arg_types[0]);
+        bool is_struct_type_from = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        bool is_struct_type_to = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[1]));
         declare_basic_variables(new_name);
-        fill_func_arg_sub("from", arg_types[0], In);
-        fill_func_arg_sub("to", arg_types[1], InOut);
+        if (is_struct_type_from) {
+            fill_func_arg_sub_struct_type("from", arg_types[0], In, new_args[0].m_value);
+        } else {
+            fill_func_arg_sub("from", arg_types[0], In);
+        }
+        if (is_struct_type_to) {
+            fill_func_arg_sub_struct_type("to", arg_types[1], InOut, new_args[1].m_value);
+        } else {
+            fill_func_arg_sub("to", arg_types[1], InOut);
+        }
         if (!ASRUtils::is_character(*arg_types[0])) {
             int n_dims = ASRUtils::extract_n_dims_from_ttype(ASRUtils::expr_type(args[0]));
             Vec<ASR::dimension_t> alloc_dims; alloc_dims.reserve(al, n_dims);
