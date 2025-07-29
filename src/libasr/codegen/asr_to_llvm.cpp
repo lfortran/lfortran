@@ -9017,6 +9017,10 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
+        int64_t ptr_loads_copy = ptr_loads;
+        if (ASRUtils::is_pointer(ASRUtils::expr_type(x.m_arg))) {
+            ptr_loads = 2;
+        }
         this->visit_expr_wrapper(x.m_arg, true);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
@@ -9388,6 +9392,7 @@ public:
             }
             default : throw CodeGenError("Cast kind not implemented");
         }
+        ptr_loads = ptr_loads_copy;
     }
 
     llvm::Function* get_read_function(ASR::ttype_t *type) {
