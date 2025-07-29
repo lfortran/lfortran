@@ -425,44 +425,7 @@
                                             ))]
                                             (StructType
                                                 [(Real 4)]
-                                                [(FunctionType
-                                                    [(StructType
-                                                        [(Real 4)]
-                                                        []
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    (Real 4)
-                                                    Source
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    .false.
-                                                )
-                                                (FunctionType
-                                                    [(StructType
-                                                        [(Real 4)]
-                                                        []
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    ()
-                                                    Source
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    .false.
-                                                )]
+                                                []
                                                 .true.
                                                 .false.
                                             )

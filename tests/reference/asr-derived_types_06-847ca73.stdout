@@ -1899,53 +1899,7 @@
                                                                 .false.
                                                             )
                                                         )]
-                                                        [(FunctionType
-                                                            [(Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            (StructType
-                                                                [(Allocatable
-                                                                    (StructType
-                                                                        [(Integer 4)
-                                                                        (Integer 4)
-                                                                        (Integer 4)]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
-                                                                    )
-                                                                )
-                                                                (Allocatable
-                                                                    (StructType
-                                                                        [(Integer 4)
-                                                                        (Allocatable
-                                                                            (Integer 4)
-                                                                        )
-                                                                        (Integer 4)
-                                                                        (Integer 4)
-                                                                        (Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )]
-                                                                        []
-                                                                        .true.
-                                                                        .false.
-                                                                    )
-                                                                )]
-                                                                []
-                                                                .false.
-                                                                .false.
-                                                            )]
-                                                            ()
-                                                            Source
-                                                            Implementation
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )]
+                                                        []
                                                         .true.
                                                         .false.
                                                     )
@@ -1991,53 +1945,7 @@
                                                     .false.
                                                 )
                                             )]
-                                            [(FunctionType
-                                                [(Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                (StructType
-                                                    [(Allocatable
-                                                        (StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)
-                                                            (Integer 4)]
-                                                            []
-                                                            .true.
-                                                            .false.
-                                                        )
-                                                    )
-                                                    (Allocatable
-                                                        (StructType
-                                                            [(Integer 4)
-                                                            (Allocatable
-                                                                (Integer 4)
-                                                            )
-                                                            (Integer 4)
-                                                            (Integer 4)
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )]
-                                                            []
-                                                            .true.
-                                                            .false.
-                                                        )
-                                                    )]
-                                                    []
-                                                    .false.
-                                                    .false.
-                                                )]
-                                                ()
-                                                Source
-                                                Implementation
-                                                ()
-                                                .false.
-                                                .false.
-                                                .false.
-                                                .false.
-                                                .false.
-                                                []
-                                                .false.
-                                            )]
+                                            []
                                             .true.
                                             .false.
                                         )]
@@ -2087,30 +1995,7 @@
                                                 [(Integer 4)
                                                 (Integer 4)
                                                 (Integer 4)]
-                                                [(FunctionType
-                                                    [(Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    (StructType
-                                                        [(Integer 4)
-                                                        (Integer 4)
-                                                        (Integer 4)]
-                                                        []
-                                                        .false.
-                                                        .false.
-                                                    )]
-                                                    ()
-                                                    Source
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    .false.
-                                                )]
+                                                []
                                                 .true.
                                                 .false.
                                             )

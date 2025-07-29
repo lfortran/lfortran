@@ -3027,9 +3027,6 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
     Vec<ASR::ttype_t*> member_types;
     member_types.reserve(al, derived_type->m_symtab->get_scope().size());
 
-    Vec<ASR::ttype_t*> member_function_types;
-    member_function_types.reserve(al, derived_type->m_symtab->get_scope().size());
-
     for (auto const& sym : derived_type->m_symtab->get_scope()) {
         if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
@@ -3040,19 +3037,14 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                 return ASRUtils::TYPE(
                     ASR::make_StructType_t(al, loc, stype->m_data_member_types,
                                            stype->n_data_member_types,
-                                           stype->m_member_function_types,
-                                           stype->n_member_function_types,
+                                           nullptr,
+                                           0,
                                            is_cstruct == false ? false : stype->m_is_cstruct,
                                            stype->m_is_unlimited_polymorphic
                                            )
                 );
             }
             member_types.push_back(al, var->m_type);
-        } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*sym.second)) {
-            ASR::StructMethodDeclaration_t* c_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(
-                ASRUtils::symbol_get_past_external(sym.second));
-            member_function_types.push_back(
-                al, ASR::down_cast<ASR::Function_t>(c_proc->m_proc)->m_function_signature);
         }
     }
     return ASRUtils::TYPE(
@@ -3060,8 +3052,8 @@ static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                loc,
                                member_types.p,
                                member_types.n,
-                               member_function_types.p,
-                               member_function_types.n,
+                               nullptr,
+                               0,
                                is_cstruct,
                                derived_type_name == "~unlimited_polymorphic_type" ? true : false));
 }
@@ -3193,8 +3185,8 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
                                                        t->base.loc,
                                                        tnew->m_data_member_types,
                                                        tnew->n_data_member_types,
-                                                       tnew->m_member_function_types,
-                                                       tnew->n_member_function_types,
+                                                       nullptr,
+                                                       0,
                                                        tnew->m_is_cstruct,
                                                        tnew->m_is_unlimited_polymorphic));
             break;
@@ -3435,8 +3427,8 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
             return ASRUtils::TYPE(ASR::make_StructType_t(al, t->base.loc,
                 tstruct->m_data_member_types,
                 tstruct->n_data_member_types,
-                tstruct->m_member_function_types,
-                tstruct->n_member_function_types,
+                nullptr,
+                0,
                 tstruct->m_is_cstruct,
                 tstruct->m_is_unlimited_polymorphic));
         }

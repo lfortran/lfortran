@@ -48,20 +48,7 @@
                                     Default
                                     (StructType
                                         [(Real 4)]
-                                        [(FunctionType
-                                            [(Integer 4)]
-                                            ()
-                                            Source
-                                            Implementation
-                                            ()
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            []
-                                            .false.
-                                        )]
+                                        []
                                         .true.
                                         .false.
                                     )

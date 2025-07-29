@@ -190,26 +190,7 @@
                                                     Default
                                                     (StructType
                                                         []
-                                                        [(FunctionType
-                                                            [(StructType
-                                                                []
-                                                                []
-                                                                .false.
-                                                                .false.
-                                                            )
-                                                            (Integer 4)]
-                                                            ()
-                                                            Source
-                                                            Interface
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                            .true.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )]
+                                                        []
                                                         .false.
                                                         .false.
                                                     )
@@ -229,26 +210,7 @@
                                     (FunctionType
                                         [(StructType
                                             []
-                                            [(FunctionType
-                                                [(StructType
-                                                    []
-                                                    []
-                                                    .false.
-                                                    .false.
-                                                )
-                                                (Integer 4)]
-                                                ()
-                                                Source
-                                                Interface
-                                                ()
-                                                .false.
-                                                .false.
-                                                .true.
-                                                .false.
-                                                .false.
-                                                []
-                                                .false.
-                                            )]
+                                            []
                                             .false.
                                             .false.
                                         )
@@ -344,26 +306,7 @@
                                     Default
                                     (StructType
                                         []
-                                        [(FunctionType
-                                            [(StructType
-                                                []
-                                                []
-                                                .false.
-                                                .false.
-                                            )
-                                            (Integer 4)]
-                                            ()
-                                            Source
-                                            Interface
-                                            ()
-                                            .false.
-                                            .false.
-                                            .true.
-                                            .false.
-                                            .false.
-                                            []
-                                            .false.
-                                        )]
+                                        []
                                         .true.
                                         .false.
                                     )

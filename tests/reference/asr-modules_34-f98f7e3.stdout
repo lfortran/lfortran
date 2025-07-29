@@ -97,35 +97,7 @@
                                                                 DescriptorArray
                                                             )
                                                         )]
-                                                        [(FunctionType
-                                                            [(StructType
-                                                                [(Allocatable
-                                                                    (Array
-                                                                        (Integer 4)
-                                                                        [(()
-                                                                        ())]
-                                                                        DescriptorArray
-                                                                    )
-                                                                )]
-                                                                []
-                                                                .false.
-                                                                .false.
-                                                            )
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )]
-                                                            ()
-                                                            Source
-                                                            Implementation
-                                                            ()
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            .false.
-                                                            []
-                                                            .false.
-                                                        )]
+                                                        []
                                                         .true.
                                                         .false.
                                                     )
@@ -272,35 +244,7 @@
                                                                         DescriptorArray
                                                                     )
                                                                 )]
-                                                                [(FunctionType
-                                                                    [(StructType
-                                                                        [(Allocatable
-                                                                            (Array
-                                                                                (Integer 4)
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                        )]
-                                                                        []
-                                                                        .false.
-                                                                        .false.
-                                                                    )
-                                                                    (Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )]
-                                                                    ()
-                                                                    Source
-                                                                    Implementation
-                                                                    ()
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    .false.
-                                                                    []
-                                                                    .false.
-                                                                )]
+                                                                []
                                                                 .true.
                                                                 .false.
                                                             )
@@ -351,35 +295,7 @@
                                                                     DescriptorArray
                                                                 )
                                                             )]
-                                                            [(FunctionType
-                                                                [(StructType
-                                                                    [(Allocatable
-                                                                        (Array
-                                                                            (Integer 4)
-                                                                            [(()
-                                                                            ())]
-                                                                            DescriptorArray
-                                                                        )
-                                                                    )]
-                                                                    []
-                                                                    .false.
-                                                                    .false.
-                                                                )
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )]
-                                                                ()
-                                                                Source
-                                                                Implementation
-                                                                ()
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                .false.
-                                                                []
-                                                                .false.
-                                                            )]
+                                                            []
                                                             .true.
                                                             .false.
                                                         )]
@@ -437,35 +353,7 @@
                                                         DescriptorArray
                                                     )
                                                 )]
-                                                [(FunctionType
-                                                    [(StructType
-                                                        [(Allocatable
-                                                            (Array
-                                                                (Integer 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
-                                                        )]
-                                                        []
-                                                        .false.
-                                                        .false.
-                                                    )
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )]
-                                                    ()
-                                                    Source
-                                                    Implementation
-                                                    ()
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    []
-                                                    .false.
-                                                )]
+                                                []
                                                 .true.
                                                 .false.
                                             )]

@@ -1173,38 +1173,7 @@
                                             .true.
                                             .false.
                                         )]
-                                        [(FunctionType
-                                            [(StructType
-                                                [(StructType
-                                                    [(Complex 4)
-                                                    (StructType
-                                                        []
-                                                        []
-                                                        .true.
-                                                        .false.
-                                                    )]
-                                                    []
-                                                    .true.
-                                                    .false.
-                                                )]
-                                                []
-                                                .false.
-                                                .false.
-                                            )
-                                            (Integer 4)
-                                            (Complex 4)]
-                                            ()
-                                            Source
-                                            Implementation
-                                            ()
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            .false.
-                                            []
-                                            .false.
-                                        )]
+                                        []
                                         .true.
                                         .false.
                                     )
