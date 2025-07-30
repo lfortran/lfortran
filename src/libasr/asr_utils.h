@@ -6039,7 +6039,9 @@ inline void* set_ArrayConstant_data(ASR::expr_t** a_args, size_t n_args, ASR::tt
             return (void*) data;
         }
         case ASR::ttypeType::String: {
-            int len = -1; len = ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(a_type)->m_len, len)? len : 0;
+            int len = -1;
+            ASRUtils::extract_value(
+                ASR::down_cast<ASR::String_t>(extract_type(expr_type(a_args[0])))->m_len, len);
             char* data = new char[len*n_args + 1];
             for (size_t i = 0; i < n_args; i++) {
                 char* value = ASR::down_cast<ASR::StringConstant_t>(ASRUtils::expr_value(a_args[i]))->m_s;

@@ -2959,16 +2959,14 @@ public:
     ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
         ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
         char* original_str = string_constant->m_s;
-        size_t original_length = std::strlen(original_str);
-
         size_t new_length = static_cast<size_t>(lhs_len);
         char* adjusted_str = al.allocate<char>(new_length + 1);
 
         if (lhs_len < rhs_len) { // trim
             std::memcpy(adjusted_str, original_str, new_length);
         } else { // pad
-            std::memcpy(adjusted_str, original_str, original_length);
-            std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+            std::memcpy(adjusted_str, original_str, rhs_len);
+            std::memset(adjusted_str + rhs_len, ' ', new_length - rhs_len);
         }
         adjusted_str[new_length] = '\0'; // null-terminate the string
 
@@ -3004,6 +3002,12 @@ public:
 
         array_constant->m_data = ASRUtils::set_ArrayConstant_data(
                 body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+        array_constant->m_n_data = array_size * lhs_len;
+        {
+            ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
+            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
+            ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
+        }
 
         return (ASR::expr_t*) array_constant;
     }
@@ -4178,10 +4182,24 @@ public:
                             if((lhs_len != rhs_len)) {
                                 // Adjust character string by padding or trimming
                                 // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                if (!is_array_reshape && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                if(is_array_reshape){
+                                    ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
+                                    (void)adjust_array_character_length(
+                                                array_reshape_t->m_array, lhs_len, rhs_len, al);
+                                    {
+                                        ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
+                                        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
+                                        {
+                                            ASR::String_t* arr_const_str_t = ASRUtils::get_string_type(array_reshape_t->m_array);
+                                            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(arr_const_str_t->m_len))
+                                            ASR::down_cast<ASR::IntegerConstant_t>(reshape_str_t->m_len)->m_n = 
+                                                ASR::down_cast<ASR::IntegerConstant_t>(arr_const_str_t->m_len)->m_n;
+                                        }
+                                    }
+                                } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {   
                                     value = adjust_array_character_length(value, lhs_len,
                                         rhs_len, al);
-                                } else if (!is_array_reshape) {
+                                } else {
                                     value = adjust_character_length(value, lhs_len,
                                         rhs_len, init_expr->base.loc, al);
                                 }
