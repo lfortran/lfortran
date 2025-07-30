@@ -788,8 +788,9 @@
                                 )
                         })
                     fpm_dependency
-                    [fpm_dependency]
                     ()
+                    [fpm_dependency]
+                    .false.
                     .false.
                     .false.
                 )

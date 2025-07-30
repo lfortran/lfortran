@@ -122,10 +122,11 @@
                                 )
                         })
                     module_operator_overloading_12
-                    []
                     ()
+                    []
                     .false.
                     .false.
+                    .true.
                 ),
             operator_overloading_12:
                 (Program

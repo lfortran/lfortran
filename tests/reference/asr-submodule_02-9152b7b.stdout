@@ -322,10 +322,11 @@
                                 )
                         })
                     points
-                    [stdlib_kinds_submodule_02]
                     ()
+                    [stdlib_kinds_submodule_02]
                     .false.
                     .false.
+                    .true.
                 ),
             points_a:
                 (Module
@@ -756,8 +757,9 @@
                                 )
                         })
                     points_a
+                    points
                     []
-                    1 points
+                    .false.
                     .false.
                     .false.
                 ),
@@ -788,8 +790,9 @@
                                 )
                         })
                     stdlib_kinds_submodule_02
-                    [iso_fortran_env]
                     ()
+                    [iso_fortran_env]
+                    .false.
                     .false.
                     .false.
                 ),

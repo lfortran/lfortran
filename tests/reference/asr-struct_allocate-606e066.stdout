@@ -132,8 +132,9 @@
                                 )
                         })
                     mod_struct_allocate
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 ),

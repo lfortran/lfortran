@@ -133,12 +133,13 @@
                             }
                         },
                         "name": "modules_10",
+                        "parent_module": [],
                         "dependencies": [
                             "my_other_module"
                         ],
-                        "parent_module": [],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "has_submodules": false
                     },
                     "loc": {
                         "first": 148,
@@ -413,10 +414,11 @@
                             }
                         },
                         "name": "my_other_module",
-                        "dependencies": [],
                         "parent_module": [],
+                        "dependencies": [],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "has_submodules": false
                     },
                     "loc": {
                         "first": 0,

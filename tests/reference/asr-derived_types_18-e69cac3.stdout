@@ -280,8 +280,9 @@
                                 )
                         })
                     derived_types_18_module_1
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )

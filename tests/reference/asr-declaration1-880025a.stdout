@@ -104,8 +104,9 @@
                                 )
                         })
                     declaration1
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )

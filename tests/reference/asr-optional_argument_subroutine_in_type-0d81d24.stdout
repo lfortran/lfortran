@@ -186,8 +186,9 @@
                                 )
                         })
                     test_module
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )

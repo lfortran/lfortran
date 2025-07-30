@@ -193,8 +193,9 @@
                                 )
                         })
                     derived_type1
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )

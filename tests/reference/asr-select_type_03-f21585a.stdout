@@ -123,9 +123,10 @@
                                 )
                         })
                     class_default_select_type
-                    []
                     ()
+                    []
                     .true.
+                    .false.
                     .false.
                 ),
             class_default_select_type_user:
@@ -615,8 +616,9 @@
                                 )
                         })
                     class_default_select_type_user
-                    [class_default_select_type]
                     ()
+                    [class_default_select_type]
+                    .false.
                     .false.
                     .false.
                 )

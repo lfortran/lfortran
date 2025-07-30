@@ -19,9 +19,10 @@
                                 )
                         })
                     tomlf_structure
-                    [tomlf_structure_base]
                     ()
+                    [tomlf_structure_base]
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_structure_base:
@@ -150,9 +151,10 @@
                                 )
                         })
                     tomlf_structure_base
-                    [tomlf_type_value]
                     ()
+                    [tomlf_type_value]
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_type:
@@ -222,8 +224,9 @@
                                 )
                         })
                     tomlf_type
-                    [tomlf_type_array]
                     ()
+                    [tomlf_type_array]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -591,11 +594,12 @@
                                 )
                         })
                     tomlf_type_array
+                    ()
                     [tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
-                    ()
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_type_value:
@@ -722,9 +726,10 @@
                                 )
                         })
                     tomlf_type_value
-                    []
                     ()
+                    []
                     .true.
+                    .false.
                     .false.
                 )
         })

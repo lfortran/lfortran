@@ -234,9 +234,10 @@
                                 )
                         })
                     fpm_git
-                    []
                     ()
+                    []
                     .true.
+                    .false.
                     .false.
                 ),
             fpm_manifest_dependency:
@@ -852,9 +853,10 @@
                                 )
                         })
                     fpm_manifest_dependency
-                    [fpm_git]
                     ()
+                    [fpm_git]
                     .true.
+                    .false.
                     .false.
                 ),
             modules_28:
