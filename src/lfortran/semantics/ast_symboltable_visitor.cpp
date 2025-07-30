@@ -115,6 +115,25 @@ public:
         // To Be Implemented
     }
 
+    void initialize_has_submodules(ASR::Module_t* m) {
+        if (m->m_parent_module) {
+            return ;
+        }
+
+        bool is_parent_module = false;
+        for(auto &item : m->m_symtab->get_scope()){
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                if (func_type->m_module) {
+                    is_parent_module = true;
+                    break;
+                }
+            }
+        }
+
+        m->m_has_submodules = is_parent_module;
+    }
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
@@ -336,6 +355,7 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+        initialize_has_submodules(m);
         dflt_access = ASR::Public;
     }
 
