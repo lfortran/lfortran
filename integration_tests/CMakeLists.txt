@@ -1162,7 +1162,7 @@ RUN(NAME intrinsics_370 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_371 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # findloc
 RUN(NAME intrinsics_372 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran) # cmplx
 RUN(NAME intrinsics_373 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
-# RUN(NAME intrinsics_374 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME intrinsics_374 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME intrinsics_375 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # move_alloc for string
 RUN(NAME intrinsics_376 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # present
 RUN(NAME intrinsics_377 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc) # minval, maxval

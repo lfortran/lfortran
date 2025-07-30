@@ -1016,10 +1016,16 @@ namespace LCompilers {
         }
 
         void SimpleCMODescriptor::copy_array_data_only(llvm::Value* src, llvm::Value* dest,
-            llvm::Module* module, llvm::Type* llvm_data_type, llvm::Value* num_elements) {
-            llvm::DataLayout data_layout(module->getDataLayout());
-            uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
-            llvm::Value* llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+            llvm::Module* module, llvm::Type* llvm_data_type, ASR::ttype_t* arr_type,
+            llvm::Value* num_elements) {
+            if(ASRUtils::is_array_of_strings(arr_type)) llvm_data_type = llvm::Type::getInt8Ty(context);
+            
+            llvm::Value* llvm_size {};
+            {
+                llvm::DataLayout data_layout(module->getDataLayout());
+                uint64_t size = data_layout.getTypeAllocSize(llvm_data_type);
+                llvm_size = llvm::ConstantInt::get(context, llvm::APInt(32, size));
+            }
             num_elements = builder->CreateMul(num_elements, llvm_size);
             builder->CreateMemCpy(src, llvm::MaybeAlign(), dest, llvm::MaybeAlign(), num_elements);
         }
