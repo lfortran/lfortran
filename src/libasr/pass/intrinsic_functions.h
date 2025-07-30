@@ -6183,7 +6183,7 @@ namespace Max {
                 char* val = ASR::down_cast<ASR::StringConstant_t>(args[i])->m_s;
                 if (strcmp(val, max_val) > 0) {
                     max_val = val;
-                    arg_type = expr_type(args[1]);
+                    arg_type = expr_type(args[i]);
                 }
             }
             return ASR::down_cast<ASR::expr_t>(ASR::make_StringConstant_t(al, loc, max_val, arg_type));
