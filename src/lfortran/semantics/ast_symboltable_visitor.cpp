@@ -279,7 +279,7 @@ public:
                                                 m->m_name,
                                                 nullptr,
                                                 0,
-                                                false, false);
+                                                false, false, false);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
@@ -291,7 +291,7 @@ public:
                                                 nullptr,
                                                 nullptr,
                                                 0,
-                                                false, false);
+                                                false, false, false);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_use; i++) {

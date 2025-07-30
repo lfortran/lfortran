@@ -2644,7 +2644,7 @@ public:
                         nullptr,
                         nullptr,
                         0,
-                        false, false);
+                        false, false, false);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);

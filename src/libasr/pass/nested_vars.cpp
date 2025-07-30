@@ -445,7 +445,7 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             nullptr,
                                             nullptr,
                                             0,
-                                            false, false);
+                                            false, false, false);
             if (is_any_variable_externally_defined) {
                 // this module is externally defined, so we mark it as external
                 current_scope->mark_all_variables_external(al);

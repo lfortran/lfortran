@@ -301,6 +301,13 @@ public:
             } else {
                 s.append("false");
             }
+            s.append(",\n" + indtd);
+            s.append("\"has_submodules\": ");
+            if (x.m_has_submodules) {
+                s.append("true");
+            } else {
+                s.append("false");
+            }
             dec_indent(); s.append("\n" + indtd);
             s.append("}");
             append_location(s, x.base.base.loc.first, x.base.base.loc.last);
