@@ -443,8 +443,8 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             /* a_symtab */ current_scope,
                                             /* a_name */ s2c(al, module_name),
                                             nullptr,
-                                            0,
                                             nullptr,
+                                            0,
                                             false, false);
             if (is_any_variable_externally_defined) {
                 // this module is externally defined, so we mark it as external

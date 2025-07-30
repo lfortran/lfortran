@@ -272,14 +272,14 @@ public:
                                                             diag::Label("", {loc})}));
                                                     throw SemanticAbort();}, lm, compiler_options.separate_compilation
                                                 ));
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
                                                 /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                m->m_name,
                                                 nullptr,
                                                 0,
-                                                submod_parent,
                                                 false, false);
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
@@ -289,8 +289,8 @@ public:
                                                 /* a_symtab */ current_scope,
                                                 /* a_name */ s2c(al, to_lower(x.m_name)),
                                                 nullptr,
-                                                0,
                                                 nullptr,
+                                                0,
                                                 false, false);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
@@ -822,7 +822,8 @@ public:
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
         if (interface_module->m_parent_module) {
-            interface_module = ASR::down_cast<ASR::Module_t>(interface_module->m_parent_module);
+            SymbolTable* tu_symtab = current_scope->get_global_scope();
+            interface_module = ASR::down_cast<ASR::Module_t>(tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
         }
 
         ASR::Function_t* proc_interface = nullptr;

@@ -267,6 +267,13 @@ public:
             s.append("\"name\": ");
             s.append("\"" + std::string(x.m_name) + "\"");
             s.append(",\n" + indtd);
+            s.append("\"parent_module\": ");
+            if (x.m_parent_module) {
+                s.append("\"" + std::string(x.m_parent_module) + "\"");
+            } else {
+                s.append("[]");
+            }
+            s.append(",\n" + indtd);
             s.append("\"dependencies\": ");
             s.append("[");
             if (x.n_dependencies > 0) {
@@ -280,13 +287,6 @@ public:
                 dec_indent(); s.append("\n" + indtd);
             }
             s.append("]");
-            s.append(",\n" + indtd);
-            s.append("\"parent_module\": ");
-            if (x.m_parent_module) {
-                visit_symbol(*x.m_parent_module);
-            } else {
-                s.append("[]");
-            }
             s.append(",\n" + indtd);
             s.append("\"loaded_from_mod\": ");
             if (x.m_loaded_from_mod) {
