@@ -9,6 +9,7 @@ module bspline_sub_module
                 implicit none
                 integer(4),intent(in),optional :: n     
                 print *, present(n)
+                if (present(n) .neqv. .true.) error stop
             end subroutine check
     end subroutine check_inputs
 end module bspline_sub_module
