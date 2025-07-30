@@ -4723,3 +4723,7 @@ run = true
 [[test]]
 filename = "../integration_tests/call_subroutine_without_type_01.f90"
 llvm = true
+
+[[test]]
+filename = "../integration_tests/functions_41.f90"
+ast = true
