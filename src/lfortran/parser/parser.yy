@@ -4,7 +4,7 @@
 %param {LCompilers::LFortran::Parser &p}
 %locations
 %glr-parser
-%expect    238 // shift/reduce conflicts
+%expect    240 // shift/reduce conflicts
 %expect-rr 175 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1081,6 +1081,7 @@ fn_mod
     | KW_MODULE { $$ = SIMPLE_ATTR(Module, @$); }
     | KW_PURE { $$ = SIMPLE_ATTR(Pure, @$); }
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
+    | KW_NON_RECURSIVE {  $$ = SIMPLE_ATTR(NonRecursive, @$); }
     ;
 
 temp_decl_star
