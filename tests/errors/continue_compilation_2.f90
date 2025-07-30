@@ -204,7 +204,7 @@ program continue_compilation_2
     real(4) ::idnint_runtime = 3.5
     real(8) :: ifix_runtime = 4.23
     logical :: min_max = .true.
-    real(4) :: spacing_runtime = 1.0_4
+
 
     
 
@@ -456,8 +456,7 @@ program continue_compilation_2
     !max
     print *, max(.true., .false.)
     print *, max(min_max, min_max)
-    !spacing
-    print *, spacing(spacing_runtime)
+
     contains
     logical function f(x)
         integer, intent(in), optional :: x
