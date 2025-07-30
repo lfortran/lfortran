@@ -6564,15 +6564,8 @@ public:
                         llvm_size = builder->CreateMul(llvm_size, builder->CreateSExtOrTrunc(tmp,
                                 llvm::Type::getInt32Ty(context)));
                     }
-                    if(ASRUtils::is_array_of_strings(target_type)){
-                        llvm_size = 
-                            builder->CreateMul(
-                                llvm_size,
-                                builder->CreateAdd(
-                                    llvm::ConstantInt::get(context, llvm::APInt(64,1)),
-                                    llvm_utils->get_stringArray_length(target_type, target)
-                                )
-                            );
+                    if(ASRUtils::is_array_of_strings(target_type)){ // Neglect previous llvm_size
+                        llvm_size = llvm_utils->get_stringArray_whole_size(target_type);
                     }
                 } else {
                     target_data = 
@@ -6598,15 +6591,8 @@ public:
                             this->visit_expr_wrapper(value_dims[i].m_length, true);
                             llvm_size = builder->CreateMul(llvm_size, tmp);
                         }
-                        if(ASRUtils::is_array_of_strings(value_type)){
-                            llvm_size = 
-                                builder->CreateMul(
-                                    llvm_size,
-                                    builder->CreateAdd(
-                                        llvm::ConstantInt::get(context, llvm::APInt(64, 1)),
-                                        llvm_utils->get_stringArray_length(value_type, value)
-                                    )
-                                );
+                        if(ASRUtils::is_array_of_strings(value_type)){ // Neglect previous llvm_size
+                            llvm_size = llvm_utils->get_stringArray_whole_size(value_type);
                         }
                     }
                 } else {
