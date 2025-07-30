@@ -2488,8 +2488,8 @@ get_names(const std::vector<std::string> &input) {
         if(name.length() > 1 && name[0] == '-' && name[1] != '-') {
             if(name.length() == 2 && valid_first_char(name[1]))
                 short_names.emplace_back(1, name[1]);
-            else
-                throw BadNameString::OneCharName(name);
+            // else
+                // throw BadNameString::OneCharName(name);
         } else if(name.length() > 2 && name.substr(0, 2) == "--") {
             name = name.substr(2);
             if(valid_name_string(name))
