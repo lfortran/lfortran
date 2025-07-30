@@ -1928,6 +1928,22 @@ namespace LCompilers {
 
 
     void LLVMUtils::allocate_allocatable_string(ASR::String_t* str_type, llvm::Value* str, llvm::Value* amount_to_allocate){
+        // Make sure the str data was not allocated before (equals null)
+        llvm::Value* str_data = get_string_data(str_type, str);
+        llvm::Value* null_ptr = llvm::ConstantPointerNull::get(static_cast<llvm::PointerType*>(str_data->getType()));
+
+        llvm::Value* is_not_null = builder->CreateICmpNE(str_data, null_ptr);
+
+        create_if_else(is_not_null, [&]() {
+            llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("runtime error: Attempting to allocate already allocated variable!\n");
+            print_error(context, *module, *builder, {fmt_ptr});
+            const int exit_code_int = 1;
+            llvm::Value *exit_code = llvm::ConstantInt::get(context, llvm::APInt(32, exit_code_int));
+            exit(context, *module, *builder, exit_code);
+        }, [&]() {
+            // value is null so do nothing
+        });
+
         switch (str_type->m_len_kind){
             case ASR::ExpressionLength:
             case ASR::AssumedLength:{ //String length remains the same
