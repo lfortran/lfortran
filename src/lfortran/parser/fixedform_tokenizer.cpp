@@ -1804,9 +1804,9 @@ struct FixedFormRecursiveDescent {
     }
 
     bool lex_procedure(unsigned char *&cur) {
-	const std::vector<std::string> subroutine_keywords{"recursive", "pure",
+	const std::vector<std::string> subroutine_keywords{"recursive", "non_recursive", "pure",
             "elemental"};
-        const std::vector<std::string> function_keywords{"recursive", "pure",
+        const std::vector<std::string> function_keywords{"recursive", "non_recursive", "pure",
             "elemental", "real*", "real",
 	    "character*(*)",
             "character*", "character",
