@@ -709,8 +709,9 @@
                                 )
                         })
                     my_module
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )

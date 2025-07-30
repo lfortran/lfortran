@@ -89,8 +89,9 @@
                                 )
                         })
                     abstract_type
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 ),

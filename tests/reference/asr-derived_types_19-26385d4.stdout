@@ -322,9 +322,10 @@
                                 )
                         })
                     derived_types_module_19
-                    []
                     ()
+                    []
                     .true.
+                    .false.
                     .false.
                 ),
             derived_types_module_19_1:
@@ -380,8 +381,9 @@
                                 )
                         })
                     derived_types_module_19_1
-                    [derived_types_module_19]
                     ()
+                    [derived_types_module_19]
+                    .false.
                     .false.
                     .false.
                 ),

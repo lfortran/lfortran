@@ -369,8 +369,9 @@
                                 )
                         })
                     module_function_call1
-                    [module_function_call1]
                     ()
+                    [module_function_call1]
+                    .false.
                     .false.
                     .false.
                 )

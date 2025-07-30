@@ -536,8 +536,9 @@
                                 )
                         })
                     complex_module
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 ),

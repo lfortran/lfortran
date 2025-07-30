@@ -329,9 +329,10 @@
                                 )
                         })
                     fpm_filesystem
+                    ()
                     [fpm_strings
                     iso_c_binding]
-                    ()
+                    .false.
                     .false.
                     .false.
                 ),
@@ -782,10 +783,11 @@
                                 )
                         })
                     fpm_strings
+                    ()
                     [iso_c_binding
                     fpm_strings]
-                    ()
                     .true.
+                    .false.
                     .false.
                 ),
             iso_c_binding:

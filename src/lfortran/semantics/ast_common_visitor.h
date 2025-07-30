@@ -2642,9 +2642,9 @@ public:
                         /* a_symtab */ current_scope,
                         /* a_name */ s2c(al, to_lower(module_name)),
                         nullptr,
-                        0,
                         nullptr,
-                        false, false);
+                        0,
+                        false, false, false);
 
             ASR::symbol_t* current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
             global_scope->add_symbol(to_lower(module_name), current_module_sym);

@@ -115,6 +115,25 @@ public:
         // To Be Implemented
     }
 
+    void initialize_has_submodules(ASR::Module_t* m) {
+        if (m->m_parent_module) {
+            return ;
+        }
+
+        bool is_parent_module = false;
+        for(auto &item : m->m_symtab->get_scope()){
+            if (ASR::is_a<ASR::Function_t>(*item.second)) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(item.second);
+                ASR::FunctionType_t* func_type = ASR::down_cast<ASR::FunctionType_t>(func->m_function_signature);
+                if (func_type->m_module) {
+                    is_parent_module = true;
+                    break;
+                }
+            }
+        }
+
+        m->m_has_submodules = is_parent_module;
+    }
 
     void populate_implicit_dictionary(Location &a_loc, std::map<std::string, ASR::ttype_t*> &implicit_dictionary) {
         for (char ch='i'; ch<='n'; ch++) {
@@ -272,14 +291,14 @@ public:
                                                             diag::Label("", {loc})}));
                                                     throw SemanticAbort();}, lm, compiler_options.separate_compilation
                                                 ));
+            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
             tmp0 = ASR::make_Module_t(al, x.base.base.loc,
                                                 /* a_symtab */ current_scope,
                                                 /* a_name */ s2c(al, to_lower(x.m_name)),
+                                                m->m_name,
                                                 nullptr,
                                                 0,
-                                                submod_parent,
-                                                false, false);
-            ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(submod_parent);
+                                                false, false, false);
             std::string unsupported_sym_name = import_all(m, true);
             if( !unsupported_sym_name.empty() ) {
                 throw LCompilersException("'" + unsupported_sym_name + "' is not supported yet for declaring with use.");
@@ -289,9 +308,9 @@ public:
                                                 /* a_symtab */ current_scope,
                                                 /* a_name */ s2c(al, to_lower(x.m_name)),
                                                 nullptr,
-                                                0,
                                                 nullptr,
-                                                false, false);
+                                                0,
+                                                false, false, false);
         }
         current_module_sym = ASR::down_cast<ASR::symbol_t>(tmp0);
         for (size_t i=0; i<x.n_use; i++) {
@@ -336,6 +355,7 @@ public:
         }
         parent_scope->add_symbol(sym_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
+        initialize_has_submodules(m);
         dflt_access = ASR::Public;
     }
 
@@ -822,7 +842,8 @@ public:
     void visit_Procedure(const AST::Procedure_t &x) {
         ASR::Module_t* interface_module = ASR::down_cast<ASR::Module_t>(current_module_sym);
         if (interface_module->m_parent_module) {
-            interface_module = ASR::down_cast<ASR::Module_t>(interface_module->m_parent_module);
+            SymbolTable* tu_symtab = current_scope->get_global_scope();
+            interface_module = ASR::down_cast<ASR::Module_t>(tu_symtab->get_symbol(std::string(interface_module->m_parent_module)));
         }
 
         ASR::Function_t* proc_interface = nullptr;

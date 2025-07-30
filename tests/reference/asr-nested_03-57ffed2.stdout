@@ -162,8 +162,9 @@
                                 )
                         })
                     nested_03_a
-                    []
                     ()
+                    []
+                    .false.
                     .false.
                     .false.
                 )
