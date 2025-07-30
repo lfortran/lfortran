@@ -1481,7 +1481,6 @@ public:
     SetChar current_function_dependencies;
     ASR::ttype_t* current_variable_type_;
     ASR::expr_t* current_struct_type_var_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
-    ASR::expr_t* current_pointer_null_constant_expr = nullptr; // used for setting the struct symbol in `PointerNullConstant`
 
     int32_t enum_init_val;
     bool default_storage_save = false;

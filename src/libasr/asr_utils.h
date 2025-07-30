@@ -4188,9 +4188,7 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
         ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(sym_target);
         ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(sym_value);
         is_class_same = (sym_target == sym_value);
-        if (ASRUtils::is_class_type(tar_ext)) {
-            is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
-        }
+        is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
     }
     return is_class_same;
 }

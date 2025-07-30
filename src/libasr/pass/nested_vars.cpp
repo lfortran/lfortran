@@ -350,12 +350,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
                     continue;
                 }
+                ASR::symbol_t* m_derived_type_or_class_type = nullptr;
                 if( ASR::is_a<ASR::StructType_t>(*var_type_)) {
                     ASR::symbol_t* derived_type_or_class_type = nullptr;
                     ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
                     derived_type_or_class_type = var->m_type_declaration;
                     if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(derived_type_or_class_type)->get_counter() ) {
-                        ASR::symbol_t* m_derived_type_or_class_type = current_scope->get_symbol(
+                        m_derived_type_or_class_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(derived_type_or_class_type));
                         if( m_derived_type_or_class_type == nullptr ) {
                             if (!ASR::is_a<ASR::Program_t>(
@@ -389,8 +390,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             struct_t->base.base.loc,
                                             m_derived_type_or_class_type,
                                             ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct);
-                            var->m_type_declaration = current_scope->get_symbol(
-                                ASRUtils::symbol_name(derived_type_or_class_type));
                         }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
@@ -433,9 +432,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                 if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
                     var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
                 }
+                ASR::symbol_t* type_decl = nullptr;
+                if (m_derived_type_or_class_type) {
+                    type_decl = m_derived_type_or_class_type;
+                }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
-                    ASR::intentType::Unspecified, nullptr, ASRUtils::EXPR(ASR::make_Var_t(al, var->base.base.loc, it2)));
+                    ASR::intentType::Unspecified, type_decl, nullptr);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
@@ -685,9 +688,17 @@ public:
                             ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
                                     ASRUtils::symbol_get_past_external(ext_sym));
                             // Import the Struct as an `ExternalSymbol` into `Program`
-                            std::string sym_name = "";
-                            if (var->m_type_declaration != nullptr) {
+                            std::string sym_name, module_name = "";
+                            ASR::symbol_t* m_external = nullptr;
+                            if (ASR::is_a<ASR::ExternalSymbol_t>(*var->m_type_declaration)) {
+                                sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                                m_external = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                                module_name = ASR::down_cast<ASR::ExternalSymbol_t>(
+                                                            var->m_type_declaration)->m_module_name;
+                            } else {
                                 sym_name = ASRUtils::symbol_name(var->m_type_declaration);
+                                m_external = var->m_type_declaration;
+                                module_name = ASR::down_cast<ASR::ExternalSymbol_t>(ext_sym)->m_module_name;
                             }
                             ASR::symbol_t* st_sym = ASR::down_cast<ASR::symbol_t>(
                                                     ASR::make_ExternalSymbol_t(
@@ -695,9 +706,8 @@ public:
                                                         var->base.base.loc,
                                                         current_scope,
                                                         s2c(al, sym_name),
-                                                        var->m_type_declaration,
-                                                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                                                            ext_sym)->m_module_name,
+                                                        m_external,
+                                                        s2c(al, module_name),
                                                         nullptr,
                                                         0,
                                                         ASRUtils::symbol_name(var->m_type_declaration),
