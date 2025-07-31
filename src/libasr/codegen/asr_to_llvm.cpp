@@ -1988,7 +1988,8 @@ public:
             return ;
         }
         if( ptr_loads > 0 ) {
-            tmp = llvm_utils->CreateLoad(tmp);
+            llvm::Type* value_type = llvm_utils->getMemberType(member_type_asr, member_var, module.get());
+            tmp = llvm_utils->CreateLoad2(value_type, tmp);
         }
     }
 
