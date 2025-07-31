@@ -2731,11 +2731,15 @@ public:
         ASR::ttype_t* x_mv_type = ASRUtils::expr_type(x.m_v);
         llvm::Value* array = nullptr;
         ASR::Variable_t *v = nullptr;
+        bool is_intent_in = false;
         std::string array_name;
         if( ASR::is_a<ASR::Var_t>(*x.m_v) ) {
             v = ASRUtils::EXPR2VAR(x.m_v);
             array_name = v->m_name;
             uint32_t v_h = get_hash((ASR::asr_t*)v);
+            if (v->m_intent == ASRUtils::intent_in) {
+                is_intent_in = true;
+            }
             array = llvm_symtab[v_h];
             if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(v->m_type))) {
                 ASR::Struct_t* der_symbol = ASR::down_cast<ASR::Struct_t>(
@@ -2830,7 +2834,11 @@ public:
                     this->visit_expr_wrapper(m_dims[idim].m_start, true);
                     llvm::Value* dim_start = tmp;
                     ptr_loads = 2 - !LLVM::is_llvm_pointer(*ASRUtils::expr_type(m_dims[idim].m_length));
-                    load_array_size_deep_copy(m_dims[idim].m_length);
+                    if (is_intent_in) {
+                        this->visit_expr_wrapper(m_dims[idim].m_length, true);
+                    } else {
+                        load_array_size_deep_copy(m_dims[idim].m_length);
+                    }
                     llvm::Value* dim_size = tmp;
                     llvm_diminfo.push_back(al, dim_start);
                     llvm_diminfo.push_back(al, dim_size);
