@@ -5750,17 +5750,6 @@ public:
                         "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
-                } else if (ASR::is_a<ASR::String_t>(*extracted_type)) {
-                    int64_t l1, l2;
-                    if (ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(extracted_type)->m_len, l1) &&
-                        ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(extracted_new_type)->m_len, l2)) {
-                        if (l1 != l2) {
-                            diag.add(Diagnostic("Different `character` lengths " + std::to_string(l1)
-                                + " and " + std::to_string(l2) + " in array constructor",
-                                Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                    }
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
@@ -5793,6 +5782,58 @@ public:
         } else {
             type = ASRUtils::duplicate_type(al, type, &dims);
         }
+
+        {
+            /*
+                * type_spec --> `[character(10) :: ......]`
+
+                ArrayConstant    + No type_spec => Check length equlity
+                ArrayConstant    + type_spec    => Adjust Length
+
+            */
+            bool Array_constant = true;
+            for (size_t i = 0; i < body.size(); i++) {
+                ASR::expr_t* a_value = ASRUtils::expr_value(body[i]);
+                Array_constant &= ASRUtils::is_value_constant(a_value);
+            }
+            if (is_type_spec_ommitted &&
+                Array_constant &&
+                ASRUtils::is_array_of_strings(type)) {
+                for(size_t i = 0; i < body.size(); i++){
+                    int64_t l1, l2;
+                    if (ASRUtils::extract_value(ASRUtils::get_string_type(type)->m_len, l1) &&
+                        ASRUtils::extract_value(ASRUtils::get_string_type(body[i])->m_len, l2)) {
+                        if (l1 != l2) {
+                            diag.add(Diagnostic("Different `character` lengths " + std::to_string(l1)
+                                + " and " + std::to_string(l2) + " in array constructor",
+                                Level::Error, Stage::Semantic, {Label("",{body[i]->base.loc})}));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
+            }
+
+            if( ASRUtils::is_array_of_strings(type) &&
+                ((Array_constant && !is_type_spec_ommitted))){ // Adjust 
+                // Adjust constant strings based on array's length.
+                int64_t arr_len {};
+                if(ASRUtils::extract_value(ASRUtils::get_string_type(type)->m_len, arr_len)){
+                    int64_t item_len;
+                    for(size_t i = 0; i < body.size(); i++){
+                        if( ASRUtils::extract_value(ASRUtils::get_string_type(body[i])->m_len, item_len) ){
+                            if(arr_len != item_len){
+                                if(ASRUtils::is_array(ASRUtils::expr_type(body[i]))){
+                                    *(body.p+i) = adjust_array_character_length(body[i], arr_len, item_len, al);
+                                } else {
+                                    *(body.p+i) = adjust_character_length(body[i], arr_len, item_len, body[i]->base.loc, al);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }

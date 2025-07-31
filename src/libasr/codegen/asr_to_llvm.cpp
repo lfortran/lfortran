@@ -4466,7 +4466,9 @@ public:
                 throw LCompilersException("Unhandled ArrayPhysicalType");
             }
         } else if (ASR::is_a<ASR::ArrayReshape_t>(*v->m_symbolic_value)) {
-            builder->CreateStore(llvm_utils->CreateLoad(init_value), target_var, v->m_is_volatile);
+            llvm::Type* arr_type = llvm_utils->get_type_from_ttype_t_util(
+                v->m_symbolic_value, ASRUtils::expr_type(v->m_symbolic_value), module.get());
+            builder->CreateStore(builder->CreateLoad(arr_type, init_value), target_var, v->m_is_volatile);
         } else if (is_a<ASR::String_t>(*v->m_type)) {
             ASR::String_t *t = down_cast<ASR::String_t>(v->m_type);
             visit_expr(*t->m_len);
