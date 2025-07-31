@@ -1221,7 +1221,7 @@ public:
                     throw SemanticAbort();
                 }
             }
-            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, nullptr, AST::symbolType::None);
+            AST::ast_t* r_ast = AST::make_AttrType_t(al, loc, ttype, nullptr, 0, nullptr, nullptr, nullptr, nullptr, 0, AST::symbolType::None);
             AST::decl_attribute_t* r_attr = AST::down_cast<AST::decl_attribute_t>(r_ast);
             r = AST::down_cast<AST::AttrType_t>(r_attr);
         }

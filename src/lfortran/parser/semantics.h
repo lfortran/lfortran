@@ -275,45 +275,48 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, nullptr, \
-            nullptr, None)
+            nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_INT(x, n, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             a2kind_list(p.m_a, l, INTEGER(n, l)).p, 1, \
-            nullptr, nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, \
+            nullptr, 0, None)
 
 #define ATTR_TYPE_KIND(x, kind, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             kind.p, kind.size(), \
-            nullptr, nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, \
+            nullptr, 0, None)
 
 #define ATTR_TYPE_NAME(x, name, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, nullptr, \
-            name2char(name), None)
+            name2char(name), \
+            nullptr, 0, None)
 
 #define ATTR_GENERIC_TYPE_NAME(x, generic_type_param, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, \
             down_cast<generic_type_param_t>(generic_type_param), \
-            nullptr, None)
+            nullptr, nullptr, 0, None)
 
 #define ATTR_TYPE_STAR(x, sym, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, nullptr, nullptr,\
-            nullptr, sym)
+            nullptr, nullptr, 0, sym)
 
 #define ATTR_TYPE_ATTR(x, attr, l) make_AttrType_t( \
             p.m_a, l, \
             decl_typeType::Type##x, \
             nullptr, 0, \
             down_cast<decl_attribute_t>(attr), \
-            nullptr, nullptr, None)
+            nullptr, nullptr, nullptr, 0, None)
 
 #define ATTR_NAME(x, l) make_AttrNamelist_t \
             (p.m_a, l, name2char(x))
@@ -2585,11 +2588,17 @@ return make_Submodule_t(al, a_loc,
         down_cast<implements_header_t>(header), \
         IMPLEMENTS_ITEMS(contains), contains.size())
 
-#define IMPLEMENTS_HEADER_TYPE(interface_name, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
-        name2char(interface_name), down_cast<decl_attribute_t>(type_name))
+#define IMPLEMENTS_HEADER_TYPE1(trait_name, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, A2LIST(p.m_a, trait_name)), 1, down_cast<decl_attribute_t>(type_name))
 
-#define IMPLEMENTS_HEADER_INTERFACE(interface_name, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
-        name2char(interface_name), name2char(type_name))
+#define IMPLEMENTS_HEADER_INTERFACE1(trait_name, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, A2LIST(p.m_a, trait_name)), 1, name2char(type_name))
+
+#define IMPLEMENTS_HEADER_TYPE2(trait_names, type_name, l) make_ImplementsHeaderType_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, trait_names), trait_names.size(), down_cast<decl_attribute_t>(type_name))
+        
+#define IMPLEMENTS_HEADER_INTERFACE2(trait_names, type_name, l) make_ImplementsHeaderInterface_t(p.m_a, l, \
+        REDUCE_ARGS(p.m_a, trait_names), trait_names.size(), name2char(type_name))
 
 #define IMPLEMENTS_PROC(a_name, a_attrs, l) make_ImplementsProc_t(p.m_a, l, \
         name2char(a_name), \

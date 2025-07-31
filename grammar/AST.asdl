@@ -93,8 +93,8 @@ interface_item
     | InterfaceTypeDef(identifier name, decl_attribute attribute)
 
 implements_header
-    = ImplementsHeaderType(identifier interface_name, decl_attribute type_name)
-    | ImplementsHeaderInterface(identifier interface_name, identifier type_name)
+    = ImplementsHeaderType(identifier* traits, decl_attribute type_name)
+    | ImplementsHeaderInterface(identifier* traits, identifier interface_name)
 
 implements_item
     = ImplementsProc(identifier name, decl_attribute* attrs)
@@ -300,7 +300,7 @@ decl_attribute
     | AttrPass(identifier? name)
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
-        generic_type_param? parametrized_type, identifier? name, symbol sym)
+        generic_type_param? parametrized_type, identifier? name, identifier* traits, symbol sym)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)

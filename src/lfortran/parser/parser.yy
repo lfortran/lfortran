@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 
-%expect    253 // shift/reduce conflicts
+%expect    240 // shift/reduce conflicts
 %expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -382,6 +382,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <ast> id
 %type <vec_ast> id_list
 %type <vec_ast> id_list_opt
+%type <vec_ast> trait_list
 %type <ast> script_unit
 %type <ast> module
 %type <ast> end_module
@@ -748,8 +749,10 @@ implements_decl
     ;
 
 implements_stmt
-    : KW_IMPLEMENTS id "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE($2, $4, @$); }
-    | KW_IMPLEMENTS id "::" id { $$ =  IMPLEMENTS_HEADER_INTERFACE($2, $4, @$); }
+    : KW_IMPLEMENTS id "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE1($2, $4, @$); }
+    | KW_IMPLEMENTS id "::" id { $$ =  IMPLEMENTS_HEADER_INTERFACE1($2, $4, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" "::" var_type { $$ = IMPLEMENTS_HEADER_TYPE2($3, $6, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" "::" id { $$ = IMPLEMENTS_HEADER_INTERFACE2($3, $6, @$); }
     ;
 
 implements_body
@@ -764,7 +767,7 @@ implements_item
 // Using "id" instead of "TK_NAME" causes ambiguity and hundreds of reduce/shift 
 // conflicts with "var_type"
 endimplements
-    : endimplements0
+    : endimplements0 sep
     | endimplements0 TK_NAME sep
     | endimplements0 var_type sep
     ;
@@ -1597,7 +1600,7 @@ var_modifier
     | bind { $$ = BIND($1, @$); }
     | KW_KIND { $$ = SIMPLE_ATTR(Kind, @$); }
     | KW_LEN { $$ = SIMPLE_ATTR(Len, @$); }
-    | KW_IMPLEMENTS "(" id_list ")" { $$ = ATTR_IMPLEMENTS($3, @$); }
+    | KW_IMPLEMENTS "(" trait_list ")" { $$ = ATTR_IMPLEMENTS($3, @$); }
     ;
 
 
@@ -1639,7 +1642,7 @@ declaration_type_spec
     | KW_TYPE "(" "*" ")" { $$ = ATTR_TYPE_STAR(Type, Asterisk, @$); }
     | KW_CLASS "(" id ")" { $$ = ATTR_TYPE_NAME(Class, $3, @$); }
     | KW_CLASS "(" "*" ")" { $$ = ATTR_TYPE_STAR(Class, Asterisk, @$); }
-    | KW_CLASS "(" id "{" id "}" ")" { 
+    | KW_CLASS "(" id "{" id "}" ")" {
         $$ = ATTR_GENERIC_TYPE_NAME(Class, GENERIC_TYPE_PARAM($3, $5, @$), @$); }
     ;
 
@@ -2607,6 +2610,11 @@ id_list_opt
 
 id_list
     : id_list "," id { $$ = $1; LIST_ADD($$, $3); }
+    | id { LIST_NEW($$); LIST_ADD($$, $1); }
+    ;
+
+trait_list
+    : trait_list "+" id { $$ = $1; LIST_ADD($$, $3); } // Use TK_NAME
     | id { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
