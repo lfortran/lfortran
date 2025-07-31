@@ -5400,7 +5400,9 @@ public:
             (LLVM::is_llvm_pointer(*ASRUtils::type_get_past_pointer(asr_type))
              || ASR::is_a<ASR::Array_t>(*ASRUtils::type_get_past_pointer(asr_type))
              || llvm::isa<llvm::AllocaInst>(llvm_tmp))) {
-            llvm_tmp = llvm_utils->CreateLoad(llvm_tmp);
+            ASR::ttype_t* contained_type = ASRUtils::type_get_past_pointer(asr_type);
+            llvm::Type* llvm_ty = llvm_utils->get_type_from_ttype_t_util(nullptr, contained_type, module.get());
+            llvm_tmp = llvm_utils->CreateLoad2(llvm_ty->getPointerTo(), llvm_tmp);
         }
         asr_type = ASRUtils::get_contained_type(asr_type);
 
