@@ -14,10 +14,10 @@
                                     []
                                     Local
                                     (ArrayConstant
-                                        8
+                                        4
                                         ["1", "2", "3", "$"]
                                         (Array
-                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerToDataArray
@@ -25,10 +25,10 @@
                                         ColMajor
                                     )
                                     (ArrayConstant
-                                        8
+                                        4
                                         ["1", "2", "3", "$"]
                                         (Array
-                                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 4 (Integer 4) Decimal))]
                                             PointerToDataArray

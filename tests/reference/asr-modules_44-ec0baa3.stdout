@@ -190,7 +190,7 @@
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             160
-                                            ["# ", "My cool new project!"]
+                                            ["#                                                                               ", "My cool new project!                                                            "]
                                             (Array
                                                 (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
