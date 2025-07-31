@@ -2959,16 +2959,14 @@ public:
     ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
         ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
         char* original_str = string_constant->m_s;
-        size_t original_length = std::strlen(original_str);
-
         size_t new_length = static_cast<size_t>(lhs_len);
         char* adjusted_str = al.allocate<char>(new_length + 1);
 
         if (lhs_len < rhs_len) { // trim
             std::memcpy(adjusted_str, original_str, new_length);
         } else { // pad
-            std::memcpy(adjusted_str, original_str, original_length);
-            std::memset(adjusted_str + original_length, ' ', new_length - original_length);
+            std::memcpy(adjusted_str, original_str, rhs_len);
+            std::memset(adjusted_str + rhs_len, ' ', new_length - rhs_len);
         }
         adjusted_str[new_length] = '\0'; // null-terminate the string
 
@@ -3004,6 +3002,12 @@ public:
 
         array_constant->m_data = ASRUtils::set_ArrayConstant_data(
                 body.p, body.size(), ASRUtils::extract_type(array_constant->m_type));
+        array_constant->m_n_data = array_size * lhs_len;
+        {
+            ASR::String_t* str_t = ASRUtils::get_string_type(array_constant->m_type);
+            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(str_t->m_len))
+            ASR::down_cast<ASR::IntegerConstant_t>(str_t->m_len)->m_n = lhs_len;
+        }
 
         return (ASR::expr_t*) array_constant;
     }
@@ -4178,10 +4182,24 @@ public:
                             if((lhs_len != rhs_len)) {
                                 // Adjust character string by padding or trimming
                                 // Notice that we only trim when variable is parameter, to have compile-time-correct string.
-                                if (!is_array_reshape && ASR::is_a<ASR::ArrayConstant_t>(*value)) {
+                                if(is_array_reshape){
+                                    ASR::ArrayReshape_t* array_reshape_t = ASR::down_cast<ASR::ArrayReshape_t>(init_expr);
+                                    (void)adjust_array_character_length(
+                                                array_reshape_t->m_array, lhs_len, rhs_len, al);
+                                    {
+                                        ASR::String_t* reshape_str_t = ASRUtils::get_string_type(array_reshape_t->m_type);
+                                        LCOMPILERS_ASSERT(ASRUtils::is_value_constant(reshape_str_t->m_len))
+                                        {
+                                            ASR::String_t* arr_const_str_t = ASRUtils::get_string_type(array_reshape_t->m_array);
+                                            LCOMPILERS_ASSERT(ASRUtils::is_value_constant(arr_const_str_t->m_len))
+                                            ASR::down_cast<ASR::IntegerConstant_t>(reshape_str_t->m_len)->m_n = 
+                                                ASR::down_cast<ASR::IntegerConstant_t>(arr_const_str_t->m_len)->m_n;
+                                        }
+                                    }
+                                } else if (ASR::is_a<ASR::ArrayConstant_t>(*value)) {   
                                     value = adjust_array_character_length(value, lhs_len,
                                         rhs_len, al);
-                                } else if (!is_array_reshape) {
+                                } else {
                                     value = adjust_character_length(value, lhs_len,
                                         rhs_len, init_expr->base.loc, al);
                                 }
@@ -5732,17 +5750,6 @@ public:
                         "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
-                } else if (ASR::is_a<ASR::String_t>(*extracted_type)) {
-                    int64_t l1, l2;
-                    if (ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(extracted_type)->m_len, l1) &&
-                        ASRUtils::extract_value(ASR::down_cast<ASR::String_t>(extracted_new_type)->m_len, l2)) {
-                        if (l1 != l2) {
-                            diag.add(Diagnostic("Different `character` lengths " + std::to_string(l1)
-                                + " and " + std::to_string(l2) + " in array constructor",
-                                Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
-                            throw SemanticAbort();
-                        }
-                    }
                 }
             } else if (!ASRUtils::check_equal_type(expr_type, type)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
@@ -5775,6 +5782,58 @@ public:
         } else {
             type = ASRUtils::duplicate_type(al, type, &dims);
         }
+
+        {
+            /*
+                * type_spec --> `[character(10) :: ......]`
+
+                ArrayConstant    + No type_spec => Check length equality
+                ArrayConstant    + type_spec    => Adjust Length
+
+            */
+            bool Array_constant = true;
+            for (size_t i = 0; i < body.size(); i++) {
+                ASR::expr_t* a_value = ASRUtils::expr_value(body[i]);
+                Array_constant &= ASRUtils::is_value_constant(a_value);
+            }
+            if (is_type_spec_ommitted &&
+                Array_constant &&
+                ASRUtils::is_array_of_strings(type)) {
+                for(size_t i = 0; i < body.size(); i++){
+                    int64_t l1, l2;
+                    if (ASRUtils::extract_value(ASRUtils::get_string_type(type)->m_len, l1) &&
+                        ASRUtils::extract_value(ASRUtils::get_string_type(body[i])->m_len, l2)) {
+                        if (l1 != l2) {
+                            diag.add(Diagnostic("Different `character` lengths " + std::to_string(l1)
+                                + " and " + std::to_string(l2) + " in array constructor",
+                                Level::Error, Stage::Semantic, {Label("",{body[i]->base.loc})}));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
+            }
+
+            if( ASRUtils::is_array_of_strings(type) &&
+                ((Array_constant && !is_type_spec_ommitted))){ // Adjust 
+                // Adjust constant strings based on array's length.
+                int64_t arr_len {};
+                if(ASRUtils::extract_value(ASRUtils::get_string_type(type)->m_len, arr_len)){
+                    int64_t item_len;
+                    for(size_t i = 0; i < body.size(); i++){
+                        if( ASRUtils::extract_value(ASRUtils::get_string_type(body[i])->m_len, item_len) ){
+                            if(arr_len != item_len){
+                                if(ASRUtils::is_array(ASRUtils::expr_type(body[i]))){
+                                    *(body.p+i) = adjust_array_character_length(body[i], arr_len, item_len, al);
+                                } else {
+                                    *(body.p+i) = adjust_character_length(body[i], arr_len, item_len, body[i]->base.loc, al);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         tmp = ASRUtils::make_ArrayConstructor_t_util(al, x.base.base.loc, body.p,
             body.size(), type, ASR::arraystorageType::ColMajor);
     }
