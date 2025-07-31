@@ -2780,6 +2780,8 @@ LFORTRAN_API void _lfortran_strcpy(
         if(*lhs == NULL) *lhs = (char*)malloc((*lhs_len + null_terminated_string) * sizeof(char));
         _lfortran_copy_str_and_pad(*lhs, *lhs_len, rhs, rhs_len);
     } else if (is_lhs_deferred && is_lhs_allocatable) { // Automatic Reallocation
+        if (rhs == NULL)
+            return;
         *lhs = (char*)realloc(*lhs, (rhs_len + null_terminated_string) * sizeof(char));
         *lhs_len = rhs_len;
         for(int64_t i = 0; i < rhs_len; i++) {(*lhs)[i] = rhs[i];}
