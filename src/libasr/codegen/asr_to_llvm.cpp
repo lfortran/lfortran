@@ -6889,7 +6889,7 @@ public:
         } else if (
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::SIMDArray) {
-            tmp = llvm_utils->CreateLoad(arg);
+            tmp = llvm_utils->CreateLoad2(m_arg_llvm_type, arg);
         } else if(
             m_new == ASR::array_physical_typeType::DescriptorArray &&
             m_old == ASR::array_physical_typeType::FixedSizeArray) {
@@ -6941,17 +6941,17 @@ public:
                     tmp = llvm_utils->create_gep2(arr_type, tmp, 0);
                 }
             } else {
-                tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(),arr_descr->get_pointer_to_data(tmp));
             }
         } else if (
             m_new == ASR::array_physical_typeType::StringArraySinglePointer &&
             m_old == ASR::array_physical_typeType::DescriptorArray) {
             if (ASRUtils::is_fixed_size_array(m_type)) {
-                tmp = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(tmp));
+                tmp = llvm_utils->CreateLoad2(data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
                 llvm::Type* target_type = llvm_utils->get_type_from_ttype_t_util(m_arg, m_type, module.get())->getPointerTo();
                 tmp = builder->CreateBitCast(tmp, target_type); // [1 x i8*]*
                 // we need [1 x i8*]
-                tmp = llvm_utils->CreateLoad(tmp);
+                tmp = llvm_utils->CreateLoad2(target_type, tmp);
             }
         } else {
             LCOMPILERS_ASSERT(false);
