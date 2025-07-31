@@ -442,31 +442,15 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::OverloadedBinOp: {
             ASR::OverloadedBinOp_t* overloaded_bin_op = ASR::down_cast<ASR::OverloadedBinOp_t>(expression);
-            ASR::symbol_t* left_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_bin_op->m_left));
-            ASR::symbol_t* right_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_bin_op->m_right));
-            if (left_struct_sym != nullptr) {
-                return left_struct_sym;
-            } else if (right_struct_sym != nullptr) {
-                return right_struct_sym;
-            } else if ( overloaded_bin_op->m_value != nullptr ) {
-                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_bin_op->m_value));
-            } else {
-                return nullptr; // If no struct symbol found in either side
-            }
+            return ASRUtils::get_struct_sym_from_struct_expr(overloaded_bin_op->m_overloaded);
+        }
+        case ASR::exprType::OverloadedUnaryMinus: {
+            ASR::OverloadedUnaryMinus_t* overloaded_unary_minus = ASR::down_cast<ASR::OverloadedUnaryMinus_t>(expression);
+            return ASRUtils::get_struct_sym_from_struct_expr(overloaded_unary_minus->m_overloaded);
         }
         case ASR::exprType::OverloadedCompare: {
             ASR::OverloadedCompare_t* overloaded_compare = ASR::down_cast<ASR::OverloadedCompare_t>(expression);
-            ASR::symbol_t* left_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_left));
-            ASR::symbol_t* right_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_right));
-            if (left_struct_sym != nullptr) {
-                return left_struct_sym;
-            } else if (right_struct_sym != nullptr) {
-                return right_struct_sym;
-            } else if ( overloaded_compare->m_value != nullptr ) {
-                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_value));
-            } else {
-                return nullptr; // If no struct symbol found in either side
-            }
+            return ASRUtils::get_struct_sym_from_struct_expr(overloaded_compare->m_overloaded);
         }
         case ASR::exprType::OverloadedStringConcat: {
             ASR::OverloadedStringConcat_t* overloaded_string_concat = ASR::down_cast<ASR::OverloadedStringConcat_t>(expression);
@@ -1171,8 +1155,10 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( ASRUtils::check_equal_type(left_arg_type, left_type) &&
-                            ASRUtils::check_equal_type(right_arg_type, right_type) ) {
+                        if( (ASRUtils::check_equal_type(left_arg_type, left_type) &&
+                            ASRUtils::check_equal_type(right_arg_type, right_type))
+                            || (ASRUtils::check_class_assignment_compatibility(func->m_args[0], left) &&
+                                ASRUtils::check_class_assignment_compatibility(func->m_args[1], right)) ) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -1254,7 +1240,8 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
     std::string matched_func_name = "";
     if( func->n_args == 1 ) {
         ASR::ttype_t* operand_arg_type = ASRUtils::expr_type(func->m_args[0]);
-        if( ASRUtils::check_equal_type(operand_arg_type, operand_type) ) {
+        if (ASRUtils::check_equal_type(operand_arg_type, operand_type)
+            || ASRUtils::check_class_assignment_compatibility(func->m_args[0], operand)) {
             found = true;
             Vec<ASR::call_arg_t> a_args;
             a_args.reserve(al, 1);
@@ -1324,6 +1311,39 @@ bool use_overloaded_unary_minus(ASR::expr_t* operand,
     const std::function<void (const std::string &, const Location &)> err) {
     ASR::ttype_t *operand_type = ASRUtils::expr_type(operand);
     ASR::symbol_t* sym = curr_scope->resolve_symbol("~sub");
+
+    if (!sym) {
+        if (ASR::is_a<ASR::StructType_t>(*operand_type) && !ASRUtils::is_class_type(operand_type)) {
+            ASR::symbol_t* struct_t_sym = ASRUtils::symbol_get_past_external(
+                ASRUtils::get_struct_sym_from_struct_expr(operand));
+            if (ASR::is_a<ASR::Struct_t>(*struct_t_sym)) {
+                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(struct_t_sym);
+                sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                while (sym == nullptr && struct_type_t->m_parent != nullptr) {
+                    struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                        ASRUtils::symbol_get_past_external(struct_type_t->m_parent));
+                    sym = struct_type_t->m_symtab->resolve_symbol("~sub");
+                }
+                if (sym == nullptr) {
+                    return false;
+                }
+                sym = ASR::down_cast<ASR::symbol_t>(
+                    ASR::make_ExternalSymbol_t(al,
+                                               loc,
+                                               curr_scope,
+                                               s2c(al, "~sub"),
+                                               sym,
+                                               struct_type_t->m_name,
+                                               nullptr,
+                                               0,
+                                               s2c(al, "~sub"),
+                                               ASR::accessType::Public));
+                curr_scope->add_symbol("~sub", sym);
+            } else {
+                LCOMPILERS_ASSERT(false);
+            }
+        }
+    }
 
     bool found = false;
     ASR::symbol_t* orig_sym = ASRUtils::symbol_get_past_external(sym);

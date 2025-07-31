@@ -1718,7 +1718,8 @@ public:
                 }
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
                 ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
-                if (!ASRUtils::check_equal_type(source_type, var_type)) {
+                if (!ASRUtils::check_equal_type(source_type, var_type)
+                    && !ASRUtils::check_class_assignment_compatibility(alloc_args_vec.p[i].m_a, source)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran(source_type);
                     std::string var_type_str = ASRUtils::type_to_str_fortran(var_type);
                     diag.add(Diagnostic(
