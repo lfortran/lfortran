@@ -966,12 +966,28 @@ int save_mod_files(const LCompilers::ASR::TranslationUnit_t &u,
 
             LCOMPILERS_ASSERT(LCompilers::asr_verify(u, true, diagnostics));
 
-	    std::filesystem::path filename { std::string(m->m_name) + ".mod" };
+            std::string modfile_name;
+            if (!m->m_parent_module) {
+                modfile_name = std::string(m->m_name) + ".mod";
+            } else {
+                modfile_name = std::string(m->m_parent_module) + "@" + std::string(m->m_name) + ".smod";
+            }
+
+	    std::filesystem::path filename { modfile_name };
             std::filesystem::path fullpath = compiler_options.po.mod_files_dir / filename;
             {
                 std::ofstream out;
 		out.open(fullpath, std::ofstream::out | std::ofstream::binary);
                 out << modfile_binary;
+            }
+
+            // Create an empty modfile for submodules using submodule name to satify CMAKE condition.
+            if (m->m_parent_module) {
+                std::filesystem::path emptyfile_filename { std::string(m->m_name) + ".mod" };
+                std::filesystem::path emptyfile_fullpath = compiler_options.po.mod_files_dir / emptyfile_filename;
+                {
+                    std::ofstream emptyfile_out(emptyfile_fullpath);
+                }
             }
         }
     }
