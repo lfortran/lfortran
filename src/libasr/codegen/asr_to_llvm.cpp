@@ -5721,10 +5721,12 @@ public:
         ptr_loads = 1 - !LLVM::is_llvm_pointer(*value_array_type);
         visit_expr_wrapper(array_section->m_v);
         llvm::Value* value_desc = tmp;
+        llvm::Type* value_desc_type = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
+            ASRUtils::expr_type(array_section->m_v), module.get());
         if( ASR::is_a<ASR::StructInstanceMember_t>(*array_section->m_v) &&
             ASRUtils::extract_physical_type(value_array_type) !=
                 ASR::array_physical_typeType::FixedSizeArray ) {
-            value_desc = llvm_utils->CreateLoad(value_desc);
+            value_desc = llvm_utils->CreateLoad2(value_desc_type, value_desc);
         }
 #if LLVM_VERSION_MAJOR > 16
         ptr_type[value_desc] = llvm_utils->get_type_from_ttype_t_util(array_section->m_v,
