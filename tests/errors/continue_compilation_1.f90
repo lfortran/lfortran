@@ -333,7 +333,6 @@ program continue_compilation_1
     allocate(arr5, mold = arr4)
 
     print *, ["aa", "aaa"]
-    print *, ["aa", string(x+1:x+2), "aaa"]
 
     print *, pack(arr2, mask1)
 
