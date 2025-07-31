@@ -4448,17 +4448,12 @@ public:
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
-        ASR::expr_t* type_source_expr = nullptr;
         if (v->m_value != nullptr) {
             this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
-            type_source_expr = v->m_value;
         } else {
             this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
-            type_source_expr = v->m_symbolic_value;
         }
         llvm::Value *init_value = tmp;
-        llvm::Type* init_value_type = llvm_utils->get_type_from_ttype_t_util(
-            type_source_expr, ASRUtils::expr_type(type_source_expr), module.get());
         if( ASRUtils::is_array(v->m_type) &&
             ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
             (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
@@ -5254,6 +5249,11 @@ public:
                 llvm::Value *tmp = ret_val;
                 if (is_a<ASR::Complex_t>(*arg_type)) {
                     int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
+                    llvm::Type* complex_val_type = llvm_utils->get_type_from_ttype_t_util(
+                        ASRUtils::EXPR(
+                            ASR::make_Var_t(al, asr_retval->base.base.loc, &asr_retval->base)),
+                        arg_type,
+                        module.get());
                     if (c_kind == 4) {
                         if (compiler_options.platform == Platform::Windows) {
                             // tmp is {float, float}*
@@ -5262,10 +5262,11 @@ public:
                             // Convert {float,float}* to i64* using bitcast
                             tmp = builder->CreateBitCast(tmp, type_fx2p);
                             // Then convert i64* -> i64
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(type_fx2p, tmp);
                         } else if (compiler_options.platform == Platform::macOS_ARM) {
                             // Pass by value
-                            tmp = llvm_utils->CreateLoad(tmp);
+
+                            tmp = llvm_utils->CreateLoad2(complex_val_type, tmp);
                         } else {
                             // tmp is {float, float}*
                             // type_fx2 is <2 x float>
@@ -5281,7 +5282,7 @@ public:
                             // 128 bit aggregate type is passed by reference
                         } else {
                             // Pass by value
-                            tmp = llvm_utils->CreateLoad(tmp);
+                            tmp = llvm_utils->CreateLoad2(complex_val_type, tmp);
                         }
                     }
                 ret_val2 = tmp;
