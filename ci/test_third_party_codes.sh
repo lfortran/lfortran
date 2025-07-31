@@ -198,7 +198,7 @@ time_section "🧪 Testing POT3D with fortran_mpi" '
   FC="$FC --cpp -DOPEN_MPI=yes --no-array-bounds-checking" ./build_and_run_lfortran.sh
 
   print_subsection "Building with optimization flags"
-  # FC="$FC --cpp --fast --skip-pass=dead_code_removal --no-array-bounds-checking -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
+  # FC="$FC --cpp --fast --skip-pass=dead_code_removal -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
 
   print_subsection "Building POT3D in separate compilation mode"
   FC="$FC --cpp --separate-compilation --no-array-bounds-checking -DOPEN_MPI=yes" ./build_and_run_lfortran.sh
@@ -844,7 +844,7 @@ time_section "🧪 Testing SNAP" '
     ./gsnap ../qasnap/sample/inp out
 
     make clean
-    make -j8 FORTRAN=$FC FFLAGS="--fast --no-array-bounds-checking" MPI=no OPENMP=no
+    make -j8 FORTRAN=$FC FFLAGS="--fast" MPI=no OPENMP=no
     ./gsnap ../qasnap/sample/inp out
 '
 

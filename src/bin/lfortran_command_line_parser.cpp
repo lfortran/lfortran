@@ -242,7 +242,7 @@ namespace LCompilers::CommandLineInterface {
             );
         }
 
-        if (disable_bounds_checking) {
+        if (disable_bounds_checking || compiler_options.po.fast) {
             compiler_options.bounds_checking = false;
         }
 
