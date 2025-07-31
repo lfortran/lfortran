@@ -5484,7 +5484,8 @@ public:
             if (ASR::is_a<ASR::StructInstanceMember_t>(*cptr)) {
                 // `type(c_ptr)` requires an extra load here
                 // TODO: be more explicit about ptr_loads: https://github.com/lfortran/lfortran/issues/4245
-                llvm_cptr = llvm_utils->CreateLoad(llvm_cptr);
+                llvm::Type* llvm_cptr_type = llvm_utils->get_type_from_ttype_t_util(cptr, ASRUtils::expr_type(cptr), module.get());
+                llvm_cptr = llvm_utils->CreateLoad2(llvm_cptr_type, llvm_cptr);
             }
             ptr_loads = 0;
             this->visit_expr(*fptr);
@@ -5520,7 +5521,9 @@ public:
             llvm::Value* shape_data = llvm_shape;
             if( llvm_shape && (ASRUtils::extract_physical_type(asr_shape_type) ==
                 ASR::array_physical_typeType::DescriptorArray) ) {
-                shape_data = llvm_utils->CreateLoad(arr_descr->get_pointer_to_data(llvm_shape));
+                ASR::ttype_t* shape_elem_asr_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(shape));
+                llvm::Type* shape_elem_llvm_type = llvm_utils->get_type_from_ttype_t_util( nullptr, shape_elem_asr_type, module.get());
+                shape_data = llvm_utils->CreateLoad2(shape_elem_llvm_type, arr_descr->get_pointer_to_data(llvm_shape));
             }
             llvm_cptr = builder->CreateBitCast(llvm_cptr, llvm_fptr_data_type->getPointerTo());
             builder->CreateStore(llvm_cptr, fptr_data);
