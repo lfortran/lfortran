@@ -12353,7 +12353,7 @@ public:
                         start_new_block(elseBB);
                     }
                     start_new_block(mergeBB);
-                    tmp = llvm_utils->CreateLoad(target);
+                    tmp = llvm_utils->CreateLoad2(target_type, target);
                 } else {
                     int kind = ASRUtils::extract_kind_from_ttype_t(m_type);
                     if( physical_type == ASR::array_physical_typeType::FixedSizeArray ) {
