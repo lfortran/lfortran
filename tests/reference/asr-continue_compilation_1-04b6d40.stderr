@@ -764,25 +764,25 @@ semantic error: Different `character` lengths 2 and 3 in array constructor
     |                     ^^^^^ 
 
 semantic error: The argument `mask` must be of rank 2, an array with rank 1 was provided.
-   --> tests/errors/continue_compilation_1.f90:338:25
+   --> tests/errors/continue_compilation_1.f90:337:25
     |
-338 |     print *, pack(arr2, mask1)
+337 |     print *, pack(arr2, mask1)
     |                         ^^^^^ 
 
 semantic error: Variable protected_module_my_class_obj is PROTECTED and cannot appear in LHS of assignment
-   --> tests/errors/continue_compilation_1.f90:341:5
+   --> tests/errors/continue_compilation_1.f90:340:5
     |
-341 |     protected_module_my_class_obj%value = 42
+340 |     protected_module_my_class_obj%value = 42
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Invalid syntax of derived type for array constructor
-   --> tests/errors/continue_compilation_1.f90:343:12
+   --> tests/errors/continue_compilation_1.f90:342:12
     |
-343 |     arr = [type(MyClass) :: v1, v2, v3]
+342 |     arr = [type(MyClass) :: v1, v2, v3]
     |            ^^^^^^^^^^^^^ help: use just the derived type name 'ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type)', without the keyword 'type'
 
 semantic error: Class type `NonExistingType` is not defined
-   --> tests/errors/continue_compilation_1.f90:345:11
+   --> tests/errors/continue_compilation_1.f90:344:11
     |
-345 |     arr = [NonExistingType :: v1, v2, v3]
+344 |     arr = [NonExistingType :: v1, v2, v3]
     |           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

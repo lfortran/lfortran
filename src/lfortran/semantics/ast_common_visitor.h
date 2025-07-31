@@ -5787,7 +5787,7 @@ public:
             /*
                 * type_spec --> `[character(10) :: ......]`
 
-                ArrayConstant    + No type_spec => Check length equlity
+                ArrayConstant    + No type_spec => Check length equality
                 ArrayConstant    + type_spec    => Adjust Length
 
             */
