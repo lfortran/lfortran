@@ -5709,7 +5709,7 @@ public:
                 builder->CreateStore(builder->CreateICmpNE(ptr, nptr), res);
             }
         });
-        tmp = llvm_utils->CreateLoad(res);
+        tmp = llvm_utils->CreateLoad2(llvm::Type::getInt1Ty(context), res);
     }
 
     void handle_array_section_association_to_pointer(const ASR::Associate_t& x) {
