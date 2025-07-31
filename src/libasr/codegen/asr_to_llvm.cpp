@@ -5324,17 +5324,19 @@ public:
                 ASR::Variable_t *arg = EXPR2VAR(x.m_args[0]);
                 uint32_t h = get_hash((ASR::asr_t*)arg);
                 llvm::Value* llvm_arg1 = llvm_symtab[h];
+                llvm::Type* llvm_arg1_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[0], arg->m_type, module.get());
 
                 arg = EXPR2VAR(x.m_args[1]);
                 h = get_hash((ASR::asr_t*)arg);
                 llvm::Value* llvm_arg2 = llvm_symtab[h];
+                llvm::Type* llvm_arg2_type = llvm_utils->get_type_from_ttype_t_util(x.m_args[1], arg->m_type, module.get());
 
                 ASR::Variable_t *ret = EXPR2VAR(x.m_return_var);
                 h = get_hash((ASR::asr_t*)ret);
                 llvm::Value* llvm_ret_ptr = llvm_symtab[h];
 
-                llvm::Value* dim_des_val = llvm_utils->CreateLoad(llvm_arg1);
-                llvm::Value* dim_val = llvm_utils->CreateLoad(llvm_arg2);
+                llvm::Value* dim_des_val = llvm_utils->CreateLoad2(llvm_arg1_type, llvm_arg1);
+                llvm::Value* dim_val = llvm_utils->CreateLoad2(llvm_arg2_type, llvm_arg2);
                 llvm::Value* const_1 = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 dim_val = builder->CreateSub(dim_val, const_1);
                 llvm::Value* dim_struct = arr_descr->get_pointer_to_dimension_descriptor(dim_des_val, dim_val);
