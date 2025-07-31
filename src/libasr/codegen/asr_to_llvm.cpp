@@ -1665,7 +1665,8 @@ public:
                     llvm::Value* tmp_ = tmp;
                     if (LLVM::is_llvm_pointer(*cur_type)
                         && !ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
                     if (ASRUtils::is_class_type(ASRUtils::extract_type(cur_type))) {
                         // If it is a class type, we need to get the pointer to the struct
@@ -1703,14 +1704,15 @@ public:
                     llvm_utils->create_if_else(cond, [=]() {
                         llvm::AllocaInst *arg_tmp = llvm_utils->CreateAlloca(*builder, character_type);
                         builder->CreateStore(builder->CreateBitCast(tmp, character_type), arg_tmp);
-                        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_tmp)};
+                        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad2(character_type, arg_tmp)};
                         builder->CreateCall(free_fn, args);
                         builder->CreateStore(
                             llvm::ConstantPointerNull::get(llvm_data_type->getPointerTo()), tmp_);
                     }, [](){});
                 } else {
                     if( LLVM::is_llvm_pointer(*cur_type) ) {
-                        tmp = llvm_utils->CreateLoad(tmp);
+                        llvm::Type* typ = llvm_utils->get_type_from_ttype_t_util(tmp_expr, cur_type, module.get());
+                        tmp = llvm_utils->CreateLoad2(typ, tmp);
                     }
 #if LLVM_VERSION_MAJOR > 16
                 ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(tmp_expr,
