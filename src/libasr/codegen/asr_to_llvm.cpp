@@ -2757,7 +2757,9 @@ public:
             this->visit_expr_wrapper(x.m_args[0].m_right, true);
             llvm::Value *p = nullptr;
             llvm::Value *idx = tmp;
-            llvm::Value *str = llvm_utils->CreateLoad(array);
+            ASR::ttype_t* array_asr_type = ASRUtils::extract_type(expr_type(x.m_v));
+            llvm::Type* str_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_v, array_asr_type, module.get());
+            llvm::Value *str = llvm_utils->CreateLoad2(str_value_type, array);
             if( is_assignment_target ) {
                 idx = builder->CreateSub(idx, llvm::ConstantInt::get(context, llvm::APInt(32, 1)));
                 std::vector<llvm::Value*> idx_vec = {idx};
