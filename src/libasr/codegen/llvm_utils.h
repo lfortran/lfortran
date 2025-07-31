@@ -494,6 +494,11 @@ namespace LCompilers {
                                                    llvm::Module* module,
                                                    ASR::abiType asr_abi = ASR::abiType::Source);
 
+            llvm::Type* get_type_from_ttype_t_util_from_symbol(ASR::symbol_t* sym,
+                                                   ASR::ttype_t* asr_type,
+                                                   llvm::Module* module,
+                                                   ASR::abiType asr_abi = ASR::abiType::Source);
+
             llvm::Type* get_arg_type_from_ttype_t(ASR::expr_t* arg_expr, ASR::ttype_t* asr_type,
                 ASR::symbol_t *type_declaration, ASR::abiType m_abi, ASR::abiType arg_m_abi,
                 ASR::storage_typeType m_storage, bool arg_m_value_attr, int& n_dims,

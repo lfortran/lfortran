@@ -5249,9 +5249,7 @@ public:
                 llvm::Value *tmp = ret_val;
                 if (is_a<ASR::Complex_t>(*arg_type)) {
                     int c_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                    llvm::Type* complex_val_type = llvm_utils->get_type_from_ttype_t_util(
-                        ASRUtils::EXPR(
-                            ASR::make_Var_t(al, asr_retval->base.base.loc, &asr_retval->base)),
+                    llvm::Type* complex_val_type = llvm_utils->get_type_from_ttype_t_util_from_symbol((ASR::symbol_t*)asr_retval,
                         arg_type,
                         module.get());
                     if (c_kind == 4) {
