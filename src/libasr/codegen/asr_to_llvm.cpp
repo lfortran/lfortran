@@ -1413,7 +1413,7 @@ public:
                     realloc);
                 if( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(tmp_expr))) 
                     && !ASRUtils::is_class_type(ASRUtils::expr_type(tmp_expr)) ) {
-                    llvm::Value* x_arr_ = llvm_utils->CreateLoad(x_arr);
+                    llvm::Value* x_arr_ = llvm_utils->CreateLoad2(type->getPointerTo(), x_arr);
 #if LLVM_VERSION_MAJOR > 16
                             ptr_type[x_arr_] = type;
 #endif
