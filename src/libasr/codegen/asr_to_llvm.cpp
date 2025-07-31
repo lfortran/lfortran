@@ -1530,7 +1530,7 @@ public:
         llvm::Value* arr = llvm_utils->CreateLoad2(llvm_data_type->getPointerTo(), arr_descr->get_pointer_to_data(tmp));
         llvm::AllocaInst *arg_arr = llvm_utils->CreateAlloca(*builder, character_type);
         builder->CreateStore(builder->CreateBitCast(arr, character_type), arg_arr);
-        std::vector<llvm::Value*> args = {llvm_utils->CreateLoad(arg_arr)};
+        std::vector<llvm::Value*> args = { llvm_utils->CreateLoad2(character_type, arg_arr) };
         builder->CreateCall(fn, args);
         arr_descr->reset_is_allocated_flag(tmp, llvm_data_type);
     }
