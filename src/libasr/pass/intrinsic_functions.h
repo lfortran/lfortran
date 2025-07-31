@@ -3766,44 +3766,6 @@ namespace Merge {
 
 } // namespace Merge
 
-namespace Spacing {
-
-    static ASR::expr_t *eval_Spacing(Allocator &al, const Location &loc,
-            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
-        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
-        if (kind == 4) {
-            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            float result = std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-        } else {
-            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
-            double result = std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
-            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
-        }
-    }
-
-    static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
-            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
-            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
-        declare_basic_variables("_lcompilers_spacing_" + type_to_str_python(arg_types[0]));
-        fill_func_arg("x", arg_types[0]);
-        auto result = declare(fn_name, arg_types[0], ReturnVar);
-        /*
-        function spacing(x) result(result)
-            real :: x
-            real :: result
-            result = abs(nextafter(x, infinity) - x)
-        end function
-        */
-        LCOMPILERS_ASSERT(false);
-        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
-            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
-        scope->add_symbol(fn_name, f_sym);
-        return b.Call(f_sym, new_args, return_type, nullptr);
-    }
-
-} // namespace Spacing
-
 namespace Trailz {
 
     static ASR::expr_t *eval_Trailz(Allocator &al, const Location &loc,
@@ -3926,41 +3888,86 @@ namespace Nearest {
             res = transfer(ix, res)
         end function
         */
-        ASR::expr_t* ix = declare("ix", int32, Local);
-        ASR::expr_t* dir = declare("dir", int32, Local);
-        ASR::expr_t* zero_real = EXPR(ASR::make_RealConstant_t(al, loc, 0.0, arg_types[1]));
-        body.push_back(al, b.If(b.Eq(args[1], zero_real), {
+
+        int kind = ASRUtils::extract_kind_from_ttype_t(arg_types[0]);
+        ASR::ttype_t* int_type = ASRUtils::TYPE(ASR::make_Integer_t(al, loc, kind));
+        ASR::expr_t* ix = declare("ix", int_type, Local);
+        ASR::expr_t* dir = declare("dir", int_type, Local);
+        ASR::expr_t* zero = b.i_t(0, int_type);
+        body.push_back(al, b.If(b.Eq(args[1], b.f_t(0.0, arg_types[1])), {
             b.Assignment(result, args[0]),
             b.Return(),
         }, {}));
-        body.push_back(al, b.Assignment(ix, EXPR(ASR::make_BitCast_t(al, loc, args[0], b.i32(0), nullptr, int32, nullptr))));
+        body.push_back(al, b.Assignment(ix, EXPR(ASR::make_BitCast_t(al, loc, args[0], zero, nullptr, int_type, nullptr))));
 
-        body.push_back(al, b.If(b.Or(b.And(b.Gt(args[0], zero_real), b.Gt(args[1], zero_real)),
-            b.And(b.Lt(args[0], zero_real), b.Lt(args[1], zero_real))), {
-            b.Assignment(dir, b.i32(1))
+        body.push_back(al, b.If(b.Or(b.And(b.Gt(args[0], b.f_t(0.0, arg_types[0])), b.Gt(args[1], b.f_t(0.0, arg_types[1]))),
+            b.And(b.Lt(args[0], b.f_t(0.0, arg_types[0])), b.Lt(args[1], b.f_t(0.0, arg_types[1])))), {
+            b.Assignment(dir, b.i_t(1, int_type))
         }, {
-            b.Assignment(dir, b.i32(-1))
+            b.Assignment(dir, b.i_t(-1, int_type))
         }));
 
-        body.push_back(al, b.If(b.Eq(args[0], zero_real), {
-            b.Assignment(ix, b.i32(1)),
-            b.If(b.Lt(args[1], zero_real), {
-                b.Assignment(ix, b.i32(-1))
+        body.push_back(al, b.If(b.Eq(args[0], b.f_t(0.0, arg_types[0])), {
+            b.Assignment(ix, b.i_t(1, int_type)),
+            b.If(b.Lt(args[1], b.f_t(0.0, arg_types[1])), {
+                b.Assignment(ix, b.i_t(-1, int_type))
             }, {}),
-            b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))),
+            b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, zero, nullptr, arg_types[0], nullptr))),
             b.Return(),
         }, {}));
 
         body.push_back(al, b.Assignment(ix, b.Add(ix, dir)));
 
-        body.push_back(al, b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, b.i32(0), nullptr, arg_types[0], nullptr))));
+        body.push_back(al, b.Assignment(result, EXPR(ASR::make_BitCast_t(al, loc, ix, zero, nullptr, arg_types[0], nullptr))));
+        ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
+            body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
+        scope->add_symbol(fn_name, f_sym);
+        return b.Call(f_sym, new_args, return_type, nullptr);
+    }
+    static inline ASR::expr_t* NEAREST(ASRBuilder &b, ASR::expr_t* a, ASR::expr_t* p, SymbolTable* scope) {
+        return b.CallIntrinsic(scope, {expr_type(a), expr_type(p)}, {a, p}, expr_type(a), 0, Nearest::instantiate_Nearest);
+    }
+
+} // namespace Nearest
+
+namespace Spacing {
+
+    static ASR::expr_t *eval_Spacing(Allocator &al, const Location &loc,
+            ASR::ttype_t* t1, Vec<ASR::expr_t*> &args, diag::Diagnostics& /*diag*/) {
+        int64_t kind = ASRUtils::extract_kind_from_ttype_t(ASRUtils::expr_type(args[0]));
+        if (kind == 4) {
+            float x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            float result = std::fabs(std::nextafterf(x, std::numeric_limits<float>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        } else {
+            double x = ASR::down_cast<ASR::RealConstant_t>(args[0])->m_r;
+            double result = std::fabs(std::nextafter(x, std::numeric_limits<double>::infinity()) - x);
+            return make_ConstantWithType(make_RealConstant_t, result, t1, loc);
+        }
+    }
+
+    static inline ASR::expr_t* instantiate_Spacing(Allocator &al, const Location &loc,
+            SymbolTable *scope, Vec<ASR::ttype_t*>& arg_types, ASR::ttype_t *return_type,
+            Vec<ASR::call_arg_t>& new_args, int64_t /*overload_id*/) {
+        declare_basic_variables("_lcompilers_spacing_" + type_to_str_python(arg_types[0]));
+        fill_func_arg("x", arg_types[0]);
+        auto result = declare(fn_name, arg_types[0], ReturnVar);
+        /*
+        function spacing(x) result(result)
+            real :: x
+            real :: result
+            result = nearest(x, 1.0) - x
+        end function
+        */
+        ASR::expr_t* nearest_expr = Nearest::NEAREST(b, args[0], b.f_t(1, arg_types[0]), scope);
+        body.push_back(al, b.Assignment(result, b.Sub(nearest_expr, args[0])));
         ASR::symbol_t *f_sym = make_ASR_Function_t(fn_name, fn_symtab, dep, args,
             body, result, ASR::abiType::Source, ASR::deftypeType::Implementation, nullptr);
         scope->add_symbol(fn_name, f_sym);
         return b.Call(f_sym, new_args, return_type, nullptr);
     }
 
-} // namespace Nearest
+} // namespace Spacing
 
 namespace Modulo {
 

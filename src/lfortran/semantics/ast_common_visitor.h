@@ -8827,10 +8827,6 @@ public:
                 }
                 if( ASRUtils::IntrinsicElementalFunctionRegistry::is_intrinsic_function(var_name) ) {
                     const bool are_all_args_evaluated { ASRUtils::all_args_evaluated(args, true) };
-                    if (!are_all_args_evaluated && var_name == "spacing") {
-                        diag.add(Diagnostic("`Spacing` intrinsic is not yet implemented for runtime values", Level::Error,
-                            Stage::Semantic, {Label("", { x.base.base.loc })}));
-                    }
                     fill_optional_kind_arg(var_name, args);
                     tmp = nullptr;
                     scalar_kind_arg(var_name, args);
