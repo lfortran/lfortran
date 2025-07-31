@@ -810,7 +810,7 @@ public:
         llvm::AllocaInst *presult = llvm_utils->CreateAlloca(*builder, complex_type);
         std::vector<llvm::Value*> args = {pleft_arg, pright_arg, presult};
         builder->CreateCall(fn, args);
-        return llvm_utils->CreateLoad(presult);
+        return llvm_utils->CreateLoad2(complex_type, presult);
     }
 
 
