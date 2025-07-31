@@ -5847,7 +5847,8 @@ public:
                 if(ASRUtils::is_array(target_type) ){ // Fetch data ptr
                     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(target_type) ==
                         ASR::array_physical_typeType::DescriptorArray);
-                    llvm_target = llvm_utils->CreateLoad(llvm_target);
+                    llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
+                    llvm_target = llvm_utils->CreateLoad2(llvm_target_type, llvm_target);
                     llvm_target = arr_descr->get_pointer_to_data(llvm_target);
                 }
                 builder->CreateStore(llvm_value, llvm_target);
@@ -5873,7 +5874,8 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructInstanceMember_t>(*x.m_value) &&
                         ASR::is_a<ASR::FunctionType_t>(*value_type)) {
-                llvm_value = llvm_utils->CreateLoad(llvm_value);
+                llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 builder->CreateStore(llvm_value, llvm_target);
             } else if (is_target_class && !is_value_class) {
                 llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
@@ -5944,7 +5946,8 @@ public:
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::FixedSizeArray ||
                       ASRUtils::extract_physical_type(value_type) == ASR::array_physical_typeType::DescriptorArray));
                 if( LLVM::is_llvm_pointer(*value_type) ) {
-                    llvm_value = llvm_utils->CreateLoad(llvm_value);
+                    llvm::Type* llvm_value_type = llvm_utils->get_type_from_ttype_t_util(x.m_value, value_type, module.get());
+                    llvm_value = llvm_utils->CreateLoad2(llvm_value_type, llvm_value);
                 }
                 if( is_value_data_only_array ) { // This needs a refactor to handle
                     ASR::ttype_t* target_type_ = ASRUtils::type_get_past_pointer(target_type);
@@ -5997,7 +6000,8 @@ public:
                             break;
                         }
                         case ASR::array_physical_typeType::FixedSizeArray: {
-                            llvm_value = llvm_utils->CreateLoad(llvm_value);
+                            llvm::Type* llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,value_type, module.get());
+                            llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);
                             break;
                         }
                         case ASR::array_physical_typeType::PointerToDataArray: {
