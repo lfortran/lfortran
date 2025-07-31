@@ -4448,12 +4448,17 @@ public:
         collect_variable_types_and_struct_types(variable_type_names, struct_types, x_symtab->parent);
     }
     void set_VariableInital_value(ASR::Variable_t* v, llvm::Value* target_var){
+        ASR::expr_t* type_source_expr = nullptr;
         if (v->m_value != nullptr) {
             this->visit_expr_wrapper(v->m_value, true, v->m_is_volatile);
+            type_source_expr = v->m_value;
         } else {
             this->visit_expr_wrapper(v->m_symbolic_value, true, v->m_is_volatile);
+            type_source_expr = v->m_symbolic_value;
         }
         llvm::Value *init_value = tmp;
+        llvm::Type* init_value_type = llvm_utils->get_type_from_ttype_t_util(
+            type_source_expr, ASRUtils::expr_type(type_source_expr), module.get());
         if( ASRUtils::is_array(v->m_type) &&
             ASRUtils::is_array(ASRUtils::expr_type(v->m_symbolic_value)) &&
             (ASR::is_a<ASR::ArrayConstant_t>(*v->m_symbolic_value) ||
@@ -4523,7 +4528,7 @@ public:
                         module.get()),
                     false);
                 llvm::Value* data_ptr = llvm_utils->create_gep2(
-                    array_desc_type, llvm_utils->CreateLoad(target_var), 0);
+                    array_desc_type, llvm_utils->CreateLoad2(array_desc_type->getPointerTo(), target_var), 0);
                 builder->CreateStore(init_value, data_ptr, v->m_is_volatile);
         } else {
             if (v->m_storage == ASR::storage_typeType::Save
