@@ -2614,7 +2614,7 @@ id_list
     ;
 
 trait_list
-    : trait_list "+" id { $$ = $1; LIST_ADD($$, $3); } // Use TK_NAME
+    : trait_list "+" id { $$ = $1; LIST_ADD($$, $3); }
     | id { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
