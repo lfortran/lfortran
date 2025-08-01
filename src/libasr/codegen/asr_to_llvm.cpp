@@ -6249,9 +6249,8 @@ public:
             llvm::Value* value_class_ptr = llvm_utils->create_gep2(value_llvm_type, value_struct, 1);
             value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type->getPointerTo(), value_class_ptr);
             // bitcast to the correct type
-
             llvm::Value* target_class_ptr = llvm_utils->create_gep2(target_llvm_type, target_struct, 1);
-            if (val_struct != tar_struct) {
+            if (val_struct != tar_struct) {   // Create copy of rhs type if both class type is not equal
                 value_class_ptr = llvm_utils->CreateLoad2(wrapper_value_llvm_type, value_class_ptr);
                 llvm::AllocaInst *val_copy = llvm_utils->CreateAlloca(*builder, wrapper_value_llvm_type);
                 builder->CreateStore(value_class_ptr, val_copy);

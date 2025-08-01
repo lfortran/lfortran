@@ -36,10 +36,10 @@ define void @__module_module_call_subroutine_without_type_01_get_i(%mytype_polym
   %9 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 0
   store i64 %8, i64* %9, align 4
   %10 = load %mytype*, %mytype** getelementptr inbounds (%mytype_polymorphic, %mytype_polymorphic* @__lcompilers_created__nested_context__get_i_self, i32 0, i32 1), align 8
-  %11 = load %mytype, %mytype* %10, align 1
-  %12 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
-  %13 = load %mytype*, %mytype** %12, align 8
-  store %mytype %11, %mytype* %13, align 1
+  %11 = getelementptr %mytype_polymorphic, %mytype_polymorphic* %self, i32 0, i32 1
+  %12 = load %mytype, %mytype* %10, align 1
+  %13 = load %mytype*, %mytype** %11, align 8
+  store %mytype %12, %mytype* %13, align 1
   br label %return
 
 return:                                           ; preds = %.entry
