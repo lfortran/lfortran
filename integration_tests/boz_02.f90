@@ -31,6 +31,6 @@ print *, boz_1
 print *, matrix1
 print *, matrix2
 print *, arr1, arr2
-PRINT *, a,b,c,d,e,f
+print *, a,b,c,d,e,f
 end program
 
