@@ -9440,7 +9440,7 @@ public:
                 this->visit_expr(*x.m_arg);
                 ptr_loads = ptr_loads_copy;
                 llvm::Type* list_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_arg, ASRUtils::expr_type(x.m_arg), module.get());
-                tmp = llvm_utils->CreateLoad(list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
+                tmp = llvm_utils->CreateLoad2(list_llvm_type, list_api->get_pointer_to_list_data_using_type(list_llvm_type, tmp));
                 break;
             }
             case (ASR::cast_kindType::PointerToInteger): {
