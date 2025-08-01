@@ -8156,10 +8156,12 @@ public:
         lookup_enum_value_for_nonints = false;
         LCOMPILERS_ASSERT(ASRUtils::is_real(*x.m_type))
         if (ASRUtils::is_simd_array(x.m_right) && is_a<ASR::Var_t>(*x.m_right)) {
-            right_val = llvm_utils->CreateLoad(right_val);
+            llvm::Type *right_type = llvm_utils->get_type_from_ttype_t_util(x.m_right, ASRUtils::expr_type(x.m_right), module.get());
+            right_val = llvm_utils->CreateLoad2(right_type, right_val);
         }
         if (ASRUtils::is_simd_array(x.m_left) && is_a<ASR::Var_t>(*x.m_left)) {
-            left_val = llvm_utils->CreateLoad(left_val);
+            llvm::Type *left_type = llvm_utils->get_type_from_ttype_t_util(x.m_left, ASRUtils::expr_type(x.m_left), module.get());
+            left_val = llvm_utils->CreateLoad2(left_type, left_val);
         }
         switch (x.m_op) {
             case ASR::binopType::Add: {
