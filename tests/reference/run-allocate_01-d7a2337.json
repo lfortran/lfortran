@@ -7,7 +7,7 @@
     "outfile_hash": null,
     "stdout": null,
     "stdout_hash": null,
-    "stderr": null,
-    "stderr_hash": null,
-    "returncode": 0
+    "stderr": "run-allocate_01-d7a2337.stderr",
+    "stderr_hash": "673d30388144c3aaf7dbe2956f5cbca2423aeb195d7e0a98d9c6f7c1",
+    "returncode": 1
 }
