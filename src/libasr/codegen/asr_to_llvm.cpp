@@ -9819,7 +9819,11 @@ public:
                     llvm::Type *el_type = llvm_utils->get_type_from_ttype_t_util(x.m_values[i], ASRUtils::extract_type(type), module.get());
                     if (ASR::is_a<ASR::Allocatable_t>(*type)
                         || ASR::is_a<ASR::Pointer_t>(*type)) {
-                        var_to_read_into = llvm_utils->CreateLoad(var_to_read_into);
+                        llvm::Type* t = llvm_utils->get_type_from_ttype_t_util(
+                            x.m_values[i],
+                            ASRUtils::type_get_past_allocatable_pointer(type),
+                            module.get())->getPointerTo();
+                        var_to_read_into = llvm_utils->CreateLoad2(t, var_to_read_into);
                     }
                     llvm::Value* original_array_representation = var_to_read_into; // Loaded (if necessary)
 #if LLVM_VERSION_MAJOR > 16
