@@ -246,7 +246,22 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
 '
 
 ##########################
-# Section 2: Fortran-Primes
+# Section 2: FPM
+##########################
+time_section "🧪 Testing FPM" '
+  git clone https://github.com/jinangshah21/fpm.git
+  cd fpm
+  export PATH="$(pwd)/../src/bin:$PATH"
+  git checkout lf-5
+  micromamba install -c conda-forge fpm
+  git checkout c51c581242ae260efd710721945326bea6d8dad3
+  fpm --compiler=$FC build
+  print_success "Done with FPM"
+  cd ..
+'
+
+##########################
+# Section 3: Fortran-Primes
 ##########################
 time_section "🧪 Testing Fortran-Primes" '
   git clone https://github.com/jinangshah21/fortran-primes.git
@@ -267,7 +282,7 @@ time_section "🧪 Testing Fortran-Primes" '
 '
 
 ########################################
-# Section 3: Numerical Methods Fortran #
+# Section 4: Numerical Methods Fortran #
 ########################################
 time_section "🧪 Testing Numerical Methods Fortran" '
   git clone https://github.com/Pranavchiku/numerical-methods-fortran.git
@@ -794,23 +809,7 @@ time_section "🧪 Testing fastGPT" '
 '
 
 ##########################
-# Section 10: FPM
-##########################
-time_section "🧪 Testing FPM" '
-    # TODO: regression as of `struct refactoring`
-    # if [[ "$RUNNER_OS" == "ubuntu-latest" ]]; then
-    #     git clone https://github.com/czgdp1807/fpm.git
-    #     cd fpm
-    #     git fetch origin lfortran_build_4
-    #     git checkout lfortran_build_4
-    #     git checkout 910c461f04506bf87a05a8fbaf7d1b0a79f0bd48
-    #     export PATH="$(pwd)/../../src/bin:$PATH"
-    #     ./build.sh
-    # fi
-'
-
-##########################
-# Section 11: stdlib
+# Section 10: stdlib
 ##########################
 time_section "🧪 Testing stdlib" '
     git clone https://github.com/czgdp1807/stdlib.git
@@ -828,7 +827,7 @@ time_section "🧪 Testing stdlib" '
 '
 
 ##########################
-# Section 12: SNAP
+# Section 11: SNAP
 ##########################
 time_section "🧪 Testing SNAP" '
     git clone https://github.com/certik/SNAP.git
