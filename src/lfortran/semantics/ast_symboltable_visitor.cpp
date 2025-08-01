@@ -1610,7 +1610,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
+                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                     type_decl = v;
                     break;
                 }
@@ -2338,7 +2338,7 @@ public:
 
                             ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
                             ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym);
+                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym, true);
 
                             Vec<ASR::call_arg_t> vals;
                             auto member2sym = struct_s->m_symtab->get_scope();
@@ -3924,7 +3924,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0);
+                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
