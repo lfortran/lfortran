@@ -3982,7 +3982,8 @@ public:
                         } else {
                             symbol_variable->m_type = type;
                         }
-                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))
+                            || ASR::is_a<ASR::UnionType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
                             symbol_variable->m_type_declaration = type_declaration;
                         } else if ( type_declaration != nullptr ) {
                             // This is the case where the variable is implicitly declared `public :: xx`
@@ -5070,7 +5071,7 @@ public:
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
-                type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                type = ASRUtils::get_union_type(al, loc, v);
             } else {
                 if (!v) {
                     if (is_template) { 
@@ -5119,7 +5120,7 @@ public:
                 type_declaration = v;
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
-                    type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                    type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
                     type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
@@ -6871,7 +6872,7 @@ public:
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::UnionType_t>(*v_type)) {
-                derived_type = ASR::down_cast<ASR::UnionType_t>(v_type)->m_union_type;
+                derived_type = ASRUtils::symbol_get_past_external(v_variable->m_type_declaration);
             }
             ASR::Union_t *der_type;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {

@@ -503,9 +503,8 @@ public:
                 }
             } else if (ASR::is_a<ASR::UnionType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
-                ASR::UnionType_t *t = ASR::down_cast<ASR::UnionType_t>(v_m_type);
                 std::string der_type_name = ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(t->m_union_type));
+                    ASRUtils::symbol_get_past_external(v.m_type_declaration));
                 if( is_array ) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);

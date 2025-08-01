@@ -159,7 +159,7 @@ namespace LCompilers {
                 break ;
             }
             case ASR::ttypeType::UnionType: {
-                llvm_mem_type = getUnion(mem_type, module);
+                llvm_mem_type = getUnion(ASR::down_cast<ASR::Union_t>(member->m_type_declaration), module);
                 break;
             }
             case ASR::ttypeType::Allocatable: {
@@ -289,13 +289,6 @@ namespace LCompilers {
             return union_type_llvm->getPointerTo();
         }
         return (llvm::Type*) union_type_llvm;
-    }
-
-    llvm::Type* LLVMUtils::getUnion(ASR::ttype_t* _type, llvm::Module* module, bool is_pointer) {
-        ASR::UnionType_t* union_ = ASR::down_cast<ASR::UnionType_t>(_type);
-        ASR::symbol_t* union_sym = ASRUtils::symbol_get_past_external(union_->m_union_type);
-        ASR::Union_t* union_type = ASR::down_cast<ASR::Union_t>(union_sym);
-        return getUnion(union_type, module, is_pointer);
     }
 
     llvm::Type* LLVMUtils::getClassType(ASR::Struct_t* der_type, bool is_pointer) {
@@ -430,7 +423,9 @@ namespace LCompilers {
                 break;
             }
             case ASR::ttypeType::UnionType: {
-                el_type = getUnion(m_type_, module);
+                el_type = getUnion(ASR::down_cast<ASR::Union_t>(
+                                                ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr))),
+                                            module);
                 break;
             }
             case ASR::ttypeType::String: {
@@ -1228,7 +1223,10 @@ namespace LCompilers {
                 break;
             }
             case (ASR::ttypeType::UnionType) : {
-                llvm_type = getUnion(asr_type, module, false);
+                llvm_type = getUnion(ASR::down_cast<ASR::Union_t>(
+                                                ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(arg_expr))),
+                                            module,
+                                            LLVM::is_llvm_pointer(*asr_type));
                 break;
             }
             case (ASR::ttypeType::Pointer) : {
