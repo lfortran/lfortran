@@ -7,6 +7,9 @@ module elemental_14_mod
     procedure :: is_positive
   end type number_t
 
+  type :: dec 
+    type(number_t), allocatable :: nums(:)
+  end type
 contains
 
   elemental logical function is_positive(self)
@@ -21,6 +24,7 @@ program elemental_14
   implicit none
 
   type(number_t), dimension(5) :: nums
+  type(dec) :: ele
   logical :: result
   integer :: i
   nums(1)%val = -1.0
@@ -33,4 +37,9 @@ program elemental_14
   nums(1)%val = 1.0
   result = any(nums%is_positive())
   if (result .neqv. .true.) error stop
+  allocate(ele%nums(2))
+  ele%nums(2)%val = -1.0
+  ele%nums(1)%val = -1.0
+  result = any(ele%nums%is_positive())
+  if (result .neqv. .false.) error stop
 end program elemental_14
