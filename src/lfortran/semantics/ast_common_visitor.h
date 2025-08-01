@@ -4122,7 +4122,23 @@ public:
                         }
                     }
                 } else if (s.m_initializer != nullptr) {
+                    ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
+                    if (s.m_initializer!=nullptr && s.m_initializer->type==AST::ArrayInitializer) {
+                        // This is an array initializer, we need to handle it separately
+                        AST::ArrayInitializer_t *array_init1 = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
+                        if (array_init1->m_vartype && array_init1->m_vartype->type == AST::decl_attributeType::AttrType) {
+                            AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(array_init1->m_vartype);
+                            if (attr_type->m_type == AST::decl_typeType::TypeReal) {
+                                for (size_t i = 0; i < array_init1->n_args; i++) {
+                                    if (array_init1->m_args[i]->type == AST::exprType::BOZ){
+                                        current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, (array_init1->base).base.loc, compiler_options.po.default_integer_kind));
+                                    }
+                                }
+                            }
+                        }
+                    }
                     this->visit_expr(*s.m_initializer);
+                    current_variable_type_ = temp_current_variable_type_;
                     if (is_compile_time && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *temp_array =
                             AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
