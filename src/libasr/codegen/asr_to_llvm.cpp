@@ -11646,35 +11646,6 @@ public:
         }
     }
 
-    void handle_bitwise_args(const ASR::FunctionCall_t& x, llvm::Value*& arg1,
-                             llvm::Value*& arg2) {
-        LCOMPILERS_ASSERT(x.n_args == 2);
-        tmp = nullptr;
-        this->visit_expr_wrapper(x.m_args[0].m_value, true);
-        arg1 = tmp;
-        tmp = nullptr;
-        this->visit_expr_wrapper(x.m_args[1].m_value, true);
-        arg2 = tmp;
-    }
-
-    void handle_bitwise_xor(const ASR::FunctionCall_t& x) {
-        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
-        handle_bitwise_args(x, arg1, arg2);
-        tmp = builder->CreateXor(arg1, arg2);
-    }
-
-    void handle_bitwise_and(const ASR::FunctionCall_t& x) {
-        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
-        handle_bitwise_args(x, arg1, arg2);
-        tmp = builder->CreateAnd(arg1, arg2);
-    }
-
-    void handle_bitwise_or(const ASR::FunctionCall_t& x) {
-        llvm::Value *arg1 = nullptr, *arg2 = nullptr;
-        handle_bitwise_args(x, arg1, arg2);
-        tmp = builder->CreateOr(arg1, arg2);
-    }
-
     void handle_allocated(ASR::expr_t* arg) {
         ASR::ttype_t* asr_type = ASRUtils::expr_type(arg);
         int64_t ptr_loads_copy = ptr_loads;
@@ -12110,21 +12081,6 @@ public:
                 args.push_back(dt_polymorphic);
             } else {
                 throw CodeGenError("FunctionCall: StructType symbol type not supported");
-            }
-        }
-        if( ASRUtils::is_intrinsic_function2(s) ) {
-            std::string symbol_name = ASRUtils::symbol_name(x.m_name);
-            if( startswith(symbol_name, "_bitwise_xor") ) {
-                handle_bitwise_xor(x);
-                return ;
-            }
-            if( startswith(symbol_name, "_bitwise_and") ) {
-                handle_bitwise_and(x);
-                return ;
-            }
-            if( startswith(symbol_name, "_bitwise_or") ) {
-                handle_bitwise_or(x);
-                return ;
             }
         }
 
