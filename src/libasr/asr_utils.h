@@ -2425,12 +2425,18 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
                             LCompilers::LocationManager &lm,
-                            bool generate_object_code = false);
+                            bool generate_object_code = false,
+                            bool load_submodules = false);
 
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
                                                 LCompilers::LocationManager &lm);
+
+Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodules(Allocator &al, const std::string &msym,
+                                                            SymbolTable &symtab,
+                                                            LCompilers::PassOptions &pass_options,
+                                                            LCompilers::LocationManager &lm);
 
 void set_intrinsic(ASR::TranslationUnit_t* trans_unit);
 
@@ -3023,7 +3029,7 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
 static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  Location loc,
                                                  ASR::symbol_t* derived_type_sym,
-                                                 bool is_cstruct = true)
+                                                 bool is_cstruct)
 {
     ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
         ASRUtils::symbol_get_past_external(derived_type_sym));
@@ -5669,7 +5675,7 @@ static inline void import_struct_t(Allocator& al,
             } else {
                 der_sym = current_scope->resolve_symbol(sym_name);
             }
-            var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym);
+            var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym, true);
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

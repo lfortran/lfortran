@@ -38,6 +38,7 @@ public:
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
+    bool in_program = false;
     std::string interface_name = "";
     ASR::symbol_t *current_module_sym;
 
@@ -431,6 +432,7 @@ public:
         simd_variables.clear();
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
+        in_program = true;
         for (size_t i=0; i<x.n_use; i++) {
             try {
                 visit_unit_decl1(*x.m_use[i]);
@@ -438,6 +440,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -1610,7 +1613,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v);
+                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
                     type_decl = v;
                     break;
                 }
@@ -2349,7 +2352,7 @@ public:
 
                             ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
                             ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym);
+                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym, true);
 
                             Vec<ASR::call_arg_t> vals;
                             auto member2sym = struct_s->m_symtab->get_scope();
@@ -3327,6 +3330,7 @@ public:
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
+            bool load_submodules = (!compiler_options.separate_compilation && in_program);
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
@@ -3334,7 +3338,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation));
+            }, lm, compiler_options.separate_compilation, load_submodules));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
@@ -3935,7 +3939,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0);
+                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);

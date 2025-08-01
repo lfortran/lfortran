@@ -370,6 +370,8 @@ jobs:
             ./run_tests.py -b llvm -sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f -nf16
+            ./run_tests.py -b llvm_submodule
+            ./run_tests.py -b llvm_submodule -sc
 
       - name: Test Linux LLVM 17-20
         if: ${{(contains(matrix.llvm-version, '17') || contains(matrix.llvm-version, '18') || contains(matrix.llvm-version, '19') || contains(matrix.llvm-version, '20'))}}
@@ -380,6 +382,8 @@ jobs:
             ./run_tests.py -b llvm -sc
             ./run_tests.py -b llvm llvmImplicit
             ./run_tests.py -b llvm llvmImplicit -f
+            ./run_tests.py -b llvm_submodule
+            ./run_tests.py -b llvm_submodule -sc
 
       - name: Check SciPy Build and Test Run - Test SciPy
         shell: bash -e -x -l {0}
