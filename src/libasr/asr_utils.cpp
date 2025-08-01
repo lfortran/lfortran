@@ -818,7 +818,8 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool run_verify,
                             const std::function<void (const std::string &, const Location &)> err,
                             LCompilers::LocationManager &lm,
-                            bool generate_object_code) {
+                            bool generate_object_code,
+                            bool load_submodules) {
     LCOMPILERS_ASSERT(symtab);
     if (symtab->get_symbol(module_name) != nullptr) {
         ASR::symbol_t *m = symtab->get_symbol(module_name);
@@ -864,6 +865,25 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
         mod2->m_symtab->mark_all_variables_external(al);
     }
     LCOMPILERS_ASSERT(symtab->resolve_symbol(module_name));
+
+    // Load all the Submodules of loaded parent module
+    if (load_submodules && mod2->m_has_submodules) {
+        std::vector<ASR::TranslationUnit_t*> submods;
+        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
+            = find_and_load_submodules(al, module_name, *symtab, pass_options, lm);
+        if (res.ok) {
+            submods = res.result;
+        } else {
+            error_message = res.error.message;
+            err(error_message, loc);
+        }
+        for (size_t i=0;i<submods.size();i++) {
+            ASR::Module_t *submod = extract_module(*submods[i]);
+            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+            submod->m_symtab->parent = symtab;
+            submod->m_loaded_from_mod = true;
+        }
+    }
 
     // Create a temporary TranslationUnit just for fixing the symbols
     ASR::asr_t *orig_asr_owner = symtab->asr_owner;
@@ -1035,6 +1055,42 @@ Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al
         }
     }
     return ErrorMessage("Module '" + msym + "' modfile was not found");
+}
+
+Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> find_and_load_submodules(Allocator &al, const std::string &parent_module_name,
+                                                            SymbolTable &symtab,
+                                                            LCompilers::PassOptions &pass_options,
+                                                            LCompilers::LocationManager &lm) {
+    std::vector<ASR::TranslationUnit_t*> submodules_collector;
+    std::filesystem::path runtime_library_dir { pass_options.runtime_library_dir };
+    std::vector<std::filesystem::path> mod_files_dirs;
+
+    mod_files_dirs.push_back(runtime_library_dir);
+    mod_files_dirs.push_back(pass_options.mod_files_dir);
+    mod_files_dirs.insert(mod_files_dirs.end(),
+                          pass_options.include_dirs.begin(),
+                          pass_options.include_dirs.end());
+
+    for (auto &path : mod_files_dirs) {
+        if (path.empty()) path = ".";
+        for (auto &file : std::filesystem::directory_iterator(path)) {
+            std::string submod_filename = file.path().filename().string();
+            if (startswith(submod_filename, parent_module_name) && endswith(submod_filename, ".smod")) {
+                std::string submodfile;
+                if (read_file(file.path().string(), submodfile)) {
+                    Result<ASR::TranslationUnit_t*, ErrorMessage> sub_res = load_modfile(al, submodfile, false, symtab, lm);
+                    if (sub_res.ok) {
+                        ASR::TranslationUnit_t* asr = sub_res.result;
+                        submodules_collector.push_back(asr);
+                    } else {
+                        return sub_res.error;
+                    }
+                }
+            }
+        }
+    }
+
+    return submodules_collector;
 }
 
 ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,

@@ -38,6 +38,7 @@ public:
     std::string dt_name;
     bool in_submodule = false;
     bool is_interface = false;
+    bool in_program = false;
     std::string interface_name = "";
     ASR::symbol_t *current_module_sym;
 
@@ -431,6 +432,7 @@ public:
         simd_variables.clear();
         bool is_global_save_enabled_copy = is_global_save_enabled;
         check_if_global_save_is_enabled( x );
+        in_program = true;
         for (size_t i=0; i<x.n_use; i++) {
             try {
                 visit_unit_decl1(*x.m_use[i]);
@@ -438,6 +440,7 @@ public:
                 if ( !compiler_options.continue_compilation ) throw e;
             }
         }
+        in_program = false;
         for (size_t i=0; i<x.n_decl; i++) {
             if(AST::is_a<AST::Declaration_t>(*x.m_decl[i])) {
                 AST::Declaration_t* decl = AST::down_cast<AST::Declaration_t>(x.m_decl[i]);
@@ -3316,6 +3319,7 @@ public:
             while (tu_symtab->parent != nullptr) {
                 tu_symtab = tu_symtab->parent;
             }
+            bool load_submodules = (!compiler_options.separate_compilation && in_program);
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
@@ -3323,7 +3327,7 @@ public:
                         msg, diag::Level::Error, diag::Stage::Semantic, {
                             diag::Label("", {loc})}));
                     throw SemanticAbort();
-            }, lm, compiler_options.separate_compilation));
+            }, lm, compiler_options.separate_compilation, load_submodules));
         }
         if (!ASR::is_a<ASR::Module_t>(*t)) {
             diag.add(diag::Diagnostic(
