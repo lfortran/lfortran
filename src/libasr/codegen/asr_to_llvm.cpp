@@ -8711,26 +8711,22 @@ public:
         llvm::Value* x_v = llvm_symtab[x_h];
         int64_t ptr_loads_copy = ptr_loads;
         tmp = x_v;
-#if LLVM_VERSION_MAJOR > 16
+        llvm::Type* type_req = nullptr;
         int loads = 0;
-#endif
         while( ptr_loads_copy-- ) {
-#if LLVM_VERSION_MAJOR > 16
             if( loads == 0 ) {
-                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                ptr_type[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     x->m_type, module.get());
+                
             } else {
-                ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
+                ptr_type[tmp] = type_req =  llvm_utils->get_type_from_ttype_t_util(ASRUtils::EXPR(ASR::make_Var_t(
                     al, x->base.base.loc, &x->base)),
                     ASRUtils::type_get_past_allocatable_pointer(x->m_type),
                     module.get());
             }
-#endif
-            tmp = llvm_utils->CreateLoad(tmp);
-#if LLVM_VERSION_MAJOR > 16
-            loads++;
-#endif
+            tmp = llvm_utils->CreateLoad2(type_req, tmp);
+                loads++;
         }
     }
 
