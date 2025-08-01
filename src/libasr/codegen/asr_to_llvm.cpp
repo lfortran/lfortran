@@ -7632,7 +7632,7 @@ public:
             this->visit_expr_wrapper(x.m_orelse, true);
             builder->CreateStore(tmp, ifexp_res);
         });
-        tmp = llvm_utils->CreateLoad(ifexp_res);
+        tmp = llvm_utils->CreateLoad2(_type, ifexp_res);
     }
 
     // TODO: Implement visit_DooLoop
