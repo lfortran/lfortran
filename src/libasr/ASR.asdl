@@ -136,7 +136,7 @@ expr
     | StringRepeat(expr left, expr right, ttype type, expr? value)
     | StringLen(expr arg, ttype type, expr? value)
     | StringItem(expr arg, expr idx, ttype type, expr? value)
-    | StringSection(expr arg, expr? start, expr? end, expr? step, ttype type, expr? value)
+    | StringSection(expr arg, string_index_kind kind, expr? start, expr? end, expr? step, ttype type, expr? value)
     | StringCompare(expr left, cmpop op, expr right, ttype type, expr? value)
     | StringContains(expr substr, expr str, ttype type, expr? value)
     | StringOrd(expr arg, ttype type, expr? value)
@@ -249,6 +249,7 @@ integerboz = Binary | Hex | Octal | Decimal
 arraybound = LBound | UBound
 arraystorage = RowMajor | ColMajor
 string_format_kind = FormatFortran | FormatC | FormatPythonPercent | FormatPythonFString | FormatPythonFormat
+string_index_kind = IndexFortran | IndexPython
 
 omp_region_type = Parallel | Do | ParallelDo | Sections | Section | ParallelSections | Critical | Atomic | Barrier | Single | Master | Task | Taskwait | Taskloop | Simd | Teams | Distribute | Target | TargetData
 omp_clause
