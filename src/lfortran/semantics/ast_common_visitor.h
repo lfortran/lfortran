@@ -5047,7 +5047,7 @@ public:
                 type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
             } else {
                 if (!v) {
-                    if (is_template) {
+                    if (is_template) { 
                         diag.add(Diagnostic(
                             "Type parameter '" + derived_type_name + "' is not specified "
                             "in any requirements",
@@ -5056,15 +5056,32 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-                    
-                    // If the type is not found, report the error and stop.
-                    diag.add(Diagnostic(
-                        "Derived type '" + derived_type_name + "' is being used before it is defined",
-                        diag::Level::Error, Stage::Semantic, {
-                            Label("Type used here is not defined in any scope", {loc})
-                        }));
-                    throw SemanticAbort();
-                    
+                    else if (this->is_derived_type && is_pointer) {
+                        v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
+                                al, loc, current_scope, s2c(al, derived_type_name),
+                                nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
+                                ASR::accessType::Private));
+
+                        type_declaration = v;
+                        type = ASRUtils::TYPE(ASR::make_StructType_t(
+                        al,
+                        loc,
+                        nullptr,
+                        0,
+                        nullptr,
+                        0,
+                        true,
+                        ASRUtils::symbol_name(v) == std::string("~unlimited_polymorphic_type")
+                        ? true
+                        : false));
+                    } else { 
+                        diag.add(Diagnostic(
+                            "Derived type '" + derived_type_name + "' is not defined",
+                            diag::Level::Error, Stage::Semantic, {
+                                Label("Type used here is not defined in any scope", {loc})
+                            }));
+                        throw SemanticAbort();
+                    }                   
                 } else if (v && ASRUtils::symbol_get_past_external(v)
                            && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))) {
                     // set the variable's type declaration to the derived type
