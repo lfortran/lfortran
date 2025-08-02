@@ -1290,7 +1290,7 @@ public:
                             dest_asr_type = ASRUtils::make_StructType_t_util(al, curr_arg_m_a_type->base.loc, dest_class_sym, true);
                             malloc_size = SizeOfTypeUtil(curr_arg.m_a, dest_asr_type, llvm_utils->getIntType(4),
                                 ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, 4)));
-                        } else {                            
+                        } else {
                             llvm::Type* llvm_type = nullptr;
                             dest_class_sym = ASRUtils::symbol_get_past_external(curr_arg.m_sym_subclass);
                             ASR::Struct_t* dest_struct = ASR::down_cast<ASR::Struct_t>(dest_class_sym);
@@ -1343,7 +1343,7 @@ public:
                         x_arr = builder->CreateBitCast(x_arr, dest_type->getPointerTo());
 
                         if (ASR::is_a<ASR::StructType_t>(*dest_asr_type)) {
-                            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(dest_class_sym), x_arr, dest_asr_type);                        
+                            allocate_array_members_of_struct(ASR::down_cast<ASR::Struct_t>(dest_class_sym), x_arr, dest_asr_type);
                         }
                         if (m_source && !m_source_is_class) {
                             int64_t ptr_loads_copy = ptr_loads;
