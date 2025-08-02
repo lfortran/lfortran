@@ -450,14 +450,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            [(Real 4)
-                                                            (Real 4)]
+                                                            [(Integer 4)]
                                                             []
-                                                            .false.
+                                                            .true.
                                                             .false.
                                                         )
                                                     )
-                                                    4 point
+                                                    4 color_point
                                                     Source
                                                     Public
                                                     Required
