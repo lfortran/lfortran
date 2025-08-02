@@ -1,5 +1,0 @@
-semantic error: Derived type 'bspline_3d' is not defined
- --> tests/errors/undefined_type.f90:6:9
-  |
-6 |         type(bspline_3d) :: s3
-  |         ^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope

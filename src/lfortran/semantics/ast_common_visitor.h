@@ -5055,13 +5055,14 @@ public:
                                 Label("",{loc})
                             }));
                         throw SemanticAbort();
-                    }
-                    else if (this->is_derived_type && is_pointer) {
+                    } else if (this->is_derived_type && is_pointer) {
+                        // Placeholder symbol for StructType type
+                        // Derived type can be used before its actually defined
                         v = ASR::down_cast<ASR::symbol_t>(ASR::make_ExternalSymbol_t(
                                 al, loc, current_scope, s2c(al, derived_type_name),
                                 nullptr, nullptr, nullptr, 0, s2c(al, derived_type_name),
                                 ASR::accessType::Private));
-
+                        // set the variable's type declaration to the derived type
                         type_declaration = v;
                         type = ASRUtils::TYPE(ASR::make_StructType_t(
                         al,
@@ -5076,7 +5077,7 @@ public:
                         : false));
                     } else { 
                         diag.add(Diagnostic(
-                            "Derived type '" + derived_type_name + "' is not defined",
+                            "Derived type `" + derived_type_name + "` is not defined",
                             diag::Level::Error, Stage::Semantic, {
                                 Label("Type used here is not defined in any scope", {loc})
                             }));

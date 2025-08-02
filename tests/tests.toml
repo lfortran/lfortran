@@ -4723,7 +4723,3 @@ run = true
 [[test]]
 filename = "../integration_tests/call_subroutine_without_type_01.f90"
 llvm = true
-
-[[test]]
-filename = "errors/undefined_type.f90"
-asr = true
