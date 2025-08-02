@@ -1,0 +1,13 @@
+{
+    "basename": "asr-undefined_type-072f2e4",
+    "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
+    "infile": "tests/errors/undefined_type.f90",
+    "infile_hash": "3a9e577d23fb927ea3ba84095fe02568ffa14ecbd7ff4d904c417af3",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "asr-undefined_type-072f2e4.stderr",
+    "stderr_hash": "7c19cddffe3d2b16cb85b5f2d1b6d9c3d2f4b6960381ae8cc8d1fc61",
+    "returncode": 2
+}
