@@ -1,0 +1,13 @@
+{
+    "basename": "ast-functions_41-1e43fd0",
+    "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/functions_41.f90",
+    "infile_hash": "85251751a2389037443a86b523b90e5db508759f889cdf5413aab330",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "ast-functions_41-1e43fd0.stdout",
+    "stdout_hash": "259fc8b35a039673e893fb5d852edbc3854d3752bfd2b75993d02413",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
