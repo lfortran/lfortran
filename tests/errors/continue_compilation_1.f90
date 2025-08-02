@@ -26,12 +26,12 @@ module continue_compilation_1_mod
 
 
 
-
-
-
-
-
 contains
+
+    subroutine my_undefined_type_test()
+        implicit none
+        type(another_undefined_type) :: s3_in_subroutine
+    end subroutine my_undefined_type_test
 
     subroutine my_func(x, y)
         integer, intent(in) :: x, y
@@ -114,7 +114,7 @@ program continue_compilation_1
     type :: matrix
       integer :: elements(n)
     end type
-
+    type(bspline_3d) :: s3_in_program
 
 
 

@@ -1,3 +1,9 @@
+semantic error: Derived type `another_undefined_type` is not defined
+  --> tests/errors/continue_compilation_1.f90:33:9
+   |
+33 |         type(another_undefined_type) :: s3_in_subroutine
+   |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
+
 semantic error: c_char should have a length of 1
   --> tests/errors/continue_compilation_1.f90:57:9
    |
@@ -110,6 +116,12 @@ semantic error: Variable `n` cannot appear in the expression as it is not a cons
     |
 115 |       integer :: elements(n)
     |                           ^ 
+
+semantic error: Derived type `bspline_3d` is not defined
+   --> tests/errors/continue_compilation_1.f90:117:5
+    |
+117 |     type(bspline_3d) :: s3_in_program
+    |     ^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:136:8
