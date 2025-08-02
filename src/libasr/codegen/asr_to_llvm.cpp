@@ -5889,8 +5889,7 @@ public:
                 ASR::Struct_t* value_struct_t = ASR::down_cast<ASR::Struct_t>(
                         ASRUtils::symbol_get_past_external(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value))));
                 value_struct_t_name = value_struct_t->m_name;
-                LCOMPILERS_ASSERT(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target))
-                                  == ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)));
+                LCOMPILERS_ASSERT(ASRUtils::check_class_assignment_compatibility(x.m_target, x.m_value));
                 llvm::Type* value_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_value,
                     ASRUtils::type_get_past_allocatable_pointer(value_type), module.get());
                 llvm::Type* ptr_type = llvm_utils->getStructType(
