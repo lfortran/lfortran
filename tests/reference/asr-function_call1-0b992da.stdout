@@ -356,6 +356,12 @@
                                                 )
                                         })
                                     softmax
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []

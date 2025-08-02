@@ -82,6 +82,12 @@
                                                 )
                                         })
                                     block_1
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b

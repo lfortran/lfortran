@@ -56,6 +56,13 @@
                                                 )
                                         })
                                     point
+                                    (StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [x
                                     y]
@@ -149,6 +156,12 @@
                                                 )
                                         })
                                     color_point
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [color]
                                     []
@@ -306,6 +319,12 @@
                                                 )
                                         })
                                     point_3d
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [z]
                                     []

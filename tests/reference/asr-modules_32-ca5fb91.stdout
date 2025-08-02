@@ -77,6 +77,19 @@
                                                 )
                                         })
                                     build_target_ptr
+                                    (StructType
+                                        [(Pointer
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [build_target_t]
                                     [ptr]
                                     []
@@ -141,6 +154,17 @@
                                                 )
                                         })
                                     build_target_t
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [output_file
                                     version]

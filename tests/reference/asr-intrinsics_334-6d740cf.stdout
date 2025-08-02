@@ -244,6 +244,12 @@
                                                 )
                                         })
                                     toml_value
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [x]
                                     []

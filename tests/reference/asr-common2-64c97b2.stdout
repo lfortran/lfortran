@@ -108,6 +108,12 @@
                                                 )
                                         })
                                     block_1
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b
@@ -209,6 +215,12 @@
                                                 )
                                         })
                                     block_2
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c
                                     d]
@@ -309,6 +321,12 @@
                                                 )
                                         })
                                     block_3
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [e
                                     g]
@@ -388,6 +406,12 @@
                                                 )
                                         })
                                     block_4
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -487,6 +511,12 @@
                                                 )
                                         })
                                     block_5
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [j
                                     k]

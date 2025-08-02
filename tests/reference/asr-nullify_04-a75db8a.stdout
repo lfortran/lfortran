@@ -42,6 +42,19 @@
                                                 )
                                         })
                                     scaled_data_structure
+                                    (StructType
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [one_d_real_pointer]
                                     []

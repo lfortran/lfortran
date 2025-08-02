@@ -243,6 +243,21 @@
                                                 )
                                         })
                                     logger_type
+                                    (StructType
+                                        [(Logical 4)
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [add_blank_line
                                     log_units

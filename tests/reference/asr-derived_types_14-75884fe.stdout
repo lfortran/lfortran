@@ -140,6 +140,17 @@
                                                 )
                                         })
                                     enum_type
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [invalid
                                     string

@@ -424,6 +424,12 @@
                                                 )
                                         })
                                     test_obj
+                                    (StructType
+                                        [(CPtr)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [ptr]
                                     []

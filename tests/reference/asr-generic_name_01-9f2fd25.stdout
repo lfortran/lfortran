@@ -86,6 +86,13 @@
                                                 )
                                         })
                                     complextype
+                                    (StructType
+                                        [(Real 4)
+                                        (Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [r
                                     i]

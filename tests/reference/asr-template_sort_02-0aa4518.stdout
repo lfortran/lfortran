@@ -3989,6 +3989,12 @@
                                                 )
                                         })
                                     my_type
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [d]
                                     []

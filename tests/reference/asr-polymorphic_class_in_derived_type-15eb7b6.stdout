@@ -76,6 +76,12 @@
                                                             
                                                         })
                                                     ~unlimited_polymorphic_type
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .true.
+                                                    )
                                                     []
                                                     []
                                                     []
@@ -89,6 +95,27 @@
                                                 )
                                         })
                                     dict_item
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .true.
+                                            )
+                                        )
+                                        (Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .true.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [value
                                     value2]

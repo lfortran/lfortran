@@ -108,6 +108,12 @@
                                                 )
                                         })
                                     my_super_type
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [x]
                                     []
@@ -222,6 +228,18 @@
                                                 )
                                         })
                                     my_type
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [my_super_type]
                                     [x
                                     super]

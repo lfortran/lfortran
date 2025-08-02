@@ -252,6 +252,14 @@
                                                 )
                                         })
                                     fpm_cmd_settings
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [working_dir]
                                     []
@@ -293,6 +301,14 @@
                                                 )
                                         })
                                     fpm_new_settings
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [name]
                                     []

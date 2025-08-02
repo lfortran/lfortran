@@ -203,6 +203,12 @@
                                                 )
                                         })
                                     b
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [d
                                     e
@@ -304,6 +310,12 @@
                                                 )
                                         })
                                     blank#block
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [z1
                                     z2]
@@ -446,6 +458,12 @@
                                                 )
                                         })
                                     c
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c
                                     g
@@ -579,6 +597,12 @@
                                                 )
                                         })
                                     sample
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b

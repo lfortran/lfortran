@@ -154,15 +154,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Allocatable
-                                                                            (Array
-                                                                                (Integer 4)
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                        )
-                                                                        (Integer 4)]
+                                                                        []
                                                                         []
                                                                         .false.
                                                                         .false.
@@ -182,15 +174,7 @@
                                                     __asr_push_back
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Allocatable
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
-                                                                )
-                                                            )
-                                                            (Integer 4)]
+                                                            []
                                                             []
                                                             .false.
                                                             .false.
@@ -354,15 +338,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Allocatable
-                                                                            (Array
-                                                                                (Integer 4)
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                        )
-                                                                        (Integer 4)]
+                                                                        []
                                                                         []
                                                                         .false.
                                                                         .false.
@@ -410,15 +386,7 @@
                                                     __asr_resize
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Allocatable
-                                                                (Array
-                                                                    (Integer 4)
-                                                                    [(()
-                                                                    ())]
-                                                                    DescriptorArray
-                                                                )
-                                                            )
-                                                            (Integer 4)]
+                                                            []
                                                             []
                                                             .false.
                                                             .false.
@@ -712,6 +680,12 @@
                                                                 )
                                                         })
                                                     intvector
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [elements
                                                     sz]
@@ -734,15 +708,7 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Allocatable
-                                                            (Array
-                                                                (Integer 4)
-                                                                [(()
-                                                                ())]
-                                                                DescriptorArray
-                                                            )
-                                                        )
-                                                        (Integer 4)]
+                                                        []
                                                         []
                                                         .true.
                                                         .false.
@@ -1531,6 +1497,22 @@
                                                                 )
                                                         })
                                                     vector
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [elements
                                                     sz]

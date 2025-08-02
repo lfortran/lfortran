@@ -292,6 +292,12 @@
                                                 )
                                         })
                                     toml_table
+                                    (StructType
+                                        [(Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [inline]
                                     []
@@ -358,6 +364,19 @@
                                                 )
                                         })
                                     toml_tokenizer
+                                    (StructType
+                                        [(Pointer
+                                            (StructType
+                                                [(Logical 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [toml_table]
                                     [current]
                                     []
@@ -377,6 +396,12 @@
                                             
                                         })
                                     toml_tokenizer_
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []

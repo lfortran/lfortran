@@ -173,6 +173,12 @@
                                                 )
                                         })
                                     test_type
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [test_real_value]
                                     []

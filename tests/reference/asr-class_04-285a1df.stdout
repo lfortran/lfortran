@@ -95,6 +95,12 @@
                                                 )
                                         })
                                     bar_a
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a]
                                     []
@@ -134,6 +140,12 @@
                                                 )
                                         })
                                     bar_b
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [b]
                                     []
@@ -173,6 +185,12 @@
                                                 )
                                         })
                                     bar_c
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c]
                                     []
@@ -248,6 +266,17 @@
                                                 )
                                         })
                                     foo_a
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_a]
                                     [m_bar_a]
                                     []
@@ -292,6 +321,17 @@
                                                 )
                                         })
                                     foo_b
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_b]
                                     [m_bar_b]
                                     []
@@ -336,6 +376,17 @@
                                                 )
                                         })
                                     foo_c
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_c]
                                     [m_bar_c]
                                     []

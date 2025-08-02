@@ -60,6 +60,13 @@
                                                 )
                                         })
                                     enum_stat
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [success
                                     fatal]
@@ -541,6 +548,13 @@
                                                 )
                                         })
                                     toml_table
+                                    (StructType
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [implicit
                                     inline]
@@ -602,6 +616,13 @@
                                                 )
                                         })
                                     toml_value
+                                    (StructType
+                                        [(Real 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [int
                                     float]

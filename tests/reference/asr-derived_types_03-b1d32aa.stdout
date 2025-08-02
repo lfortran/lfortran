@@ -61,6 +61,12 @@
                                                 )
                                         })
                                     x
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -105,6 +111,12 @@
                                                                 )
                                                         })
                                                     a
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [i]
                                                     []
@@ -200,6 +212,12 @@
                                                                 )
                                                         })
                                                     a
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [i]
                                                     []

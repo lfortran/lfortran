@@ -402,6 +402,17 @@
                                                                 )
                                                         })
                                                     tuple
+                                                    (StructType
+                                                        [(TypeParameter
+                                                            t
+                                                        )
+                                                        (TypeParameter
+                                                            t
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [fst
                                                     snd]
@@ -492,8 +503,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Integer 4)
-                                                                        (Integer 4)]
+                                                                        []
                                                                         []
                                                                         .true.
                                                                         .false.
@@ -534,8 +544,7 @@
                                                     get_int_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
@@ -596,8 +605,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Integer 4)
-                                                                        (Integer 4)]
+                                                                        []
                                                                         []
                                                                         .true.
                                                                         .false.
@@ -638,8 +646,7 @@
                                                     get_int_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Integer 4)
-                                                            (Integer 4)]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
@@ -700,8 +707,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Real 4)
-                                                                        (Real 4)]
+                                                                        []
                                                                         []
                                                                         .true.
                                                                         .false.
@@ -742,8 +748,7 @@
                                                     get_real_fst
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Real 4)
-                                                            (Real 4)]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
@@ -804,8 +809,7 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        [(Real 4)
-                                                                        (Real 4)]
+                                                                        []
                                                                         []
                                                                         .true.
                                                                         .false.
@@ -846,8 +850,7 @@
                                                     get_real_snd
                                                     (FunctionType
                                                         [(StructType
-                                                            [(Real 4)
-                                                            (Real 4)]
+                                                            []
                                                             []
                                                             .true.
                                                             .false.
@@ -932,6 +935,12 @@
                                                                 )
                                                         })
                                                     int_tuple
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [fst
                                                     snd]
@@ -993,6 +1002,12 @@
                                                                 )
                                                         })
                                                     real_tuple
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [fst
                                                     snd]
@@ -1015,8 +1030,7 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Integer 4)
-                                                        (Integer 4)]
+                                                        []
                                                         []
                                                         .true.
                                                         .false.
@@ -1042,8 +1056,7 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        [(Real 4)
-                                                        (Real 4)]
+                                                        []
                                                         []
                                                         .true.
                                                         .false.
