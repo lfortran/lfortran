@@ -3037,6 +3037,86 @@ ASR::asr_t* make_ArraySize_t_util(
     return ASR::make_ArraySize_t(al, a_loc, a_v, a_dim, a_type, a_value);
 }
 
+ASR::ttype_t* make_StructType_t_util(Allocator& al,
+                                     Location loc,
+                                     ASR::symbol_t* derived_type_sym,
+                                     bool is_cstruct)
+{
+    ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
+        ASRUtils::symbol_get_past_external(derived_type_sym));
+
+    if ( derived_type->m_struct_signature != nullptr ) {
+        ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(derived_type->m_struct_signature);
+        // if ( struct_type->m_is_cstruct == is_cstruct ) {
+        //     // return already constructed struct type
+        //     return derived_type->m_struct_signature;
+        // }
+
+        if ( is_cstruct == false && struct_type->m_is_cstruct != is_cstruct ) {
+            /*
+                This if for the cases where a struct type is declared as class(XX) in Fortran
+                For the example given below, in subroutine method, `list` is used as a class type
+
+                module list_module
+
+                type :: list
+                    type(list), pointer :: child => null()
+                ! contains
+                !    procedure :: method
+                end type list
+
+                contains
+
+                subroutine method(self)
+                    class(list), intent(inout) :: self
+                    print *, 'associated: ', associated(self%child)
+                end subroutine method
+
+                end module list_module
+            */
+            ASR::StructType_t* new_struct_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::duplicate_type(al, (ASR::ttype_t*) struct_type));
+            new_struct_type->m_is_cstruct = is_cstruct;
+            return (ASR::ttype_t*) new_struct_type;
+        }
+        return derived_type->m_struct_signature;
+    }
+
+    std::string derived_type_name = derived_type->m_name;
+
+    Vec<ASR::ttype_t*> member_types;
+    member_types.reserve(al, derived_type->m_symtab->get_scope().size());
+
+    for (auto const& sym : derived_type->m_symtab->get_scope()) {
+        if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                ASRUtils::symbol_get_past_external(sym.second));
+            if (ASRUtils::symbol_get_past_external(derived_type_sym) == ASRUtils::symbol_get_past_external(var->m_type_declaration)) {
+                // this is self referential, so we can directly take it
+                ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var->m_type));
+                return ASRUtils::TYPE(
+                    ASR::make_StructType_t(al, loc, stype->m_data_member_types,
+                                           stype->n_data_member_types,
+                                           nullptr,
+                                           0,
+                                           is_cstruct == false ? false : stype->m_is_cstruct,
+                                           stype->m_is_unlimited_polymorphic
+                                           )
+                );
+            }
+            member_types.push_back(al, var->m_type);
+        }
+    }
+    return ASRUtils::TYPE(
+        ASR::make_StructType_t(al,
+                               loc,
+                               member_types.p,
+                               member_types.n,
+                               nullptr,
+                               0,
+                               is_cstruct,
+                               derived_type_name == "~unlimited_polymorphic_type" ? true : false));
+}
+
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){
     LCOMPILERS_ASSERT(ASR::is_a<ASR::Array_t>(*
         ASRUtils::type_get_past_allocatable_pointer(array_type)));
