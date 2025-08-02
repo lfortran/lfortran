@@ -5079,7 +5079,7 @@ public:
                         diag.add(Diagnostic(
                             "Derived type `" + derived_type_name + "` is not defined",
                             diag::Level::Error, Stage::Semantic, {
-                                Label("Type used here is not defined in any scope", {loc})
+                                Label("Type used here is not defined in any scope", {decl_attribute->base.loc})
                             }));
                         throw SemanticAbort();
                     }                   
