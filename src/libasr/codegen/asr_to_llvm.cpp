@@ -257,6 +257,16 @@ public:
         llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value); \
     } \
 
+    #define load_unlimited_polymorpic_value(expr, llvm_value) if(current_select_type_block_type_asr &&              \
+        ASR::is_a<ASR::Var_t>(*expr) && ASRUtils::is_unlimited_polymorphic_type(expr)) {                            \
+        ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expr)->m_v);             \
+        if (ASR::is_a<ASR::Variable_t>(*sym) && (ASRUtils::symbol_name(sym) == current_selector_var_name)) {        \
+            llvm::Type *llvm_type = llvm_utils->get_type_from_ttype_t_util(expr,                                    \
+                ASRUtils::extract_type(current_select_type_block_type_asr), module.get());                          \
+            llvm_value = llvm_utils->CreateLoad2(llvm_type, llvm_value);                                            \
+        }                                                                                                           \
+    }                                                                                                               \
+
     // Inserts a new block `bb` using the current builder
     // and terminates the previous block if it is not already terminated
     void start_new_block(llvm::BasicBlock *bb) {
@@ -6459,6 +6469,7 @@ public:
             ASR::is_a<ASR::UnionType_t>(*value_type) ) {
             tmp = llvm_utils->CreateLoad(tmp);
         }
+        load_unlimited_polymorpic_value(x.m_value, tmp);
         value = tmp;
         if (ASR::is_a<ASR::StructType_t>(*target_type) && !ASRUtils::is_class_type(target_type)) {
             if (value->getType()->isPointerTy()) {
@@ -7176,10 +7187,6 @@ public:
                 llvm::Value* llvm_selector_new = llvm_utils->create_gep2(src_type, llvm_selector, 1);
                 llvm_selector_new = llvm_utils->CreateLoad2(llvm::Type::getVoidTy(context)->getPointerTo(),llvm_selector_new);
                 llvm_selector_new = builder->CreateBitCast(llvm_selector_new, current_select_type_block_type->getPointerTo());
-                if (current_select_type_block_type_asr &&
-                    !ASRUtils::is_character(*current_select_type_block_type_asr)) {
-                    llvm_selector_new = llvm_utils->CreateLoad2(current_select_type_block_type, llvm_selector_new);
-                }
                 uint32_t h = get_hash((ASR::asr_t*)ASR::down_cast<ASR::Variable_t>(current_scope->resolve_symbol(selector_var_name)));
                 llvm_symtab[h] = llvm_selector_new;
             }
@@ -7228,6 +7235,8 @@ public:
         llvm::Value *right = tmp;
         load_non_array_non_character_pointers(x.m_left, ASRUtils::expr_type(x.m_left), left);
         load_non_array_non_character_pointers(x.m_right, ASRUtils::expr_type(x.m_right), right);
+        load_unlimited_polymorpic_value(x.m_left, left);
+        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -7269,6 +7278,8 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left);
+        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateICmpEQ(left, right);
@@ -7353,6 +7364,8 @@ public:
         llvm::Value *left = tmp;
         this->visit_expr_wrapper(x.m_right, true);
         llvm::Value *right = tmp;
+        load_unlimited_polymorpic_value(x.m_left, left);
+        load_unlimited_polymorpic_value(x.m_right, right);
         switch (x.m_op) {
             case (ASR::cmpopType::Eq) : {
                 tmp = builder->CreateFCmpOEQ(left, right);
@@ -9043,6 +9056,7 @@ public:
             ptr_loads = 2;
         }
         this->visit_expr_wrapper(x.m_arg, true);
+        load_unlimited_polymorpic_value(x.m_arg, tmp);
         switch (x.m_kind) {
             case (ASR::cast_kindType::IntegerToReal) : {
                 int a_kind = ASRUtils::extract_kind_from_ttype_t(x.m_type);
