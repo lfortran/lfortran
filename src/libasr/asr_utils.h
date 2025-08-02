@@ -3020,49 +3020,10 @@ inline ASR::ttype_t* make_Array_t_util(Allocator& al, const Location& loc,
         al, loc, type, m_dims, n_dims, physical_type));
 }
 
-static inline ASR::ttype_t* make_StructType_t_util(Allocator& al,
+ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                                  Location loc,
                                                  ASR::symbol_t* derived_type_sym,
-                                                 bool is_cstruct)
-{
-    ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
-        ASRUtils::symbol_get_past_external(derived_type_sym));
-
-    std::string derived_type_name = derived_type->m_name;
-
-    Vec<ASR::ttype_t*> member_types;
-    member_types.reserve(al, derived_type->m_symtab->get_scope().size());
-
-    for (auto const& sym : derived_type->m_symtab->get_scope()) {
-        if (ASR::is_a<ASR::Variable_t>(*sym.second)) {
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
-                ASRUtils::symbol_get_past_external(sym.second));
-            if (ASRUtils::symbol_get_past_external(derived_type_sym) == ASRUtils::symbol_get_past_external(var->m_type_declaration)) {
-                // this is self referential, so we can directly take it
-                ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var->m_type));
-                return ASRUtils::TYPE(
-                    ASR::make_StructType_t(al, loc, stype->m_data_member_types,
-                                           stype->n_data_member_types,
-                                           nullptr,
-                                           0,
-                                           is_cstruct == false ? false : stype->m_is_cstruct,
-                                           stype->m_is_unlimited_polymorphic
-                                           )
-                );
-            }
-            member_types.push_back(al, var->m_type);
-        }
-    }
-    return ASRUtils::TYPE(
-        ASR::make_StructType_t(al,
-                               loc,
-                               member_types.p,
-                               member_types.n,
-                               nullptr,
-                               0,
-                               is_cstruct,
-                               derived_type_name == "~unlimited_polymorphic_type" ? true : false));
-}
+                                                 bool is_cstruct);
 
 // Sets the dimension member of `ttype_t`. Returns `true` if dimensions set.
 // Returns `false` if the `ttype_t` does not have a dimension member.
@@ -4988,7 +4949,7 @@ class SymbolDuplicator {
         duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
         return ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(
             al, struct_type_t->base.base.loc, struct_type_symtab,
-            struct_type_t->m_name, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
+            struct_type_t->m_name, struct_type_t->m_struct_signature, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
             struct_type_t->m_members, struct_type_t->n_members,
             struct_type_t->m_member_functions, struct_type_t->n_member_functions, struct_type_t->m_abi,
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
