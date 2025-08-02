@@ -780,7 +780,11 @@ public:
             visit_expr(*x.m_symbolic_value);
             r += src;
         } else if (x.m_value) {
-            r += " = ";
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                r += " => ";
+            } else {
+                r += " = ";
+            }
             visit_expr(*x.m_value);
             r += src;
         } else if (x.m_symbolic_value) {
@@ -2142,7 +2146,10 @@ public:
 
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
-    // void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {}
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+        (void)x; // suppress unused warning
+        src = "null()";
+    }
 
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
