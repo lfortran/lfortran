@@ -10853,12 +10853,11 @@ public:
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
                                     tmp = llvm_utils->CreateLoad(tmp);
                                 }
-
                                 if (ASRUtils::is_class_type(
-                                        ASRUtils::type_get_past_allocatable(arg->m_type))
+                                        ASRUtils::type_get_past_allocatable_pointer(arg->m_type))
                                     && !ASRUtils::is_unlimited_polymorphic_type(x.m_args[i].m_value)
                                     && !ASRUtils::is_class_type(
-                                        ASRUtils::type_get_past_allocatable(orig_arg->m_type))) {
+                                        ASRUtils::type_get_past_allocatable_pointer(orig_arg->m_type))) {
                                     tmp = convert_class_to_type(x.m_args[i].m_value, ASRUtils::EXPR(ASR::make_Var_t(
                                         al, orig_arg->base.base.loc, &orig_arg->base)), orig_arg->m_type, tmp);
                                 }
@@ -11128,12 +11127,7 @@ public:
 
             // To avoid segmentation faults when original argument
             // is not a ASR::Variable_t like callbacks.
-            if( orig_arg && !(ASR::is_a<ASR::Pointer_t>(*expr_type(x.m_args[i].m_value)) && ASRUtils::is_class_type(
-                ASRUtils::type_get_past_array(
-                    ASRUtils::type_get_past_allocatable(
-                        ASRUtils::type_get_past_pointer(
-                            ASRUtils::expr_type(x.m_args[i].m_value)))))) ) {
-
+            if( orig_arg ) {
                 tmp = convert_to_polymorphic_arg(x.m_args[i].m_value, tmp,
                     ASRUtils::EXPR(ASR::make_Var_t(al, orig_arg->base.base.loc, &orig_arg->base)),
                     ASRUtils::type_get_past_allocatable(
@@ -11152,8 +11146,9 @@ public:
         // in the struct pointer to it
         llvm::Value *value = nullptr;
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
-        LCOMPILERS_ASSERT(ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(arg_type)) &&
-                          !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable(dest_type)));
+        ASR::ttype_t* ext_arg_type = ASRUtils::type_get_past_allocatable_pointer(arg_type);
+        LCOMPILERS_ASSERT(ASRUtils::is_class_type(ext_arg_type) &&
+                          !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(dest_type)));
         if (compiler_options.po.realloc_lhs && ASRUtils::is_allocatable(arg_type)) {
             check_and_allocate(arg, dest_arg, dest_type);
         }
@@ -11163,13 +11158,10 @@ public:
         llvm::Type* llvm_struct_type = llvm_utils->get_type_from_ttype_t_util(arg, struct_type,
                 module.get())->getPointerTo();
         llvm::Value* struct_ptr = llvm_utils->create_gep2(
-                                llvm_utils->get_type_from_ttype_t_util(arg,
-                                    ASRUtils::type_get_past_allocatable(arg_type),
-                                    module.get()),
+                                llvm_utils->get_type_from_ttype_t_util(arg, ext_arg_type, module.get()),
                                 class_value, 1);
 
-        if (ASRUtils::is_class_type(
-                ASRUtils::type_get_past_allocatable(arg_type))
+        if (ASRUtils::is_class_type(ext_arg_type)
             && !ASR::is_a<ASR::Allocatable_t>(*dest_type)) {
             value = llvm_utils->CreateLoad2(llvm_struct_type, struct_ptr);
             value = builder->CreateBitCast(value, llvm_utils->get_type_from_ttype_t_util(dest_arg, dest_type, module.get())->getPointerTo());
