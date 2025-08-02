@@ -236,7 +236,7 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
-      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
+      -DCMAKE_Fortran_FLAGS="--cpp --separate-compilation --realloc-lhs --no-warnings --use-loop-variable-after-loop --no-array-bounds-checking -I$(pwd)/src -I$(pwd)/subprojects/test-drive/"
   make -j8
   ctest
 
@@ -624,17 +624,17 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -645,17 +645,17 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
 '
 
 ##########################

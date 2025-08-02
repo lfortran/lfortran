@@ -56,7 +56,8 @@ MODULE passing_array_01_mod
       len = 20
       arr = [1,2,3,4,5,6]
       ! All calls would accept the passed array,
-      ! as they don't have compile-time array size to compare against.
+      ! as they don't have compile-time array size to compare against
+      ! and we disable array bounds checking.
 
       ret =  test_01_interface (len,arr)
       print * , ret

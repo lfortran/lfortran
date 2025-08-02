@@ -22,5 +22,5 @@ real, dimension(4, 4) :: cs2
 cs = [1.0, 2.0, 3.0, 4.0]
 cs2 = 12.87
 call a(cs)
-call b(cs)
+call b(cs2)
 end program
