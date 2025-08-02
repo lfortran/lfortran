@@ -713,6 +713,13 @@
                                                 )
                                         })
                                     x
+                                    (StructType
+                                        [(Integer 4)
+                                        (Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [r
                                     i]
@@ -780,6 +787,19 @@
                                                 )
                                         })
                                     y
+                                    (StructType
+                                        [(Complex 4)
+                                        (StructType
+                                            [(Integer 4)
+                                            (Real 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [x]
                                     [c
                                     d]
@@ -876,6 +896,25 @@
                                                 )
                                         })
                                     z
+                                    (StructType
+                                        [(Complex 4)
+                                        (StructType
+                                            [(Complex 4)
+                                            (StructType
+                                                [(Integer 4)
+                                                (Real 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [y]
                                     [k
                                     l]

@@ -326,6 +326,12 @@
                                                 )
                                         })
                                     map_setiterator
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []

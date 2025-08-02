@@ -109,6 +109,12 @@
                                                 )
                                         })
                                     open_hashmap_type
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []

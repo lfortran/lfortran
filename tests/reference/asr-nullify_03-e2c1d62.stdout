@@ -63,6 +63,19 @@
                                                 )
                                         })
                                     rp1d
+                                    (StructType
+                                        [(Pointer
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [f]
                                     []
@@ -219,6 +232,49 @@
                                                 )
                                         })
                                     sds
+                                    (StructType
+                                        [(Array
+                                            (Integer 4)
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )
+                                        (Pointer
+                                            (Array
+                                                (Real 8)
+                                                [(()
+                                                ())
+                                                (()
+                                                ())
+                                                (()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Array
+                                            (StructType
+                                                [(Pointer
+                                                    (Array
+                                                        (Real 8)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                            [((IntegerConstant 1 (Integer 4) Decimal)
+                                            (IntegerConstant 3 (Integer 4) Decimal))]
+                                            FixedSizeArray
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [ndim
                                     dims

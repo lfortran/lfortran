@@ -468,6 +468,18 @@
                                                 )
                                         })
                                     srcfile_t
+                                    (StructType
+                                        [(Integer 8)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [file_name
                                     exe_name

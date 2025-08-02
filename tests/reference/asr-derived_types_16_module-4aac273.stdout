@@ -263,6 +263,14 @@
                                                 )
                                         })
                                     fpm_run_settings
+                                    (StructType
+                                        [(Logical 4)
+                                        (Real 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [int
                                     float

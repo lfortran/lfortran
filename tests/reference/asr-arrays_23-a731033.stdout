@@ -395,6 +395,16 @@
                                                 )
                                         })
                                     toml_context
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Pointer
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [pos
                                     num
