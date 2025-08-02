@@ -5496,7 +5496,7 @@ public:
                         ASR::ExpressionLength, 
                         ASR::DescriptorString));
                 }
-                return ASR::make_StringSection_t(al, loc, array_item, l,
+                return ASR::make_StringSection_t(al, loc, array_item, ASR::string_index_kindType::IndexFortran, l,
                         r, ASRUtils::EXPR(tmp), string_tt, arr_ref_val);
             } else {
                 ASR::ttype_t* final_type;
@@ -5575,7 +5575,7 @@ public:
                         char_type = ASRUtils::TYPE(
                             ASR::make_String_t(al, loc, 1, a_len_expr, ASR::ExpressionLength, ASR::DescriptorString));
                     }
-                    return ASR::make_StringSection_t(al, loc, v_Var, l,
+                    return ASR::make_StringSection_t(al, loc, v_Var, ASR::string_index_kindType::IndexFortran, l,
                             r, casted_step, char_type, arr_ref_val);
                 }
             }

@@ -7936,11 +7936,10 @@ public:
             this->visit_expr_wrapper(x.m_value, true);
             return;
         }
-        // TODO : Find some way to use the helper functions based on the frontend,
-        // We are using fortran only for now.
-        if(true){ // Fortran 
+
+        if(x.m_kind == ASR::string_index_kindType::IndexFortran){ // Fortran 
             stringSection_helper_fortran(x);
-        } else { // Python
+        } else if(x.m_kind == ASR::string_index_kindType::IndexPython){ // Python
             stringSection_helper_python(x);
         }
     }
