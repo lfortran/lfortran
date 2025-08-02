@@ -4123,14 +4123,15 @@ public:
                     }
                 } else if (s.m_initializer != nullptr) {
                     ASR::ttype_t* temp_current_variable_type_ = current_variable_type_;
-                    if (s.m_initializer!=nullptr && s.m_initializer->type==AST::ArrayInitializer) {
-                        // This is an array initializer, we need to handle it separately
+                    if (s.m_initializer!=nullptr && AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer) ) {
+                        // This branch is to handle cases of BOZ Declarations inside Real Array 
+                        // Initializers, e.g.: real :: x(2) = [real::b'01', 5.6] 
                         AST::ArrayInitializer_t *array_init1 = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
-                        if (array_init1->m_vartype && array_init1->m_vartype->type == AST::decl_attributeType::AttrType) {
+                        if (array_init1->m_vartype && AST::is_a<AST::AttrType_t>(*array_init1->m_vartype)) {
                             AST::AttrType_t *attr_type = AST::down_cast<AST::AttrType_t>(array_init1->m_vartype);
                             if (attr_type->m_type == AST::decl_typeType::TypeReal) {
                                 for (size_t i = 0; i < array_init1->n_args; i++) {
-                                    if (array_init1->m_args[i]->type == AST::exprType::BOZ){
+                                    if (AST::is_a<AST::BOZ_t>(*array_init1->m_args[i])){
                                         current_variable_type_ = ASRUtils::TYPE(ASR::make_Real_t(al, (array_init1->base).base.loc, compiler_options.po.default_integer_kind));
                                     }
                                 }
