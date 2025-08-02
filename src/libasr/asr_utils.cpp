@@ -194,9 +194,11 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 // If `func_call->m_dt` is not null, it means that the function call
                 // is returning a struct type.
                 return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func_call->m_dt));
-            } else {
+            } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(func_call->m_name))) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_call->m_name));
                 return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var));
+            } else {
+                return nullptr;
             }
         }
         case ASR::exprType::StructConstant: {
@@ -420,8 +422,20 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(logical_not->m_arg));
         }
         case ASR::exprType::ImpliedDoLoop: {
-            ASR::ImpliedDoLoop_t* implied_do_loop = ASR::down_cast<ASR::ImpliedDoLoop_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(implied_do_loop->m_var));
+            ASR::ImpliedDoLoop_t* imp_dl = ASR::down_cast<ASR::ImpliedDoLoop_t>(expression);
+            for (size_t i = 0; i < imp_dl->n_values; i++) {
+                ASR::expr_t* arg = imp_dl->m_values[i];
+                if (arg != nullptr) {
+                    ASR::symbol_t* struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(arg));
+                    if (struct_sym != nullptr) {
+                        return struct_sym;
+                    }
+                }
+            }
+            if (imp_dl->m_value != nullptr) {
+                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(imp_dl->m_value));
+            }
+            return nullptr;
         }
         case ASR::exprType::StringSection: {
             ASR::StringSection_t* string_section = ASR::down_cast<ASR::StringSection_t>(expression);

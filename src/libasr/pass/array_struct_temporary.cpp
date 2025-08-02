@@ -255,6 +255,15 @@ template <typename T>
 ASR::expr_t* get_first_array_function_args(T* func) {
     int64_t first_array_arg_idx = -1;
     ASR::expr_t* first_array_arg = nullptr;
+    if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {
+        ASR::symbol_t* call_func = ASRUtils::symbol_get_past_external(func->m_name);
+        if (ASR::is_a<ASR::StructMethodDeclaration_t>(*call_func)) {
+            bool is_no_pass = ASRUtils::get_class_proc_nopass_val(call_func);
+            if (!is_no_pass && ASRUtils::is_array(ASRUtils::expr_type(func->m_dt))) {
+                return func->m_dt;
+            }
+        }
+    }
     for (int64_t i = 0; i < (int64_t)func->n_args; i++) {
         ASR::ttype_t* func_arg_type;
         if constexpr (std::is_same_v<T, ASR::FunctionCall_t>) {

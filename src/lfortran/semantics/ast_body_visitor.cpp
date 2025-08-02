@@ -1471,6 +1471,25 @@ public:
         tmp = ASR::make_AssociateBlockCall_t(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(associate_block));
     }
 
+    void set_string_len_if_needed(const AST::Allocate_t& x, Vec<ASR::alloc_arg_t> &alloc_args_vec, bool cond, ASR::expr_t* expr) {
+            if (cond && ASRUtils::is_character(*ASRUtils::expr_type(expr))) {
+                ASR::expr_t* string_len = ASRUtils::EXPR(
+                    ASR::make_StringLen_t(al, x.base.base.loc, expr,
+                        ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
+                            compiler_options.po.default_integer_kind)),
+                        nullptr
+                    )
+                );
+                for (size_t i = 0; i < alloc_args_vec.size(); i++) {
+                    LCOMPILERS_ASSERT(
+                        ASRUtils::is_character(*ASRUtils::expr_type(alloc_args_vec[i].m_a)) ||
+                        ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(alloc_args_vec[i].m_a)))
+                    );
+                    alloc_args_vec.p[i].m_len_expr = string_len;
+                }
+            }
+        }
+
     void visit_Allocate(const AST::Allocate_t& x) {
         Vec<ASR::alloc_arg_t> alloc_args_vec;
         alloc_args_vec.reserve(al, x.n_args);
@@ -1602,23 +1621,11 @@ public:
             } else if( source_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 source = ASRUtils::EXPR(tmp);
+                set_string_len_if_needed(x, alloc_args_vec, source_cond, source);
             } else if ( mold_cond ) {
                 this->visit_expr(*(x.m_keywords[i].m_value));
                 mold = ASRUtils::EXPR(tmp);
-            }
-        }
-        if(source_cond && ASRUtils::is_character(*ASRUtils::expr_type(source))){
-            ASR::expr_t* string_len = ASRUtils::EXPR(
-                ASR::make_StringLen_t(al , x.base.base.loc, source, 
-                    ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc,
-                        compiler_options.po.default_integer_kind)),
-                    nullptr
-                )
-            );
-            for (size_t i = 0; i < alloc_args_vec.size(); i++) {
-                LCOMPILERS_ASSERT(ASRUtils::is_character(*ASRUtils::expr_type(alloc_args_vec[i].m_a)) || 
-                    ASRUtils::is_class_type(ASRUtils::extract_type(ASRUtils::expr_type(alloc_args_vec[i].m_a))));
-                ((alloc_args_vec.p)+i)->m_len_expr = string_len;
+                set_string_len_if_needed(x, alloc_args_vec, mold_cond, mold);
             }
         }
 
