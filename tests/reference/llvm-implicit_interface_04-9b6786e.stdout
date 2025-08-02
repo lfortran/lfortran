@@ -110,7 +110,7 @@ ifcont5:                                          ; preds = %ifcont3
   %25 = getelementptr [3 x i32], [3 x i32]* @main.b, i32 0, i32 %21
   store i32 30, i32* %25, align 4
   %26 = load i32, i32* @main.n, align 4
-  %27 = icmp ne i32 3, %26
+  %27 = icmp slt i32 3, %26
   br i1 %27, label %then6, label %ifcont7
 
 then6:                                            ; preds = %ifcont5
