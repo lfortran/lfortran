@@ -6274,12 +6274,13 @@ public:
                 check_and_allocate(x.m_target, x.m_value, asr_value_type);
             }
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 0;
+            ptr_loads = ASRUtils::is_allocatable(asr_value_type);
             this->visit_expr(*x.m_value);
             llvm::Value* value_struct = tmp;
 
             bool is_assignment_target_copy = is_assignment_target;
             is_assignment_target = true;
+            ptr_loads = 0;
             this->visit_expr(*x.m_target);
             is_assignment_target = is_assignment_target_copy;
 
@@ -6287,6 +6288,10 @@ public:
             ASR::ttype_t* wrapped_struct_type = ASRUtils::make_StructType_t_util(al, asr_target_type->base.loc,
                             ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_target)), true);
             llvm::Type* wrapper_struct_llvm_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, wrapped_struct_type, module.get())->getPointerTo();
+            llvm::Value* vptr_hash = llvm_utils->create_gep2(asr_target_llvm_type, tmp, 0);
+            llvm::Value* struct_type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
+                llvm::APInt(64, get_class_hash(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(x.m_value)))));
+            builder->CreateStore(struct_type_hash, vptr_hash);
             tmp = llvm_utils->create_gep2(asr_target_llvm_type, tmp, 1);
             tmp = llvm_utils->CreateLoad2(wrapper_struct_llvm_type, tmp);
             tmp = builder->CreateBitCast(tmp, value_struct->getType());
@@ -6294,7 +6299,7 @@ public:
             llvm::Value* target_struct = tmp;
 
             llvm_utils->deepcopy(x.m_value, value_struct, target_struct,
-                asr_value_type, asr_value_type, module.get(), name2memidx);
+                asr_target_type, ASRUtils::type_get_past_allocatable(asr_value_type), module.get(), name2memidx);
             return;
         }
 
