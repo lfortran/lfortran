@@ -11,6 +11,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -38,6 +39,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec

@@ -11,6 +11,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -32,6 +33,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -53,6 +55,7 @@
                 ()
                 ()
                 doubleprecision
+                []
                 None
             )
             [(SimpleAttribute
@@ -74,6 +77,7 @@
                 ()
                 ()
                 integer
+                []
                 None
             )
             [(SimpleAttribute
@@ -95,6 +99,7 @@
                 ()
                 ()
                 real
+                []
                 None
             )
             [(SimpleAttribute
@@ -116,6 +121,7 @@
                 ()
                 ()
                 complex
+                []
                 None
             )
             [(SimpleAttribute
@@ -137,6 +143,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -158,6 +165,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -190,6 +198,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -211,6 +220,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute

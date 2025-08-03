@@ -49,6 +49,7 @@
                         ()
                         ()
                         t
+                        []
                         None
                     )
                     [(AttrIntent
@@ -77,6 +78,7 @@
                         ()
                         ()
                         ()
+                        []
                         None
                     )
                     []
@@ -149,6 +151,7 @@
                         ()
                         ()
                         t
+                        []
                         None
                     )
                     [(AttrIntent
@@ -172,6 +175,7 @@
                         ()
                         ()
                         ()
+                        []
                         None
                     )
                     [(SimpleAttribute
@@ -204,6 +208,7 @@
                         ()
                         ()
                         ()
+                        []
                         None
                     )
                     []
@@ -478,6 +483,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             (AttrIntrinsicOperator
@@ -496,6 +502,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             (AttrIntrinsicOperator

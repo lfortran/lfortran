@@ -18,6 +18,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -46,6 +47,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute

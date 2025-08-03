@@ -22,6 +22,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -110,6 +111,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 []
@@ -133,6 +135,7 @@
                     ()
                     ()
                     C
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -164,6 +167,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(SimpleAttribute
@@ -247,6 +251,7 @@
                     ()
                     ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -286,6 +291,7 @@
                     ()
                     ()
                     X
+                    []
                     None
                 )
                 [(AttrIntent
@@ -329,6 +335,7 @@
                 ()
                 ()
                 X
+                []
                 None
             )
             []

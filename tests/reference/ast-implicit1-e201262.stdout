@@ -57,6 +57,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -80,6 +81,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -103,6 +105,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -126,6 +129,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -151,6 +155,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -176,6 +181,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -199,6 +205,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -220,6 +227,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -237,6 +245,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -274,6 +283,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -305,6 +315,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -328,6 +339,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -357,6 +369,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -380,6 +393,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -403,6 +417,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -428,6 +443,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -451,6 +467,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -474,6 +491,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -497,6 +515,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -522,6 +541,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -541,6 +561,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -562,6 +583,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -581,6 +603,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -600,6 +623,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -621,6 +645,7 @@
                     ()
                     ()
                     BLOB
+                    []
                     None
                 )
                 [(LetterSpec
@@ -638,6 +663,7 @@
                     ()
                     ()
                     X
+                    []
                     None
                 )
                 [(LetterSpec
@@ -661,6 +687,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -677,6 +704,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -693,6 +721,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -720,6 +749,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -739,6 +769,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -755,6 +786,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -771,6 +803,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -798,6 +831,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -817,6 +851,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -833,6 +868,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -849,6 +885,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -876,6 +913,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -895,6 +933,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -911,6 +950,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -927,6 +967,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -954,6 +995,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -976,6 +1018,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -998,6 +1041,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -1017,6 +1061,7 @@
                     ()
                     ()
                     ()
+                    []
                     None
                 )
                 [(LetterSpec

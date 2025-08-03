@@ -21,6 +21,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -42,6 +43,7 @@
                 ()
                 ()
                 team_type
+                []
                 None
             )
             []
@@ -68,6 +70,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(AttrCodimension
@@ -94,6 +97,7 @@
                 ()
                 ()
                 ()
+                []
                 None
             )
             [(AttrDimension
