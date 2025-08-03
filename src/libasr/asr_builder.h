@@ -981,8 +981,12 @@ class ASRBuilder {
     }
 
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
-        LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs)),
-            type_to_str_python(expr_type(lhs)) + ", " + type_to_str_python(expr_type(rhs)));
+        // FIXME: This is a hack. Revert this when type inheritance is fixed.
+        LCOMPILERS_ASSERT_MSG((check_equal_type(expr_type(lhs), expr_type(rhs))
+                               || (ASRUtils::check_class_assignment_compatibility(lhs, rhs)
+                                   || ASRUtils::check_class_assignment_compatibility(rhs, lhs))),
+                              type_to_str_python(expr_type(lhs)) + ", "
+                                  + type_to_str_python(expr_type(rhs)));
         return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false));
     }
 

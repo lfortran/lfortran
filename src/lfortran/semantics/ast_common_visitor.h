@@ -5757,6 +5757,9 @@ public:
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
         for (size_t i=0; i<x.n_args; i++) {
+            this->visit_expr(*x.m_args[0]);
+            static ASR::expr_t* first_element = ASRUtils::EXPR(tmp);
+
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
 
@@ -5780,7 +5783,9 @@ public:
             } else if (is_type_spec_ommitted) {
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
-                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)) {
+                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)
+                    && (!ASRUtils::check_class_assignment_compatibility(first_element, expr)
+                        || !ASRUtils::check_class_assignment_compatibility(expr, first_element))) {
                     diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_type(extracted_type) +
                         "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
