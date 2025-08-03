@@ -351,6 +351,13 @@ jobs:
             cd integration_tests
             ./run_tests.py -b wasm
             ./run_tests.py -b wasm -f
+
+      - name: Check Bison Grammar for Essential Conflicts
+        if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '20')
+        shell: bash -e -l {0}
+        run: |
+          ./ci/grammar_conflicts.sh
+
       # Run last. Script checks out to first commit in PR history
       - name: Check for Added Binary Files
         shell: bash -e -l {0}

@@ -1,8 +1,19 @@
 diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
-index c773ce871..7c7529101 100644
+index 09cfa9778..3b054069f 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -2283,169 +2283,4 @@ id_opt
+@@ -1394,9 +1392,7 @@ common_block_list_top
+     ;
+ 
+ common_block_list
+-    : common_block_list TK_COMMA common_block { $$ = $1; PLIST_ADD($$, $3); }
+-    | common_block_list common_block { $$ = $1; PLIST_ADD($$, $2); }
+-    | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
++    : common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
+     ;
+ 
+ common_block
+@@ -2561,177 +2557,4 @@ id_opt
  
  id
      : TK_NAME { $$ = SYMBOL($1, @$); }
@@ -41,6 +52,7 @@ index c773ce871..7c7529101 100644
 -    | KW_DOWHILE { $$ = SYMBOL($1, @$); }
 -    | KW_DOUBLE { $$ = SYMBOL($1, @$); }
 -    | KW_DOUBLE_PRECISION { $$ = SYMBOL($1, @$); }
+-    | KW_DOUBLE_COMPLEX { $$ = SYMBOL($1, @$); }
 -    | KW_ELEMENTAL { $$ = SYMBOL($1, @$); }
 -    | KW_ELSE { $$ = SYMBOL($1, @$); }
 -    | KW_ELSEIF { $$ = SYMBOL($1, @$); }
@@ -95,6 +107,7 @@ index c773ce871..7c7529101 100644
 -    | KW_INCLUDE { $$ = SYMBOL($1, @$); }
 -    | KW_INOUT { $$ = SYMBOL($1, @$); }
 -    | KW_INQUIRE { $$ = SYMBOL($1, @$); }
+-    | KW_INSTANTIATE { $$ = SYMBOL($1, @$); }
 -    | KW_INTEGER { $$ = SYMBOL($1, @$); }
 -    | KW_INTENT { $$ = SYMBOL($1, @$); }
 -    | KW_INTERFACE { $$ = SYMBOL($1, @$); }
@@ -140,6 +153,8 @@ index c773ce871..7c7529101 100644
 -    | KW_REAL { $$ = SYMBOL($1, @$); }
 -    | KW_RECURSIVE { $$ = SYMBOL($1, @$); }
 -    | KW_REDUCE { $$ = SYMBOL($1, @$); }
+-    | KW_REQUIREMENT { $$ = SYMBOL($1, @$); }
+-    | KW_REQUIRE { $$ = SYMBOL($1, @$); }
 -    | KW_RESULT { $$ = SYMBOL($1, @$); }
 -    | KW_RETURN { $$ = SYMBOL($1, @$); }
 -    | KW_REWIND { $$ = SYMBOL($1, @$); }
@@ -171,4 +186,8 @@ index c773ce871..7c7529101 100644
 -    | KW_WHERE { $$ = SYMBOL($1, @$); }
 -    | KW_WHILE { $$ = SYMBOL($1, @$); }
 -    | KW_WRITE { $$ = SYMBOL($1, @$); }
+-    | KW_LF_LIST { $$ = SYMBOL($1, @$); }
+-    | KW_LF_SET { $$ = SYMBOL($1, @$); }
+-    | KW_LF_DICT { $$ = SYMBOL($1, @$); }
+-    | KW_LF_TUPLE { $$ = SYMBOL($1, @$); }
      ;
