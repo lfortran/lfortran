@@ -1,0 +1,5 @@
+semantic error: Argument 'val_a' has intent(IN) but is passed to a dummy argument with a modifying intent (OUT or INOUT)
+  --> tests/errors/intent_chain.f90:17:16
+   |
+17 |     call sub_b(val_a)
+   |                ^^^^^ Argument passed here
