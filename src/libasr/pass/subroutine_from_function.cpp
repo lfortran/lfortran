@@ -34,6 +34,15 @@ class CreateFunctionFromSubroutine: public ASR::BaseWalkVisitor<CreateFunctionFr
 class ReplaceFunctionCallWithSubroutineCall:
     public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 private :
+    void insert_implicit_deallocate(ASR::expr_t* result_var) {
+        Vec<ASR::expr_t*> to_be_deallocated;
+        to_be_deallocated.reserve(al, 1);
+        to_be_deallocated.push_back(al, result_var);
+        pass_result.push_back(al, ASRUtils::STMT(
+        ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
+            to_be_deallocated.p, to_be_deallocated.size())));
+    }
+
 public :
     Allocator & al;
     int result_counter = 0;
@@ -58,12 +67,7 @@ public :
             ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
                 "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
             if(ASRUtils::is_allocatable(result_var)){
-                Vec<ASR::expr_t*> to_be_deallocated;
-                to_be_deallocated.reserve(al, 1);
-                to_be_deallocated.push_back(al, result_var);
-                pass_result.push_back(al, ASRUtils::STMT(
-                ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
-                    to_be_deallocated.p, to_be_deallocated.size())));
+                insert_implicit_deallocate(result_var);
             }
             // Create allocate statement if needed
             if(ASRUtils::is_string_only(x->m_type)){ 
@@ -87,6 +91,10 @@ public :
                     str->m_len = nullptr; str->m_len_kind = ASR::DeferredLength;str->m_physical_type = ASR::DescriptorString;
                     ASRUtils::EXPR2VAR(result_var)->m_type =
                         ASRUtils::TYPE(ASR::make_Allocatable_t(al, str->base.base.loc, ASRUtils::EXPR2VAR(result_var)->m_type));
+
+                    // Make an implicit deallocate before allocating the return var (handles when allocate is in a do while loop)
+                    insert_implicit_deallocate(result_var);
+
                     // Create allocate statement
                     Vec<ASR::alloc_arg_t> v;
                     v.reserve(al, 1);
