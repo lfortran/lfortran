@@ -52,13 +52,11 @@ time_section "🧪 Testing assert" '
   micromamba install -c conda-forge fpm
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
-  set -x
   which fpm
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
   fpm --version
-  set +x
 
   git checkout -t origin/fix-test
   git checkout 535434d2f44508aa06231c6c2fe95f9e11292769
@@ -78,13 +76,11 @@ time_section "🧪 Testing splpak" '
   micromamba install -c conda-forge fpm
 
   # To debug https://github.com/lfortran/lfortran/issues/7732:
-  set -x
   which fpm
   realpath $(which fpm)
   ls -l $(dirname $(realpath $(which fpm)))/../lib
   ls -l $CONDA_PREFIX/lib
   fpm --version
-  set +x
 
   git checkout lf-2
   git checkout 460bd22f4ac716e5266412e8ed35ce07aa664f08
