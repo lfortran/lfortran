@@ -1386,7 +1386,7 @@ named_constant_def
 common_block_list_top
     : common_block_object_list {
          LIST_NEW($$); PLIST_ADD($$, COMMON_BLOCK(nullptr, $1, @$)); }
-    | common_block_object_list TK_COMMA common_block_list {
+    | common_block_object_list "," common_block_list {
          COMMON_BLOCK_MERGE($$, nullptr, $1, $3, @$); }
     | common_block_object_list common_block_list {
          COMMON_BLOCK_MERGE($$, nullptr, $1, $2, @$); }
@@ -1394,17 +1394,17 @@ common_block_list_top
     ;
 
 common_block_list
-    : common_block_list TK_COMMA common_block { $$ = $1; PLIST_ADD($$, $3); }
+    : common_block_list "," common_block { $$ = $1; PLIST_ADD($$, $3); }
     | common_block_list common_block { $$ = $1; PLIST_ADD($$, $2); }
     | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
     ;
 
 common_block
-    : TK_SLASH id TK_SLASH common_block_object_list  %dprec 2 {
+    : "/" id "/" common_block_object_list  %dprec 2 {
        $$ = COMMON_BLOCK($2, $4, @$); }
-    | TK_CONCAT common_block_object_list %dprec 1 {
+    | "//" common_block_object_list %dprec 1 {
        $$ = COMMON_BLOCK(nullptr, $2, @$); }
-    | TK_SLASH TK_SLASH common_block_object_list %dprec 1 {
+    | "/" "/" common_block_object_list %dprec 1 {
        $$ = COMMON_BLOCK(nullptr, $3, @$); }
     ;
 
