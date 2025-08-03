@@ -9452,7 +9452,58 @@ public:
                 ASR::ttype_t* arg_type = extract_ttype_t_from_expr(x.m_arg);
                 LCOMPILERS_ASSERT(arg_type != nullptr)
                 int arg_kind = ASRUtils::extract_kind_from_ttype_t(arg_type);
-                tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind);
+
+                if (arg->getType()->isPointerTy())
+                    arg = llvm_utils->CreateLoad2(llvm_utils->getIntType(arg_kind), arg);
+
+                tmp = lfortran_type_to_str(arg, llvm_utils->getIntType(arg_kind), "int", arg_kind);  // Returns i8*
+
+                // TODO: Replace with proper check 
+                if (ASRUtils::is_allocatable(x.m_type)) {
+                    llvm::Value* temp_str = builder->CreateAlloca(string_descriptor);
+                    llvm_utils->set_string_memory_on_heap(
+                        ASR::string_physical_typeType::DescriptorString,
+                        temp_str, lfortran_str_len(tmp)
+                    );            
+
+                    llvm::Value *lhs_data, *lhs_len;
+                    llvm::Value *rhs_data, *rhs_len;
+                    llvm::Value *is_lhs_deferred, *is_lhs_allocatable;
+
+                    std::tie(lhs_data, lhs_len) = llvm_utils->get_string_length_data(
+                                                    ASR::down_cast<ASR::String_t>(ASRUtils::TYPE(ASR::make_String_t(
+                                                        al, x.base.base.loc, 1, nullptr, 
+                                                        ASR::string_length_kindType::DeferredLength, 
+                                                        ASR::string_physical_typeType::DescriptorString))), 
+                                                    temp_str, true, true);
+                    rhs_data = tmp;
+                    rhs_len = lfortran_str_len(tmp);
+ 
+                    is_lhs_deferred = llvm::ConstantInt::get(context, llvm::APInt(8, 1));
+                    is_lhs_allocatable= llvm::ConstantInt::get(context, llvm::APInt(8, 1));
+        
+
+                    std::string runtime_func_name = "_lfortran_strcpy";
+                    llvm::Function *fn = module->getFunction(runtime_func_name);
+                    if (!fn) {
+                        llvm::FunctionType *function_type = llvm::FunctionType::get(
+                                llvm::Type::getVoidTy(context),
+                                {
+                                    llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
+                                    llvm::Type::getInt64Ty(context)->getPointerTo(),
+                                    llvm::Type::getInt8Ty(context), llvm::Type::getInt8Ty(context),
+                                    llvm::Type::getInt8Ty(context)->getPointerTo(),
+                                    llvm::Type::getInt64Ty(context)
+                                }, false);
+                        fn = llvm::Function::Create(function_type,
+                                llvm::Function::ExternalLinkage, runtime_func_name, *module);
+                    }
+                    builder->CreateCall(fn, {
+                        lhs_data, lhs_len,
+                        is_lhs_allocatable, is_lhs_deferred,
+                        rhs_data, rhs_len});
+                    tmp = temp_str;
+                }
                 break;
             }
             case (ASR::cast_kindType::LogicalToString) : {
