@@ -60,4 +60,16 @@ program intrinsics_334
     type is (toml_value)
         ! if (struct_to3%x /= 123) error stop   !! TODO: casting of class types
     end select
+
+    allocate(struct_from)
+    struct_from%x = 42
+    call move_alloc(struct_from, struct_to3)
+    if (allocated(struct_from)) error stop
+
+    select type(struct_to3)
+    type is (toml_value)
+        if (struct_to3%x /= 42) error stop
+    class default
+        error stop
+    end select
 end program
