@@ -5568,8 +5568,10 @@ public:
                     ASR::expr_t *l = nullptr, *r = nullptr;
 
                     if (m_args[0].m_start) {
-                        if (ASR::is_a<ASR::IntegerConstant_t>(*args[0].m_left) ) {
-                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(args[0].m_left)->m_n;
+                        ASR::expr_t* left_value = ASRUtils::expr_value(args[0].m_left);
+
+                        if (left_value != nullptr && ASR::is_a<ASR::IntegerConstant_t>(*left_value) ) {
+                            int64_t a = ASR::down_cast<ASR::IntegerConstant_t>(left_value)->m_n;
                             if ( a < 1 ) {
                                 diag.add(Diagnostic("The first index in string section is less than 1",
                                     Level::Error, Stage::Semantic, {Label("", {loc})}));
