@@ -791,6 +791,7 @@ RUN(NAME submodule_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME submodule_09 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME submodule_10 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME floor_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor body
 RUN(NAME floor_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm fortran) # floor symboltable
@@ -2529,6 +2530,7 @@ RUN(NAME separate_compilation_17 LABELS gfortran llvm_submodule EXTRAFILES separ
 RUN(NAME separate_compilation_18 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_18a.f90 separate_compilation_18b.f90)
 RUN(NAME separate_compilation_19 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_19a.f90 separate_compilation_19b.f90)
 RUN(NAME separate_compilation_20 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_20a.f90 separate_compilation_20b.f90)
+RUN(NAME separate_compilation_21 LABELS gfortran llvm_submodule EXTRAFILES separate_compilation_21a.f90 separate_compilation_21b.f90)
 
 
 
