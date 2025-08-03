@@ -7908,7 +7908,7 @@ public:
         llvm::Value *str {};
         { // Set proper load + Visit + Revert load
             int64_t ptr_loads_copy = ptr_loads;
-            ptr_loads = 1; this->visit_expr_wrapper(x.m_idx, true);
+            ptr_loads = LLVM::is_llvm_pointer(*expr_type(x.m_idx)) ? 2 : 1; this->visit_expr_wrapper(x.m_idx, true);
             idx = tmp;
             ptr_loads = 0; this->visit_expr_wrapper(x.m_arg, true);
             str = tmp;
@@ -7976,11 +7976,11 @@ public:
         llvm::Value *str = tmp;
         llvm::Value *left{}, *right{};
         if (x.m_start) {
-            this->visit_expr_load_wrapper(x.m_start, 1, true);
+            this->visit_expr_load_wrapper(x.m_start, LLVM::is_llvm_pointer(*expr_type(x.m_start)) ? 2 : 1, true);
             left = tmp;
         }
         if (x.m_end) {
-            this->visit_expr_load_wrapper(x.m_end, 1, true);
+            this->visit_expr_load_wrapper(x.m_end, LLVM::is_llvm_pointer(*expr_type(x.m_end)) ? 2 : 1, true);
             right = tmp;
         }
         LCOMPILERS_ASSERT(x.m_step)
