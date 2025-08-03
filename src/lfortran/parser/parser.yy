@@ -1389,6 +1389,7 @@ common_block_list_top
 common_block_start
     : "/" id "/" { }
     | "/" "/" { }
+    | "//" { }
     ;
 
 common_block_object
