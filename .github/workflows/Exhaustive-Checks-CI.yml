@@ -85,6 +85,12 @@ jobs:
           inst.moved/bin/lfortran --openmp --backend=cpp expr2.F90 -o expr2c
           ./expr2c
 
+      - name: Test Grammar
+        shell: bash -e -l {0}
+        run: |
+          ./ci/grammar_conflicts.sh
+
+
   release:
     name: Check Release build
     runs-on: ubuntu-latest
