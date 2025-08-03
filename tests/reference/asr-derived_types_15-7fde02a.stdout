@@ -341,6 +341,12 @@
                                                 )
                                         })
                                     t_1
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []

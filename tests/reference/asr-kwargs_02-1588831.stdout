@@ -301,6 +301,12 @@
                                                 )
                                         })
                                     logger_type
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []

@@ -450,6 +450,14 @@
                                                 )
                                         })
                                     toml_key
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [key]
                                     []
@@ -479,6 +487,12 @@
                                                 )
                                         })
                                     toml_tokenizer
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []

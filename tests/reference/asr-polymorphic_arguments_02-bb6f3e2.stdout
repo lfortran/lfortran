@@ -181,6 +181,12 @@
                                                             
                                                         })
                                                     ~unlimited_polymorphic_type
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .true.
+                                                    )
                                                     []
                                                     []
                                                     []

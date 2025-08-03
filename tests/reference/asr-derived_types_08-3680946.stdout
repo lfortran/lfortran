@@ -599,6 +599,13 @@
                                                 )
                                         })
                                     rectangle
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [length
                                     width]
@@ -713,6 +720,15 @@
                                                 )
                                         })
                                     shape
+                                    (StructType
+                                        [(Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [color
                                     filled

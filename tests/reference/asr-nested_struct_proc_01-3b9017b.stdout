@@ -175,6 +175,23 @@
                                                 )
                                         })
                                     integer32complex32orderedmap
+                                    (StructType
+                                        [(StructType
+                                            [(Complex 4)
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [omap_map]
                                     [map]
                                     []
@@ -412,6 +429,12 @@
                                             
                                         })
                                     omap_i_set
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -862,6 +885,18 @@
                                                 )
                                         })
                                     omap_map
+                                    (StructType
+                                        [(Complex 4)
+                                        (StructType
+                                            []
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [omap_i_set]
                                     [tree
                                     stored_value]

@@ -304,6 +304,12 @@
                                                 )
                                         })
                                     custom_int
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [value]
                                     []

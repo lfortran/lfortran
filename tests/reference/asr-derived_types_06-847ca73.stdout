@@ -1340,6 +1340,14 @@
                                                 )
                                         })
                                     toml_date
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [year
                                     month
@@ -1444,6 +1452,37 @@
                                                 )
                                         })
                                     toml_datetime
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Allocatable
+                                                    (Integer 4)
+                                                )
+                                                (Integer 4)
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [date
                                     time]
@@ -1590,6 +1629,20 @@
                                                 )
                                         })
                                     toml_time
+                                    (StructType
+                                        [(Integer 4)
+                                        (Allocatable
+                                            (Integer 4)
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [hour
                                     minute

@@ -55,6 +55,12 @@
                                                 )
                                         })
                                     base
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -158,6 +164,12 @@
                                                 )
                                         })
                                     child
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [j]
                                     []

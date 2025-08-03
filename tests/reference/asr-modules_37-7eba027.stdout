@@ -106,9 +106,7 @@
                                                                 (StructType
                                                                     [(Pointer
                                                                         (StructType
-                                                                            [(Allocatable
-                                                                                (String 1 () DeferredLength DescriptorString)
-                                                                            )]
+                                                                            []
                                                                             []
                                                                             .true.
                                                                             .false.
@@ -300,9 +298,7 @@
                                                         (StructType
                                                             [(Pointer
                                                                 (StructType
-                                                                    [(Allocatable
-                                                                        (String 1 () DeferredLength DescriptorString)
-                                                                    )]
+                                                                    []
                                                                     []
                                                                     .true.
                                                                     .false.
@@ -383,9 +379,7 @@
                                             (StructType
                                                 [(Pointer
                                                     (StructType
-                                                        [(Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )]
+                                                        []
                                                         []
                                                         .true.
                                                         .false.
@@ -516,6 +510,19 @@
                                                 )
                                         })
                                     build_target_ptr
+                                    (StructType
+                                        [(Pointer
+                                            (StructType
+                                                []
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [build_target_t]
                                     [ptr]
                                     []
@@ -557,6 +564,14 @@
                                                 )
                                         })
                                     build_target_t
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [output_dir]
                                     []
@@ -649,9 +664,7 @@
                                                             (StructType
                                                                 [(Pointer
                                                                     (StructType
-                                                                        [(Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )]
+                                                                        []
                                                                         []
                                                                         .true.
                                                                         .false.
@@ -727,6 +740,12 @@
                                             
                                         })
                                     fpm_build_settings
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -772,6 +791,12 @@
                                                 )
                                         })
                                     fpm_cmd_settings
+                                    (StructType
+                                        [(Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [verbose]
                                     []
@@ -791,6 +816,12 @@
                                             
                                         })
                                     fpm_model_t
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -832,6 +863,14 @@
                                                 )
                                         })
                                     string_t
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [s]
                                     []

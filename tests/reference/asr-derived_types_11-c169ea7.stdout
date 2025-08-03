@@ -144,6 +144,12 @@
                                                 )
                                         })
                                     y
+                                    (StructType
+                                        [(String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [backslash]
                                     []
