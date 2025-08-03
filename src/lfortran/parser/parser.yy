@@ -1378,18 +1378,17 @@ named_constant_def
     ;
 
 common_block_list_top
-    : common_block_start common_block_object { }
+    : common_block_object { }
+    | common_block_start common_block_object { }
     | common_block_list_top "," common_block_object { $$ = $1; }
-    | common_block_list_top common_block_start common_block_object {
-        $$ = $1;
-      }
+    | common_block_list_top common_block_start common_block_object { $$ = $1; }
     | common_block_list_top "," common_block_start common_block_object {
-        $$ = $1;
-      }
+        $$ = $1; }
     ;
 
 common_block_start
     : "/" id "/" { }
+    | "/" "/" { }
     ;
 
 common_block_object
