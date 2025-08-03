@@ -539,9 +539,9 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_var_sym> named_constant_def_list
 %type <var_sym> named_constant_def
 %type <vec_common_block> common_block_list_top
-%type <vec_common_block> common_block_list
-%type <common_block> common_block
-%type <vec_var_sym> common_block_object_list
+//%type <vec_common_block> common_block_list
+//%type <common_block> common_block
+//%type <vec_var_sym> common_block_object_list
 %type <var_sym> common_block_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
@@ -1380,38 +1380,19 @@ named_constant_def
     : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     ;
 
-/* The first common block specification in a COMMON statement
-   does not need "//" to represent blank common.  Enumerating
-   all of these rules minimizes shift/reduce conflicts. */
+common_block_start
+    : "/" id "/" %dprec 2 { }
+    ;
+
 common_block_list_top
-    : common_block_object_list {
-         LIST_NEW($$); PLIST_ADD($$, COMMON_BLOCK(nullptr, $1, @$)); }
-    | common_block_object_list "," common_block_list {
-         COMMON_BLOCK_MERGE($$, nullptr, $1, $3, @$); }
-    | common_block_object_list common_block_list {
-         COMMON_BLOCK_MERGE($$, nullptr, $1, $2, @$); }
-    | common_block_list { $$ = $1; }
-    ;
-
-common_block_list
-    : common_block_list "," common_block { $$ = $1; PLIST_ADD($$, $3); }
-    | common_block_list common_block { $$ = $1; PLIST_ADD($$, $2); }
-    | common_block { LIST_NEW($$); PLIST_ADD($$, $1); }
-    ;
-
-common_block
-    : "/" id "/" common_block_object_list  %dprec 2 {
-       $$ = COMMON_BLOCK($2, $4, @$); }
-    | "//" common_block_object_list %dprec 1 {
-       $$ = COMMON_BLOCK(nullptr, $2, @$); }
-    | "/" "/" common_block_object_list %dprec 1 {
-       $$ = COMMON_BLOCK(nullptr, $3, @$); }
-    ;
-
-common_block_object_list
-    : common_block_object_list "," common_block_object {
-           $$ = $1; PLIST_ADD($$, $3); }
-    | common_block_object { LIST_NEW($$); PLIST_ADD($$, $1); }
+    : common_block_start common_block_object { }
+    | common_block_list_top "," common_block_object { $$ = $1; }
+    | common_block_list_top common_block_start common_block_object {
+        $$ = $1;
+      }
+    | common_block_list_top "," common_block_start common_block_object {
+        $$ = $1;
+      }
     ;
 
 common_block_object
