@@ -66,6 +66,10 @@ time_section "🧪 Testing assert" '
   fpm build --compiler=$FC --flag "--cpp" --verbose
   fpm test --compiler=$FC --flag "--cpp"
 
+  git clean -dfx
+  print_subsection "Testing with assertions enabled"
+  fpm test --compiler=$FC --verbose --flag '--cpp -DASSERTIONS -DASSERT_PARALLEL_CALLBACKS'
+
   cd ../
   rm -rf assert
 '
