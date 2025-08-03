@@ -2,17 +2,6 @@ diff --git a/src/lfortran/parser/parser.yy b/src/lfortran/parser/parser.yy
 index 09cfa9778..3b054069f 100644
 --- a/src/lfortran/parser/parser.yy
 +++ b/src/lfortran/parser/parser.yy
-@@ -3,9 +3,7 @@
- %define api.value.type {LCompilers::LFortran::YYSTYPE}
- %param {LCompilers::LFortran::Parser &p}
- %locations
--%glr-parser
--%expect    238 // shift/reduce conflicts
--%expect-rr 175 // reduce/reduce conflicts
-+%expect-rr 0
- 
- // Uncomment this to get verbose error messages
- //%define parse.error verbose
 @@ -1394,9 +1392,7 @@ common_block_list_top
      ;
  
