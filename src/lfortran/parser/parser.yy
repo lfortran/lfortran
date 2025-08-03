@@ -539,9 +539,6 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_var_sym> named_constant_def_list
 %type <var_sym> named_constant_def
 %type <vec_common_block> common_block_list_top
-//%type <vec_common_block> common_block_list
-//%type <common_block> common_block
-//%type <vec_var_sym> common_block_object_list
 %type <var_sym> common_block_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
@@ -1380,10 +1377,6 @@ named_constant_def
     : id "=" expr { $$ = VAR_SYM_DIM_INIT($1, nullptr, 0, $3, Equal, @$); }
     ;
 
-common_block_start
-    : "/" id "/" %dprec 2 { }
-    ;
-
 common_block_list_top
     : common_block_start common_block_object { }
     | common_block_list_top "," common_block_object { $$ = $1; }
@@ -1393,6 +1386,10 @@ common_block_list_top
     | common_block_list_top "," common_block_start common_block_object {
         $$ = $1;
       }
+    ;
+
+common_block_start
+    : "/" id "/" { }
     ;
 
 common_block_object
