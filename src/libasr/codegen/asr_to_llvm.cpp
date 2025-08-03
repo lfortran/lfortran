@@ -12146,6 +12146,13 @@ public:
             std::string m_name = std::string(((ASR::Function_t*)(&(x.m_name->base)))->m_name);
             args = convert_call_args(x, is_method);
             tmp = builder->CreateCall(fntype, fn, args);
+        } else if (ASRUtils::is_symbol_procedure_variable(ASRUtils::symbol_get_past_external(proc_sym)) && llvm_symtab.find(h) != llvm_symtab.end()) {
+            // This is the case were a function pointer ( procedure variable ) is associated and used
+            llvm::FunctionType* fntype = llvm_utils->get_function_type(*s, module.get());
+            llvm::Value* fn = llvm_symtab[h];
+            fn = builder->CreateLoad(fn);
+            args = convert_call_args(x, is_method);
+            tmp = builder->CreateCall(fntype, fn, args);
         } else if (llvm_symtab_fn.find(h) == llvm_symtab_fn.end()) {
             throw CodeGenError("Function code not generated for '"
                 + std::string(s->m_name) + "'");
