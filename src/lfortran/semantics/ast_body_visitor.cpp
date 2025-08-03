@@ -4216,6 +4216,36 @@ public:
         bool nopass = false;
         process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
 
+        // checking for intent mismatch   
+        if (f) { 
+            for (size_t i = 0; i < args.size(); i++) {
+                ASR::expr_t* passed_arg_expr = args[i].m_value;
+
+                if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
+                    ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+                    if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                        ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+
+                        // This checks only for the intent(in) violation.
+                        if (passed_var->m_intent == ASR::intentType::In) {
+                            ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
+                            if (callee_param->m_intent == ASR::intentType::Out ||
+                                callee_param->m_intent == ASR::intentType::InOut) {
+                                
+                                diag.add(Diagnostic(
+                                    "Argument '" + std::string(passed_var->m_name) +
+                                    "' has intent(IN) but is passed to a dummy argument with a modifying intent (OUT or INOUT)",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("Argument passed here", {passed_arg_expr->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {
