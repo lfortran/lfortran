@@ -2036,6 +2036,15 @@ public:
             }
             vars_with_deferred_struct_declaration.erase(to_lower(x.m_name));
         }
+        std::string derived_type_name = to_lower(std::string(x.m_name));
+        if (to_lower(derived_type_name) == "unsigned") {
+            diag.add(diag::Diagnostic(
+                "Defining a derived type named 'unsigned' is not allowed.",
+                diag::Level::Error, diag::Stage::Semantic, {
+                    diag::Label("conflicting name", {x.base.base.loc})
+                }));
+            throw SemanticAbort();
+        }
 
 
         current_scope = parent_scope;
