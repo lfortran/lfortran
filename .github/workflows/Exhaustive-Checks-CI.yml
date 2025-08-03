@@ -440,7 +440,7 @@ jobs:
             mkdir lfortran-build/
             cd lfortran-build/
             LIBRARY_PATH="`pwd`/../../src/runtime/"
-            FC="$(pwd)/../../src/bin/lfortran --no-array-bounds-checking" cmake \
+            FC=$(pwd)/../../src/bin/lfortran cmake \
               -DCMAKE_Fortran_FLAGS=--verbose \
               -DLFORTRAN_RUNTIME_LIBRARY_PATH=$LIBRARY_PATH \
               ..

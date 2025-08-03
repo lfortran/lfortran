@@ -624,17 +624,17 @@ time_section "🧪 Testing Modern Minpack (Fortran-Lang)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 time_section "🧪 Testing Modern Minpack (Result Check)" '
@@ -645,17 +645,17 @@ time_section "🧪 Testing Modern Minpack (Result Check)" '
 
   $FC ./src/minpack.f90 -c --legacy-array-sections
   $FC ./examples/example_hybrd.f90 --legacy-array-sections
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --no-array-bounds-checking
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --no-array-bounds-checking
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --no-array-bounds-checking
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections
 
   print_subsection "Testing with separate compilation"
   git clean -dfx
-  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation --no-array-bounds-checking
-  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
-  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation --no-array-bounds-checking minpack.o
+  $FC ./src/minpack.f90 -c --legacy-array-sections --separate-compilation
+  $FC ./examples/example_hybrd.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_hybrd1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmdif1.f90 --legacy-array-sections --separate-compilation minpack.o
+  $FC ./examples/example_lmder1.f90 --legacy-array-sections --separate-compilation minpack.o
 '
 
 ##########################
