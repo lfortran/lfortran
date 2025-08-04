@@ -1731,6 +1731,190 @@ R"(    // Initialise Numpy
             }
         } else {
             // CodeGen for --target-offload: Generate CUDA code
+            if (x.m_region == ASR::omp_region_typeType::Target) {
+                map_vars.clear();
+                std::string target_code;
+                std::string kernel_decls;
+                std::string kernel_wrappers;
+                std::string struct_copies;
+
+                // Collect map clauses
+                for (size_t i = 0; i < x.n_clauses; i++) {
+                    if (ASR::is_a<ASR::OMPMap_t>(*x.m_clauses[i])) {
+                        ASR::OMPMap_t* m = ASR::down_cast<ASR::OMPMap_t>(x.m_clauses[i]);
+                        for (size_t j = 0; j < m->n_vars; j++) {
+                            visit_expr(*m->m_vars[j]);
+                            map_vars.push_back({src, m});
+                        }
+                    }
+                }
+
+                // Declare device pointers for data
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "float *d_" + mv.first + "_data = NULL;\n";
+                }
+                target_code += indent() + "cudaError_t err;\n";
+                // Allocate device memory for data
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "size_t " + mv.first + "_data_size = " + mv.first + "->dims[0].length * sizeof(float);\n";
+                    target_code += indent() + "err = cudaMalloc((void**)&d_" + mv.first + "_data, " + mv.first + "_data_size);\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMalloc failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Copy data to device (based on map type)
+                for (const auto &mv : map_vars) {
+                    if (mv.second->m_type == ASR::map_typeType::To || mv.second->m_type == ASR::map_typeType::ToFrom) {
+                        target_code += indent() + "err = cudaMemcpy(d_" + mv.first + "_data, " + mv.first + "->data, " + mv.first + "_data_size, cudaMemcpyHostToDevice);\n";
+                        target_code += indent() + "if (err != cudaSuccess) {\n";
+                        target_code += indent() + "    fprintf(stderr, \"cudaMemcpy H2D failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                        target_code += indent() + "    exit(1);\n";
+                        target_code += indent() + "}\n";
+                    }
+                }
+
+                // Create host struct copies with device data pointers
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "struct r32 h_" + mv.first + "_copy = *" + mv.first + ";\n";
+                    target_code += indent() + "h_" + mv.first + "_copy.data = d_" + mv.first + "_data;\n";
+                }
+
+                // Declare and allocate device struct pointers
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "struct r32 *d_" + mv.first + "_struct = NULL;\n";
+                    target_code += indent() + "err = cudaMalloc((void**)&d_" + mv.first + "_struct, sizeof(struct r32));\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMalloc failed for d_" + mv.first + "_struct: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Copy host struct copies to device
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "err = cudaMemcpy(d_" + mv.first + "_struct, &h_" + mv.first + "_copy, sizeof(struct r32), cudaMemcpyHostToDevice);\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMemcpy H2D failed for d_" + mv.first + "_struct: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Process nested constructs (teams, distribute parallel do)
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    target_code += src;
+                }
+
+                // Copy back from device (data only, structs are metadata)
+                for (const auto &mv : map_vars) {
+                    if (mv.second->m_type == ASR::map_typeType::From || mv.second->m_type == ASR::map_typeType::ToFrom) {
+                        target_code += indent() + "err = cudaMemcpy(" + mv.first + "->data, d_" + mv.first + "_data, " + mv.first + "_data_size, cudaMemcpyDeviceToHost);\n";
+                        target_code += indent() + "if (err != cudaSuccess) {\n";
+                        target_code += indent() + "    fprintf(stderr, \"cudaMemcpy D2H failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                        target_code += indent() + "    exit(1);\n";
+                        target_code += indent() + "}\n";
+                    }
+                }
+
+                // Free device memory (data and structs)
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "cudaFree(d_" + mv.first + "_data);\n";
+                    target_code += indent() + "cudaFree(d_" + mv.first + "_struct);\n";
+                }
+
+                src = kernel_decls + "\n" + target_code + "\n" + kernel_wrappers;
+            } else if (x.m_region == ASR::omp_region_typeType::Teams) {
+                // Teams: Set up grid dimensions (handled in distribute parallel do)
+                std::string teams_code;
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    teams_code += src;
+                }
+                src = teams_code;
+            } else if (x.m_region == ASR::omp_region_typeType::DistributeParallelDo ||
+                       x.m_region == ASR::omp_region_typeType::Distribute ||
+                       x.m_region == ASR::omp_region_typeType::ParallelDo) {
+                // Parallel Do: Generate kernel and launch
+                if (x.n_body != 1 || !ASR::is_a<ASR::DoLoop_t>(*x.m_body[0])) {
+                    throw CodeGenError("Distribute Parallel Do must contain a single DoLoop");
+                }
+
+                ASR::DoLoop_t* loop = ASR::down_cast<ASR::DoLoop_t>(x.m_body[0]);
+                std::string kernel_name = "compute_kernel_" + std::to_string(kernel_counter++);
+                current_kernel_name = kernel_name;
+                kernel_func_names.push_back(kernel_name);
+
+                // Extract loop head
+                std::string idx_var;
+                visit_expr(*loop->m_head.m_v);
+                idx_var = src;
+                std::string n;
+                visit_expr(*loop->m_head.m_end);
+                n = src;
+
+                // Generate kernel (pass struct pointers)
+                std::string kernel_code = "#ifdef USE_GPU\n__global__\n#endif\n";
+                kernel_code += "void " + kernel_name + "(";
+                for (const auto &mv : map_vars) {
+                    kernel_code += "struct r32 *" + mv.first + ", ";
+                }
+                kernel_code += "int " + idx_var + "_n) {\n";
+                kernel_code += "    int " + idx_var + " = blockIdx.x * blockDim.x + threadIdx.x + 1;\n";
+                kernel_code += "    if (" + idx_var + " <= " + idx_var + "_n) {\n";
+                for (size_t i = 0; i < loop->n_body; i++) {
+                    visit_stmt(*loop->m_body[i]);
+                    kernel_code += "        " + src;
+                }
+                kernel_code += "    }\n}\n";
+
+                // Generate CPU wrapper
+                std::string wrapper_code = "#ifndef USE_GPU\n";
+                wrapper_code += "void " + kernel_name + "_wrapper(void **args) {\n";
+                int arg_idx = 0;
+                for (const auto &mv : map_vars) {
+                    wrapper_code += "    struct r32 *" + mv.first + " = *(struct r32**)args[" + std::to_string(arg_idx++) + "];\n";
+                }
+                wrapper_code += "    int " + idx_var + "_n = *(int*)args[" + std::to_string(arg_idx++) + "];\n";
+                wrapper_code += "    " + kernel_name + "(";
+                for (const auto &mv : map_vars) {
+                    wrapper_code += mv.first + ", ";
+                }
+                wrapper_code += idx_var + "_n);\n";
+                wrapper_code += "}\n#endif\n";
+
+                // Generate kernel launch
+                std::string launch_code = indent() + "int " + idx_var + "_n = " + n + ";\n";
+                launch_code += indent() + "int threads_per_block = 256;\n";
+                launch_code += indent() + "int blocks = (" + idx_var + "_n + threads_per_block - 1) / threads_per_block;\n";
+                launch_code += indent() + "dim3 grid_dim = {blocks, 1, 1};\n";
+                launch_code += indent() + "dim3 block_dim = {threads_per_block, 1, 1};\n";
+                launch_code += indent() + "void *kernel_args[] = {";
+                for (const auto &mv : map_vars) {
+                    launch_code += "&d_" + mv.first + "_struct, ";
+                }
+                launch_code += "&" + idx_var + "_n};\n";
+                launch_code += indent() + "err = cudaLaunchKernel((void*)" + kernel_name + ", grid_dim, block_dim, kernel_args, 0, NULL);\n";
+                launch_code += indent() + "if (err != cudaSuccess) {\n";
+                launch_code += indent() + "    fprintf(stderr, \"cudaLaunchKernel failed: %s\\n\", cudaGetErrorString(err));\n";
+                launch_code += indent() + "    exit(1);\n";
+                launch_code += indent() + "}\n";
+                launch_code += indent() + "err = cudaDeviceSynchronize();\n";
+                launch_code += indent() + "if (err != cudaSuccess) {\n";
+                launch_code += indent() + "    fprintf(stderr, \"cudaDeviceSynchronize failed: %s\\n\", cudaGetErrorString(err));\n";
+                launch_code += indent() + "    exit(1);\n";
+                launch_code += indent() + "}\n";
+
+                kernel_func_code = kernel_code + "\n" + wrapper_code + "\n" ;
+                src = launch_code;
+            } else {
+                std::string body;
+                for(size_t i=0;i<x.n_body;i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    body += src;
+                }
+                src = body;
+            }
         }
     }
 
