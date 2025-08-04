@@ -1339,7 +1339,12 @@ namespace LCompilers {
         bool is_list_local;
         ASR::dimension_t* m_dims_local;
         int n_dims_local = 0, a_kind_local = 0;
-        return get_type_from_ttype_t(nullptr, asr_type, sym, m_storage_local, is_array_type_local,
+        ASR::symbol_t* sym_ = sym;
+        if (ASR::is_a<ASR::Variable_t>(*sym)) {
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
+            sym_ = var->m_type_declaration;
+        }
+        return get_type_from_ttype_t(nullptr, asr_type, sym_, m_storage_local, is_array_type_local,
                                      is_malloc_array_type_local, is_list_local,
                                      m_dims_local, n_dims_local, a_kind_local, module, asr_abi);
     }
