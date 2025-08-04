@@ -632,28 +632,32 @@
                     )
                     (If
                         ()
-                        (PointerAssociated
-                            (Var 2 queries)
-                            (PointerToCPtr
-                                (GetPointer
-                                    (ArrayItem
-                                        (Var 2 x)
-                                        [(()
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                        ())
-                                        (()
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                        ())]
-                                        (Integer 2)
-                                        ColMajor
+                        (LogicalNot
+                            (PointerAssociated
+                                (Var 2 queries)
+                                (PointerToCPtr
+                                    (GetPointer
+                                        (ArrayItem
+                                            (Var 2 x)
+                                            [(()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())
+                                            (()
+                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            ())]
+                                            (Integer 2)
+                                            ColMajor
+                                            ()
+                                        )
+                                        (Pointer
+                                            (Integer 2)
+                                        )
                                         ()
                                     )
-                                    (Pointer
-                                        (Integer 2)
-                                    )
+                                    (CPtr)
                                     ()
                                 )
-                                (CPtr)
+                                (Logical 4)
                                 ()
                             )
                             (Logical 4)
