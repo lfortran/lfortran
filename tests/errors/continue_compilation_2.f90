@@ -67,17 +67,17 @@ module continue_compilation_2_mod
         integer, intent(inout) :: val_b
     end subroutine sub_b
 
-    
+    function outer_func(val_a) result(res)
+        integer, intent(in) :: val_a
+        integer :: res
+        res = inner_func(val_a)
+    end function outer_func
 
+    function inner_func(val_b) result(res)
+        integer, intent(inout) :: val_b
+        integer :: res
+    end function inner_func
 
-
-
-
-
-
-
-
-    
 
 
 
@@ -463,5 +463,6 @@ program continue_compilation_2
         f = PRESENT(x)
     end function
     call sub_a(intent_bug_sub_x)
+    print *, outer_func(intent_bug_sub_x)
 
 end program
