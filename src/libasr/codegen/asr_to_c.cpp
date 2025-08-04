@@ -45,6 +45,7 @@ public:
                   int64_t default_lower_bound)
          : BaseCCPPVisitor(diag, co.platform, co, false, false, true, default_lower_bound),
            counter{0} {
+            target_offload_enabled = co.target_offload_enabled;
            }
 
     std::string convert_dims_c(size_t n_dims, ASR::dimension_t *m_dims,
@@ -763,6 +764,13 @@ R"(
             intrinsic_module = false;
         }
 
+        if(to_lower(x.m_name) == "omp_lib") {
+            headers.insert("omp.h");
+            return;
+        } else if (to_lower(x.m_name) == "iso_c_binding" || to_lower(x.m_name) == "lfortran_intrinsic_iso_c_binding") {
+            return;
+        }
+
         std::string unit_src = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -884,6 +892,25 @@ R"(    // Initialise Numpy
     }
 )";
             body += "\n";
+        }
+
+        if(compiler_options.target_offload_enabled) {
+            contains += kernel_func_code;
+        }
+
+        if (target_offload_enabled && !kernel_func_names.empty()) {
+            std::string dispatch_code = "#ifndef USE_GPU\n";
+            dispatch_code += "void compute_kernel_wrapper(void **args, void *func) {\n";
+            for (const auto &kname : kernel_func_names) {
+                dispatch_code += "    if (func == (void*)" + kname + ") {\n";
+                dispatch_code += "        " + kname + "_wrapper(args);\n";
+                dispatch_code += "        return;\n";
+                dispatch_code += "    }\n";
+            }
+            dispatch_code += "    fprintf(stderr, \"Unknown kernel function\\n\");\n";
+            dispatch_code += "    exit(1);\n";
+            dispatch_code += "}\n#endif\n";
+            contains += dispatch_code;
         }
 
         src = contains
