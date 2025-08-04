@@ -142,7 +142,7 @@ define i32 @main(i32 %0, i8** %1) {
   call void @_lfortran_strcpy(i8** %72, i64* %73, i8 0, i8 0, i8* %75, i64 30)
   %76 = getelementptr %string_descriptor, %string_descriptor* %combined, i32 0, i32 0
   %77 = load i8*, i8** %76, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %77, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %77, i64 29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -160,6 +160,6 @@ declare void @_lfortran_strcpy(i8**, i64*, i8, i8, i8*, i64)
 
 declare i8* @_lfortran_strcat(i8*, i64, i8*, i64)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
 
 declare void @_lpython_free_argv()
