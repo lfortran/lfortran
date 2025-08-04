@@ -136,18 +136,20 @@ define i32 @main(i32 %0, i8** %1) {
   store i64 %3, i64* %6, align 4
   %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %8 = load i8*, i8** %7, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %9 = load float, float* @intrinsics_02.x, align 4
-  %10 = fsub float %9, 0x3FEFEB7AA0000000
-  store float %10, float* %call_arg_value, align 4
-  %11 = call float @_lcompilers_abs_f32(float* %call_arg_value)
-  %12 = fcmp ogt float %11, 0x3EB0C6F7A0000000
-  br i1 %12, label %then, label %else
+  %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %10 = load i64, i64* %9, align 4
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i64 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1)
+  %11 = load float, float* @intrinsics_02.x, align 4
+  %12 = fsub float %11, 0x3FEFEB7AA0000000
+  store float %12, float* %call_arg_value, align 4
+  %13 = call float @_lcompilers_abs_f32(float* %call_arg_value)
+  %14 = fcmp ogt float %13, 0x3EB0C6F7A0000000
+  br i1 %14, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %13 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %14 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %13, i8* %14)
+  %15 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %16 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %15, i8* %16)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -155,17 +157,17 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %15 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
-  %16 = fsub float %15, 0x3FEAE238A0000000
-  store float %16, float* %call_arg_value1, align 4
-  %17 = call float @_lcompilers_abs_f32(float* %call_arg_value1)
-  %18 = fcmp ogt float %17, 0x3EB0C6F7A0000000
-  br i1 %18, label %then2, label %else3
+  %17 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %18 = fsub float %17, 0x3FEAE238A0000000
+  store float %18, float* %call_arg_value1, align 4
+  %19 = call float @_lcompilers_abs_f32(float* %call_arg_value1)
+  %20 = fcmp ogt float %19, 0x3EB0C6F7A0000000
+  br i1 %20, label %then2, label %else3
 
 then2:                                            ; preds = %ifcont
-  %19 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  %20 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %19, i8* %20)
+  %21 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  %22 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %21, i8* %22)
   call void @exit(i32 1)
   br label %ifcont4
 
@@ -173,17 +175,17 @@ else3:                                            ; preds = %ifcont
   br label %ifcont4
 
 ifcont4:                                          ; preds = %else3, %then2
-  %21 = load double, double* %y, align 8
-  %22 = fsub double %21, 0x3FEFEB7AA0000000
-  store double %22, double* %call_arg_value5, align 8
-  %23 = call double @_lcompilers_abs_f64(double* %call_arg_value5)
-  %24 = fcmp ogt double %23, 0x3E7AD7F2A0000000
-  br i1 %24, label %then6, label %else7
+  %23 = load double, double* %y, align 8
+  %24 = fsub double %23, 0x3FEFEB7AA0000000
+  store double %24, double* %call_arg_value5, align 8
+  %25 = call double @_lcompilers_abs_f64(double* %call_arg_value5)
+  %26 = fcmp ogt double %25, 0x3E7AD7F2A0000000
+  br i1 %26, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont4
-  %25 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  %26 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %25, i8* %26)
+  %27 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %27, i8* %28)
   call void @exit(i32 1)
   br label %ifcont8
 
@@ -194,9 +196,9 @@ ifcont8:                                          ; preds = %else7, %then6
   br i1 false, label %then9, label %else10
 
 then9:                                            ; preds = %ifcont8
-  %27 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
-  %28 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %27, i8* %28)
+  %29 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
+  %30 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %29, i8* %30)
   call void @exit(i32 1)
   br label %ifcont11
 
@@ -204,26 +206,26 @@ else10:                                           ; preds = %ifcont8
   br label %ifcont11
 
 ifcont11:                                         ; preds = %else10, %then9
-  %29 = call double @_lcompilers_sin_f64(double* %y)
-  %30 = load float, float* @intrinsics_02.x, align 4
-  %31 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
-  %32 = fadd float %30, %31
-  store float %32, float* %call_arg_value12, align 4
-  %33 = call float @_lcompilers_sin_f32(float* %call_arg_value12)
-  %34 = fpext float %33 to double
-  %35 = fadd double %29, %34
-  store double %35, double* %call_arg_value13, align 8
-  %36 = call double @_lcompilers_sin_f64(double* %call_arg_value13)
-  %37 = fsub double %36, 0x3FEF20DD80000000
-  store double %37, double* %call_arg_value14, align 8
-  %38 = call double @_lcompilers_abs_f64(double* %call_arg_value14)
-  %39 = fcmp ogt double %38, 0x3E7AD7F2A0000000
-  br i1 %39, label %then15, label %else16
+  %31 = call double @_lcompilers_sin_f64(double* %y)
+  %32 = load float, float* @intrinsics_02.x, align 4
+  %33 = call float @_lcompilers_sin_f32(float* @intrinsics_02.x)
+  %34 = fadd float %32, %33
+  store float %34, float* %call_arg_value12, align 4
+  %35 = call float @_lcompilers_sin_f32(float* %call_arg_value12)
+  %36 = fpext float %35 to double
+  %37 = fadd double %31, %36
+  store double %37, double* %call_arg_value13, align 8
+  %38 = call double @_lcompilers_sin_f64(double* %call_arg_value13)
+  %39 = fsub double %38, 0x3FEF20DD80000000
+  store double %39, double* %call_arg_value14, align 8
+  %40 = call double @_lcompilers_abs_f64(double* %call_arg_value14)
+  %41 = fcmp ogt double %40, 0x3E7AD7F2A0000000
+  br i1 %41, label %then15, label %else16
 
 then15:                                           ; preds = %ifcont11
-  %40 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.16, i32 0, i32 0), align 8
-  %41 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.18, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* %40, i8* %41)
+  %42 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.16, i32 0, i32 0), align 8
+  %43 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.18, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* %42, i8* %43)
   call void @exit(i32 1)
   br label %ifcont17
 
@@ -246,7 +248,7 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
