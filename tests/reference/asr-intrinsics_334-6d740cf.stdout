@@ -11,11 +11,56 @@
                                 (ExternalSymbol
                                     2
                                     1_toml_value_x
-                                    3 x
+                                    4 x
                                     toml_value
                                     []
                                     x
                                     Public
+                                ),
+                            base:
+                                (Struct
+                                    (SymbolTable
+                                        3
+                                        {
+                                            id:
+                                                (Variable
+                                                    3
+                                                    id
+                                                    []
+                                                    Local
+                                                    ()
+                                                    ()
+                                                    Default
+                                                    (Integer 4)
+                                                    ()
+                                                    Source
+                                                    Public
+                                                    Required
+                                                    .false.
+                                                    .false.
+                                                    .false.
+                                                    ()
+                                                    .false.
+                                                    .false.
+                                                )
+                                        })
+                                    base
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    []
+                                    [id]
+                                    []
+                                    Source
+                                    Public
+                                    .false.
+                                    .true.
+                                    []
+                                    ()
+                                    ()
                                 ),
                             from:
                                 (Variable
@@ -127,6 +172,34 @@
                                     .false.
                                     .false.
                                 ),
+                            struct_from3:
+                                (Variable
+                                    2
+                                    struct_from3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                    )
+                                    2 toml_value
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             struct_to:
                                 (Variable
                                     2
@@ -188,6 +261,34 @@
                                     .false.
                                     .false.
                                 ),
+                            struct_to3:
+                                (Variable
+                                    2
+                                    struct_to3
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (StructType
+                                            [(Integer 4)]
+                                            []
+                                            .false.
+                                            .false.
+                                        )
+                                    )
+                                    2 base
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             to:
                                 (Variable
                                     2
@@ -219,11 +320,11 @@
                             toml_value:
                                 (Struct
                                     (SymbolTable
-                                        3
+                                        4
                                         {
                                             x:
                                                 (Variable
-                                                    3
+                                                    4
                                                     x
                                                     []
                                                     Local
@@ -259,7 +360,54 @@
                                     .false.
                                     []
                                     ()
-                                    ()
+                                    2 base
+                                ),
+                            ~select_type_block_:
+                                (Block
+                                    (SymbolTable
+                                        5
+                                        {
+                                            
+                                        })
+                                    ~select_type_block_
+                                    []
+                                ),
+                            ~select_type_block_1:
+                                (Block
+                                    (SymbolTable
+                                        6
+                                        {
+                                            1_toml_value_x:
+                                                (ExternalSymbol
+                                                    6
+                                                    1_toml_value_x
+                                                    4 x
+                                                    toml_value
+                                                    []
+                                                    x
+                                                    Public
+                                                )
+                                        })
+                                    ~select_type_block_1
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (Var 2 struct_to3)
+                                                6 1_toml_value_x
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 42 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
                                 )
                         })
                     intrinsics_334
@@ -595,6 +743,119 @@
                                 []
                             )]
                             []
+                        )]
+                        [(ErrorStop
+                            ()
+                        )]
+                    )
+                    (Allocate
+                        [((Var 2 struct_from3)
+                        []
+                        ()
+                        2 toml_value
+                        (StructType
+                            [(Integer 4)]
+                            []
+                            .true.
+                            .false.
+                        ))]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 2 struct_from3)
+                            2 1_toml_value_x
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 123 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (IntrinsicImpureSubroutine
+                        MoveAlloc
+                        [(Var 2 struct_from3)
+                        (Var 2 struct_to3)]
+                        0
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 2 struct_from3)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SelectType
+                        (Var 2 struct_to3)
+                        ()
+                        [(TypeStmtName
+                            2 toml_value
+                            [(BlockCall
+                                -1
+                                2 ~select_type_block_
+                            )]
+                        )]
+                        []
+                    )
+                    (Allocate
+                        [((Var 2 struct_from)
+                        []
+                        ()
+                        ()
+                        ())]
+                        ()
+                        ()
+                        ()
+                    )
+                    (Assignment
+                        (StructInstanceMember
+                            (Var 2 struct_from)
+                            2 1_toml_value_x
+                            (Integer 4)
+                            ()
+                        )
+                        (IntegerConstant 42 (Integer 4) Decimal)
+                        ()
+                        .false.
+                    )
+                    (IntrinsicImpureSubroutine
+                        MoveAlloc
+                        [(Var 2 struct_from)
+                        (Var 2 struct_to3)]
+                        0
+                    )
+                    (If
+                        ()
+                        (IntrinsicImpureFunction
+                            Allocated
+                            [(Var 2 struct_from)]
+                            0
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
+                    (SelectType
+                        (Var 2 struct_to3)
+                        ()
+                        [(TypeStmtName
+                            2 toml_value
+                            [(BlockCall
+                                -1
+                                2 ~select_type_block_1
+                            )]
                         )]
                         [(ErrorStop
                             ()

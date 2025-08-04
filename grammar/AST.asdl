@@ -332,6 +332,7 @@ simple_attribute
     | AttrPublic
     | AttrPure
     | AttrRecursive
+    | AttrNonRecursive
     | AttrSave
     | AttrSealed
     | AttrSequence

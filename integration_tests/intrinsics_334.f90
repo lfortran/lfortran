@@ -1,6 +1,10 @@
 program intrinsics_334
     implicit none
-    type :: toml_value
+
+    type, abstract :: base
+     integer :: id
+    end type
+    type, extends(base) :: toml_value
         integer :: x = 0
     end type toml_value
 
@@ -8,6 +12,8 @@ program intrinsics_334
     integer, allocatable :: from(:), to(:)
     type(toml_value), allocatable :: struct_from, struct_to
     type(toml_value), allocatable :: struct_from2(:), struct_to2(:)
+    class(toml_value), allocatable :: struct_from3
+    class(base), allocatable :: struct_to3
 
     allocate(from(5))
     from = [1, 2, 3, 4, 5]
@@ -44,4 +50,26 @@ program intrinsics_334
         error stop
     end if
 
+    allocate(toml_value :: struct_from3)
+    struct_from3%x = 123
+
+    call move_alloc(struct_from3, struct_to3)
+    if (allocated(struct_from3)) error stop
+
+    select type(struct_to3)
+    type is (toml_value)
+        ! if (struct_to3%x /= 123) error stop   !! TODO: casting of class types
+    end select
+
+    allocate(struct_from)
+    struct_from%x = 42
+    call move_alloc(struct_from, struct_to3)
+    if (allocated(struct_from)) error stop
+
+    select type(struct_to3)
+    type is (toml_value)
+        if (struct_to3%x /= 42) error stop
+    class default
+        error stop
+    end select
 end program

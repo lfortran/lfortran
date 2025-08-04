@@ -4798,7 +4798,7 @@ class SymbolDuplicator {
 
     ASR::symbol_t* duplicate_Variable(ASR::Variable_t* variable,
         SymbolTable* destination_symtab) {
-        ExprStmtDuplicator node_duplicator(al);
+        ExprStmtWithScopeDuplicator node_duplicator(al, destination_symtab);
         node_duplicator.success = true;
         ASR::expr_t* m_symbolic_value = node_duplicator.duplicate_expr(variable->m_symbolic_value);
         if( !node_duplicator.success ) {

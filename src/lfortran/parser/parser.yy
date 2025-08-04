@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 
-%expect    246 // shift/reduce conflicts
+%expect    248 // shift/reduce conflicts
 %expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -1151,7 +1151,8 @@ fn_mod
     | KW_MODULE { $$ = SIMPLE_ATTR(Module, @$); }
     | KW_PURE { $$ = SIMPLE_ATTR(Pure, @$); }
     | KW_RECURSIVE {  $$ = SIMPLE_ATTR(Recursive, @$); }
-
+    | KW_NON_RECURSIVE {  $$ = SIMPLE_ATTR(NonRecursive, @$); }
+    ;
 generic_type_param_list
     : generic_type_param_list "," generic_type_param { $$ = $1; LIST_ADD($$, $3); }
     | generic_type_param { LIST_NEW($$); LIST_ADD($$, $1); }
@@ -1163,7 +1164,6 @@ generic_type_param
 generic_type_param_instantiation_list
     : var_type { LIST_NEW($$); LIST_ADD($$, $1); }
     | type_list "," var_type { $$ = $1; LIST_ADD($$, $3); }
-    ;
 
 temp_decl_star
     : temp_decl_star temp_decl { $$ = $1; LIST_ADD($$, $2); }
