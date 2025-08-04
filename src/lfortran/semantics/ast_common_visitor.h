@@ -2658,20 +2658,27 @@ public:
     void add_sym_to_struct(ASR::Variable_t* var_, ASR::Struct_t* struct_type) {
         char* var_name = var_->m_name;
         SymbolTable* struct_scope = struct_type->m_symtab;
-        ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, var_->base.base.loc, struct_scope,
-                        var_->m_name, var_->m_dependencies, var_->n_dependencies, var_->m_intent,
-                        var_->m_symbolic_value, var_->m_value, var_->m_storage, var_->m_type,
-                        var_->m_type_declaration, var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
-        struct_scope->add_symbol(var_name, var_sym_new);
+        // common based not working-so, checking if symbol already exists or no
+        if (struct_scope->resolve_symbol(var_name) == nullptr) {
+            // Only add it if it doesn't already exist
+            ASR::symbol_t* var_sym_new = ASR::down_cast<ASR::symbol_t>(
+                ASRUtils::make_Variable_t_util(al, var_->base.base.loc, struct_scope,
+                    var_->m_name, var_->m_dependencies, var_->n_dependencies,
+                    var_->m_intent, var_->m_symbolic_value, var_->m_value,
+                    var_->m_storage, var_->m_type, var_->m_type_declaration,
+                    var_->m_abi, var_->m_access, var_->m_presence, var_->m_value_attr));
 
-        Vec<char*> members;
-        members.reserve(al, struct_type->n_members+1);
-        for (size_t i=0; i<struct_type->n_members; i++) {
-            members.push_back(al, struct_type->m_members[i]);
+            struct_scope->add_symbol(var_name, var_sym_new);
+
+            Vec<char*> members;
+            members.reserve(al, struct_type->n_members + 1);
+            for (size_t i = 0; i < struct_type->n_members; i++) {
+                members.push_back(al, struct_type->m_members[i]);
+            }
+            members.push_back(al, var_name);
+            struct_type->m_members = members.p;
+            struct_type->n_members = members.size();
         }
-        members.push_back(al, var_name);
-        struct_type->m_members = members.p;
-        struct_type->n_members = members.size();
     }
 
     ASR::Variable_t * get_symtab_var_for_common(AST::var_sym_t const &s) {
