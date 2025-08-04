@@ -185,10 +185,6 @@ namespace LCompilers {
                 llvm_mem_type = llvm::Type::getVoidTy(context)->getPointerTo();
                 break;
             }
-            case ASR::ttypeType::List: {
-                llvm_mem_type = get_type_from_ttype_t_util(nullptr, mem_type, module);
-                break;
-            }
             default:
                 throw CodeGenError("Cannot identify the type of member, '" +
                                     std::string(member->m_name) +
