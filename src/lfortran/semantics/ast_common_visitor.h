@@ -3984,6 +3984,10 @@ public:
                         }
                         if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
                             symbol_variable->m_type_declaration = type_declaration;
+                        } else if ( type_declaration != nullptr ) {
+                            // This is the case where the variable is implicitly declared `public :: xx`
+                            // and later declared as a procedure variable ex: `procedure(yy), pointer :: xx`
+                            symbol_variable->m_type_declaration = type_declaration;
                         }
                     }
                 }
