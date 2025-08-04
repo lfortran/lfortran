@@ -1758,9 +1758,6 @@ namespace LCompilers {
 #endif
     }
 
-    /*
-        Allocates and sets the memory on heap for a string (already exisiting).
-    */
     void LLVMUtils::set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type,
         llvm::Value* str , llvm::Value* len /*null-char not included*/){
         llvm::Value *str_data{};
@@ -3034,6 +3031,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
         llvm::Value* list_data = LLVM::lfortran_malloc(context, *module, *builder,
                                                        arg_size);
+        builder->CreateMemSet(list_data, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), arg_size, llvm::MaybeAlign());
         llvm::Type* el_type = std::get<2>(typecode2listtype[type_code]);
         llvm::Type* list_type= std::get<0>(typecode2listtype[type_code]);
 
@@ -3057,6 +3055,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* llvm_type_size = llvm::ConstantInt::get(context, llvm::APInt(32, type_size));
         llvm::Value* arg_size = builder->CreateMul(llvm_type_size, initial_capacity);
         llvm::Value* list_data = LLVM::lfortran_malloc(context, *module, *builder, arg_size);
+        builder->CreateMemSet(list_data, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), arg_size, llvm::MaybeAlign());
 
         llvm::Type* el_type = std::get<2>(typecode2listtype[type_code]);
         list_data = builder->CreateBitCast(list_data, el_type->getPointerTo());
@@ -3221,6 +3220,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                                                    llvm::APInt(32, type_size)), src_capacity);
         llvm::Value* copy_data = LLVM::lfortran_malloc(context, *module, *builder,
                                                        arg_size);
+        builder->CreateMemSet(copy_data, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), arg_size, llvm::MaybeAlign());
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
 
         // We consider the case when the element type of a list is defined by a struct
@@ -5533,6 +5533,14 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::Value* copy_data = llvm_utils->CreateLoad2(el_type->getPointerTo() ,copy_data_ptr);
         copy_data = LLVM::lfortran_realloc(context, *module, *builder,
                                            copy_data, arg_size);
+        { //Initialize newly allocated memory 
+            llvm::Value* whole_size = builder->CreateMul(
+                                            llvm::ConstantInt::get(context,llvm::APInt(32, type_size)),
+                                            capacity);
+            llvm::Type* const realloc_ret_type = llvm::Type::getInt8Ty(context);
+            llvm::Value* unset_new_memory = builder->CreateGEP(realloc_ret_type, copy_data, whole_size);
+            builder->CreateMemSet(unset_new_memory, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), whole_size, llvm::MaybeAlign());
+        }
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
         builder->CreateStore(copy_data, copy_data_ptr);
         builder->CreateStore(new_capacity, get_pointer_to_current_capacity_using_type(list_type, list));

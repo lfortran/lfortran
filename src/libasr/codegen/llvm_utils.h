@@ -292,6 +292,7 @@ namespace LCompilers {
 
             /*
              * Allocate heap memory for string.
+             * Notice : It doesn't set the length.
             */
             void set_string_memory_on_heap(ASR::string_physical_typeType str_physical_type, llvm::Value* str, llvm::Value* len);
 

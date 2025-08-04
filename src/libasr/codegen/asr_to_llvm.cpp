@@ -1765,52 +1765,15 @@ public:
         llvm::Type* const_list_type = list_api->get_list_type(llvm_el_type, type_code, type_size);
         llvm::Value* const_list = llvm_utils->CreateAlloca(*builder, const_list_type, nullptr, "const_list");
         list_api->list_init(type_code, const_list, module.get(), x.n_args, x.n_args);
-        int64_t ptr_loads_copy = ptr_loads;
         for( size_t i = 0; i < x.n_args; i++ ) {
-            if (is_argument_of_type_CPtr(x.m_args[i])) {
-                ptr_loads = 0;
-             } else {
-                ptr_loads = 1;
-             }
-            this->visit_expr(*x.m_args[i]);
+            visit_expr_load_wrapper(
+                x.m_args[i], 
+                is_argument_of_type_CPtr(x.m_args[i]) || ASRUtils::is_character(*expr_type(x.m_args[i])) ? 0 : 1);
             llvm::Value* item = tmp;
             llvm::Value* pos = llvm::ConstantInt::get(context, llvm::APInt(32, i));
-
-            ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_args[i]);
-            if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
-                // Handle String constants - Allocate them on heap
-                LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
-                llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
-                llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
-                                                      llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
-                                                            llvm_utils->create_gep2(string_descriptor, item, 1)));
-
-                llvm_utils->deepcopy(const_cast<ASR::expr_t*>(&x.base), item, temp_str, list_type->m_type, 
-                                     list_type->m_type, module.get(), name2memidx);
-                list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item, list_type->m_type,
-                                 false, module.get(), name2memidx);
-                continue;
-            } else if (ASRUtils::is_descriptorString(arg_type) && ASRUtils::is_deferredLength_string(arg_type)) {
-                // Handle String variables - Deep copy on heap
-                LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor);
-                llvm::Value* item_ptr = llvm_utils->CreateAlloca(string_descriptor, nullptr, "item_ptr");
-                builder->CreateStore(item, item_ptr);
-                llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
-                llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
-                                                      llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
-                                                            llvm_utils->create_gep2(string_descriptor, item_ptr, 1)));
-
-                llvm_utils->deepcopy(const_cast<ASR::expr_t*>(&x.base), item_ptr, temp_str, list_type->m_type, 
-                                     list_type->m_type, module.get(), name2memidx);
-                list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item_ptr, list_type->m_type,
-                                 false, module.get(), name2memidx);
-                continue;
-            }
-
             list_api->write_item(const_cast<ASR::expr_t*>(&x.base), const_list, pos, item, list_type->m_type,
                                  false, module.get(), name2memidx);
         }
-        ptr_loads = ptr_loads_copy;
         tmp = const_list;
     }
 
@@ -2001,32 +1964,7 @@ public:
         this->visit_expr_wrapper(x.m_ele, true);
         llvm::Value *item = tmp;
         ptr_loads = ptr_loads_copy;
-
-        ASR::ttype_t* arg_type = ASRUtils::expr_type(x.m_ele);
-        
-        if (ASRUtils::is_descriptorString(arg_type) && !ASRUtils::is_deferredLength_string(arg_type)) {
-            // Handle String constants - Allocate them on heap
-            LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
-            llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
-            llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
-                                                  llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
-                                                        llvm_utils->create_gep2(string_descriptor, item, 1)));
-            llvm_utils->deepcopy(x.m_a, item, temp_str, asr_list->m_type, asr_list->m_type, 
-                                 module.get(), name2memidx);
-            list_api->append(x.m_a, plist, temp_str, asr_list->m_type, module.get(), name2memidx);
-        } else if (ASRUtils::is_descriptorString(arg_type) && ASRUtils::is_deferredLength_string(arg_type)) {
-            // Handle String variables - Deep copy on heap
-            LCOMPILERS_ASSERT(item->getType() == llvm_utils->string_descriptor->getPointerTo());
-            llvm::Value* temp_str = llvm_utils->CreateAlloca(string_descriptor, nullptr, "temp_str");
-            llvm_utils->set_string_memory_on_heap(ASR::string_physical_typeType::DescriptorString, temp_str, 
-                                                  llvm_utils->CreateLoad2(llvm::Type::getInt64Ty(context), 
-                                                        llvm_utils->create_gep2(string_descriptor, item, 1)));
-            llvm_utils->deepcopy(x.m_a, item, temp_str, arg_type, asr_list->m_type, 
-                                 module.get(), name2memidx);
-            list_api->append(x.m_a, plist, temp_str, asr_list->m_type, module.get(), name2memidx);
-        } else {
-            list_api->append(x.m_a, plist, item, asr_list->m_type, module.get(), name2memidx);
-        }
+        list_api->append(x.m_a, plist, item, asr_list->m_type, module.get(), name2memidx);
     }
 
     void visit_UnionInstanceMember(const ASR::UnionInstanceMember_t& x) {
