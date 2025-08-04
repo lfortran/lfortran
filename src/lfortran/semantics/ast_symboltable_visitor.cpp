@@ -323,7 +323,13 @@ public:
         }
         for (size_t i=0; i<x.n_decl; i++) {
             try {
-                visit_unit_decl2(*x.m_decl[i]);
+                if ( AST::is_a<AST::Interface_t>(*x.m_decl[i]) ) {
+                    std::map<std::string, ASR::ttype_t*> implicit_dictionary_copy = implicit_dictionary;
+                    visit_unit_decl2(*x.m_decl[i]);
+                    implicit_dictionary = implicit_dictionary_copy;
+                } else {
+                    visit_unit_decl2(*x.m_decl[i]);
+                }
             } catch (SemanticAbort &e) {
                 if ( !compiler_options.continue_compilation ) throw e;
             }
