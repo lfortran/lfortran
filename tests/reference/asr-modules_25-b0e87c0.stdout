@@ -7,26 +7,6 @@
                     (SymbolTable
                         2
                         {
-                            next_token:
-                                (ExternalSymbol
-                                    2
-                                    next_token
-                                    4 next_token
-                                    tomlf_de_character
-                                    []
-                                    next_token
-                                    Public
-                                ),
-                            parse_select:
-                                (ExternalSymbol
-                                    2
-                                    parse_select
-                                    8 parse_select
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    parse_select
-                                    Public
-                                ),
                             toml_character_tokenizer:
                                 (ExternalSymbol
                                     2
@@ -73,7 +53,7 @@
                     [(Print
                         (StringConstant
                             "running module_25 program"
-                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 25 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 ),
@@ -97,12 +77,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Pointer
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        4 toml_character_tokenizer
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_character_tokenizer
                                                     Source
                                                     Private
                                                     Required
@@ -110,6 +92,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             dot_is_token:
@@ -131,15 +114,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     next_token
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Pointer
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            4 toml_character_tokenizer
+                                            .false.
                                         )
                                         (Logical 4)]
                                         ()
@@ -164,16 +150,6 @@
                                     .false.
                                     ()
                                 ),
-                            parse_select:
-                                (ExternalSymbol
-                                    4
-                                    parse_select
-                                    8 parse_select
-                                    tomlf_de_tokenizer_25
-                                    []
-                                    parse_select
-                                    Public
-                                ),
                             toml_character_tokenizer:
                                 (Struct
                                     (SymbolTable
@@ -189,7 +165,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (String 1 () DeferredLength PointerString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -200,9 +176,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             next_token:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     next_token
                                                     ()
@@ -214,6 +191,14 @@
                                                 )
                                         })
                                     toml_character_tokenizer
+                                    (StructType
+                                        [(Pointer
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [conf]
                                     []
@@ -257,8 +242,10 @@
                                 )
                         })
                     tomlf_de_character
+                    ()
                     [tomlf_de_tokenizer_25]
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_de_tokenizer_25:
@@ -281,12 +268,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Pointer
+                                                            (StructType
+                                                                [(Logical 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        8 toml_tokenizer
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 toml_tokenizer
                                                     Source
                                                     Private
                                                     Required
@@ -294,6 +288,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             dot_is_token:
@@ -315,15 +310,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     next_token
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Pointer
+                                                (StructType
+                                                    [(Logical 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            8 toml_tokenizer
+                                            .false.
                                         )
                                         (Logical 4)]
                                         ()
@@ -373,12 +376,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Pointer
+                                                            (StructType
+                                                                [(Logical 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        8 toml_tokenizer
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 toml_tokenizer
                                                     Source
                                                     Private
                                                     Required
@@ -386,6 +396,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             table:
@@ -399,13 +410,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)]
                                                             []
                                                             .true.
-                                                            8 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    8 toml_table
                                                     Source
                                                     Private
                                                     Required
@@ -414,15 +425,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     parse_select
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Pointer
+                                                (StructType
+                                                    [(Logical 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            8 toml_tokenizer
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -447,10 +466,10 @@
                                             13 1_toml_tokenizer_current
                                             (Pointer
                                                 (StructType
-                                                    []
+                                                    [(Logical 4)]
                                                     []
                                                     .true.
-                                                    8 toml_table
+                                                    .false.
                                                 )
                                             )
                                             ()
@@ -493,9 +512,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
+                                    (StructType
+                                        [(Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [inline]
                                     []
@@ -521,33 +547,35 @@
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Logical 4)]
                                                                 []
                                                                 .true.
-                                                                8 toml_table
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 10 current)
                                                     )
                                                     (PointerNullConstant
                                                         (Pointer
                                                             (StructType
-                                                                []
+                                                                [(Logical 4)]
                                                                 []
                                                                 .true.
-                                                                8 toml_table
+                                                                .false.
                                                             )
                                                         )
+                                                        (Var 10 current)
                                                     )
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)]
                                                             []
                                                             .true.
-                                                            8 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    8 toml_table
                                                     Source
                                                     Private
                                                     Required
@@ -556,9 +584,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             next_token:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     10
                                                     next_token
                                                     ()
@@ -570,6 +599,19 @@
                                                 )
                                         })
                                     toml_tokenizer
+                                    (StructType
+                                        [(Pointer
+                                            (StructType
+                                                [(Logical 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [toml_table]
                                     [current]
                                     []
@@ -589,6 +631,12 @@
                                             
                                         })
                                     toml_tokenizer_
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -602,8 +650,10 @@
                                 )
                         })
                     tomlf_de_tokenizer_25
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 )
         })

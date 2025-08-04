@@ -36,6 +36,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -61,6 +62,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -80,6 +82,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -172,6 +175,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -191,6 +195,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             verify:
@@ -222,6 +227,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -247,6 +253,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -267,6 +274,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             r:
                                                 (Variable
@@ -286,6 +294,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -404,6 +413,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -428,6 +438,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -530,11 +541,14 @@
                             ()
                             [(Var 2 r)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (LogicalNot
                             (Var 2 r)
                             (Logical 4)

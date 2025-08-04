@@ -62,7 +62,7 @@ LFortran is a modern interactive Fortran compiler based on LLVM.
 - `--error-format TEXT=human`: Control how errors are produced (human, short)
 - `--backend TEXT=llvm`: Select a backend (llvm, cpp, x86, wasm, fortran)
 - `--openmp`: Enable OpenMP
-- `--generate-object-code`: Generate object code into .o files
+- `--separate-compilation`: Generate object code into .o files
 - `--rtlib`: Include the full runtime library in the LLVM output
 - `--use-loop-variable-after-loop`: Allow using loop variable after the loop
 - `--fast`: Best performance (disable strict standard compliance)

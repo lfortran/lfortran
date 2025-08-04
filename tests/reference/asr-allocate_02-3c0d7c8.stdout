@@ -33,6 +33,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -59,6 +60,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             c:
@@ -87,6 +89,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ierr:
                                 (Variable
@@ -106,6 +109,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             isource:
@@ -127,6 +131,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -146,6 +151,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             whole_square:
@@ -179,6 +185,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             a_2:
                                                 (Variable
@@ -205,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ab:
@@ -233,6 +241,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             abc:
                                                 (Variable
@@ -259,6 +268,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             b:
@@ -287,6 +297,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b_2:
                                                 (Variable
@@ -313,6 +324,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             bc:
@@ -341,6 +353,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -367,6 +380,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c_2:
@@ -395,6 +409,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ca:
                                                 (Variable
@@ -422,6 +437,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -442,6 +458,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             status:
                                                 (Variable
@@ -461,6 +478,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -522,15 +540,18 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
+                                        ()
                                         ())
                                         ((Var 3 b_2)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
+                                        ()
                                         ())
                                         ((Var 3 c_2)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
+                                        ()
                                         ()
                                         ())]
                                         ()
@@ -542,20 +563,24 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
+                                        ()
                                         ())
                                         ((Var 3 bc)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
+                                        ()
                                         ()
                                         ())
                                         ((Var 3 ca)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
                                         ()
+                                        ()
                                         ())
                                         ((Var 3 abc)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (Var 3 n))]
+                                        ()
                                         ()
                                         ())]
                                         ()
@@ -860,20 +885,41 @@
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
                         ()
+                        ()
                         ())
                         ((Var 2 b)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
+                        ()
                         ()
                         ())
                         ((Var 2 c)
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (Var 2 n))]
                         ()
+                        ()
                         ())]
                         (Var 2 ierr)
                         ()
                         (Var 2 isource)
+                    )
+                    (Assignment
+                        (Var 2 a)
+                        (Var 2 isource)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 b)
+                        (Var 2 isource)
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 c)
+                        (Var 2 isource)
+                        ()
+                        .false.
                     )
                     (Assignment
                         (Var 2 a)
@@ -976,7 +1022,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

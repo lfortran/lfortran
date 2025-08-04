@@ -1,5 +1,0 @@
-warning: Argument `action` isn't supported yet
- --> tests/warnings/open_notimplemented_kwarg1.f90:6:5
-  |
-6 |     open(10, file='file_01_data.txt', status='old', action='read')
-  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ ignored for now

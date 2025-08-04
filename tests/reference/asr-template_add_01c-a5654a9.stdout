@@ -83,6 +83,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -105,6 +106,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -126,6 +128,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -202,6 +205,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -224,6 +228,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -245,6 +250,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -301,6 +307,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     add_t
@@ -343,6 +350,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -365,6 +373,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -386,6 +395,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -442,6 +452,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     r
@@ -478,6 +489,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -498,6 +510,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -517,6 +530,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -578,6 +592,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ~add:
                                                 (CustomOperator
@@ -610,6 +625,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -630,6 +646,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -649,6 +666,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -726,23 +744,27 @@
                                             ()
                                             [(StringConstant
                                                 "The result is"
-                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 8 n)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     template_add_01c_m
+                    ()
                     [template_add_01c_m]
+                    .false.
                     .false.
                     .false.
                 )

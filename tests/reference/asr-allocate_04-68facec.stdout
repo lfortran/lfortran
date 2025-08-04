@@ -37,6 +37,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             message:
                                 (Variable
@@ -59,6 +60,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -69,7 +71,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -78,6 +80,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             string:
@@ -101,6 +104,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     allocate_04
@@ -109,6 +113,7 @@
                         [((Var 2 string)
                         []
                         (IntegerConstant 8 (Integer 4) Decimal)
+                        ()
                         ())]
                         ()
                         ()
@@ -118,6 +123,7 @@
                         [((Var 2 message)
                         []
                         (IntegerConstant 20 (Integer 4) Decimal)
+                        ()
                         ())]
                         ()
                         ()
@@ -132,6 +138,7 @@
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         ()
                         ()
@@ -141,25 +148,19 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
                     )
                     (Assignment
                         (Var 2 string)
-                        (StringPhysicalCast
-                            (IntrinsicElementalFunction
-                                StringTrim
-                                [(Var 2 num)]
-                                0
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
-                                ()
-                            )
-                            PointerString
-                            DescriptorString
+                        (IntrinsicElementalFunction
+                            StringTrim
+                            [(Var 2 num)]
+                            0
                             (Allocatable
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                (String 1 () DeferredLength DescriptorString)
                             )
                             ()
                         )
@@ -167,24 +168,13 @@
                         .false.
                     )
                     (If
+                        ()
                         (StringCompare
-                            (StringPhysicalCast
-                                (Var 2 string)
-                                DescriptorString
-                                PointerString
-                                (Allocatable
-                                    (String 1 (StringLen
-                                        (Var 2 string)
-                                        (Integer 4)
-                                        ()
-                                    ) ExpressionLength PointerString)
-                                )
-                                ()
-                            )
+                            (Var 2 string)
                             NotEq
                             (StringConstant
                                 "lfortran"
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Logical 4)
                             ()
@@ -198,68 +188,32 @@
                         (Var 2 num)
                         (StringConstant
                             "lfortran working"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
                     )
                     (Assignment
                         (Var 2 message)
-                        (StringPhysicalCast
-                            (StringSection
-                                (Var 2 num)
-                                (IntegerBinOp
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    Sub
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                )
-                                (IntegerBinOp
-                                    (IntrinsicElementalFunction
-                                        StringLenTrim
-                                        [(Var 2 num)]
-                                        0
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    Add
-                                    (IntegerConstant 1 (Integer 4) Decimal)
+                        (StringSection
+                            (Var 2 num)
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (IntegerBinOp
+                                (IntrinsicElementalFunction
+                                    StringLenTrim
+                                    [(Var 2 num)]
+                                    0
                                     (Integer 4)
                                     ()
                                 )
+                                Add
                                 (IntegerConstant 1 (Integer 4) Decimal)
-                                (String 1 (IntegerBinOp
-                                    (IntegerBinOp
-                                        (IntrinsicElementalFunction
-                                            StringLenTrim
-                                            [(Var 2 num)]
-                                            0
-                                            (Integer 4)
-                                            ()
-                                        )
-                                        Add
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        ()
-                                    )
-                                    Sub
-                                    (IntegerBinOp
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        Sub
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                    )
-                                    (Integer 4)
-                                    ()
-                                ) ExpressionLength PointerString)
+                                (Integer 4)
                                 ()
                             )
-                            PointerString
-                            DescriptorString
-                            (Allocatable
-                                (String 1 (IntegerBinOp
+                            (IntegerConstant 1 (Integer 4) Decimal)
+                            (String 1 (IntegerBinOp
+                                (IntegerBinOp
                                     (IntegerBinOp
                                         (IntrinsicElementalFunction
                                             StringLenTrim
@@ -274,17 +228,15 @@
                                         ()
                                     )
                                     Sub
-                                    (IntegerBinOp
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        Sub
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                        (Integer 4)
-                                        (IntegerConstant 0 (Integer 4) Decimal)
-                                    )
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     (Integer 4)
                                     ()
-                                ) ExpressionLength DescriptorString)
-                            )
+                                )
+                                Add
+                                (IntegerConstant 1 (Integer 4) Decimal)
+                                (Integer 4)
+                                ()
+                            ) ExpressionLength DescriptorString)
                             ()
                         )
                         ()
@@ -293,21 +245,11 @@
                     (Print
                         (StringFormat
                             ()
-                            [(StringPhysicalCast
-                                (Var 2 message)
-                                DescriptorString
-                                PointerString
-                                (Allocatable
-                                    (String 1 (StringLen
-                                        (Var 2 message)
-                                        (Integer 4)
-                                        ()
-                                    ) ExpressionLength PointerString)
-                                )
-                                ()
-                            )]
+                            [(Var 2 message)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

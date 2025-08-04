@@ -192,6 +192,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             alloc_arg.m_type = nullptr;
             alloc_arg.loc = loc_;
             alloc_arg.m_a = result_var_;
+            alloc_arg.m_sym_subclass = nullptr;
             Vec<ASR::dimension_t> alloc_dims;
             alloc_dims.reserve(al, n_dims);
             for( int j = 1; j <= n_dims + 1; j++ ) {
@@ -223,7 +224,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
             if_body.push_back(al, ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(
                 al, loc, to_be_deallocated.p, to_be_deallocated.size())));
             if_body.push_back(al, allocate_stmt);
-            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc_, test_expr,
+            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc_, nullptr, test_expr,
                                 if_body.p, if_body.size(), else_, else_n));
             Vec<ASR::stmt_t*> if_else_if;
             if_else_if.reserve(al, 1);
@@ -279,7 +280,7 @@ class ReplaceFunctionCallReturningArray: public ASR::BaseExprReplacer<ReplaceFun
         new_args.push_back(al, new_arg);
         ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(
             al, x->base.base.loc, x->m_name, x->m_original_name, new_args.p,
-            new_args.size(), x->m_dt, nullptr, false, false));
+            new_args.size(), x->m_dt, nullptr, false));
         pass_result.push_back(al, subrout_call);
     }
 };

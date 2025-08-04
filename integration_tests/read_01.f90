@@ -1,5 +1,5 @@
 program read_01
-    character(len=2) :: str = "42"
+    character(len=2), target :: str = "42"
  
     character(len=2) :: c
     integer :: i32
@@ -13,6 +13,7 @@ program read_01
     character(len=:), allocatable :: al_val
 
     character(len=:), allocatable :: al_str
+    character(len=:), pointer :: str_ptr
 
     read(str, *) c
     print *, c
@@ -61,4 +62,9 @@ program read_01
     end select
     print *, i32
     if (i32 /= 72) error stop
+    str = "20"
+    str_ptr => str
+    read(str_ptr, *) i32
+    print *, i32
+    if (i32 /= 20) error stop
 end program

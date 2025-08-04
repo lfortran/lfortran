@@ -32,11 +32,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     intrinsics_09
                     []
                     [(If
+                        ()
                         (RealCompare
                             (Var 2 z)
                             Lt
@@ -61,7 +63,9 @@
                                 ()
                                 [(Var 2 z)]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )
                         )]

@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    ()
+                                                    2 fpoint
                                                     Source
                                                     Public
                                                     Required
@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             i:
@@ -50,6 +51,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

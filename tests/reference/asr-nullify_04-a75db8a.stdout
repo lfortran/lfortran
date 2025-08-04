@@ -38,9 +38,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     scaled_data_structure
+                                    (StructType
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [one_d_real_pointer]
                                     []
@@ -54,7 +68,9 @@
                                 )
                         })
                     module_nullify_04
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -83,12 +99,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
                                         []
                                         .true.
-                                        4 scaled_data_structure
+                                        .false.
                                     )
-                                    ()
+                                    4 scaled_data_structure
                                     Source
                                     Public
                                     Required
@@ -96,6 +119,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             s2:
@@ -108,12 +132,19 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Pointer
+                                            (Array
+                                                (Real 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
                                         []
                                         .true.
-                                        4 scaled_data_structure
+                                        .false.
                                     )
-                                    ()
+                                    4 scaled_data_structure
                                     Source
                                     Public
                                     Required
@@ -121,6 +152,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             scaled_data_structure:

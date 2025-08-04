@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             loop:
                                 (Block
@@ -51,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     loop
@@ -67,6 +69,7 @@
                                         .false.
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 2 a)
                                             Eq
@@ -141,6 +144,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             result:
                                 (Variable
@@ -160,6 +164,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -193,6 +198,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 3 result)
                             NotEq
@@ -210,7 +216,9 @@
                             ()
                             [(Var 3 result)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

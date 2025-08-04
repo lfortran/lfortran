@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ap:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             b:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             bp:
                                 (Variable
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             c:
@@ -112,6 +116,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             cp:
                                 (Variable
@@ -137,6 +142,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             d:
@@ -164,6 +170,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -190,6 +197,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             grade_fixed:
                                 (Variable
@@ -199,14 +207,14 @@
                                     Local
                                     (StringConstant
                                         "B"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "B"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -215,6 +223,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             marks:
@@ -236,6 +245,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             marks_fixed:
                                 (Variable
@@ -256,21 +266,23 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     cond_03
                     []
                     [(Select
+                        ()
                         (Var 2 grade_fixed)
                         [(CaseStmt
                             [(StringConstant
                                 "A"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Excellent!"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             .false.
@@ -278,9 +290,10 @@
                         (CaseStmt
                             [(StringConstant
                                 "B"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             [(If
+                                ()
                                 (IntegerCompare
                                     (Var 2 a)
                                     Eq
@@ -291,10 +304,11 @@
                                 [(Print
                                     (StringConstant
                                         "a == b"
-                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )
                                 (If
+                                    ()
                                     (IntegerCompare
                                         (Var 2 ap)
                                         Eq
@@ -308,17 +322,18 @@
                                     [(Print
                                         (StringConstant
                                             "ap == bp"
-                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     [(Print
                                         (StringConstant
                                             "ap /= bp"
-                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                 )]
                                 [(If
+                                    ()
                                     (RealCompare
                                         (Cast
                                             (Var 2 ap)
@@ -340,10 +355,11 @@
                                     [(Print
                                         (StringConstant
                                             "ap == cp"
-                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (If
+                                        ()
                                         (RealCompare
                                             (Var 2 cp)
                                             Eq
@@ -357,17 +373,18 @@
                                         [(Print
                                             (StringConstant
                                                 "cp == dp"
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )]
                                         [(Print
                                             (StringConstant
                                                 "cp /= dp"
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )]
                                     )]
                                     [(If
+                                        ()
                                         (RealCompare
                                             (Var 2 c)
                                             Eq
@@ -378,7 +395,7 @@
                                         [(Print
                                             (StringConstant
                                                 "c == d"
-                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )]
                                         []
@@ -390,12 +407,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "C"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Well done"
-                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             .false.
@@ -403,12 +420,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "D"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             [(Print
                                 (StringConstant
                                     "You passed"
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             .false.
@@ -416,12 +433,12 @@
                         (CaseStmt
                             [(StringConstant
                                 "F"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             [(Print
                                 (StringConstant
                                     "Better try again"
-                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                             .false.
@@ -429,7 +446,7 @@
                         [(Print
                             (StringConstant
                                 "Invalid grade"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         .false.
@@ -439,11 +456,13 @@
                             ()
                             [(StringConstant
                                 "Your grade is "
-                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 grade_fixed)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -454,6 +473,7 @@
                         .false.
                     )
                     (Select
+                        ()
                         (Var 2 marks)
                         [(CaseStmt_Range
                             (IntegerBinOp
@@ -467,7 +487,7 @@
                             [(Print
                                 (StringConstant
                                     "Pass!"
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )
@@ -483,14 +503,14 @@
                             [(Print
                                 (StringConstant
                                     "Failed!"
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         .false.
@@ -500,15 +520,18 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Select
+                        ()
                         (Var 2 marks_fixed)
                         [(CaseStmt_Range
                             (IntegerBinOp
@@ -522,7 +545,7 @@
                             [(Print
                                 (StringConstant
                                     "Pass!"
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )
@@ -538,14 +561,14 @@
                             [(Print
                                 (StringConstant
                                     "Failed!"
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )]
                         )]
                         [(Print
                             (StringConstant
                                 "Invalid marks"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         .false.
@@ -555,11 +578,13 @@
                             ()
                             [(StringConstant
                                 "Your marks are "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 marks)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -55,6 +56,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -129,6 +131,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (Var 2 a)
                             Gt
@@ -187,11 +190,14 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -231,6 +237,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs

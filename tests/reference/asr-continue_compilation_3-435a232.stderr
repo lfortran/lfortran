@@ -16,7 +16,7 @@ syntax error: The LFortran pragma !LF$ must be followed by a space
 171 |         !LF$unroll 4  ! Error: Missing space after `!LF$`
     |         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Module 'continue_compilation_3_fake_module' not declared in the current source and the modfile was not found
+semantic error: Module 'continue_compilation_3_fake_module' modfile was not found
   --> tests/errors/continue_compilation_3.f90:48:5
    |
 48 |     use continue_compilation_3_fake_module
@@ -259,20 +259,32 @@ semantic error: Array reference is not allowed on scalar variable
 168 |     c(1) = 1
     |     ^^^^ 
 
-semantic error: Argument of `size` must be an array
-   --> tests/errors/continue_compilation_3.f90:178:18
+semantic error: Kind of all the arguments of Mergebits must be the same
+   --> tests/errors/continue_compilation_3.f90:176:14
     |
-178 |         print *, size(bpe)
+176 |     print *, merge_bits(1, 2, 3_8)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Kind of all the arguments of Mergebits must be the same
+   --> tests/errors/continue_compilation_3.f90:177:14
+    |
+177 |     print *, merge_bits(merge_i,merge_j,merge_k)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument of `size` must be an array
+   --> tests/errors/continue_compilation_3.f90:181:18
+    |
+181 |         print *, size(bpe)
     |                  ^^^^^^^^^ 
 
 semantic error: Variable 'd' is not declared
-   --> tests/errors/continue_compilation_3.f90:179:15
+   --> tests/errors/continue_compilation_3.f90:182:15
     |
-179 |         bpe = d
+182 |         bpe = d
     |               ^ 'd' is undeclared
 
 semantic error: Assignment to subroutine is not allowed
-   --> tests/errors/continue_compilation_3.f90:179:9
+   --> tests/errors/continue_compilation_3.f90:182:9
     |
-179 |         bpe = d
+182 |         bpe = d
     |         ^^^ 

@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             r2:
@@ -78,6 +80,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             r3:
                                 (Variable
@@ -98,6 +101,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             sp:
                                 (Variable
@@ -117,6 +121,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -157,7 +162,9 @@
                             (Var 2 r2)
                             (Var 2 r3)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

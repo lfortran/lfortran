@@ -36,11 +36,13 @@
                                             ()
                                             [(StringConstant
                                                 "priv = "
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 2 priv)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -49,11 +51,13 @@
                                             ()
                                             [(StringConstant
                                                 "publ = "
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 2 publ)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -88,6 +92,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             publ:
                                 (Variable
@@ -114,10 +119,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     access_vars
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

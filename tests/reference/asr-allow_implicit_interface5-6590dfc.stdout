@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             klvna:
                                 (Function
@@ -51,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rt:
                                                 (Variable
@@ -70,6 +72,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -116,6 +119,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             rt:
                                 (Variable
@@ -135,6 +139,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             rt0:
@@ -161,6 +166,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             zo:
                                 (Variable
@@ -185,6 +191,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

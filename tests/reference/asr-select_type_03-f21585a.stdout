@@ -35,6 +35,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             success:
                                                 (Variable
@@ -55,9 +56,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     enum_stat
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [success
                                     fatal]
@@ -81,10 +90,11 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            4 enum_stat
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -92,20 +102,22 @@
                                         [((IntegerConstant 0 (Integer 4) Decimal))
                                         ((IntegerConstant -1 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            4 enum_stat
+                                            .false.
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         []
                                         .true.
-                                        4 enum_stat
+                                        .false.
                                     )
-                                    ()
+                                    4 enum_stat
                                     Source
                                     Public
                                     Required
@@ -114,11 +126,14 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     class_default_select_type
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 ),
             class_default_select_type_user:
@@ -151,12 +166,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Logical 4)]
                                                         []
                                                         .false.
-                                                        2 toml_table
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -165,15 +181,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     check_table
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Logical 4)
+                                            (Logical 4)]
                                             []
                                             .false.
-                                            2 toml_table
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -192,7 +210,7 @@
                                     [(Print
                                         (StringConstant
                                             "inside check_table"
-                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )]
                                     ()
@@ -227,13 +245,14 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            2 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -241,6 +260,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             stat:
@@ -262,6 +282,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -273,12 +294,13 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Logical 4)]
                                                         []
                                                         .false.
-                                                        2 toml_table
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -286,6 +308,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             tmp:
@@ -299,13 +322,14 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Real 4)
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            2 toml_value
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 toml_value
                                                     Source
                                                     Public
                                                     Required
@@ -313,6 +337,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~select_type_block_:
@@ -337,6 +362,7 @@
                                                         (Var 8 tmp)
                                                     )
                                                     (If
+                                                        ()
                                                         (IntrinsicElementalFunction
                                                             Present
                                                             [(Var 8 stat)]
@@ -362,17 +388,19 @@
                                     get_table
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Logical 4)
+                                            (Logical 4)]
                                             []
                                             .false.
-                                            2 toml_table
+                                            .false.
                                         )
                                         (Pointer
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Logical 4)]
                                                 []
                                                 .true.
-                                                2 toml_table
+                                                .false.
                                             )
                                         )
                                         (Integer 4)]
@@ -396,6 +424,7 @@
                                         [(Var 8 ptr)]
                                     )
                                     (If
+                                        ()
                                         (PointerAssociated
                                             (Var 8 tmp)
                                             ()
@@ -404,6 +433,7 @@
                                         )
                                         [(SelectType
                                             (Var 8 tmp)
+                                            ()
                                             [(TypeStmtName
                                                 2 toml_table
                                                 [(BlockCall
@@ -412,6 +442,7 @@
                                                 )]
                                             )]
                                             [(If
+                                                ()
                                                 (IntrinsicElementalFunction
                                                     Present
                                                     [(Var 8 stat)]
@@ -486,6 +517,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -512,9 +544,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
+                                    (StructType
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [implicit
                                     inline]
@@ -551,6 +591,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -571,9 +612,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_value
+                                    (StructType
+                                        [(Real 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [int
                                     float]
@@ -588,7 +637,9 @@
                                 )
                         })
                     class_default_select_type_user
+                    ()
                     [class_default_select_type]
+                    .false.
                     .false.
                     .false.
                 )

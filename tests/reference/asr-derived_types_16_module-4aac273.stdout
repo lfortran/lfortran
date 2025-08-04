@@ -68,13 +68,15 @@
                                     Default
                                     (Allocatable
                                         (StructType
-                                            []
+                                            [(Logical 4)
+                                            (Real 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            5 fpm_run_settings
+                                            .false.
                                         )
                                     )
-                                    ()
+                                    5 fpm_run_settings
                                     Source
                                     Public
                                     Required
@@ -83,6 +85,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     derived_types_16
@@ -90,6 +93,7 @@
                     [(Allocate
                         [((Var 5 settings)
                         []
+                        ()
                         ()
                         ())]
                         ()
@@ -106,6 +110,7 @@
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 5 settings)
@@ -124,6 +129,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -160,6 +166,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (StructInstanceMember
                                 (Var 5 settings)
@@ -210,6 +217,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             float:
                                                 (Variable
@@ -229,6 +237,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             int:
@@ -250,9 +259,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     fpm_run_settings
+                                    (StructType
+                                        [(Logical 4)
+                                        (Real 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [int
                                     float
@@ -282,13 +300,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Real 4)
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            2 fpm_run_settings
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 fpm_run_settings
                                                     Source
                                                     Public
                                                     Required
@@ -297,16 +317,19 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     get_command_line_settings
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .false.
-                                                2 fpm_run_settings
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -337,10 +360,12 @@
                                                 (Logical 4)
                                             ))]
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Real 4)
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                2 fpm_run_settings
+                                                .false.
                                             )
                                             ()
                                         )
@@ -355,7 +380,9 @@
                                 )
                         })
                     fpm_command_line
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -97,12 +97,13 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)
+                                        (Integer 4)]
                                         []
                                         .true.
-                                        6 rectangle
+                                        .false.
                                     )
-                                    ()
+                                    6 rectangle
                                     Source
                                     Public
                                     Required
@@ -110,6 +111,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             rectangle:
@@ -142,12 +144,15 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Integer 4)]
                                         []
                                         .true.
-                                        6 shape
+                                        .false.
                                     )
-                                    ()
+                                    6 shape
                                     Source
                                     Public
                                     Required
@@ -155,6 +160,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -212,7 +218,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -244,7 +252,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -286,7 +296,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -360,6 +372,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -380,6 +393,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             sh:
                                                 (Variable
@@ -391,12 +405,15 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Logical 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        2 shape
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 shape
                                                     Source
                                                     Public
                                                     Required
@@ -404,6 +421,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -425,6 +443,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -445,15 +464,19 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     initialize_subrout
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 4)
+                                            (Logical 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            2 shape
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Logical 4)
@@ -551,6 +574,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             width:
                                                 (Variable
@@ -571,9 +595,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     rectangle
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [length
                                     width]
@@ -610,6 +642,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filled:
                                                 (Variable
@@ -630,9 +663,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             initialize:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     initialize
                                                     ()
@@ -661,6 +695,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -681,9 +716,19 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     shape
+                                    (StructType
+                                        [(Integer 4)
+                                        (Logical 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [color
                                     filled
@@ -700,7 +745,9 @@
                                 )
                         })
                     shape_mod
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

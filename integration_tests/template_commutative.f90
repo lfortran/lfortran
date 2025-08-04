@@ -12,7 +12,8 @@ module template_commutative_m
         pure elemental function equal(x, y) result(equal)
             type(T), intent(in) :: x
             type(T), intent(in) :: y
-            type(T) :: equal
+            ! type(T) :: equal
+            logical :: equal
         end function
     end requirement
 

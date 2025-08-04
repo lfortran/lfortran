@@ -74,6 +74,7 @@ unit_decl2
         program_unit* funcs)
     | Require(unit_require* reqs)
     | Implements(implements_header header, implements_item* item)
+    | Union(identifier name, trivia? trivia, decl_attribute* attrtype, unit_decl2* items)
 
 interface_header
     = InterfaceHeader()
@@ -301,6 +302,7 @@ decl_attribute
     | SimpleAttribute(simple_attribute attr)
     | AttrType(decl_type type, kind_item* kind, decl_attribute? attr,
         generic_type_param? parametrized_type, identifier? name, identifier* traits, symbol sym)
+    | AttrTypeList(decl_type type, decl_attribute* attr)
     | AttrAssignment()
     | AttrIntrinsicOperator(intrinsicop op)
     | AttrDefinedOperator(string op_name)
@@ -353,6 +355,8 @@ decl_type
     | TypeInterface
     | TypeLF_List
     | TypeLF_Set
+    | TypeLF_Dict
+    | TypeLF_Tuple
 
 event_attribute
     = AttrStat(identifier variable)

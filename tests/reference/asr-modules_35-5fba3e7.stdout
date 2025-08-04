@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             strings:
                                                 (Variable
@@ -43,7 +44,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () AssumedLength PointerString)
+                                                            (String 1 () AssumedLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -57,6 +58,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             strings_a:
@@ -70,7 +72,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () DeferredLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -85,13 +87,14 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     get_args_fixed_length_a_array
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 () AssumedLength PointerString)
+                                                (String 1 () AssumedLength DescriptorString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -116,12 +119,14 @@
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 2 (Integer 4) Decimal))]
                                         (IntegerConstant 5 (Integer 4) Decimal)
+                                        ()
                                         ())]
                                         ()
                                         ()
                                         ()
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 3 place)
                                             Gt
@@ -130,6 +135,7 @@
                                             ()
                                         )
                                         [(If
+                                            ()
                                             (IntegerCompare
                                                 (StringLen
                                                     (ArrayItem
@@ -143,7 +149,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 () DeferredLength PointerString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -163,7 +169,7 @@
                                                             ()
                                                         )
                                                         ())]
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         ColMajor
                                                         ()
                                                     )
@@ -196,16 +202,16 @@
                                                                     ()
                                                                 )
                                                                 ())]
-                                                                (String 1 () AssumedLength PointerString)
+                                                                (String 1 () AssumedLength DescriptorString)
                                                                 ColMajor
                                                                 ()
                                                             )
                                                             (Integer 4)
                                                             ()
-                                                        ) ExpressionLength PointerString)
+                                                        ) ExpressionLength DescriptorString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 0 (Integer 4) Decimal))]
-                                                        FixedSizeArray
+                                                        PointerToDataArray
                                                     )
                                                     ()
                                                     ColMajor
@@ -217,6 +223,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 3 place)
                                             Gt
@@ -241,16 +248,16 @@
                                                                 ()
                                                             )
                                                             ())]
-                                                            (String 1 () AssumedLength PointerString)
+                                                            (String 1 () AssumedLength DescriptorString)
                                                             ColMajor
                                                             ()
                                                         )
                                                         (Integer 4)
                                                         ()
-                                                    ) ExpressionLength PointerString)
+                                                    ) ExpressionLength DescriptorString)
                                                     [((IntegerConstant 1 (Integer 4) Decimal)
                                                     (IntegerConstant 0 (Integer 4) Decimal))]
-                                                    FixedSizeArray
+                                                    PointerToDataArray
                                                 )
                                                 ()
                                                 ColMajor
@@ -268,7 +275,9 @@
                                 )
                         })
                     m_cli2_21
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -298,7 +307,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -313,6 +322,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     modules_35
@@ -322,6 +332,7 @@
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 2 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         ()
                         ()
@@ -330,7 +341,7 @@
                     (Print
                         (StringConstant
                             "executing modules_35"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (SubroutineCall

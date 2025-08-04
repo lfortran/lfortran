@@ -62,6 +62,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -81,6 +82,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             h:
@@ -102,9 +104,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_1
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b
@@ -131,9 +140,9 @@
                                         []
                                         []
                                         .true.
-                                        3 block_1
+                                        .false.
                                     )
-                                    ()
+                                    3 block_1
                                     Source
                                     Public
                                     Required
@@ -142,10 +151,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_1
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -178,6 +190,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -198,9 +211,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_2
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c
                                     d]
@@ -226,9 +246,9 @@
                                         []
                                         []
                                         .true.
-                                        5 block_2
+                                        .false.
                                     )
-                                    ()
+                                    5 block_2
                                     Source
                                     Public
                                     Required
@@ -237,10 +257,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_2
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -273,6 +296,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
@@ -293,9 +317,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_3
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [e
                                     g]
@@ -321,9 +352,9 @@
                                         []
                                         []
                                         .true.
-                                        7 block_3
+                                        .false.
                                     )
-                                    ()
+                                    7 block_3
                                     Source
                                     Public
                                     Required
@@ -332,10 +363,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_3
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -368,9 +402,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_4
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -395,9 +436,9 @@
                                         []
                                         []
                                         .true.
-                                        9 block_4
+                                        .false.
                                     )
-                                    ()
+                                    9 block_4
                                     Source
                                     Public
                                     Required
@@ -406,10 +447,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_4
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -442,6 +486,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             k:
                                                 (Variable
@@ -462,9 +507,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_5
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [j
                                     k]
@@ -490,9 +542,9 @@
                                         []
                                         []
                                         .true.
-                                        11 block_5
+                                        .false.
                                     )
-                                    ()
+                                    11 block_5
                                     Source
                                     Public
                                     Required
@@ -501,10 +553,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_5
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -39,7 +39,7 @@
                     (Print
                         (StringConstant
                             "executing modules_39"
-                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 ),
@@ -62,7 +62,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -71,6 +71,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             __libasr_created_variable_1:
@@ -82,7 +83,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -91,6 +92,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             __libasr_created_variable_2:
@@ -102,7 +104,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -112,65 +114,6 @@
                                                     .false.
                                                     ()
                                                     .false.
-                                                ),
-                                            __libasr_created_variable_3:
-                                                (Variable
-                                                    7
-                                                    __libasr_created_variable_3
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            __libasr_created_variable_4:
-                                                (Variable
-                                                    7
-                                                    __libasr_created_variable_4
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            __libasr_created_variable_5:
-                                                (Variable
-                                                    7
-                                                    __libasr_created_variable_5
-                                                    []
-                                                    Local
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                    ()
-                                                    Source
-                                                    Public
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
                                                     .false.
                                                 )
                                         })
@@ -194,102 +137,48 @@
                                     [(SubroutineCall
                                         2 filewrite_string____1
                                         2 filewrite_string____1
-                                        [((StringPhysicalCast
-                                            (FunctionCall
-                                                2 join_path
-                                                ()
-                                                [((StringConstant
-                                                    "build"
-                                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                ))
-                                                ((StringConstant
-                                                    ".gitignore"
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                ))
-                                                ((Var 7 __libasr_created_variable_))
-                                                ((LogicalConstant
-                                                    .false.
-                                                    (Logical 4)
-                                                ))
-                                                ((Var 7 __libasr_created_variable_1))
-                                                ((LogicalConstant
-                                                    .false.
-                                                    (Logical 4)
-                                                ))
-                                                ((Var 7 __libasr_created_variable_2))
-                                                ((LogicalConstant
-                                                    .false.
-                                                    (Logical 4)
-                                                ))]
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
+                                        [((FunctionCall
+                                            2 join_path
+                                            ()
+                                            [((StringConstant
+                                                "build"
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            ((StringConstant
+                                                ".gitignore"
+                                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_1))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))
+                                            ((Var 7 __libasr_created_variable_2))
+                                            ((LogicalConstant
+                                                .false.
+                                                (Logical 4)
+                                            ))]
                                             (Allocatable
-                                                (String 1 (StringLen
-                                                    (FunctionCall
-                                                        2 join_path
-                                                        ()
-                                                        [((StringConstant
-                                                            "build"
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                        ))
-                                                        ((StringConstant
-                                                            ".gitignore"
-                                                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                        ))
-                                                        ((Var 7 __libasr_created_variable_3))
-                                                        ((LogicalConstant
-                                                            .false.
-                                                            (Logical 4)
-                                                        ))
-                                                        ((Var 7 __libasr_created_variable_4))
-                                                        ((LogicalConstant
-                                                            .false.
-                                                            (Logical 4)
-                                                        ))
-                                                        ((Var 7 __libasr_created_variable_5))
-                                                        ((LogicalConstant
-                                                            .false.
-                                                            (Logical 4)
-                                                        ))]
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
+                                            ()
                                         ))
-                                        ((ArrayPhysicalCast
-                                            (ArrayConstant
-                                                1
-                                                ["*"]
-                                                (Array
-                                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                    [((IntegerConstant 1 (Integer 4) Decimal)
-                                                    (IntegerConstant 1 (Integer 4) Decimal))]
-                                                    FixedSizeArray
-                                                )
-                                                ColMajor
-                                            )
-                                            FixedSizeArray
-                                            PointerToDataArray
+                                        ((ArrayConstant
+                                            1
+                                            ["*"]
                                             (Array
-                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 1 (Integer 4) Decimal))]
                                                 PointerToDataArray
                                             )
-                                            ()
+                                            ColMajor
                                         ))
                                         ((IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
@@ -322,7 +211,9 @@
                                 )
                         })
                     modules_39_fpm_39
+                    ()
                     [modules_39_module_fpm_filesystem_39]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -355,6 +246,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filedata:
                                                 (Variable
@@ -366,7 +258,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 9 __1filedata))]
                                                         PointerToDataArray
@@ -380,6 +272,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filename:
                                                 (Variable
@@ -390,7 +283,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -400,13 +293,14 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     filewrite_string____1
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Array
-                                            (String 1 () AssumedLength PointerString)
+                                            (String 1 () AssumedLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (FunctionParam
                                                 2
@@ -453,7 +347,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -462,6 +356,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             a2:
@@ -473,7 +368,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -482,6 +377,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             a3:
@@ -493,7 +389,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -502,6 +398,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             a4:
@@ -513,7 +410,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -522,6 +419,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             a5:
@@ -533,7 +431,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -542,6 +440,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_a3_present_:
@@ -563,6 +462,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_a4_present_:
                                                 (Variable
@@ -583,6 +483,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_a5_present_:
                                                 (Variable
@@ -602,6 +503,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             path:
@@ -625,17 +527,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     join_path
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
-                                        (String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Logical 4)]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
@@ -669,8 +572,10 @@
                                 )
                         })
                     modules_39_module_fpm_filesystem_39
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 )
         })

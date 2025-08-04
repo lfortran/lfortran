@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             dp:
                                 (ExternalSymbol
@@ -60,6 +61,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             r1:
                                 (Variable
@@ -79,6 +81,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             r2:
@@ -100,6 +103,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -119,6 +123,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -152,6 +157,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -183,6 +189,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -236,6 +243,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -361,6 +369,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -399,11 +408,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntrinsicElementalFunction
                                 Abs

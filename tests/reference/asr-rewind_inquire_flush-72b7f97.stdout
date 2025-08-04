@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             ext:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             fm:
                                 (Variable
@@ -76,7 +79,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             ios:
@@ -106,6 +110,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             len:
                                 (Variable
@@ -126,6 +131,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     rewind_inquire_flush
@@ -141,7 +147,7 @@
                         ()
                         (StringConstant
                             "file_b"
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         ()
@@ -251,7 +257,7 @@
                     (Print
                         (StringConstant
                             "err rewind"
-                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (GoToTarget
@@ -261,7 +267,7 @@
                     (Print
                         (StringConstant
                             "err inquire"
-                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

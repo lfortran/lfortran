@@ -210,7 +210,7 @@ public:
                 int_type, nullptr)), nullptr, false));
             if_body.push_back(al, if_body_stmt);
 
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test,
                 if_body.p, if_body.n, nullptr, 0));
             body.push_back(al, list_section_stmt);
         }
@@ -234,10 +234,10 @@ public:
                 al, loc, arg_exprs[1], a_len_1, nullptr, false));
             else_body_1.push_back(al, else_body_stmt_1);
 
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test_1,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test_1,
                 if_body_1.p, if_body_1.n, else_body_1.p, else_body_1.n));
             if_body.push_back(al, list_section_stmt);
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test,
                 if_body.p, if_body.n, nullptr, 0));
             body.push_back(al, list_section_stmt);
         }
@@ -261,10 +261,10 @@ public:
                 al, loc, arg_exprs[2], minus_one, nullptr, false));
             else_body_1.push_back(al, else_body_stmt_1);
 
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test_1,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test_1,
                 if_body_1.p, if_body_1.n, else_body_1.p, else_body_1.n));
             if_body.push_back(al, list_section_stmt);
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test,
                 if_body.p, if_body.n, nullptr, 0));
             body.push_back(al, list_section_stmt);
         }
@@ -284,7 +284,7 @@ public:
             ASR::stmt_t* if_body_stmt_1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, arg_exprs[2], a_len, nullptr, false));
             if_body_1.push_back(al, if_body_stmt_1);
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test_1,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test_1,
                 if_body_1.p, if_body_1.n, nullptr, 0));
             if_body.push_back(al, list_section_stmt);
 
@@ -293,11 +293,11 @@ public:
             ASR::stmt_t* if_body_stmt_2 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(
                 al, loc, arg_exprs[1], a_len_1, nullptr, false));
             if_body_2.push_back(al, if_body_stmt_2);
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test_2,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test_2,
                 if_body_2.p, if_body_2.n, nullptr, 0));
             else_body.push_back(al, list_section_stmt);
 
-            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, a_test,
+            list_section_stmt = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, a_test,
                 if_body.p, if_body.n, else_body.p, else_body.n));
             body.push_back(al, list_section_stmt);
         }
@@ -406,7 +406,7 @@ public:
         }
         ASR::symbol_t *fn_sym = list_section_func_map[list_type_name];
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            fn_sym, nullptr, args.p, args.n, x->m_type, nullptr, nullptr, false));
+            fn_sym, nullptr, args.p, args.n, x->m_type, nullptr, nullptr));
     }
 
     void create_concat_function(Location& loc,
@@ -443,7 +443,7 @@ public:
         // Declare `result_list`
         ASR::symbol_t* arg = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, list_concat_symtab,
-            s2c(al, "result_list"), nullptr, 0, ASR::intentType::Local, nullptr, nullptr,
+            s2c(al, "result_list"), nullptr, 0, ASR::intentType::Out, nullptr, nullptr,
             ASR::storage_typeType::Default, list_type, nullptr,
             ASR::abiType::Source, ASR::accessType::Public,
             ASR::presenceType::Required, false));
@@ -530,7 +530,7 @@ public:
         }
         ASR::symbol_t *fn_sym = list_concat_func_map[list_type_name];
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            fn_sym, nullptr, args.p, 2, x->m_type, nullptr, nullptr, false));
+            fn_sym, nullptr, args.p, 2, x->m_type, nullptr, nullptr));
     }
 
 };

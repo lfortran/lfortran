@@ -17,26 +17,6 @@
                                     add_t
                                     Public
                                 ),
-                            func_arg_int:
-                                (ExternalSymbol
-                                    13
-                                    func_arg_int
-                                    2 func_arg_int
-                                    template_add_01_m
-                                    []
-                                    func_arg_int
-                                    Public
-                                ),
-                            func_arg_real:
-                                (ExternalSymbol
-                                    13
-                                    func_arg_real
-                                    2 func_arg_real
-                                    template_add_01_m
-                                    []
-                                    func_arg_real
-                                    Public
-                                ),
                             r:
                                 (ExternalSymbol
                                     13
@@ -103,6 +83,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -125,6 +106,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -146,6 +128,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -222,6 +205,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -244,6 +228,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -265,6 +250,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -321,6 +307,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     add_t
@@ -356,6 +343,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -376,6 +364,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -395,6 +384,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -459,6 +449,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -479,6 +470,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             z:
                                                 (Variable
@@ -498,6 +490,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -569,6 +562,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -591,6 +585,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -612,6 +607,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -668,6 +664,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     r
@@ -699,6 +696,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             add_integer:
                                                 (Function
@@ -724,6 +722,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -744,6 +743,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -763,6 +763,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -829,6 +830,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -849,6 +851,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             z:
                                                                 (Variable
@@ -868,6 +871,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -929,6 +933,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -949,6 +954,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -968,6 +974,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1011,7 +1018,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (FunctionCall
                                                 10 add_real
@@ -1023,11 +1030,14 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
                                     (If
+                                        ()
                                         (RealCompare
                                             (IntrinsicElementalFunction
                                                 Abs
@@ -1083,7 +1093,7 @@
                                             ()
                                             [(StringConstant
                                                 "The result is "
-                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (FunctionCall
                                                 10 add_integer
@@ -1095,11 +1105,14 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (FunctionCall
                                                 10 add_integer
@@ -1121,14 +1134,16 @@
                                         []
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     template_add_01_m
+                    ()
                     [template_add_01_m]
+                    .false.
                     .false.
                     .false.
                 )

@@ -133,11 +133,13 @@
                             }
                         },
                         "name": "modules_10",
+                        "parent_module": [],
                         "dependencies": [
                             "my_other_module"
                         ],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "has_submodules": false
                     },
                     "loc": {
                         "first": 148,
@@ -254,7 +256,8 @@
                                         "target_attr": false,
                                         "contiguous_attr": false,
                                         "bindc_name": [],
-                                        "is_volatile": false
+                                        "is_volatile": false,
+                                        "is_protected": false
                                     },
                                     "loc": {
                                         "first": 38,
@@ -332,12 +335,27 @@
                                                             ],
                                                             "kind": "FormatFortran",
                                                             "type": {
-                                                                "node": "String",
+                                                                "node": "Allocatable",
                                                                 "fields": {
-                                                                    "kind": 1,
-                                                                    "len": [],
-                                                                    "len_kind": "ExpressionLength",
-                                                                    "physical_type": "CString"
+                                                                    "type": {
+                                                                        "node": "String",
+                                                                        "fields": {
+                                                                            "kind": 1,
+                                                                            "len": [],
+                                                                            "len_kind": "DeferredLength",
+                                                                            "physical_type": "DescriptorString"
+                                                                        },
+                                                                        "loc": {
+                                                                            "first": 98,
+                                                                            "last": 115,
+                                                                            "first_filename": "tests/modules_10.f90",
+                                                                            "first_line": 5,
+                                                                            "first_column": 9,
+                                                                            "last_filename": "tests/modules_10.f90",
+                                                                            "last_line": 5,
+                                                                            "last_column": 26
+                                                                        }
+                                                                    }
                                                                 },
                                                                 "loc": {
                                                                     "first": 98,
@@ -396,9 +414,11 @@
                             }
                         },
                         "name": "my_other_module",
+                        "parent_module": [],
                         "dependencies": [],
                         "loaded_from_mod": false,
-                        "intrinsic": false
+                        "intrinsic": false,
+                        "has_submodules": false
                     },
                     "loc": {
                         "first": 0,

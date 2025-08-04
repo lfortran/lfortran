@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "BC"
-                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "BC"
-                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             is_alpha:
@@ -52,6 +53,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             num:
                                 (Variable
@@ -62,7 +64,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -71,6 +73,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -85,7 +88,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -96,7 +99,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -111,7 +114,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -122,7 +125,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -141,7 +144,9 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -149,7 +154,7 @@
                         (Var 2 c)
                         (StringConstant
                             "@a"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -163,7 +168,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -174,7 +179,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -189,7 +194,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -200,7 +205,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -219,7 +224,9 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -227,7 +234,7 @@
                         (Var 2 c)
                         (StringConstant
                             "a@"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -241,7 +248,7 @@
                                     GtE
                                     (StringConstant
                                         "A"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -252,7 +259,7 @@
                                     LtE
                                     (StringConstant
                                         "Z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -267,7 +274,7 @@
                                     GtE
                                     (StringConstant
                                         "a"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -278,7 +285,7 @@
                                     LtE
                                     (StringConstant
                                         "z"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (Logical 4)
                                     ()
@@ -297,51 +304,36 @@
                             ()
                             [(Var 2 is_alpha)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (Assignment
                         (StringSection
                             (Var 2 num)
-                            (IntegerBinOp
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                Sub
-                                (IntegerConstant 1 (Integer 4) Decimal)
-                                (Integer 4)
-                                (IntegerConstant 0 (Integer 4) Decimal)
-                            )
+                            (IntegerConstant 1 (Integer 4) Decimal)
                             (IntegerConstant 3 (Integer 4) Decimal)
                             (IntegerConstant 1 (Integer 4) Decimal)
-                            (String 1 (IntegerBinOp
-                                (IntegerConstant 3 (Integer 4) Decimal)
-                                Sub
-                                (IntegerBinOp
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    Sub
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (Integer 4)
-                                    (IntegerConstant 0 (Integer 4) Decimal)
-                                )
-                                (Integer 4)
-                                ()
-                            ) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ()
                         )
                         (StringConstant
                             "sbs"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
                     )
                     (If
+                        ()
                         (StringCompare
                             (Var 2 num)
                             NotEq
                             (StringConstant
                                 "sbs"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Logical 4)
                             ()

@@ -411,8 +411,8 @@ class DefaultLookupNameVisitor(ASDLVisitor):
         self.emit("node_to_return = ( ASR::asr_t* ) ((Variable_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
-        self.emit("case ASR::symbolType::ClassProcedure: {", 3)
-        self.emit("node_to_return = ( ASR::asr_t* ) ((ClassProcedure_t*)sym);", 4)
+        self.emit("case ASR::symbolType::StructMethodDeclaration: {", 3)
+        self.emit("node_to_return = ( ASR::asr_t* ) ((StructMethodDeclaration_t*)sym);", 4)
         self.emit("return;", 4)
         self.emit("}", 3)
         self.emit("case ASR::symbolType::AssociateBlock: {", 3)
@@ -1119,10 +1119,12 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_expr = []
         self.duplicate_ttype = []
         self.duplicate_case_stmt = []
+        self.duplicate_type_stmt = []
         self.is_stmt = False
         self.is_expr = False
         self.is_ttype = False
         self.is_case_stmt = False
+        self.is_type_stmt = False
         self.is_product = False
         super(ExprStmtDuplicatorVisitor, self).__init__(stream, data)
 
@@ -1170,6 +1172,13 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_case_stmt.append(("", 0))
         self.duplicate_case_stmt.append(("    switch(x->type) {", 1))
 
+        self.duplicate_type_stmt.append(("    ASR::type_stmt_t* duplicate_type_stmt(ASR::type_stmt_t* x) {", 0))
+        self.duplicate_type_stmt.append(("    if( !x ) {", 1))
+        self.duplicate_type_stmt.append(("    return nullptr;", 2))
+        self.duplicate_type_stmt.append(("    }", 1))
+        self.duplicate_type_stmt.append(("", 0))
+        self.duplicate_type_stmt.append(("    switch(x->type) {", 1))
+
         super(ExprStmtDuplicatorVisitor, self).visitModule(mod)
         self.duplicate_stmt.append(("    default: {", 2))
         self.duplicate_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " statement is not supported yet.");', 3))
@@ -1203,6 +1212,14 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.duplicate_case_stmt.append(("    return nullptr;", 1))
         self.duplicate_case_stmt.append(("    }", 0))
 
+        self.duplicate_type_stmt.append(("    default: {", 2))
+        self.duplicate_type_stmt.append(('    LCOMPILERS_ASSERT_MSG(false, "Duplication of " + std::to_string(x->type) + " case statement is not supported yet.");', 3))
+        self.duplicate_type_stmt.append(("    }", 2))
+        self.duplicate_type_stmt.append(("    }", 1))
+        self.duplicate_type_stmt.append(("", 0))
+        self.duplicate_type_stmt.append(("    return nullptr;", 1))
+        self.duplicate_type_stmt.append(("    }", 0))
+
         for line, level in self.duplicate_stmt:
             self.emit(line, level=level)
         self.emit("")
@@ -1213,6 +1230,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.emit(line, level=level)
         self.emit("")
         for line, level in self.duplicate_case_stmt:
+            self.emit(line, level=level)
+        for line, level in self.duplicate_type_stmt:
             self.emit(line, level=level)
         self.emit("")
         self.emit("};")
@@ -1227,7 +1246,8 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
         self.is_expr = args[0] == 'expr'
         self.is_ttype = args[0] == "ttype"
         self.is_case_stmt = args[0] == 'case_stmt'
-        if self.is_stmt or self.is_expr or self.is_case_stmt or self.is_ttype:
+        self.is_type_stmt = args[0] == 'type_stmt'
+        if self.is_stmt or self.is_expr or self.is_case_stmt or self.is_type_stmt or self.is_ttype:
             for tp in sum.types:
                 self.visit(tp, *args)
 
@@ -1278,6 +1298,10 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             self.duplicate_case_stmt.append(("    case ASR::case_stmtType::%s: {" % name, 2))
             self.duplicate_case_stmt.append(("    return down_cast<ASR::case_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
             self.duplicate_case_stmt.append(("    }", 2))
+        elif self.is_type_stmt:
+            self.duplicate_type_stmt.append(("    case ASR::type_stmtType::%s: {" % name, 2))
+            self.duplicate_type_stmt.append(("    return down_cast<ASR::type_stmt_t>(self().duplicate_%s(down_cast<ASR::%s_t>(x)));" % (name, name), 3))
+            self.duplicate_type_stmt.append(("    }", 2))
         self.emit("}", 1)
         self.emit("")
 
@@ -1291,6 +1315,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
             field.type == "array_index" or
             field.type == "alloc_arg" or
             field.type == "case_stmt" or
+            field.type == "type_stmt" or
             field.type == "ttype" or
             field.type == "dimension"):
             level = 2
@@ -1315,6 +1340,7 @@ class ExprStmtDuplicatorVisitor(ASDLVisitor):
                 elif field.type == "alloc_arg":
                     self.emit("    ASR::alloc_arg_t alloc_arg_copy;", level)
                     self.emit("    alloc_arg_copy.loc = x->m_%s[i].loc;"%(field.name), level)
+                    self.emit("    alloc_arg_copy.m_sym_subclass = nullptr;", level)
                     self.emit("    alloc_arg_copy.m_a = self().duplicate_expr(x->m_%s[i].m_a);"%(field.name), level)
                     self.emit("    alloc_arg_copy.m_len_expr = self().duplicate_expr(x->m_%s[i].m_len_expr);"%(field.name), level)
                     self.emit("    alloc_arg_copy.m_type = self().duplicate_ttype(x->m_%s[i].m_type);"%(field.name), level)

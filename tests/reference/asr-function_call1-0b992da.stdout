@@ -41,6 +41,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -55,9 +56,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 softmax
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 softmax
                                                     Source
                                                     Public
                                                     Required
@@ -65,6 +66,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -91,6 +93,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     eval_1d
@@ -99,7 +102,7 @@
                                             []
                                             []
                                             .false.
-                                            2 softmax
+                                            .false.
                                         )
                                         (Array
                                             (Real 4)
@@ -192,6 +195,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -206,9 +210,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 softmax
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 softmax
                                                     Source
                                                     Public
                                                     Required
@@ -216,6 +220,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -242,6 +247,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     eval_1d_prime
@@ -250,7 +256,7 @@
                                             []
                                             []
                                             .false.
-                                            2 softmax
+                                            .false.
                                         )
                                         (Array
                                             (Real 4)
@@ -338,7 +344,7 @@
                                         3
                                         {
                                             eval_1d:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     eval_1d
                                                     ()
@@ -350,6 +356,12 @@
                                                 )
                                         })
                                     softmax
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -363,7 +375,9 @@
                                 )
                         })
                     module_function_call1
+                    ()
                     [module_function_call1]
+                    .false.
                     .false.
                     .false.
                 )

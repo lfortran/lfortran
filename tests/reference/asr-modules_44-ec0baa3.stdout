@@ -47,12 +47,14 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
                                         []
                                         .true.
-                                        9 fpm_new_settings
+                                        .false.
                                     )
-                                    ()
+                                    9 fpm_new_settings
                                     Source
                                     Public
                                     Required
@@ -60,6 +62,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             warnwrite:
@@ -113,7 +116,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () DeferredLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -128,6 +131,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             settings:
                                                 (Variable
@@ -139,12 +143,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 fpm_new_settings
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 fpm_new_settings
                                                     Source
                                                     Public
                                                     Required
@@ -153,15 +159,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     cmd_new
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 fpm_new_settings
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -181,12 +190,12 @@
                                         (Var 8 littlefile)
                                         (ArrayConstant
                                             160
-                                            ["# ", "My cool new project!"]
+                                            ["#                                                                               ", "My cool new project!                                                            "]
                                             (Array
-                                                (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 2 (Integer 4) Decimal))]
-                                                FixedSizeArray
+                                                PointerToDataArray
                                             )
                                             ColMajor
                                         )
@@ -196,30 +205,11 @@
                                     (SubroutineCall
                                         2 warnwrite
                                         ()
-                                        [((StringPhysicalCast
-                                            (StructInstanceMember
-                                                (Var 8 settings)
-                                                8 1_fpm_new_settings_name
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
+                                        [((StructInstanceMember
+                                            (Var 8 settings)
+                                            8 1_fpm_new_settings_name
                                             (Allocatable
-                                                (String 1 (StringLen
-                                                    (StructInstanceMember
-                                                        (Var 8 settings)
-                                                        8 1_fpm_new_settings_name
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         ))
@@ -258,9 +248,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     fpm_cmd_settings
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [working_dir]
                                     []
@@ -298,9 +297,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     fpm_new_settings
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [name]
                                     []
@@ -324,7 +332,9 @@
                                 )
                         })
                     modules_44_fpm_cmd_new
+                    ()
                     [modules_44_module_fpm_filesystem]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -348,7 +358,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -362,6 +372,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             fname:
                                                 (Variable
@@ -372,7 +383,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -382,13 +393,14 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     warnwrite
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)
+                                        [(String 1 () AssumedLength DescriptorString)
                                         (Array
-                                            (String 1 () AssumedLength PointerString)
+                                            (String 1 () AssumedLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -417,8 +429,10 @@
                                 )
                         })
                     modules_44_module_fpm_filesystem
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 )
         })

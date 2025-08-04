@@ -36,6 +36,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     modules_06
@@ -58,7 +59,9 @@
                             ()
                             [(Var 4 i)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -92,6 +95,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     b
@@ -114,7 +118,7 @@
                                     [(Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (Assignment
@@ -131,7 +135,9 @@
                                 )
                         })
                     modules_06_a
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -1,4 +1,4 @@
-semantic error: first argument of `ifix` must have kind equals to 4
+semantic error: first argument of `ifix` must have kind equal to 4
  --> tests/errors/ifix_01.f90:2:14
   |
 2 |     print *, ifix(4.23_8)

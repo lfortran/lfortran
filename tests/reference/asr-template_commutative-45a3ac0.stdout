@@ -36,6 +36,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -56,6 +57,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -75,6 +77,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -128,6 +131,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -148,6 +152,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -167,6 +172,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -235,7 +241,7 @@
                                                                     ()
                                                                     ()
                                                                 ))]
-                                                                (Integer 4)
+                                                                (Logical 4)
                                                                 ()
                                                                 ()
                                                             )
@@ -263,7 +269,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4)
+                                                                    (Logical 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -272,6 +278,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             x:
@@ -293,6 +300,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -313,13 +321,14 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     equal
                                                     (FunctionType
                                                         [(Integer 4)
                                                         (Integer 4)]
-                                                        (Integer 4)
+                                                        (Logical 4)
                                                         Source
                                                         Implementation
                                                         ()
@@ -359,6 +368,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~eq:
@@ -410,6 +420,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -432,6 +443,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -453,6 +465,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -512,6 +525,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -534,6 +548,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -555,6 +570,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -635,9 +651,7 @@
                                                                     ()
                                                                     ()
                                                                 ))]
-                                                                (TypeParameter
-                                                                    t
-                                                                )
+                                                                (Logical 4)
                                                                 ()
                                                                 ()
                                                             )
@@ -665,9 +679,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
+                                                                    (Logical 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -676,6 +688,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             x:
@@ -699,6 +712,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -721,6 +735,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     equal
@@ -731,9 +746,7 @@
                                                         (TypeParameter
                                                             t
                                                         )]
-                                                        (TypeParameter
-                                                            t
-                                                        )
+                                                        (Logical 4)
                                                         Source
                                                         Implementation
                                                         ()
@@ -775,6 +788,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~eq:
@@ -827,6 +841,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -849,6 +864,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -870,6 +886,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -919,9 +936,7 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (TypeParameter
-                                                                        t
-                                                                    )
+                                                                    (Logical 4)
                                                                     ()
                                                                     Source
                                                                     Public
@@ -930,6 +945,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             x:
@@ -953,6 +969,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -975,6 +992,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     equal
@@ -985,9 +1003,7 @@
                                                         (TypeParameter
                                                             t
                                                         )]
-                                                        (TypeParameter
-                                                            t
-                                                        )
+                                                        (Logical 4)
                                                         Source
                                                         Implementation
                                                         ()
@@ -1030,6 +1046,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     magma_r
@@ -1040,7 +1057,9 @@
                                 )
                         })
                     template_commutative_m
+                    ()
                     [template_commutative_m]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -1072,11 +1091,11 @@
                             int_minus_comm:
                                 (Function
                                     (SymbolTable
-                                        24
+                                        21
                                         {
                                             prop:
                                                 (Variable
-                                                    24
+                                                    21
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1093,10 +1112,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
-                                                    24
+                                                    21
                                                     x
                                                     []
                                                     In
@@ -1113,10 +1133,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
-                                                    24
+                                                    21
                                                     y
                                                     []
                                                     In
@@ -1132,6 +1153,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1152,17 +1174,17 @@
                                         .false.
                                     )
                                     [~sub_intrinsic
-                                    ~eq_intrinsic3]
-                                    [(Var 24 x)
-                                    (Var 24 y)]
+                                    ~eq_intrinsic]
+                                    [(Var 21 x)
+                                    (Var 21 y)]
                                     [(Assignment
-                                        (Var 24 prop)
+                                        (Var 21 prop)
                                         (OverloadedCompare
                                             (FunctionCall
                                                 14 ~sub_intrinsic
                                                 ()
-                                                [((Var 24 x))
-                                                ((Var 24 y))]
+                                                [((Var 21 x))
+                                                ((Var 21 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1171,8 +1193,8 @@
                                             (FunctionCall
                                                 14 ~sub_intrinsic
                                                 ()
-                                                [((Var 24 y))
-                                                ((Var 24 x))]
+                                                [((Var 21 y))
+                                                ((Var 21 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1180,13 +1202,13 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic3
+                                                14 ~eq_intrinsic
                                                 6 ~eq
                                                 [((FunctionCall
                                                     14 ~sub_intrinsic
                                                     ()
-                                                    [((Var 24 x))
-                                                    ((Var 24 y))]
+                                                    [((Var 21 x))
+                                                    ((Var 21 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1194,13 +1216,13 @@
                                                 ((FunctionCall
                                                     14 ~sub_intrinsic
                                                     ()
-                                                    [((Var 24 y))
-                                                    ((Var 24 x))]
+                                                    [((Var 21 y))
+                                                    ((Var 21 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))]
-                                                (Integer 4)
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -1208,7 +1230,7 @@
                                         ()
                                         .false.
                                     )]
-                                    (Var 24 prop)
+                                    (Var 21 prop)
                                     Public
                                     .false.
                                     .false.
@@ -1217,11 +1239,11 @@
                             int_plus_comm:
                                 (Function
                                     (SymbolTable
-                                        19
+                                        18
                                         {
                                             prop:
                                                 (Variable
-                                                    19
+                                                    18
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1238,10 +1260,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
-                                                    19
+                                                    18
                                                     x
                                                     []
                                                     In
@@ -1258,10 +1281,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
-                                                    19
+                                                    18
                                                     y
                                                     []
                                                     In
@@ -1277,6 +1301,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1297,17 +1322,17 @@
                                         .false.
                                     )
                                     [~add_intrinsic
-                                    ~eq_intrinsic1]
-                                    [(Var 19 x)
-                                    (Var 19 y)]
+                                    ~eq_intrinsic]
+                                    [(Var 18 x)
+                                    (Var 18 y)]
                                     [(Assignment
-                                        (Var 19 prop)
+                                        (Var 18 prop)
                                         (OverloadedCompare
                                             (FunctionCall
                                                 14 ~add_intrinsic
                                                 ()
-                                                [((Var 19 x))
-                                                ((Var 19 y))]
+                                                [((Var 18 x))
+                                                ((Var 18 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1316,8 +1341,8 @@
                                             (FunctionCall
                                                 14 ~add_intrinsic
                                                 ()
-                                                [((Var 19 y))
-                                                ((Var 19 x))]
+                                                [((Var 18 y))
+                                                ((Var 18 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1325,13 +1350,13 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic1
+                                                14 ~eq_intrinsic
                                                 6 ~eq
                                                 [((FunctionCall
                                                     14 ~add_intrinsic
                                                     ()
-                                                    [((Var 19 x))
-                                                    ((Var 19 y))]
+                                                    [((Var 18 x))
+                                                    ((Var 18 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1339,13 +1364,13 @@
                                                 ((FunctionCall
                                                     14 ~add_intrinsic
                                                     ()
-                                                    [((Var 19 y))
-                                                    ((Var 19 x))]
+                                                    [((Var 18 y))
+                                                    ((Var 18 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))]
-                                                (Integer 4)
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -1353,7 +1378,7 @@
                                         ()
                                         .false.
                                     )]
-                                    (Var 19 prop)
+                                    (Var 18 prop)
                                     Public
                                     .false.
                                     .false.
@@ -1372,11 +1397,11 @@
                             minus_comm:
                                 (Function
                                     (SymbolTable
-                                        22
+                                        20
                                         {
                                             prop:
                                                 (Variable
-                                                    22
+                                                    20
                                                     prop
                                                     []
                                                     ReturnVar
@@ -1393,10 +1418,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
-                                                    22
+                                                    20
                                                     x
                                                     []
                                                     In
@@ -1413,10 +1439,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
-                                                    22
+                                                    20
                                                     y
                                                     []
                                                     In
@@ -1432,6 +1459,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1452,17 +1480,17 @@
                                         .false.
                                     )
                                     [~sub_intrinsic
-                                    ~eq_intrinsic2]
-                                    [(Var 22 x)
-                                    (Var 22 y)]
+                                    ~eq_intrinsic]
+                                    [(Var 20 x)
+                                    (Var 20 y)]
                                     [(Assignment
-                                        (Var 22 prop)
+                                        (Var 20 prop)
                                         (OverloadedCompare
                                             (FunctionCall
                                                 14 ~sub_intrinsic
                                                 ()
-                                                [((Var 22 x))
-                                                ((Var 22 y))]
+                                                [((Var 20 x))
+                                                ((Var 20 y))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1471,8 +1499,8 @@
                                             (FunctionCall
                                                 14 ~sub_intrinsic
                                                 ()
-                                                [((Var 22 y))
-                                                ((Var 22 x))]
+                                                [((Var 20 y))
+                                                ((Var 20 x))]
                                                 (Integer 4)
                                                 ()
                                                 ()
@@ -1480,13 +1508,13 @@
                                             (Logical 4)
                                             ()
                                             (FunctionCall
-                                                14 ~eq_intrinsic2
+                                                14 ~eq_intrinsic
                                                 10 ~eq
                                                 [((FunctionCall
                                                     14 ~sub_intrinsic
                                                     ()
-                                                    [((Var 22 x))
-                                                    ((Var 22 y))]
+                                                    [((Var 20 x))
+                                                    ((Var 20 y))]
                                                     (Integer 4)
                                                     ()
                                                     ()
@@ -1494,13 +1522,13 @@
                                                 ((FunctionCall
                                                     14 ~sub_intrinsic
                                                     ()
-                                                    [((Var 22 y))
-                                                    ((Var 22 x))]
+                                                    [((Var 20 y))
+                                                    ((Var 20 x))]
                                                     (Integer 4)
                                                     ()
                                                     ()
                                                 ))]
-                                                (Integer 4)
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -1508,7 +1536,7 @@
                                         ()
                                         .false.
                                     )]
-                                    (Var 22 prop)
+                                    (Var 20 prop)
                                     Public
                                     .false.
                                     .false.
@@ -1538,6 +1566,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -1558,6 +1587,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -1577,6 +1607,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1645,7 +1676,7 @@
                                                     ()
                                                     ()
                                                 ))]
-                                                (Integer 4)
+                                                (Logical 4)
                                                 ()
                                                 ()
                                             )
@@ -1690,6 +1721,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             arg1:
                                                 (Variable
@@ -1710,6 +1742,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ret:
                                                 (Variable
@@ -1729,6 +1762,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1773,10 +1807,7 @@
                                 (CustomOperator
                                     14
                                     ~eq
-                                    [14 ~eq_intrinsic
-                                    14 ~eq_intrinsic1
-                                    14 ~eq_intrinsic2
-                                    14 ~eq_intrinsic3]
+                                    [14 ~eq_intrinsic]
                                     Public
                                 ),
                             ~eq_intrinsic:
@@ -1803,6 +1834,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             arg1:
                                                 (Variable
@@ -1823,6 +1855,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ret:
                                                 (Variable
@@ -1842,6 +1875,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1882,315 +1916,6 @@
                                     .true.
                                     ()
                                 ),
-                            ~eq_intrinsic1:
-                                (Function
-                                    (SymbolTable
-                                        18
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    18
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    18
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    18
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                )
-                                        })
-                                    ~eq_intrinsic1
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Logical 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 18 arg0)
-                                    (Var 18 arg1)]
-                                    [(Assignment
-                                        (Var 18 ret)
-                                        (IntegerCompare
-                                            (Var 18 arg0)
-                                            Eq
-                                            (Var 18 arg1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                    )]
-                                    (Var 18 ret)
-                                    Public
-                                    .false.
-                                    .true.
-                                    ()
-                                ),
-                            ~eq_intrinsic2:
-                                (Function
-                                    (SymbolTable
-                                        21
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    21
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    21
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    21
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                )
-                                        })
-                                    ~eq_intrinsic2
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Logical 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 21 arg0)
-                                    (Var 21 arg1)]
-                                    [(Assignment
-                                        (Var 21 ret)
-                                        (IntegerCompare
-                                            (Var 21 arg0)
-                                            Eq
-                                            (Var 21 arg1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                    )]
-                                    (Var 21 ret)
-                                    Public
-                                    .false.
-                                    .true.
-                                    ()
-                                ),
-                            ~eq_intrinsic3:
-                                (Function
-                                    (SymbolTable
-                                        23
-                                        {
-                                            arg0:
-                                                (Variable
-                                                    23
-                                                    arg0
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            arg1:
-                                                (Variable
-                                                    23
-                                                    arg1
-                                                    []
-                                                    In
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Integer 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                ),
-                                            ret:
-                                                (Variable
-                                                    23
-                                                    ret
-                                                    []
-                                                    ReturnVar
-                                                    ()
-                                                    ()
-                                                    Default
-                                                    (Logical 4)
-                                                    ()
-                                                    Source
-                                                    Private
-                                                    Required
-                                                    .false.
-                                                    .false.
-                                                    .false.
-                                                    ()
-                                                    .false.
-                                                )
-                                        })
-                                    ~eq_intrinsic3
-                                    (FunctionType
-                                        [(Integer 4)
-                                        (Integer 4)]
-                                        (Logical 4)
-                                        Source
-                                        Implementation
-                                        ()
-                                        .true.
-                                        .true.
-                                        .false.
-                                        .false.
-                                        .false.
-                                        []
-                                        .false.
-                                    )
-                                    []
-                                    [(Var 23 arg0)
-                                    (Var 23 arg1)]
-                                    [(Assignment
-                                        (Var 23 ret)
-                                        (IntegerCompare
-                                            (Var 23 arg0)
-                                            Eq
-                                            (Var 23 arg1)
-                                            (Logical 4)
-                                            ()
-                                        )
-                                        ()
-                                        .false.
-                                    )]
-                                    (Var 23 ret)
-                                    Public
-                                    .false.
-                                    .true.
-                                    ()
-                                ),
                             ~sub:
                                 (CustomOperator
                                     14
@@ -2201,11 +1926,11 @@
                             ~sub_intrinsic:
                                 (Function
                                     (SymbolTable
-                                        20
+                                        19
                                         {
                                             arg0:
                                                 (Variable
-                                                    20
+                                                    19
                                                     arg0
                                                     []
                                                     In
@@ -2222,10 +1947,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             arg1:
                                                 (Variable
-                                                    20
+                                                    19
                                                     arg1
                                                     []
                                                     In
@@ -2242,10 +1968,11 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ret:
                                                 (Variable
-                                                    20
+                                                    19
                                                     ret
                                                     []
                                                     ReturnVar
@@ -2261,6 +1988,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -2281,21 +2009,21 @@
                                         .false.
                                     )
                                     []
-                                    [(Var 20 arg0)
-                                    (Var 20 arg1)]
+                                    [(Var 19 arg0)
+                                    (Var 19 arg1)]
                                     [(Assignment
-                                        (Var 20 ret)
+                                        (Var 19 ret)
                                         (IntegerBinOp
-                                            (Var 20 arg0)
+                                            (Var 19 arg0)
                                             Sub
-                                            (Var 20 arg1)
+                                            (Var 19 arg1)
                                             (Integer 4)
                                             ()
                                         )
                                         ()
                                         .false.
                                     )]
-                                    (Var 20 ret)
+                                    (Var 19 ret)
                                     Public
                                     .false.
                                     .true.
@@ -2307,7 +2035,7 @@
                     [(Print
                         (StringConstant
                             "test commutative"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Print
@@ -2315,7 +2043,7 @@
                             ()
                             [(StringConstant
                                 "plus_comm: "
-                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 11 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 plus_comm
@@ -2327,7 +2055,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2336,7 +2066,7 @@
                             ()
                             [(StringConstant
                                 "int_plus_comm: "
-                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 15 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 int_plus_comm
@@ -2348,7 +2078,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2357,7 +2089,7 @@
                             ()
                             [(StringConstant
                                 "minus_comm: "
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 minus_comm
@@ -2369,7 +2101,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -2378,7 +2112,7 @@
                             ()
                             [(StringConstant
                                 "int_minus_comm: "
-                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (FunctionCall
                                 14 int_minus_comm
@@ -2390,7 +2124,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

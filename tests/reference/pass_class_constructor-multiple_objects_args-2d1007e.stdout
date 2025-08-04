@@ -47,9 +47,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [radius]
                                     []
@@ -86,12 +93,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Public
                                                     Required
@@ -99,6 +106,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             n:
@@ -111,12 +119,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Public
                                                     Required
@@ -125,21 +133,22 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     print_radius
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 circle
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 circle
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -172,7 +181,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -201,12 +212,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        2 circle
+                                        .false.
                                     )
-                                    ()
+                                    2 circle
                                     Source
                                     Public
                                     Required
@@ -214,6 +225,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             temp_struct_var__1:
@@ -226,12 +238,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        2 circle
+                                        .false.
                                     )
-                                    ()
+                                    2 circle
                                     Source
                                     Public
                                     Required
@@ -239,6 +251,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             was_called:
@@ -265,6 +278,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -306,6 +320,7 @@
                         ()
                     )
                     (If
+                        ()
                         (LogicalNot
                             (Var 2 was_called)
                             (Logical 4)

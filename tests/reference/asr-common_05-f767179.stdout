@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -50,6 +51,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -76,9 +78,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     block_1
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b
@@ -105,9 +114,9 @@
                                         []
                                         []
                                         .true.
-                                        3 block_1
+                                        .false.
                                     )
-                                    ()
+                                    3 block_1
                                     Source
                                     Public
                                     Required
@@ -116,10 +125,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_block_1
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -186,6 +198,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             struct_instance_block_1:
@@ -349,6 +362,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -395,6 +409,7 @@
                             .false.
                         )]
                         [(If
+                            ()
                             (IntegerCompare
                                 (ArrayItem
                                     (StructInstanceMember
@@ -446,6 +461,7 @@
                         )]
                     )
                     (Select
+                        ()
                         (StructInstanceMember
                             (Var 2 struct_instance_block_1)
                             2 1_block_1_a
@@ -674,11 +690,14 @@
                             )
                             (Var 2 d)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -697,6 +716,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 2 struct_instance_block_1)
@@ -726,6 +746,7 @@
                         (IntegerConstant 5 (Integer 4) Decimal)
                         ())
                         [(If
+                            ()
                             (IntegerCompare
                                 (ArrayItem
                                     (StructInstanceMember
@@ -764,6 +785,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 d)
                             NotEq

@@ -9,7 +9,7 @@ NO_OF_THREADS = 8 # default no of threads is 8
 SUPPORTED_BACKENDS = ['llvm', 'llvm2', 'llvm_rtlib', 'c', 'cpp', 'x86', 'wasm',
                       'gfortran', 'llvmImplicit', 'llvmStackArray', 'fortran',
                       'c_nopragma', 'llvm_nopragma', 'llvm_wasm', 'llvm_wasm_emcc',
-                      'llvm_omp', 'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc']
+                      'llvm_omp', 'llvm_submodule', 'mlir', 'mlir_omp', 'mlir_llvm_omp', 'llvm_goc']
 SUPPORTED_STANDARDS = ['lf', 'f23', 'legacy']
 BASE_DIR = os.path.dirname(os.path.realpath(__file__))
 LFORTRAN_PATH = f"{BASE_DIR}/../src/bin:$PATH"
@@ -97,7 +97,7 @@ def get_args():
     parser.add_argument("-f", "--fast", action='store_true',
                 help="Run supported tests with --fast")
     parser.add_argument("-sc", "--separate_compilation", action='store_true',
-                help="Run tests with --generate-object-code")
+                help="Run tests with --separate-compilation")
     parser.add_argument("-nf16", "--no_fast_till_llvm16", action='store_true',
                 help="Don't run unsupported tests with --fast when LLVM < 17")
     parser.add_argument("-m", action='store_true',

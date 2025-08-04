@@ -4,6 +4,8 @@
 module continue_compilation_1_mod
     type :: MyClass
         integer :: value
+
+
     contains
         procedure :: display
     end type MyClass
@@ -12,9 +14,24 @@ module continue_compilation_1_mod
     contains
         private
         procedure, public, pass(self) :: add_log_file
+
+
     
     end type logger_type
+
+    type(MyClass), PROTECTED :: protected_module_my_class_obj
+
+
+
+
+
+
 contains
+
+    subroutine my_undefined_type_test()
+        implicit none
+        type(another_undefined_type) :: s3_in_subroutine
+    end subroutine my_undefined_type_test
 
     subroutine my_func(x, y)
         integer, intent(in) :: x, y
@@ -34,6 +51,11 @@ contains
         filename = "lfortran"
         unit = 10
     end subroutine add_log_file
+
+    subroutine s(c) bind(c)
+        use iso_c_binding
+        character(len=2, kind=c_char), intent(in) :: c
+    end subroutine s
 
 end module
 
@@ -82,17 +104,17 @@ program continue_compilation_1
     character(len=10, 1) :: str_c_3
     character(1, len=20) :: str_c_4
     character(:), allocatable :: x(2)
-
-
-
-
-
-
-
-
-
-
-
+    integer, dimension(:,:), allocatable :: arr_size
+    logical :: mask_size(size(arr_size))
+    integer, protected :: protected_attr_var
+    integer, parameter, protected :: protected_parameter_var
+    type(MyClass) :: v1, v2, v3
+    type(MyClass) :: arr(3)
+    integer :: n = 2
+    type :: matrix
+      integer :: elements(n)
+    end type
+    type(bspline_3d) :: s3_in_program
 
 
 
@@ -311,5 +333,13 @@ program continue_compilation_1
     allocate(arr5, mold = arr4)
 
     print *, ["aa", "aaa"]
-    print *, ["aa", string(x+1:x+2), "aaa"]
+
+    print *, pack(arr2, mask1)
+
+    ! assigning to a *PROTECTED* struct instance member, not allowed
+    protected_module_my_class_obj%value = 42
+
+    arr = [type(MyClass) :: v1, v2, v3]
+
+    arr = [NonExistingType :: v1, v2, v3]
 end program

@@ -78,6 +78,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     default_behavior
@@ -115,6 +116,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -137,6 +139,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -158,6 +161,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -229,6 +233,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     swap
@@ -267,6 +272,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             x:
                                                                 (Variable
@@ -287,6 +293,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             y:
                                                                 (Variable
@@ -306,6 +313,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -376,6 +384,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     test_reverse
@@ -416,7 +425,9 @@
                                             ()
                                             [(Var 6 a)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -448,7 +459,9 @@
                                             ()
                                             [(Var 6 a)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -460,7 +473,9 @@
                                 )
                         })
                     template_array_04b_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

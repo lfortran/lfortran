@@ -19,8 +19,10 @@
                                 )
                         })
                     tomlf_structure
+                    ()
                     [tomlf_structure_base]
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_structure_base:
@@ -46,9 +48,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        10 toml_structure
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 toml_structure
                                                     Source
                                                     Public
                                                     Required
@@ -56,6 +58,7 @@
                                                     .true.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             toml_value:
@@ -75,7 +78,7 @@
                                             []
                                             []
                                             .false.
-                                            10 toml_structure
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -106,6 +109,12 @@
                                             
                                         })
                                     toml_ordered
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -123,7 +132,7 @@
                                         12
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     12
                                                     destroy
                                                     ()
@@ -135,6 +144,12 @@
                                                 )
                                         })
                                     toml_structure
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -148,8 +163,10 @@
                                 )
                         })
                     tomlf_structure_base
+                    ()
                     [tomlf_type_value]
                     .true.
+                    .false.
                     .false.
                 ),
             tomlf_type_array:
@@ -212,12 +229,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 toml_array
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_array
                                                     Source
                                                     Public
                                                     Required
@@ -226,15 +250,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            2 toml_array
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -251,32 +283,14 @@
                                     []
                                     [(Var 15 self)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 15 self)
-                                                    15 1_toml_value_key
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 15 self)
+                                                15 1_toml_value_key
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 15 self)
-                                                            15 1_toml_value_key
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -297,6 +311,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -307,7 +322,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -328,7 +343,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -343,7 +358,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 toml_ordered
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -379,12 +394,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 toml_array
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_array
                                                     Source
                                                     Public
                                                     Required
@@ -393,15 +415,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     new_array
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .true.
-                                            2 toml_array
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -430,7 +460,7 @@
                                         14
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     14
                                                     destroy
                                                     ()
@@ -454,10 +484,10 @@
                                                             []
                                                             []
                                                             .false.
-                                                            2 toml_ordered
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 toml_ordered
                                                     Source
                                                     Public
                                                     Required
@@ -466,9 +496,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_array
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [list]
                                     []
@@ -502,9 +546,11 @@
                                 )
                         })
                     tomlf_type_array
+                    ()
                     [tomlf_type_value
                     tomlf_structure
                     tomlf_structure_base]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -528,12 +574,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        4 toml_value
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 toml_value
                                                     Source
                                                     Private
                                                     Required
@@ -542,15 +590,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     destroy
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            4 toml_value
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -579,7 +630,7 @@
                                         5
                                         {
                                             destroy:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     destroy
                                                     ()
@@ -610,9 +661,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_value
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [key]
                                     []
@@ -626,8 +686,10 @@
                                 )
                         })
                     tomlf_type_value
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 )
         })

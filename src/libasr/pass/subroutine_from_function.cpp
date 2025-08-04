@@ -34,6 +34,15 @@ class CreateFunctionFromSubroutine: public ASR::BaseWalkVisitor<CreateFunctionFr
 class ReplaceFunctionCallWithSubroutineCall:
     public ASR::BaseExprReplacer<ReplaceFunctionCallWithSubroutineCall> {
 private :
+    void insert_implicit_deallocate(ASR::expr_t* result_var) {
+        Vec<ASR::expr_t*> to_be_deallocated;
+        to_be_deallocated.reserve(al, 1);
+        to_be_deallocated.push_back(al, result_var);
+        pass_result.push_back(al, ASRUtils::STMT(
+        ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
+            to_be_deallocated.p, to_be_deallocated.size())));
+    }
+
 public :
     Allocator & al;
     int result_counter = 0;
@@ -58,12 +67,47 @@ public :
             ASR::expr_t* result_var = PassUtils::create_var(result_counter++,
                 "_func_call_res", x->base.base.loc, ASRUtils::duplicate_type(al, x->m_type), al, current_scope);
             if(ASRUtils::is_allocatable(result_var)){
-                Vec<ASR::expr_t*> to_be_deallocated;
-                to_be_deallocated.reserve(al, 1);
-                to_be_deallocated.push_back(al, result_var);
-                pass_result.push_back(al, ASRUtils::STMT(
-                ASR::make_ImplicitDeallocate_t(al, result_var->base.loc,
-                    to_be_deallocated.p, to_be_deallocated.size())));
+                insert_implicit_deallocate(result_var);
+            }
+            // Create allocate statement if needed
+            if(ASRUtils::is_string_only(x->m_type)){ 
+                ASR::String_t* str = ASRUtils::get_string_type(result_var);
+                if( str->m_len &&
+                !ASRUtils::is_value_constant(str->m_len) &&
+                !ASRUtils::is_allocatable(result_var)){ // Corresponds to -> `character(n) :: str` (Non-allocatable string of non-compile-time length)
+                    ASR::expr_t* len_expr_to_allocate_with = str->m_len; // length Expression
+                    {
+                    /*
+                        Replace allocate length (could be a functionCall).
+                        TODO :: Do proper replacement if functionCall is dependant on FunctionParam from the current functionCall,
+                        as the current visit does redundant functionCall replacement(FunctionCall + variable).
+                    */ 
+                        ASR::expr_t** current_expr_copy = current_expr;
+                        current_expr = &len_expr_to_allocate_with;
+                        replace_expr(len_expr_to_allocate_with);
+                        current_expr = current_expr_copy;
+                    }
+                    // Modify String info to be deferred allocatable string
+                    str->m_len = nullptr; str->m_len_kind = ASR::DeferredLength;str->m_physical_type = ASR::DescriptorString;
+                    ASRUtils::EXPR2VAR(result_var)->m_type =
+                        ASRUtils::TYPE(ASR::make_Allocatable_t(al, str->base.base.loc, ASRUtils::EXPR2VAR(result_var)->m_type));
+
+                    // Make an implicit deallocate before allocating the return var (handles when allocate is in a do while loop)
+                    insert_implicit_deallocate(result_var);
+
+                    // Create allocate statement
+                    Vec<ASR::alloc_arg_t> v;
+                    v.reserve(al, 1);
+                    ASR::alloc_arg_t alloc_arg{};
+                    alloc_arg.m_a = result_var;
+                    alloc_arg.m_dims = nullptr;
+                    alloc_arg.n_dims = 0;
+                    alloc_arg.m_len_expr = len_expr_to_allocate_with;
+                    alloc_arg.m_type = nullptr;
+                    v.push_back(al, alloc_arg);
+                    pass_result.push_back(al,
+                        ASRUtils::STMT(ASR::make_Allocate_t(al, str->base.base.loc, v.p, 1, nullptr, nullptr, nullptr)));    
+                }
             }
             // Create new call args with `result_var` as last argument capturing return + Create a `subroutineCall`.
             Vec<ASR::call_arg_t> new_call_args;
@@ -72,7 +116,7 @@ public :
             new_call_args.push_back(al, {result_var->base.loc, result_var});
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, x->base.base.loc,
                                                 x->m_name, nullptr, new_call_args.p, new_call_args.size(), x->m_dt,
-                                                nullptr, false, false));
+                                                nullptr, false));
             // replace functionCall with `result_var` + push subroutineCall into the body.
             *current_expr = result_var;
             pass_result.push_back(al, subrout_call);
@@ -143,14 +187,8 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
             return is_function_call && is_aggregate_type;
         }
 
-        void visit_Assignment(const ASR::Assignment_t &x) {
-            ASR::CallReplacerOnExpressionsVisitor \
-            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
-            if( !is_function_call_returning_aggregate_type(x.m_value)) {
-                return ;
-            }
-
-            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(x.m_value);
+        void subroutine_call_from_function(const Location &loc, ASR::expr_t* value, ASR::expr_t* target) {
+            ASR::FunctionCall_t* fc = ASR::down_cast<ASR::FunctionCall_t>(value);
 
             ASR::symbol_t* func_sym = ASRUtils::symbol_get_past_external(fc->m_name);
             if(ASR::is_a<ASR::Function_t>(*func_sym)) {
@@ -163,32 +201,48 @@ class ReplaceFunctionCallWithSubroutineCallVisitor:
                     }
                 }
             }
-            if( PassUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
+            if( ASRUtils::is_elemental(fc->m_name) && ASRUtils::is_array(fc->m_type) ) {
                 return ;
             }
-            const Location& loc = x.base.base.loc;
             Vec<ASR::call_arg_t> s_args;
             s_args.reserve(al, fc->n_args + 1);
             for( size_t i = 0; i < fc->n_args; i++ ) {
                 s_args.push_back(al, fc->m_args[i]);
             }
-            if(ASRUtils::is_allocatable(x.m_value) &&
-               ASRUtils::is_allocatable(x.m_target)){ // Make sure to deallocate the argument that will hold the return of function.
+            if(ASRUtils::is_allocatable(value) &&
+               ASRUtils::is_allocatable(target)){ // Make sure to deallocate the argument that will hold the return of function.
                 Vec<ASR::expr_t*> to_be_deallocated;
                 to_be_deallocated.reserve(al, 1);
-                to_be_deallocated.push_back(al, x.m_target);
+                to_be_deallocated.push_back(al, target);
                 pass_result.push_back(al, ASRUtils::STMT(
-                    ASR::make_ImplicitDeallocate_t(al, x.m_target->base.loc,
+                    ASR::make_ImplicitDeallocate_t(al, target->base.loc,
                     to_be_deallocated.p, to_be_deallocated.size())));
             }
             ASR::call_arg_t result_arg;
-            result_arg.loc = x.m_target->base.loc;
-            result_arg.m_value = x.m_target;
+            result_arg.loc = target->base.loc;
+            result_arg.m_value = target;
             s_args.push_back(al, result_arg);
             ASR::stmt_t* subrout_call = ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false, false));
+                fc->m_name, fc->m_original_name, s_args.p, s_args.size(), fc->m_dt, nullptr, false));
             pass_result.push_back(al, subrout_call);
             remove_original_statement = true;
+        }
+
+        void visit_Assignment(const ASR::Assignment_t &x) {
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Assignment(x);
+            if(is_function_call_returning_aggregate_type(x.m_value)) {
+                subroutine_call_from_function(x.base.base.loc, x.m_value, x.m_target);
+            }
+        }
+
+        void visit_Associate(const ASR::Associate_t &x) {
+            ASR::CallReplacerOnExpressionsVisitor \
+            <ReplaceFunctionCallWithSubroutineCallVisitor>::visit_Associate(x);
+            ASR::ttype_t* t = ASRUtils::extract_type(ASRUtils::expr_type(x.m_target));
+            if(is_function_call_returning_aggregate_type(x.m_value) && ASR::is_a<ASR::StructType_t>(*t)) {
+                subroutine_call_from_function(x.base.base.loc, x.m_value, x.m_target);
+            }
         }
 };
 

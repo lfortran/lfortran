@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -56,6 +57,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -75,6 +77,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             size_a4:
@@ -96,6 +99,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             size_a8:
                                 (Variable
@@ -115,6 +119,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             size_b4:
@@ -136,6 +141,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             size_b8:
                                 (Variable
@@ -155,6 +161,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -205,6 +212,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 size_a4)
                             NotEq
@@ -218,6 +226,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 size_b4)
                             NotEq
@@ -231,6 +240,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 size_a8)
                             NotEq
@@ -244,6 +254,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 size_b8)
                             NotEq

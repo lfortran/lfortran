@@ -5,7 +5,7 @@
 %locations
 %glr-parser
 
-%expect    240 // shift/reduce conflicts
+%expect    246 // shift/reduce conflicts
 %expect-rr 210 // reduce/reduce conflicts
 
 // Uncomment this to get verbose error messages
@@ -371,6 +371,13 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 // LFortran specific
 %token <string> KW_LF_LIST
 %token <string> KW_LF_SET
+%token <string> KW_LF_DICT
+%token <string> KW_LF_TUPLE
+%token <string> KW_LF_UNION_TYPE
+%token <string> KW_LF_END_UNION_TYPE
+
+%type <vec_ast> intrinsic_type_spec_list
+%type <ast> union_type_decl
 
 // Nonterminal tokens
 
@@ -638,6 +645,7 @@ script_unit
     | implicit_statement
     | var_decl           %dprec 9
     | derived_type_decl
+    | union_type_decl 
     | enum_decl
     | statement          %dprec 7
     | expr sep           %dprec 8
@@ -806,6 +814,12 @@ derived_type_decl
             $$ = DERIVED_TYPE3($2, $3, TRIVIA($7, $11, @$), $8, $5, $9, @$); }
     ;
 
+
+union_type_decl
+    : KW_LF_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
+            $$ = LF_UNION_TYPE($2, $3, TRIVIA($4, $7, @$), $5, @$); }
+    ;
+
 template_decl
     : KW_TEMPLATE id "(" id_list ")" sep temp_decl_star
         contains_block_opt KW_END KW_TEMPLATE sep {
@@ -852,6 +866,10 @@ instantiate_symbol
 end_type
     : KW_END_TYPE id_opt
     | KW_ENDTYPE id_opt
+    ;
+
+lf_end_union_type
+    : KW_LF_END_UNION_TYPE id_opt
     ;
 
 derived_type_contains_opt
@@ -1156,6 +1174,7 @@ temp_decl
     : var_decl
     | interface_decl
     | derived_type_decl
+    | union_type_decl
     | template_decl
     | require_decl
     | instantiate
@@ -1171,6 +1190,7 @@ decl
     | interface_decl 
     | implements_decl
     | derived_type_decl
+    | union_type_decl
     | template_decl
     | requirement_decl
     | enum_decl
@@ -1632,6 +1652,13 @@ intrinsic_type_spec
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_LF_LIST "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_List, $3, @$); }
     | KW_LF_SET "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_Set, $3, @$); }
+    | KW_LF_DICT "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Dict, $3, @$); }
+    | KW_LF_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Tuple, $3, @$); }
+    ;
+
+intrinsic_type_spec_list
+    : intrinsic_type_spec_list "," intrinsic_type_spec { $$ = $1; LIST_ADD($$, $3); }
+    | intrinsic_type_spec { LIST_NEW($$); LIST_ADD($$, $1); }
     ;
 
 declaration_type_spec
@@ -1757,6 +1784,7 @@ decl_statement
     | interface_decl
     | implements_decl
     | derived_type_decl
+    | union_type_decl
     | enum_decl
     | statement
     | template_decl
@@ -2801,4 +2829,6 @@ id
     | KW_WRITE { $$ = SYMBOL($1, @$); }
     | KW_LF_LIST { $$ = SYMBOL($1, @$); }
     | KW_LF_SET { $$ = SYMBOL($1, @$); }
+    | KW_LF_DICT { $$ = SYMBOL($1, @$); }
+    | KW_LF_TUPLE { $$ = SYMBOL($1, @$); }
     ;

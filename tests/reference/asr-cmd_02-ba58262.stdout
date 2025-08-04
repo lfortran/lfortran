@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 255 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 255 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     test_exec
@@ -34,17 +35,27 @@
                         GetEnvironmentVariable
                         [(StringConstant
                             "HOME"
-                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (Var 2 homedir)]
                         0
                     )
                     (Print
-                        (IntrinsicElementalFunction
-                            StringTrim
-                            [(Var 2 homedir)]
-                            0
-                            (String 1 (IntegerConstant 255 (Integer 4) Decimal) ExpressionLength PointerString)
+                        (StringFormat
+                            ()
+                            [(IntrinsicElementalFunction
+                                StringTrim
+                                [(Var 2 homedir)]
+                                0
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
+                                ()
+                            )]
+                            FormatFortran
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -52,7 +63,11 @@
                         ExecuteCommandLine
                         [(StringConstant
                             "printenv"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
+                        (LogicalConstant
+                            .true.
+                            (Logical 4)
                         )]
                         0
                     )]

@@ -76,7 +76,7 @@ def build_lfortran_command(args):
     # Then forward original argument, adjusting the value if needs be.
     if args.c:
         lfortran_args.append("-c")
-        lfortran_args.append("--generate-object-code")
+        lfortran_args.append("--separate-compilation")
 
     if args.S:
         lfortran_args.append("-S")

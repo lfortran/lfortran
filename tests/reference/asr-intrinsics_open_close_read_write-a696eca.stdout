@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             msg:
                                 (Variable
@@ -35,14 +36,14 @@
                                     Local
                                     (StringConstant
                                         "Some error occured"
-                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "Some error occured"
-                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             p:
@@ -77,6 +79,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             q:
                                 (Variable
@@ -102,6 +105,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             u:
                                 (Variable
@@ -121,6 +125,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             u_ptr:
@@ -143,6 +148,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -169,6 +175,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -193,6 +200,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -314,12 +322,13 @@
                         (Var 2 u_ptr)
                         (StringConstant
                             "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (StringConstant
                             "replace"
-                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -340,7 +349,7 @@
                             [(StringFormat
                                 (StringConstant
                                     "(10F8.2)"
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 [(ArrayItem
                                     (Var 2 x)
@@ -361,7 +370,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )]
                             ()
@@ -388,12 +399,13 @@
                         (IntegerConstant 2 (Integer 4) Decimal)
                         (StringConstant
                             "data.dat"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (StringConstant
                             "old"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
+                        ()
                         ()
                         ()
                         ()
@@ -478,7 +490,9 @@
                                     ()
                                 )]
                                 FormatFortran
-                                (String 1 () ExpressionLength CString)
+                                (Allocatable
+                                    (String 1 () DeferredLength DescriptorString)
+                                )
                                 ()
                             )]
                             ()

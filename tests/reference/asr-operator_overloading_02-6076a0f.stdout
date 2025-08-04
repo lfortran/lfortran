@@ -36,6 +36,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ~assign:
                                 (ExternalSymbol
@@ -67,11 +68,13 @@
                             ()
                             [(StringConstant
                                 "tf=0:"
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -92,11 +95,13 @@
                             ()
                             [(StringConstant
                                 "tf=1:"
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 5 tf)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -130,6 +135,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -149,6 +155,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -213,6 +220,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             tf:
                                                 (Variable
@@ -232,6 +240,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -281,7 +290,9 @@
                                 )
                         })
                     overload_assignment_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -197,16 +197,16 @@ program continue_compilation_2
     !tokenizer error
     integer  :: ? tokenizer_error
     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
-
-
-
-
-
-
+    real :: idint_kind_mismatch = 4.23
+    character(5):: ichar_runtime = "Hello"
+    real(8) :: dprod_1, dprod_2
+    real(4) :: dprod_3 = 4.23
+    real(4) ::idnint_runtime = 3.5
+    real(8) :: ifix_runtime = 4.23
+    logical :: min_max = .true.
 
 
     
-
 
 
 
@@ -436,6 +436,26 @@ program continue_compilation_2
     100 FORMAT(A10, @)
 
     print*, merge("okay", "ok", .true.)
+    !idint_kind_mismatch
+    print *, idint(4.23)
+    print *, idint(idint_kind_mismatch)
+    !ichar_runtime
+    print *, ichar(ichar_runtime)
+    !dprod_runtime
+    print *, dprod(dprod_1, dprod_2)
+    print *, dprod(dprod_3, dprod_2)
+    !idnint
+    print *, idnint(3.5)
+    print *, idnint(idnint_runtime)
+    !ifix
+    print *, ifix(4.23_8)
+    print *, ifix(ifix_runtime)
+    !min
+    print *, min(.true., .false.)
+    print *, min(min_max, min_max)
+    !max
+    print *, max(.true., .false.)
+    print *, max(min_max, min_max)
 
     contains
     logical function f(x)

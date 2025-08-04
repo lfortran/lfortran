@@ -822,6 +822,7 @@ static inline void generate_body_for_array_mask_input(Allocator& al, const Locat
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
             ASR::stmt_t* if_mask_ = ASRUtils::STMT(ASR::make_If_t(al, loc,
+                                        nullptr,
                                         mask_ref, if_mask.p, if_mask.size(),
                                         nullptr, 0));
             doloop_body.push_back(al, if_mask_);
@@ -882,6 +883,7 @@ static inline void generate_body_for_array_dim_mask_input(
             if_mask.reserve(al, 1);
             if_mask.push_back(al, loop_invariant);
             ASR::stmt_t* if_mask_ = ASRUtils::STMT(ASR::make_If_t(al, loc,
+                                        nullptr,
                                         mask_ref, if_mask.p, if_mask.size(),
                                         nullptr, 0));
             doloop_body.push_back(al, if_mask_);
@@ -2087,7 +2089,12 @@ namespace Spread {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_spread");
-        fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            fill_func_arg_struct_type("source", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("source", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("dim", arg_types[1]);
         fill_func_arg("ncopies", arg_types[2]);
         int64_t n_dims_return_type = ASRUtils::extract_n_dims_from_ttype(return_type);
@@ -2109,7 +2116,12 @@ namespace Spread {
 
         diag::Diagnostics diag;
 
-        ASR::expr_t *result = declare("result", return_type, Out);
+        ASR::expr_t *result;
+        if (is_struct_type_arg) {
+            result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", return_type, Out);
+        }
         args.push_back(al, result);
         ASR::expr_t *i = declare("i", int32, Local);
         ASR::expr_t *source = args[0], *dim = args[1], *ncopies = args[2];
@@ -2225,13 +2237,13 @@ namespace Eoshift {
         if (dim) {
             is_dim_present = true;
         }
-        ASR::ttype_t *type_array = expr_type(array);
-        ASR::ttype_t *type_shift = expr_type(shift);
+        ASR::ttype_t *type_array = ASRUtils::type_get_past_allocatable_pointer(expr_type(array));
+        ASR::ttype_t *type_shift = ASRUtils::type_get_past_allocatable_pointer(expr_type(shift));
         ASR::ttype_t *type_boundary = nullptr;
         if(is_boundary_present){
             type_boundary = expr_type(boundary);
         }
-        ASR::ttype_t *ret_type = expr_type(array);
+        ASR::ttype_t *ret_type = type_array;
         if ( !is_array(type_array) ) {
             append_error(diag, "The argument `array` in `eoshift` must be of type Array", array->base.loc);
             return nullptr;
@@ -4896,7 +4908,7 @@ namespace Pack {
         fixed_size_array = ASRUtils::get_fixed_size_of_array(type_array);
         extract_value(array_dims[0].m_length, array_dim);
         if (mask_rank != 0) extract_value(mask_dims[0].m_length, mask_dim);
-        if (mask_rank == 0) {
+        if (mask_rank == 0 && fixed_size_array != -1) {
             Vec<ASR::expr_t*> mask_expr; mask_expr.reserve(al, fixed_size_array);
             for (int i = 0; i < fixed_size_array; i++) {
                 mask_expr.push_back(al, mask);
@@ -4919,9 +4931,9 @@ namespace Pack {
         if (is_vector_present) {
             vector_rank = extract_dimensions_from_ttype(type_vector, vector_dims);
         }
-        if (array_rank != mask_rank) {
+        if (array_rank != mask_rank && mask_rank != 0) {
             append_error(diag, "The argument `mask` must be of rank " + std::to_string(array_rank) +
-                ", provided an array with rank, " + std::to_string(mask_rank), mask->base.loc);
+                ", an array with rank " + std::to_string(mask_rank) + " was provided.", mask->base.loc);
             return nullptr;
         }
          if (array_dim != -1 && mask_dim != -1 && !dimension_expr_equal(array_dims[0].m_length,
@@ -4943,8 +4955,19 @@ namespace Pack {
             result_dims.push_back(al, b.set_dim(vector_dims[0].m_start, vector_dims[0].m_length));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims);
         } else {
-            Vec<ASR::expr_t*> args_count; args_count.reserve(al, 1); args_count.push_back(al, mask);
-            ASR::expr_t* count = EXPR(Count::create_Count(al, loc, args_count, diag));
+            ASR::expr_t* count = nullptr;
+            if (mask_rank == 0) {
+                Vec<ASR::expr_t*> merge_args; merge_args.reserve(al, 3);
+                ASR::expr_t* tsource = PassUtils::create_array_size_pack(al, loc, args[0], extract_n_dims_from_ttype(expr_type(args[0])));
+                ASR::expr_t* fsource = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 0, int32));
+                merge_args.push_back(al, tsource);
+                merge_args.push_back(al, fsource);
+                merge_args.push_back(al, mask);
+                count = EXPR(Merge::create_Merge(al, loc, merge_args, diag));
+            } else {
+                Vec<ASR::expr_t*> args_count; args_count.reserve(al, 1); args_count.push_back(al, mask);
+                count = EXPR(Count::create_Count(al, loc, args_count, diag));
+            }
             result_dims.push_back(al, b.set_dim(array_dims[0].m_start, count));
             ret_type = ASRUtils::duplicate_type(al, ret_type, &result_dims, ASR::array_physical_typeType::DescriptorArray, true);
             is_type_allocatable = true;
@@ -4977,7 +5000,12 @@ namespace Pack {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t overload_id) {
         declare_basic_variables("_lcompilers_pack");
-        fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_arg = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        if (is_struct_type_arg) {
+            fill_func_arg_struct_type("array", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("array", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[1]));
         if (overload_id == 3) {
             fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[2]));
@@ -4989,7 +5017,12 @@ namespace Pack {
                         ASRUtils::type_get_past_allocatable(return_type)),
                 ASR::array_physical_typeType::DescriptorArray, true);
         }
-        ASR::expr_t *result = declare("result", ret_type, Out);
+        ASR::expr_t *result;
+        if (is_struct_type_arg) {
+            result = declare_struct_type("result", ret_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", ret_type, Out);
+        }
         args.push_back(al, result);
         /*
             For array of rank 2, the following code is generated:
@@ -5316,10 +5349,25 @@ namespace Unpack {
             Vec<ASR::ttype_t*> &arg_types, ASR::ttype_t *return_type,
             Vec<ASR::call_arg_t> &m_args, int64_t /*overload_id*/) {
         declare_basic_variables("_lcompilers_unpack");
-        fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[0]));
+        bool is_struct_type_vec = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[0]));
+        bool is_struct_type_field = ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(arg_types[2]));
+        if (is_struct_type_vec) {
+            fill_func_arg_struct_type("vector", duplicate_type_with_empty_dims(al, arg_types[0]), m_args[0].m_value);
+        } else {
+            fill_func_arg("vector", duplicate_type_with_empty_dims(al, arg_types[0]));
+        }
         fill_func_arg("mask", duplicate_type_with_empty_dims(al, arg_types[1]));
-        fill_func_arg("field", duplicate_type_with_empty_dims(al, arg_types[2]));
-        ASR::expr_t *result = declare("result", return_type, Out);
+        if (is_struct_type_field) {
+            fill_func_arg_struct_type("field", duplicate_type_with_empty_dims(al, arg_types[2]), m_args[2].m_value);
+        } else {
+            fill_func_arg("field", duplicate_type_with_empty_dims(al, arg_types[2]));
+        }
+        ASR::expr_t *result;
+        if (is_struct_type_vec) {
+            result = declare_struct_type("result", return_type, Out, m_args[0].m_value);
+        } else {
+            result = declare("result", return_type, Out);
+        }
         args.push_back(al, result);
         /*
             For array of rank 2, the following code is generated:

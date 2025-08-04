@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 80 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             u:
@@ -46,6 +47,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     test_backspace_01
@@ -55,23 +57,27 @@
                         (IntegerConstant 10 (Integer 4) Decimal)
                         (StringConstant
                             "file_01_data.txt"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         (StringConstant
                             "old"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         ()
                         ()
                         ()
+                        (StringConstant
+                            "read"
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                        )
                     )
                     (FileRead
                         0
                         (Var 2 u)
                         (StringConstant
                             "(A)"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         ()
@@ -91,11 +97,13 @@
                         [(StringFormat
                             (StringConstant
                                 "(A)"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(Var 2 line)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )]
                         ()
@@ -114,7 +122,7 @@
                         (Var 2 u)
                         (StringConstant
                             "(A)"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         ()
@@ -134,14 +142,16 @@
                         [(StringFormat
                             (StringConstant
                                 "(A)"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(StringConstant
                                 "Read and printed the same line again:"
-                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )]
                         ()
@@ -158,11 +168,13 @@
                         [(StringFormat
                             (StringConstant
                                 "(A)"
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(Var 2 line)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )]
                         ()
@@ -171,12 +183,13 @@
                         .true.
                     )
                     (If
+                        ()
                         (StringCompare
                             (Var 2 line)
                             NotEq
                             (StringConstant
                                 "10130"
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Logical 4)
                             ()

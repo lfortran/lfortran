@@ -10,7 +10,9 @@
                             
                         })
                     foo1
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -88,10 +90,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     foo2
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -128,11 +133,14 @@
                             ()
                             [(Var 5 y)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -174,11 +182,14 @@
                             ()
                             [(Var 5 y)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs

@@ -263,7 +263,7 @@ class SymbolRenameVisitor: public ASR::BaseWalkVisitor<SymbolRenameVisitor> {
         visit_symbols_2(x);
     }
 
-    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
         if (bindc_mangling || x.m_abi != ASR::abiType::BindC) {
             if (all_symbols_mangling || should_mangle) {
                 ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
@@ -477,8 +477,8 @@ class UniqueSymbolVisitor: public ASR::BaseWalkVisitor<UniqueSymbolVisitor> {
         }
     }
 
-    void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {
-        ASR::ClassProcedure_t& xx = const_cast<ASR::ClassProcedure_t&>(x);
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
+        ASR::StructMethodDeclaration_t& xx = const_cast<ASR::StructMethodDeclaration_t&>(x);
         ASR::symbol_t *sym = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*)&x);
         if (sym_to_new_name.find(sym) != sym_to_new_name.end()) {
             xx.m_name = s2c(al, sym_to_new_name[sym]);
@@ -533,7 +533,7 @@ void pass_unique_symbols(Allocator &al, ASR::TranslationUnit_t &unit,
      * MANGLING_OPTION="--module-mangling"
      * MANGLING_OPTION="--global-mangling"
      * MANGLING_OPTION="--intrinsic-mangling"
-     * COMPILER_SPECIFIC_OPTION="--generate-object-code" // LFortran
+     * COMPILER_SPECIFIC_OPTION="--separate-compilation" // LFortran
      * COMPILER_SPECIFIC_OPTION="--separate-compilation" // LPython
      * Usage:
      *    `$MANGLING_OPTION $COMPILER_SPECIFIC_OPTION`

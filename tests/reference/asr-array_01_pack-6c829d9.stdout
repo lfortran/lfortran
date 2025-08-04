@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             p:
                                 (Variable
@@ -56,6 +57,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             s:
                                 (Variable
@@ -80,6 +82,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -231,11 +234,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (Var 2 s)

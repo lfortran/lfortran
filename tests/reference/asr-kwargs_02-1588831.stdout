@@ -42,7 +42,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -51,6 +51,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -66,9 +67,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
                                                     Public
                                                     Required
@@ -76,6 +77,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             unit:
@@ -97,6 +99,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     add_log_file
@@ -105,9 +108,9 @@
                                             []
                                             []
                                             .false.
-                                            2 logger_type
+                                            .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -163,6 +166,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             filename:
                                                 (Variable
@@ -173,7 +177,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -182,6 +186,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -197,9 +202,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
                                                     Public
                                                     Required
@@ -207,6 +212,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             unit:
@@ -228,6 +234,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     log_io_error
@@ -236,10 +243,10 @@
                                             []
                                             []
                                             .false.
-                                            2 logger_type
+                                            .false.
                                         )
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Integer 4)]
                                         ()
                                         Source
@@ -271,7 +278,7 @@
                                         3
                                         {
                                             add_log_file:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     add_log_file
                                                     self
@@ -282,7 +289,7 @@
                                                     .false.
                                                 ),
                                             log_io_error:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     log_io_error
                                                     self
@@ -294,6 +301,12 @@
                                                 )
                                         })
                                     logger_type
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -307,7 +320,9 @@
                                 )
                         })
                     kwargs_02_stdlib_logger
+                    ()
                     [kwargs_02_stdlib_logger]
+                    .false.
                     .false.
                     .false.
                 )

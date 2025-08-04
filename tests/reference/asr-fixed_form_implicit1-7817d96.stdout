@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     main
@@ -37,6 +38,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 a)
                             LtE
@@ -47,7 +49,7 @@
                         [(Print
                             (StringConstant
                                 "h"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []

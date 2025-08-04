@@ -157,6 +157,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             e:
                                                 (Variable
@@ -176,6 +177,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             f:
@@ -197,9 +199,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     b
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [d
                                     e
@@ -226,9 +235,9 @@
                                         []
                                         []
                                         .true.
-                                        6 b
+                                        .false.
                                     )
-                                    ()
+                                    6 b
                                     Source
                                     Public
                                     Required
@@ -237,10 +246,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_b
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -273,6 +285,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             z2:
                                                 (Variable
@@ -293,9 +306,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     blank#block
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [z1
                                     z2]
@@ -321,9 +341,9 @@
                                         []
                                         []
                                         .true.
-                                        8 blank#block
+                                        .false.
                                     )
-                                    ()
+                                    8 blank#block
                                     Source
                                     Public
                                     Required
@@ -332,10 +352,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_blank#block
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -368,6 +391,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             g:
                                                 (Variable
@@ -387,6 +411,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             h:
@@ -408,6 +433,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -428,9 +454,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     c
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c
                                     g
@@ -458,9 +491,9 @@
                                         []
                                         []
                                         .true.
-                                        10 c
+                                        .false.
                                     )
-                                    ()
+                                    10 c
                                     Source
                                     Public
                                     Required
@@ -469,10 +502,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_c
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -510,6 +546,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -529,6 +566,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             i:
@@ -555,9 +593,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     sample
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a
                                     b
@@ -584,9 +629,9 @@
                                         []
                                         []
                                         .true.
-                                        3 sample
+                                        .false.
                                     )
-                                    ()
+                                    3 sample
                                     Source
                                     Public
                                     Required
@@ -595,10 +640,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_sample
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -646,6 +694,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             sample:
                                 (ExternalSymbol
@@ -686,6 +735,7 @@
                     []
                     []
                     [(If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -735,6 +785,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -792,7 +843,9 @@
                             )
                             (Var 2 e)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

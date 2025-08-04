@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k1:
                                 (Variable
@@ -52,6 +53,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k10:
                                 (Variable
@@ -63,7 +65,7 @@
                                         SelectedCharKind
                                         [(StringConstant
                                             "default"
-                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )]
                                         0
                                         (Integer 4)
@@ -80,6 +82,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             k11:
@@ -109,6 +112,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k12:
                                 (Variable
@@ -137,6 +141,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k2:
                                 (Variable
@@ -162,6 +167,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             k3:
@@ -189,6 +195,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k4:
                                 (Variable
@@ -215,6 +222,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k5:
                                 (Variable
@@ -240,6 +248,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             k6:
@@ -269,6 +278,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k7:
                                 (Variable
@@ -296,6 +306,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             k8:
@@ -325,6 +336,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             k9:
                                 (Variable
@@ -353,6 +365,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             s1:
                                 (Variable
@@ -363,7 +376,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -373,6 +386,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     intrinsics_14
@@ -381,7 +395,7 @@
                         (Var 2 s1)
                         (StringConstant
                             "default"
-                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -404,7 +418,9 @@
                             )
                             (Var 2 k1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -420,7 +436,9 @@
                             )
                             (Var 2 k2)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -436,7 +454,9 @@
                             )
                             (Var 2 k3)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -452,7 +472,9 @@
                             )
                             (Var 2 k4)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -468,7 +490,9 @@
                             )
                             (Var 2 k5)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -486,7 +510,9 @@
                             )
                             (Var 2 k6)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -504,7 +530,9 @@
                             )
                             (Var 2 k7)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -522,7 +550,9 @@
                             )
                             (Var 2 k8)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -540,7 +570,9 @@
                             )
                             (Var 2 k9)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -551,7 +583,7 @@
                                 SelectedCharKind
                                 [(StringConstant
                                     "default"
-                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )]
                                 0
                                 (Integer 4)
@@ -559,7 +591,9 @@
                             )
                             (Var 2 k10)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -574,7 +608,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -591,7 +627,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -606,7 +644,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -624,7 +664,9 @@
                             )
                             (Var 2 k11)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -642,7 +684,9 @@
                             )
                             (Var 2 k12)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

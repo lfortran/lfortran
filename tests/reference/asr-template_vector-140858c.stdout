@@ -121,6 +121,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -141,6 +142,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -155,9 +157,9 @@
                                                                         []
                                                                         []
                                                                         .false.
-                                                                        7 intvector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    7 intvector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -165,6 +167,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -174,7 +177,7 @@
                                                             []
                                                             []
                                                             .false.
-                                                            7 intvector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -302,6 +305,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -322,6 +326,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -336,9 +341,9 @@
                                                                         []
                                                                         []
                                                                         .false.
-                                                                        7 intvector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    7 intvector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -346,6 +351,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -374,6 +380,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_resize
@@ -382,7 +389,7 @@
                                                             []
                                                             []
                                                             .false.
-                                                            7 intvector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -401,6 +408,7 @@
                                                     [(Var 10 this)
                                                     (Var 10 n)]
                                                     [(If
+                                                        ()
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
@@ -441,6 +449,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 10 n))]
                                                             ()
+                                                            ()
                                                             ())]
                                                             ()
                                                             ()
@@ -450,6 +459,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 10 this)
@@ -474,6 +484,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        ()
                                                         ()
                                                         ())]
                                                         ()
@@ -543,6 +554,7 @@
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 10 n))]
+                                                        ()
                                                         ()
                                                         ())]
                                                         ()
@@ -621,9 +633,10 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             push_back:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     8
                                                                     push_back
                                                                     ()
@@ -634,7 +647,7 @@
                                                                     .false.
                                                                 ),
                                                             resize:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     8
                                                                     resize
                                                                     ()
@@ -663,9 +676,16 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     intvector
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [elements
                                                     sz]
@@ -691,9 +711,9 @@
                                                         []
                                                         []
                                                         .true.
-                                                        7 intvector
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 intvector
                                                     Source
                                                     Private
                                                     Required
@@ -701,6 +721,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -728,6 +749,7 @@
                                         (Var 7 v)
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (ArrayItem
                                                 (StructInstanceMember
@@ -761,7 +783,7 @@
                                         []
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -827,6 +849,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             new_size:
                                                                 (Variable
@@ -847,6 +870,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -858,12 +882,22 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
                                                                         []
                                                                         .false.
-                                                                        3 vector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    3 vector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -872,15 +906,26 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     push_back
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            3 vector
+                                                            .false.
                                                         )
                                                         (TypeParameter
                                                             t
@@ -1014,6 +1059,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -1034,6 +1080,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             this:
                                                                 (Variable
@@ -1045,12 +1092,22 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Allocatable
+                                                                            (Array
+                                                                                (TypeParameter
+                                                                                    t
+                                                                                )
+                                                                                [(()
+                                                                                ())]
+                                                                                DescriptorArray
+                                                                            )
+                                                                        )
+                                                                        (Integer 4)]
                                                                         []
                                                                         .false.
-                                                                        3 vector
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    3 vector
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1058,6 +1115,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -1088,15 +1146,26 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     resize
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (TypeParameter
+                                                                        t
+                                                                    )
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .false.
-                                                            3 vector
+                                                            .false.
                                                         )
                                                         (Integer 4)]
                                                         ()
@@ -1115,6 +1184,7 @@
                                                     [(Var 6 this)
                                                     (Var 6 n)]
                                                     [(If
+                                                        ()
                                                         (LogicalNot
                                                             (IntrinsicImpureFunction
                                                                 Allocated
@@ -1159,6 +1229,7 @@
                                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                                             (Var 6 n))]
                                                             ()
+                                                            ()
                                                             ())]
                                                             ()
                                                             ()
@@ -1168,6 +1239,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 6 this)
@@ -1192,6 +1264,7 @@
                                                             (Integer 4)
                                                             ()
                                                         ))]
+                                                        ()
                                                         ()
                                                         ())]
                                                         ()
@@ -1270,6 +1343,7 @@
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (Var 6 n))]
                                                         ()
+                                                        ()
                                                         ())]
                                                         ()
                                                         ()
@@ -1341,6 +1415,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             vector:
                                                 (Struct
@@ -1375,9 +1450,10 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             push_back:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     4
                                                                     push_back
                                                                     ()
@@ -1388,7 +1464,7 @@
                                                                     .false.
                                                                 ),
                                                             resize:
-                                                                (ClassProcedure
+                                                                (StructMethodDeclaration
                                                                     4
                                                                     resize
                                                                     ()
@@ -1417,9 +1493,26 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     vector
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (Array
+                                                                (TypeParameter
+                                                                    t
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [elements
                                                     sz]
@@ -1439,7 +1532,9 @@
                                 )
                         })
                     template_vector_m
+                    ()
                     [template_vector_m]
+                    .false.
                     .false.
                     .false.
                 )

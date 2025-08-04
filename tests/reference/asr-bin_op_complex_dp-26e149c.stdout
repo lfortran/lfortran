@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             v:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             zero:
                                 (Variable
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -238,7 +242,9 @@
                             (Var 2 x)
                             (Var 2 u)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

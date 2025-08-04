@@ -35,12 +35,13 @@
                                                     (Logical 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -53,29 +54,30 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 8)]
                                                         []
                                                         .false.
-                                                        2 bitset_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 bitset_type
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     all_abstract
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Integer 8)]
                                             []
                                             .false.
-                                            2 bitset_type
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -93,7 +95,7 @@
                                     [(Var 4 self)]
                                     []
                                     (Var 4 all)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -104,7 +106,7 @@
                                         3
                                         {
                                             all:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     all
                                                     self
@@ -133,9 +135,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     bitset_type
+                                    (StructType
+                                        [(Integer 8)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [num_bits]
                                     []
@@ -149,7 +158,9 @@
                                 )
                         })
                     derived_types_04_bitset
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -17,12 +17,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 x
+                                        .false.
                                     )
-                                    ()
+                                    2 x
                                     Source
                                     Public
                                     Required
@@ -30,6 +30,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -56,9 +57,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     x
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -99,9 +107,16 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     a
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [i]
                                                     []
@@ -123,12 +138,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        4 a
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 a
                                                     Source
                                                     Public
                                                     Required
@@ -136,6 +151,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -192,9 +208,16 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     a
+                                                    (StructType
+                                                        [(Integer 4)]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
                                                     []
                                                     [i]
                                                     []
@@ -216,12 +239,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        6 a
+                                                        .false.
                                                     )
-                                                    ()
+                                                    6 a
                                                     Source
                                                     Public
                                                     Required
@@ -229,6 +252,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             z:
@@ -249,6 +273,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

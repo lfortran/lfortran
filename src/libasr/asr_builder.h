@@ -36,22 +36,22 @@ class ASRBuilder {
 
     // Symbols -----------------------------------------------------------------
     ASR::expr_t *Variable(SymbolTable *symtab, std::string var_name,
-            ASR::ttype_t *type, ASR::intentType intent,
+            ASR::ttype_t *type, ASR::intentType intent, ASR::symbol_t* type_decl=nullptr,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
     }
 
     void VariableDeclaration(SymbolTable *symtab, std::string var_name,
-            ASR::ttype_t *type, ASR::intentType intent,
+            ASR::ttype_t *type, ASR::intentType intent, ASR::symbol_t* type_decl=nullptr,
             ASR::abiType abi=ASR::abiType::Source, bool a_value_attr=false) {
         ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(
             ASRUtils::make_Variable_t_util(al, loc, symtab, s2c(al, var_name), nullptr, 0,
-            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, nullptr, abi,
+            intent, nullptr, nullptr, ASR::storage_typeType::Default, type, type_decl, abi,
             ASR::Public, ASR::presenceType::Required, a_value_attr));
         symtab->add_symbol(s2c(al, var_name), sym);
         return;
@@ -70,13 +70,25 @@ class ASRBuilder {
 
     #define declare(var_name, type, intent)                                     \
         b.Variable(fn_symtab, var_name, type, ASR::intentType::intent)
+    
+    #define declare_struct_type(var_name, type, intent, m_arg)                   \
+        b.Variable(fn_symtab, var_name, type, ASR::intentType::intent,           \
+            ASRUtils::get_struct_sym_from_struct_expr(m_arg))
 
     #define fill_func_arg(arg_name, type) {                                     \
         auto arg = declare(arg_name, type, In);                                 \
         args.push_back(al, arg); }
 
+    #define fill_func_arg_struct_type(arg_name, type, m_arg) {                         \
+        auto arg = declare_struct_type(arg_name, type, In, m_arg);                                 \
+        args.push_back(al, arg); }
+
     #define fill_func_arg_sub(arg_name, type, intent) {                                     \
         auto arg = declare(arg_name, type, intent);                                 \
+        args.push_back(al, arg); }
+
+    #define fill_func_arg_sub_struct_type(arg_name, type, intent, m_arg) {                                     \
+        auto arg = declare_struct_type(arg_name, type, intent, m_arg);                                 \
         args.push_back(al, arg); }
 
     #define make_ASR_Function_t(name, symtab, dep, args, body, return_var, abi,     \
@@ -109,7 +121,11 @@ class ASRBuilder {
                             ASRUtils::EXPR(ASR::make_IntegerConstant_t(\
                             al, loc, x, int32)),\
                             ASR::string_length_kindType::ExpressionLength,\
-                            ASR::string_physical_typeType::PointerString))
+                            ASR::string_physical_typeType::DescriptorString))
+    #define allocatable_deferred_string() ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc,\
+                                ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,\
+                            ASR::string_length_kindType::DeferredLength,\
+                            ASR::string_physical_typeType::DescriptorString))))
     #define List(x)      ASRUtils::TYPE(ASR::make_List_t(al, loc, x))
 
     ASR::ttype_t *Tuple(std::vector<ASR::ttype_t*> tuple_type) {
@@ -137,6 +153,20 @@ class ASRBuilder {
         return make_Array_t_util(al, loc, type, m_dims.p, m_dims.n);
     }
 
+    ASR::ttype_t* UnboundedArray(ASR::ttype_t* type, int32_t n_dims){
+        Vec<ASR::dimension_t> arr_dimensions; arr_dimensions.reserve(al, 1);
+        for(int i = 0; i < n_dims; i++) {
+            arr_dimensions.push_back(al, ASR::dimension_t{loc, nullptr, nullptr});
+        }
+        ASR::ttype_t* array_type = ASRUtils::TYPE(
+            ASR::make_Array_t(
+                al, loc,
+                type,
+                arr_dimensions.p, arr_dimensions.n,
+                ASR::UnboundedPointerToDataArray));
+        return array_type;
+    }
+
     ASR::ttype_t* CPtr() {
         return TYPE(ASR::make_CPtr_t(al, loc));
     }
@@ -144,6 +174,27 @@ class ASRBuilder {
     // Expressions -------------------------------------------------------------
     ASR::expr_t* Var(ASR::symbol_t* sym) {
         return ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym));
+    }
+
+    ASR::ttype_t* String(ASR::expr_t* len,
+        ASR::string_length_kindType len_kind, 
+        ASR::string_physical_typeType physical_type = ASR::DescriptorString) {
+        if(!(
+                (len_kind == ASR::AssumedLength && !len) || 
+                (len_kind == ASR::DeferredLength && !len) ||
+                (len_kind == ASR::ExpressionLength && len)
+            )){
+            throw LCompilersException("Invalid String Node Status");
+        }
+
+        if(physical_type == ASR::CChar){
+            int64_t len_const;
+            if(!is_value_constant(len, len_const))
+                LCompilersException("Invalid String Node Status");
+        }
+
+        return ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, len,
+            len_kind, physical_type));
     }
 
     ASR::expr_t* ArrayUBound(ASR::expr_t* x, int64_t dim) {
@@ -279,11 +330,21 @@ class ASRBuilder {
     }
 
     inline ASR::expr_t* StringSection(ASR::expr_t* s, ASR::expr_t* start, ASR::expr_t* end) {
-        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), character(-2), nullptr));
+        int64_t start_const, end_const;
+        ASR::ttype_t* string_type {};
+        LCOMPILERS_ASSERT(start && end)
+        if( ASRUtils::is_value_constant(start, start_const) &&
+            ASRUtils::is_value_constant(end, end_const)){
+            string_type = character(end_const - start_const + 1);
+        } else {
+            string_type = String(Add(Sub(end, start),i_t(1, expr_type(start))),
+                ASR::string_length_kindType::ExpressionLength);
+        }
+        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
     }
 
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
-        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(-2), nullptr));
+        return EXPR(ASR::make_StringItem_t(al, loc, x, idx, character(1), nullptr));
     }
 
     inline ASR::expr_t* StringConstant(std::string s, ASR::ttype_t* type) {
@@ -828,7 +889,7 @@ class ASRBuilder {
         Vec<ASR::stmt_t*> m_else_body; m_else_body.reserve(al, 1);
         for (auto &x: else_body) m_else_body.push_back(al, x);
 
-        return STMT(ASR::make_If_t(al, loc, a_test, m_if_body.p, m_if_body.n,
+        return STMT(ASR::make_If_t(al, loc, nullptr, a_test, m_if_body.p, m_if_body.n,
             m_else_body.p, m_else_body.n));
     }
 
@@ -849,8 +910,8 @@ class ASRBuilder {
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::expr_t *>& args,
@@ -858,20 +919,19 @@ class ASRBuilder {
         Vec<ASR::call_arg_t> args_; args_.reserve(al, 2);
         visit_expr_list(al, args, args_);
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args_.p, args_.size(), return_type, nullptr, nullptr,
-                false));
+                s, s, args_.p, args_.size(), return_type, nullptr, nullptr
+                ));
     }
 
     ASR::expr_t* Call(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args,
                       ASR::ttype_t* return_type, ASR::expr_t* value) {
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-                s, s, args.p, args.size(), return_type, value, nullptr,
-                false));
+                s, s, args.p, args.size(), return_type, value, nullptr));
     }
 
     ASR::stmt_t* SubroutineCall(ASR::symbol_t* s, Vec<ASR::call_arg_t>& args) {
         return ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al, loc,
-                s, s, args.p, args.size(), nullptr, nullptr, false, false));
+                s, s, args.p, args.size(), nullptr, nullptr, false));
     }
 
     ASR::expr_t *ArrayItem_01(ASR::expr_t *arr, std::vector<ASR::expr_t*> idx) {
@@ -921,8 +981,12 @@ class ASRBuilder {
     }
 
     ASR::stmt_t *Assignment(ASR::expr_t *lhs, ASR::expr_t *rhs) {
-        LCOMPILERS_ASSERT_MSG(check_equal_type(expr_type(lhs), expr_type(rhs)),
-            type_to_str_python(expr_type(lhs)) + ", " + type_to_str_python(expr_type(rhs)));
+        // FIXME: This is a hack. Revert this when type inheritance is fixed.
+        LCOMPILERS_ASSERT_MSG((check_equal_type(expr_type(lhs), expr_type(rhs))
+                               || (ASRUtils::check_class_assignment_compatibility(lhs, rhs)
+                                   || ASRUtils::check_class_assignment_compatibility(rhs, lhs))),
+                              type_to_str_python(expr_type(lhs)) + ", "
+                                  + type_to_str_python(expr_type(rhs)));
         return STMT(ASRUtils::make_Assignment_t_util(al, loc, lhs, rhs, nullptr, false));
     }
 
@@ -959,12 +1023,13 @@ class ASRBuilder {
         alloc_arg.n_dims = dims.n;
         alloc_arg.m_type = nullptr;
         alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_sym_subclass = nullptr;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
     }
 
-    ASR::stmt_t *Allocate(ASR::expr_t *m_a, ASR::dimension_t* m_dims, size_t n_dims) {
+    ASR::stmt_t *Allocate(ASR::expr_t *m_a, ASR::dimension_t* m_dims, size_t n_dims, ASR::expr_t* len_expr = nullptr) {
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
         alloc_arg.loc = loc;
@@ -972,12 +1037,23 @@ class ASRBuilder {
         alloc_arg.m_dims = m_dims;
         alloc_arg.n_dims = n_dims;
         alloc_arg.m_type = nullptr;
-        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_sym_subclass = nullptr;
+        alloc_arg.m_len_expr = len_expr;
         alloc_args.push_back(al, alloc_arg);
         return STMT(ASR::make_Allocate_t(al, loc, alloc_args.p, 1,
             nullptr, nullptr, nullptr));
     }
-
+    ASR::ttype_t* allocatable(ASR::ttype_t* type){
+        return ASRUtils::TYPE(ASR::make_Allocatable_t(al, loc, type));
+    }
+    ASR::stmt_t* Deallocate(ASR::expr_t* m_a){
+        Vec<ASR::expr_t*> m_a_vec; m_a_vec.reserve(al, 1);
+        m_a_vec.push_back(al, m_a);
+        return Deallocate(m_a_vec);
+    }
+    ASR::stmt_t* Deallocate(Vec<ASR::expr_t*> &m_a){
+        return ASRUtils::STMT(ASR::make_ExplicitDeallocate_t(al, loc, m_a.p, m_a.n));
+    }
 
     #define UBound(arr, dim) PassUtils::get_bound(arr, dim, "ubound", al)
     #define LBound(arr, dim) PassUtils::get_bound(arr, dim, "lbound", al)
@@ -1119,7 +1195,7 @@ class ASRBuilder {
             Vec<ASR::stmt_t*> if_body;
             if_body.reserve(al, 1);
             if_body.push_back(al, doloop);
-            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, test_expr,
+            ASR::stmt_t* if_ = ASRUtils::STMT(ASR::make_If_t(al, loc, nullptr, test_expr,
                                 if_body.p, if_body.size(), else_, else_n));
             Vec<ASR::stmt_t*> if_else_if;
             if_else_if.reserve(al, 1);
@@ -1142,10 +1218,10 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, n_args);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
-                ASR::intentType::In, ASR::abiType::BindC, true));
+                ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
-            return_type, ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+            return_type, ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
 
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
@@ -1159,11 +1235,11 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types,
-                ASR::intentType::InOut, ASR::abiType::BindC, true));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            ASRUtils::type_get_past_array(ASRUtils::type_get_past_allocatable(arg_types)),
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
@@ -1177,15 +1253,40 @@ class ASRBuilder {
         Vec<ASR::expr_t*> args_1; args_1.reserve(al, 0);
         for (int i = 0; i < n_args; i++) {
             args_1.push_back(al, this->Variable(fn_symtab_1, "x_"+std::to_string(i), arg_types[i],
-                ASR::intentType::InOut, ASR::abiType::BindC, true));
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC, true));
         }
         ASR::expr_t *return_var_1 = this->Variable(fn_symtab_1, c_func_name,
            return_type,
-           ASRUtils::intent_return_var, ASR::abiType::BindC, false);
+           ASRUtils::intent_return_var, nullptr, ASR::abiType::BindC, false);
         SetChar dep_1; dep_1.reserve(al, 1);
         Vec<ASR::stmt_t*> body_1; body_1.reserve(al, 1);
         ASR::symbol_t *s = make_ASR_Function_t(c_func_name, fn_symtab_1, dep_1, args_1,
             body_1, return_var_1, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
+        return s;
+    }
+    /*
+        Creates c-bind subroutine interface
+        e.g. -> `subroutine(arg1, arg2) bind(c)`
+    */
+    ASR::symbol_t* create_c_subroutine_interface(std::string &c_func_name, SymbolTable* fn_symtab,
+        Vec<ASR::ttype_t*> &parameter_types, const std::vector<std::string> &parameter_names, 
+        std::vector<bool> is_parameter_value = {}/*Does parameter have `value` attribute*/){
+        LCOMPILERS_ASSERT(parameter_types.size() == parameter_names.size())
+        LCOMPILERS_ASSERT( is_parameter_value.empty() ||
+            (parameter_types.size() == is_parameter_value.size()))
+
+        SymbolTable* symTable = al.make_new<SymbolTable>(fn_symtab /*parent*/);
+        Vec<ASR::expr_t*> parameters; parameters.reserve(al, parameter_types.size());
+        for (size_t i = 0; i < parameter_types.size(); i++) {
+            parameters.push_back(al, Variable(symTable,
+                parameter_names[i] + std::to_string(i), parameter_types[i],
+                ASR::intentType::InOut, nullptr, ASR::abiType::BindC,
+                is_parameter_value.empty() ? false : is_parameter_value[i]));
+        }
+        SetChar dep; dep.reserve(al, 1);
+        Vec<ASR::stmt_t*> body; body.reserve(al, 1);
+        ASR::symbol_t *s = make_ASR_Function_t(c_func_name, symTable, dep, parameters,
+            body, nullptr, ASR::abiType::BindC, ASR::deftypeType::Interface, s2c(al, c_func_name));
         return s;
     }
 

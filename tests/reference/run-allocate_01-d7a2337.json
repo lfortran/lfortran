@@ -5,9 +5,9 @@
     "infile_hash": "140c96f4a8e85df7ace3fb207f9e2f00cf47f9b6798cb542f0784e07",
     "outfile": null,
     "outfile_hash": null,
-    "stdout": "run-allocate_01-d7a2337.stdout",
-    "stdout_hash": "bd78616939688918ab2b410f893a7f948e9562e71a3e506cbc25db55",
-    "stderr": null,
-    "stderr_hash": null,
+    "stdout": null,
+    "stdout_hash": null,
+    "stderr": "run-allocate_01-d7a2337.stderr",
+    "stderr_hash": "673d30388144c3aaf7dbe2956f5cbca2423aeb195d7e0a98d9c6f7c1",
     "returncode": 1
 }

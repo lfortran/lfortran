@@ -25,9 +25,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        3 ~abstract_type
+                                                        .true.
                                                     )
-                                                    ()
+                                                    3 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -36,15 +36,22 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
-                                            ~abstract_type:
+                                            ~unlimited_polymorphic_type:
                                                 (Struct
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
                                                         })
-                                                    ~abstract_type
+                                                    ~unlimited_polymorphic_type
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .true.
+                                                    )
                                                     []
                                                     []
                                                     []
@@ -63,7 +70,7 @@
                                             []
                                             []
                                             .false.
-                                            3 ~abstract_type
+                                            .true.
                                         )]
                                         ()
                                         Source
@@ -88,7 +95,9 @@
                                 )
                         })
                     abstract_type
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),

@@ -36,6 +36,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     intrinsics_26
@@ -53,7 +54,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -87,6 +90,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -106,6 +110,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             res:
@@ -127,6 +132,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -146,6 +152,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -190,6 +197,7 @@
                                         )
                                         ())
                                         [(If
+                                            ()
                                             (LogicalNot
                                                 (IntrinsicElementalFunction
                                                     Btest
@@ -223,7 +231,9 @@
                                 )
                         })
                     stdlib_bitsets_64
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

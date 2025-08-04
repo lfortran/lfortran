@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     print_03
@@ -44,12 +45,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .true.
@@ -59,11 +60,13 @@
                             ()
                             [(StringConstant
                                 "x is "
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 x)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -75,12 +78,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .true.
@@ -95,11 +98,13 @@
                             ()
                             [(StringConstant
                                 "x is "
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 x)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )]
                         ()
@@ -115,12 +120,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .true.
@@ -128,7 +133,7 @@
                     (Print
                         (StringConstant
                             "ok"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (FileWrite
@@ -139,12 +144,12 @@
                         ()
                         [(StringConstant
                             " "
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )]
                         ()
                         (StringConstant
                             ""
-                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 0 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .true.
@@ -157,7 +162,7 @@
                         ()
                         [(StringConstant
                             "ok"
-                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )]
                         ()
                         ()

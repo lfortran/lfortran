@@ -32,6 +32,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             greater_than_inverse:
                                 (ExternalSymbol
@@ -88,6 +89,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ~gt:
                                 (ExternalSymbol
@@ -117,7 +119,7 @@
                             ()
                             [(StringConstant
                                 "T>T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -139,7 +141,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -148,7 +152,7 @@
                             ()
                             [(StringConstant
                                 "T>F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -170,7 +174,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -179,7 +185,7 @@
                             ()
                             [(StringConstant
                                 "F>T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -201,7 +207,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -210,7 +218,7 @@
                             ()
                             [(StringConstant
                                 "F>F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -232,7 +240,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -241,7 +251,7 @@
                             ()
                             [(StringConstant
                                 "T<T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -263,7 +273,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -272,7 +284,7 @@
                             ()
                             [(StringConstant
                                 "T<F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 t)
@@ -294,7 +306,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -303,7 +317,7 @@
                             ()
                             [(StringConstant
                                 "F<T:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -325,7 +339,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -334,7 +350,7 @@
                             ()
                             [(StringConstant
                                 "F<F:"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (OverloadedCompare
                                 (Var 6 f)
@@ -356,7 +372,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -390,6 +408,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -410,6 +429,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -429,6 +449,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -452,6 +473,7 @@
                                     [(Var 3 log1)
                                     (Var 3 log2)]
                                     [(If
+                                        ()
                                         (LogicalBinOp
                                             (LogicalBinOp
                                                 (Var 3 log1)
@@ -526,6 +548,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -546,6 +569,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -565,6 +589,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -588,6 +613,7 @@
                                     [(Var 4 log1)
                                     (Var 4 log2)]
                                     [(If
+                                        ()
                                         (LogicalBinOp
                                             (LogicalBinOp
                                                 (Var 4 log1)
@@ -662,6 +688,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log1:
                                                 (Variable
@@ -682,6 +709,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log2:
                                                 (Variable
@@ -701,6 +729,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -766,7 +795,9 @@
                                 )
                         })
                     operator_overloading_01_overload_comp_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

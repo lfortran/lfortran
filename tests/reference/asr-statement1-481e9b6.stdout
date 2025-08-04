@@ -22,7 +22,7 @@
                                                     ()
                                                     Default
                                                     (Real 8)
-                                                    ()
+                                                    2 dfloat
                                                     Source
                                                     Public
                                                     Required
@@ -30,6 +30,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             i:
@@ -51,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -70,6 +72,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -143,6 +146,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -162,6 +166,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             ifloat:
@@ -188,6 +193,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ifloat_return_var_name:
                                                 (Variable
@@ -199,7 +205,7 @@
                                                     ()
                                                     Default
                                                     (Integer 4)
-                                                    ()
+                                                    2 ifloat
                                                     Source
                                                     Public
                                                     Required
@@ -207,6 +213,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             j:
@@ -227,6 +234,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -286,6 +294,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             sfloat:
                                 (Function
@@ -311,6 +320,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             j:
                                                 (Variable
@@ -331,6 +341,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             sfloat_return_var_name:
                                                 (Variable
@@ -342,7 +353,7 @@
                                                     ()
                                                     Default
                                                     (Real 4)
-                                                    ()
+                                                    2 sfloat
                                                     Source
                                                     Public
                                                     Required
@@ -350,6 +361,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -414,6 +426,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             ti:
                                 (Variable
@@ -434,6 +447,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     statement1
@@ -453,6 +467,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -512,6 +527,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -543,6 +559,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -595,6 +612,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 ifloat

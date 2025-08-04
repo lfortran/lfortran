@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             zexp:
@@ -71,6 +73,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             zexp_return_var_name:
                                                 (Variable
@@ -82,7 +85,7 @@
                                                     ()
                                                     Default
                                                     (Real 8)
-                                                    ()
+                                                    2 zexp
                                                     Source
                                                     Public
                                                     Required
@@ -90,6 +93,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })

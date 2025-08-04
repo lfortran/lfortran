@@ -32,6 +32,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             zero:
                                 (Variable
@@ -57,6 +58,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -100,11 +102,13 @@
                             ()
                             [(StringConstant
                                 "factor in a:"
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 3 factor)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -144,6 +148,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     b
@@ -168,11 +173,13 @@
                             ()
                             [(StringConstant
                                 "factor: "
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 4 factor)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

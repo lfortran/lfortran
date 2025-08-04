@@ -43,6 +43,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             c_associated:
                                 (ExternalSymbol
@@ -194,6 +195,16 @@
                                     c_int8_t
                                     Public
                                 ),
+                            c_intptr_t:
+                                (ExternalSymbol
+                                    2
+                                    c_intptr_t
+                                    4 c_intptr_t
+                                    lfortran_intrinsic_iso_c_binding
+                                    []
+                                    c_intptr_t
+                                    Public
+                                ),
                             c_loc:
                                 (ExternalSymbol
                                     2
@@ -314,12 +325,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(CPtr)]
                                         []
                                         .true.
-                                        2 test_obj
+                                        .false.
                                     )
-                                    ()
+                                    2 test_obj
                                     Source
                                     Public
                                     Required
@@ -327,6 +338,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             r_ptr:
@@ -355,6 +367,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             temp_ptr:
                                 (Variable
@@ -375,6 +388,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             test_obj:
                                 (Struct
@@ -389,9 +403,11 @@
                                                     Local
                                                     (PointerNullConstant
                                                         (CPtr)
+                                                        ()
                                                     )
                                                     (PointerNullConstant
                                                         (CPtr)
+                                                        ()
                                                     )
                                                     Default
                                                     (CPtr)
@@ -404,9 +420,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     test_obj
+                                    (StructType
+                                        [(CPtr)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [ptr]
                                     []
@@ -503,7 +526,9 @@
                             ()
                             [(Var 2 c_arr)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -512,11 +537,14 @@
                             ()
                             [(Var 2 r_ptr)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (PointerAssociated
                                 (Var 2 temp_ptr)

@@ -64,7 +64,7 @@ tar xzf lfortran-0.42.0.tar.gz
 cd lfortran-0.42.0
 ```
 And build:
-```
+```bash
 cmake -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
 make -j8
 make install
@@ -172,56 +172,69 @@ including `git`.
 
 ## Build from Git on Windows with WSL
 * In windows search "turn windows features on or off".
+
 * Tick Windows subsystem for Linux.
+
 * Press OK and restart computer.
+
 * Go to Microsoft store and download Ubuntu (20.04 or 22.04 or 24.04), and launch it.
+
 * Now setup LFortran by running the following commands.
 
-```bash
-wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
-bash miniconda.sh -b -p $HOME/conda_root
-echo "export PATH=$HOME/conda_root/bin:$PATH" >> ~/.bashrc
-```
+  ```bash
+  wget  https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-x86_64.sh -O miniconda.sh
+  bash miniconda.sh -b -p $HOME/conda_root
+  echo "export PATH=$HOME/conda_root/bin:$PATH" >> ~/.bashrc
+  ```
 
 * After that restart the Ubuntu terminal.
+
 * Now clone the LFortran git repository (you should clone it inside a linux owned directory like `~` or  any of its sub-directories).
-```bash
-cd ~
-git clone https://github.com/lfortran/lfortran.git
-cd lfortran
-```
+
+  ```bash
+  cd ~
+  git clone https://github.com/lfortran/lfortran.git
+  cd lfortran
+  ```
+
 * Run the following
-```bash
-conda env create -f environment_linux.yml
-conda init bash
-```
+
+  ```bash
+  conda env create -f environment_linux.yml
+  conda init bash
+  ```
+
 * Restart Ubuntu terminal again
-```bash
-conda activate lf
-sudo apt update
-sudo apt-get install build-essential
-sudo apt-get install zlib1g-dev libzstd-dev
-sudo apt install clang
-```
+
+  ```bash
+  conda activate lf
+  sudo apt update
+  sudo apt-get install build-essential
+  sudo apt-get install zlib1g-dev libzstd-dev
+  sudo apt install clang
+  ```
 
 * Run the following commands
-```bash
-conda activate lf
-./build0.sh
-cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
-make -j8
-```
+
+  ```bash
+  conda activate lf
+  ./build0.sh
+  cmake -DCMAKE_BUILD_TYPE=Debug -DWITH_LLVM=yes -DCMAKE_INSTALL_PREFIX=`pwd`/inst .
+  make -j8
+  ```
 
 * If everything compiles, you can use LFortran as follows
-```bash
-./src/bin/lfortran ./examples/expr2.f90
-./expr2.out
-```
+
+  ```bash
+  ./src/bin/lfortran ./examples/expr2.f90
+  ./expr2.out
+  ```
 
 * Run an interactive prompt
-```bash
-./src/bin/lfortran
-```
+
+  ```bash
+  ./src/bin/lfortran
+  ```
 
 See [how to run tests](#Tests) to make sure all tests pass
 
@@ -352,13 +365,13 @@ not work, please report a bug.
 If you do not like the default way, an alternative is to use bintutils. For
 that, first install
 [Spack](https://spack.io/), then:
-```
+```bash
 spack install binutils
 spack find -p binutils
 ```
 The last command will show a full path to the installed `binutils` package. Add
 this path to your shell config file, e.g.:
-```
+```bash
 export CMAKE_PREFIX_PATH_LFORTRAN=/Users/ondrej/repos/spack/opt/spack/darwin-catalina-broadwell/apple-clang-11.0.0/binutils-2.36.1-wy6osfm6bp2323g3jpv2sjuttthwx3gd
 ```
 and compile LFortran with the

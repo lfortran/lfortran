@@ -42,12 +42,16 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Pointer
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 toml_context
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_context
                                                     Source
                                                     Public
                                                     Required
@@ -55,6 +59,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             line_break:
@@ -75,6 +80,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             message:
@@ -98,6 +104,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             num:
                                                 (Variable
@@ -108,7 +115,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -118,6 +125,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     add_context
@@ -126,10 +134,14 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Pointer
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 toml_context
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -147,6 +159,7 @@
                                     [(Var 4 message)
                                     (Var 4 context)]
                                     [(If
+                                        ()
                                         (IntegerCompare
                                             (StructInstanceMember
                                                 (Var 4 context)
@@ -168,7 +181,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(\"line\",1x,i0,\":\")"
-                                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 4 context)
@@ -177,7 +190,9 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )]
                                             ()
@@ -187,32 +202,26 @@
                                         )
                                         (Assignment
                                             (Var 4 message)
-                                            (StringPhysicalCast
-                                                (StringConcat
-                                                    (StringSection
-                                                        (Var 4 num)
-                                                        (IntegerBinOp
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            Sub
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            (IntegerConstant 0 (Integer 4) Decimal)
-                                                        )
-                                                        (IntegerBinOp
-                                                            (IntrinsicElementalFunction
-                                                                StringLenTrim
-                                                                [(Var 4 num)]
-                                                                0
-                                                                (Integer 4)
-                                                                ()
-                                                            )
-                                                            Add
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                            (StringConcat
+                                                (StringSection
+                                                    (Var 4 num)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (IntegerBinOp
+                                                        (IntrinsicElementalFunction
+                                                            StringLenTrim
+                                                            [(Var 4 num)]
+                                                            0
                                                             (Integer 4)
                                                             ()
                                                         )
+                                                        Add
                                                         (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (String 1 (IntegerBinOp
+                                                        (Integer 4)
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (String 1 (IntegerBinOp
+                                                        (IntegerBinOp
                                                             (IntegerBinOp
                                                                 (IntrinsicElementalFunction
                                                                     StringLenTrim
@@ -227,38 +236,20 @@
                                                                 ()
                                                             )
                                                             Sub
-                                                            (IntegerBinOp
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                Sub
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                (IntegerConstant 0 (Integer 4) Decimal)
-                                                            )
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             (Integer 4)
                                                             ()
-                                                        ) ExpressionLength PointerString)
-                                                        ()
-                                                    )
-                                                    (StringPhysicalCast
-                                                        (Var 4 message)
-                                                        DescriptorString
-                                                        PointerString
-                                                        (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 4 message)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
                                                         )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
                                                         ()
-                                                    )
-                                                    (String 1 () ExpressionLength PointerString)
+                                                    ) ExpressionLength DescriptorString)
                                                     ()
                                                 )
-                                                PointerString
-                                                DescriptorString
+                                                (Var 4 message)
                                                 (Allocatable
-                                                    (String 1 () ExpressionLength DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -269,77 +260,57 @@
                                     )
                                     (Assignment
                                         (Var 4 message)
-                                        (StringPhysicalCast
+                                        (StringConcat
                                             (StringConcat
                                                 (StringConcat
-                                                    (StringConcat
-                                                        (StringPhysicalCast
-                                                            (Var 4 message)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (Var 4 message)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (StringConstant
-                                                            "   | "
-                                                            (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
-                                                        )
-                                                        (String 1 () ExpressionLength PointerString)
-                                                        ()
+                                                    (Var 4 message)
+                                                    (StringConstant
+                                                        "   | "
+                                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     )
-                                                    (StringSection
-                                                        (StructInstanceMember
-                                                            (Var 4 context)
-                                                            4 1_toml_context_ptr
-                                                            (Pointer
-                                                                (String 1 () DeferredLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (IntegerBinOp
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            Sub
-                                                            (IntegerConstant 1 (Integer 4) Decimal)
-                                                            (Integer 4)
-                                                            (IntegerConstant 0 (Integer 4) Decimal)
-                                                        )
-                                                        (Var 4 line_break)
-                                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                                        (String 1 (IntegerBinOp
-                                                            (Var 4 line_break)
-                                                            Sub
-                                                            (IntegerBinOp
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                Sub
-                                                                (IntegerConstant 1 (Integer 4) Decimal)
-                                                                (Integer 4)
-                                                                (IntegerConstant 0 (Integer 4) Decimal)
-                                                            )
-                                                            (Integer 4)
-                                                            ()
-                                                        ) ExpressionLength PointerString)
-                                                        ()
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
-                                                    (String 1 () ExpressionLength PointerString)
                                                     ()
                                                 )
-                                                (StringConstant
-                                                    "   |"
-                                                    (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (StringSection
+                                                    (StructInstanceMember
+                                                        (Var 4 context)
+                                                        4 1_toml_context_ptr
+                                                        (Pointer
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        ()
+                                                    )
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (Var 4 line_break)
+                                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                                    (String 1 (IntegerBinOp
+                                                        (IntegerBinOp
+                                                            (Var 4 line_break)
+                                                            Sub
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
+                                                            (Integer 4)
+                                                            ()
+                                                        )
+                                                        Add
+                                                        (IntegerConstant 1 (Integer 4) Decimal)
+                                                        (Integer 4)
+                                                        ()
+                                                    ) ExpressionLength DescriptorString)
+                                                    ()
                                                 )
-                                                (String 1 () ExpressionLength PointerString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )
-                                            PointerString
-                                            DescriptorString
+                                            (StringConstant
+                                                "   |"
+                                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
+                                            )
                                             (Allocatable
-                                                (String 1 () ExpressionLength DescriptorString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         )
@@ -376,6 +347,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             pos:
                                                 (Variable
@@ -396,6 +368,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ptr:
                                                 (Variable
@@ -407,7 +380,7 @@
                                                     ()
                                                     Default
                                                     (Pointer
-                                                        (String 1 () DeferredLength PointerString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                     Source
@@ -418,9 +391,20 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_context
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Pointer
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [pos
                                     num
@@ -436,7 +420,9 @@
                                 )
                         })
                     arrays_23
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -471,7 +457,7 @@
                     [(Print
                         (StringConstant
                             "working"
-                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

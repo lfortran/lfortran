@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -55,6 +56,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             c:
@@ -81,6 +83,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             i:
                                 (Variable
@@ -100,6 +103,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             nsize:
@@ -121,6 +125,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             scalar:
                                 (Variable
@@ -140,6 +145,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             triad:
@@ -171,6 +177,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -195,6 +202,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -221,6 +229,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -240,6 +249,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             n:
@@ -261,6 +271,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             scalar:
                                                 (Variable
@@ -280,6 +291,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -515,7 +527,7 @@
                     (Print
                         (StringConstant
                             "End Stream Triad"
-                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 16 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

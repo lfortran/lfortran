@@ -102,7 +102,7 @@ public:
             result.push_back(al, assign_stmt);
             result.push_back(al, while_stmt);
             result.push_back(al, ASRUtils::STMT(
-                        ASR::make_If_t(al, loc, flag_expr, x.m_orelse, x.n_orelse, nullptr, 0)));
+                        ASR::make_If_t(al, loc, nullptr, flag_expr, x.m_orelse, x.n_orelse, nullptr, 0)));
             pass_result = result;
         } else {
             Vec<ASR::stmt_t*> result;

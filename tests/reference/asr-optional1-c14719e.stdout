@@ -21,7 +21,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -31,11 +31,12 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     optional_argument
                                     (FunctionType
-                                        [(String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)]
+                                        [(String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -51,6 +52,7 @@
                                     []
                                     [(Var 3 name)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 3 name)]
@@ -62,17 +64,17 @@
                                             (StringConcat
                                                 (StringConstant
                                                     "Hello "
-                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 (Var 3 name)
-                                                (String 1 (IntegerConstant 16 (Integer 8) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 16 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                                 ()
                                             )
                                         )]
                                         [(Print
                                             (StringConstant
                                                 "Hello world!"
-                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )]
                                     )]
@@ -84,7 +86,9 @@
                                 )
                         })
                     optmod
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

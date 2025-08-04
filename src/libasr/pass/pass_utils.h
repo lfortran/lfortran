@@ -40,22 +40,13 @@ namespace LCompilers {
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr);
 
-        static inline bool is_elemental(ASR::symbol_t* x) {
-            x = ASRUtils::symbol_get_past_external(x);
-            if( !ASR::is_a<ASR::Function_t>(*x) ) {
-                return false;
-            }
-            return ASRUtils::get_FunctionType(
-                ASR::down_cast<ASR::Function_t>(x))->m_elemental;
-        }
-
         bool is_args_contains_allocatable(ASR::expr_t* x);
         void fix_dimension(ASR::Cast_t* x, ASR::expr_t* arg_expr);
 
         ASR::ttype_t* get_matching_type(ASR::expr_t* sibling, Allocator& al);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
-                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope);
+                                ASR::ttype_t* var_type, Allocator& al, SymbolTable*& current_scope, ASR::expr_t* var = nullptr);
 
         ASR::expr_t* create_var(int counter, std::string suffix, const Location& loc,
                                 ASR::expr_t* sibling, Allocator& al, SymbolTable*& current_scope);
@@ -98,7 +89,7 @@ namespace LCompilers {
 
         ASR::expr_t* create_auxiliary_variable(const Location& loc, std::string& name,
             Allocator& al, SymbolTable*& current_scope, ASR::ttype_t* var_type,
-            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr);
+            ASR::intentType var_intent=ASR::intentType::Local, ASR::symbol_t* var_decl=nullptr, ASR::expr_t* var=nullptr);
 
         ASR::expr_t* get_fma(ASR::expr_t* arg0, ASR::expr_t* arg1, ASR::expr_t* arg2,
                              Allocator& al, ASR::TranslationUnit_t& unit, Location& loc,
@@ -119,6 +110,8 @@ namespace LCompilers {
         ASR::stmt_t* create_do_loop_helper_pack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* array, ASR::expr_t* mask,
             ASR::expr_t* res, ASR::expr_t* idx, int curr_idx);
+
+        ASR::expr_t* create_array_size_pack(Allocator &al, const Location &loc, ASR::expr_t* array, int n_dims);
 
         ASR::stmt_t* create_do_loop_helper_unpack(Allocator &al, const Location &loc,
             std::vector<ASR::expr_t*> do_loop_variables, ASR::expr_t* vector, ASR::expr_t* mask,
@@ -169,14 +162,18 @@ namespace LCompilers {
             allocatable string, allocatable integer, etc.. */
         static inline bool is_non_primitive_return_type(ASR::ttype_t* x){
             // TODO : Handle other allocatable types and fixed strings.
-            return ASRUtils::is_descriptorString(x);
+            return ASRUtils::is_descriptorString(x) || 
+                    (x && (ASR::is_a<ASR::List_t>(*x) 
+                       || ASR::is_a<ASR::Dict_t>(*x)
+                       || ASR::is_a<ASR::Set_t>(*x)
+                       || ASR::is_a<ASR::Tuple_t>(*x)));
         }
 
         static inline bool is_aggregate_or_array_type(ASR::expr_t* var) {
-            return ((ASR::is_a<ASR::StructType_t>(*ASRUtils::expr_type(var))
-                    && !ASRUtils::is_class_type(ASRUtils::expr_type(var))) ||
-                    ASRUtils::is_array(ASRUtils::expr_type(var)) ||
-                    ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
+            return (ASR::is_a<ASR::StructType_t>(
+                        *ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type((var))))
+                    || ASRUtils::is_array(ASRUtils::expr_type(var))
+                    || ASR::is_a<ASR::SymbolicExpression_t>(*ASRUtils::expr_type(var)));
         }
         
         static inline bool is_aggregate_or_array_or_nonPrimitive_type(ASR::expr_t* var) {
@@ -237,7 +234,7 @@ namespace LCompilers {
                     ASR::alloc_arg_t alloc_arg; alloc_arg.loc = x->base.base.loc;
                     alloc_arg.m_a = result_var_; alloc_arg.m_len_expr = nullptr;
                     alloc_arg.m_type = nullptr; alloc_arg.m_dims = res_arr->m_dims;
-                    alloc_arg.n_dims = res_arr->n_dims;
+                    alloc_arg.n_dims = res_arr->n_dims; alloc_arg.m_sym_subclass = nullptr;
                     alloc_args.push_back(al, alloc_arg);
 
                     ASR::stmt_t* allocate_stmt = ASRUtils::STMT(ASR::make_Allocate_t(al,
@@ -655,16 +652,11 @@ namespace LCompilers {
             ASR::cast_kindType cast_kind=ASR::cast_kindType::IntegerToInteger,
             ASR::ttype_t* casted_type=nullptr,
             bool realloc_lhs=false) {
-            if( x->n_args == 0 ) {
-                if( !inside_symtab ) {
-                    remove_original_statement = true;
-                }
-                return ;
-            }
             if( replacer->result_var == nullptr ) {
                 std::string result_var_name = replacer->current_scope->get_unique_name("temp_struct_var__");
                 replacer->result_var = PassUtils::create_auxiliary_variable(x->base.base.loc,
-                                    result_var_name, replacer->al, replacer->current_scope, x->m_type);
+                                    result_var_name, replacer->al, replacer->current_scope, x->m_type, 
+                                    ASR::Local, x->m_dt_sym, nullptr);
                 *replacer->current_expr = replacer->result_var;
             } else {
                 if( inside_symtab ) {
@@ -673,11 +665,13 @@ namespace LCompilers {
                     remove_original_statement = true;
                 }
             }
+            if( x->n_args == 0 ) {
+                return;
+            }
 
             std::deque<ASR::symbol_t*> constructor_arg_syms;
-            ASR::StructType_t* dt_der = ASR::down_cast<ASR::StructType_t>(x->m_type);
             ASR::Struct_t* dt_dertype = ASR::down_cast<ASR::Struct_t>(
-                                            ASRUtils::symbol_get_past_external(dt_der->m_derived_type));
+                                            ASRUtils::symbol_get_past_external(x->m_dt_sym));
             while( dt_dertype ) {
                 for( int i = (int) dt_dertype->n_members - 1; i >= 0; i-- ) {
                     constructor_arg_syms.push_front(
@@ -728,9 +722,15 @@ namespace LCompilers {
                         x_m_args_i = ASRUtils::EXPR(ASR::make_Cast_t(replacer->al, x->base.base.loc,
                             x_m_args_i, cast_kind, casted_type, nullptr));
                     }
-                    ASR::stmt_t* assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
-                                                x->base.base.loc, derived_ref,
-                                                x_m_args_i, nullptr, realloc_lhs));
+                    ASR::stmt_t* assign;
+                    if (ASRUtils::is_pointer(ASRUtils::expr_type(x_m_args_i))) {
+                        assign = ASRUtils::STMT(ASRUtils::make_Associate_t_util(replacer->al, 
+                                                    x->base.base.loc, derived_ref, x_m_args_i));
+                    } else {
+                        assign = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(replacer->al,
+                                                    x->base.base.loc, derived_ref,
+                                                    x_m_args_i, nullptr, realloc_lhs));
+                    }
                     result_vec->push_back(replacer->al, assign);
                 }
             }
@@ -1299,14 +1299,23 @@ namespace LCompilers {
             * filled inside the function.
             */
             if( is_array_or_struct_or_symbolic(x->m_return_var) || is_symbolic_list_type(x->m_return_var)) {
+                ASR::expr_t* return_var = x->m_return_var;
+                ASR::symbol_t* return_var_sym = nullptr;
+                if ( ASR::is_a<ASR::Var_t>(*return_var) ) {
+                    return_var_sym = ASR::down_cast<ASR::Var_t>(return_var)->m_v;
+                } else {
+                    throw LCompilersException("The return variable of a function should be a variable, but found: " + std::to_string(return_var->type));
+                }
                 for( auto& s_item: x->m_symtab->get_scope() ) {
                     ASR::symbol_t* curr_sym = s_item.second;
                     if( curr_sym->type == ASR::symbolType::Variable ) {
                         ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(curr_sym);
-                        if( var->m_intent == ASR::intentType::Unspecified ) {
-                            var->m_intent = ASR::intentType::In;
-                        } else if( var->m_intent == ASR::intentType::ReturnVar ) {
-                            var->m_intent = ASR::intentType::Out;
+                        if ( return_var_sym && return_var_sym == curr_sym ){
+                            if( var->m_intent == ASR::intentType::Unspecified ) {
+                                var->m_intent = ASR::intentType::In;
+                            } else if( var->m_intent == ASR::intentType::ReturnVar ) {
+                                var->m_intent = ASR::intentType::Out;
+                            }
                         }
                     }
                 }

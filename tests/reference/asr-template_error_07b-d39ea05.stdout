@@ -16,16 +16,6 @@
                                     []
                                     semigroup
                                     Public
-                                ),
-                            test_template:
-                                (ExternalSymbol
-                                    5
-                                    test_template
-                                    2 test_template
-                                    template_01_m
-                                    []
-                                    test_template
-                                    Public
                                 )
                         })
                     template_01
@@ -62,6 +52,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -103,7 +94,9 @@
                                 )
                         })
                     template_01_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

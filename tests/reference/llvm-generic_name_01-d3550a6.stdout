@@ -1,59 +1,73 @@
 ; ModuleID = 'LFortran'
 source_filename = "LFortran"
 
+%string_descriptor = type <{ i8*, i64 }>
 %complextype_polymorphic = type { i64, %complextype* }
 %complextype = type <{ float, float }>
 %__vtab_complextype = type { i64 }
 
 @0 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@1 = private unnamed_addr constant [28 x i8] c"Calling integer_add_subrout\00", align 1
-@2 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@3 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@4 = private unnamed_addr constant [25 x i8] c"Calling real_add_subrout\00", align 1
-@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@6 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data = private constant [28 x i8] c"Calling integer_add_subrout\00"
+@string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([28 x i8], [28 x i8]* @string_const_data, i32 0, i32 0), i64 27 }>
+@1 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@2 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@string_const_data.1 = private constant [25 x i8] c"Calling real_add_subrout\00"
+@string_const.2 = private global %string_descriptor <{ i8* getelementptr inbounds ([25 x i8], [25 x i8]* @string_const_data.1, i32 0, i32 0), i64 24 }>
+@3 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@4 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
 @serialization_info = private unnamed_addr constant [6 x i8] c"R4,R4\00", align 1
+@5 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data.3 = private constant [11 x i8] c"ERROR STOP\00"
+@string_const.4 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.3, i32 0, i32 0), i64 10 }>
+@string_const_data.5 = private constant [2 x i8] c"\0A\00"
+@string_const.6 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.5, i32 0, i32 0), i64 1 }>
+@6 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data.7 = private constant [11 x i8] c"ERROR STOP\00"
+@string_const.8 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.7, i32 0, i32 0), i64 10 }>
+@string_const_data.9 = private constant [2 x i8] c"\0A\00"
+@string_const.10 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.9, i32 0, i32 0), i64 1 }>
 @7 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@8 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@9 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@8 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
+@serialization_info.11 = private unnamed_addr constant [6 x i8] c"R4,R4\00", align 1
+@9 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data.12 = private constant [11 x i8] c"ERROR STOP\00"
+@string_const.13 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.12, i32 0, i32 0), i64 10 }>
+@string_const_data.14 = private constant [2 x i8] c"\0A\00"
+@string_const.15 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.14, i32 0, i32 0), i64 1 }>
 @10 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@11 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@12 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@13 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@14 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@serialization_info.1 = private unnamed_addr constant [6 x i8] c"R4,R4\00", align 1
-@15 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@16 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@17 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@18 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
-@19 = private unnamed_addr constant [11 x i8] c"ERROR STOP\00", align 1
-@20 = private unnamed_addr constant [2 x i8] c"\0A\00", align 1
-@21 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
+@string_const_data.16 = private constant [11 x i8] c"ERROR STOP\00"
+@string_const.17 = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data.16, i32 0, i32 0), i64 10 }>
+@string_const_data.18 = private constant [2 x i8] c"\0A\00"
+@string_const.19 = private global %string_descriptor <{ i8* getelementptr inbounds ([2 x i8], [2 x i8]* @string_const_data.18, i32 0, i32 0), i64 1 }>
+@11 = private unnamed_addr constant [5 x i8] c"%s%s\00", align 1
 
 define void @__module_complex_module_integer_add_subrout(%complextype_polymorphic* %this, i32* %r, i32* %i, %complextype* %sum) {
 .entry:
-  %0 = alloca %__vtab_complextype, align 8
-  %1 = getelementptr %__vtab_complextype, %__vtab_complextype* %0, i32 0, i32 0
-  store i64 0, i64* %1, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* getelementptr inbounds ([28 x i8], [28 x i8]* @1, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %2 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
-  %3 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
-  %4 = load %complextype*, %complextype** %3, align 8
-  %5 = getelementptr %complextype, %complextype* %4, i32 0, i32 0
-  %6 = load float, float* %5, align 4
-  %7 = load i32, i32* %r, align 4
-  %8 = sitofp i32 %7 to float
-  %9 = fadd float %6, %8
-  store float %9, float* %2, align 4
-  %10 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
-  %11 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
-  %12 = load %complextype*, %complextype** %11, align 8
-  %13 = getelementptr %complextype, %complextype* %12, i32 0, i32 1
-  %14 = load float, float* %13, align 4
-  %15 = load i32, i32* %i, align 4
-  %16 = sitofp i32 %15 to float
-  %17 = fadd float %14, %16
-  store float %17, float* %10, align 4
+  %0 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
+  %1 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
+  %2 = alloca %__vtab_complextype, align 8
+  %3 = getelementptr %__vtab_complextype, %__vtab_complextype* %2, i32 0, i32 0
+  store i64 0, i64* %3, align 4
+  %4 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  %5 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
+  %6 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
+  %7 = load %complextype*, %complextype** %6, align 8
+  %8 = getelementptr %complextype, %complextype* %7, i32 0, i32 0
+  %9 = load float, float* %8, align 4
+  %10 = load i32, i32* %r, align 4
+  %11 = sitofp i32 %10 to float
+  %12 = fadd float %9, %11
+  store float %12, float* %5, align 4
+  %13 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
+  %14 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
+  %15 = load %complextype*, %complextype** %14, align 8
+  %16 = getelementptr %complextype, %complextype* %15, i32 0, i32 1
+  %17 = load float, float* %16, align 4
+  %18 = load i32, i32* %i, align 4
+  %19 = sitofp i32 %18 to float
+  %20 = fadd float %17, %19
+  store float %20, float* %13, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -62,26 +76,29 @@ return:                                           ; preds = %.entry
 
 define void @__module_complex_module_real_add_subrout(%complextype_polymorphic* %this, float* %r, float* %i, %complextype* %sum) {
 .entry:
-  %0 = alloca %__vtab_complextype, align 8
-  %1 = getelementptr %__vtab_complextype, %__vtab_complextype* %0, i32 0, i32 0
-  store i64 0, i64* %1, align 4
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* getelementptr inbounds ([25 x i8], [25 x i8]* @4, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @3, i32 0, i32 0))
-  %2 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
-  %3 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
-  %4 = load %complextype*, %complextype** %3, align 8
-  %5 = getelementptr %complextype, %complextype* %4, i32 0, i32 0
-  %6 = load float, float* %5, align 4
-  %7 = load float, float* %r, align 4
-  %8 = fadd float %6, %7
-  store float %8, float* %2, align 4
-  %9 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
-  %10 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
-  %11 = load %complextype*, %complextype** %10, align 8
-  %12 = getelementptr %complextype, %complextype* %11, i32 0, i32 1
-  %13 = load float, float* %12, align 4
-  %14 = load float, float* %i, align 4
-  %15 = fadd float %13, %14
-  store float %15, float* %9, align 4
+  %0 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
+  %1 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
+  %2 = alloca %__vtab_complextype, align 8
+  %3 = getelementptr %__vtab_complextype, %__vtab_complextype* %2, i32 0, i32 0
+  store i64 0, i64* %3, align 4
+  %4 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %4, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %5 = getelementptr %complextype, %complextype* %sum, i32 0, i32 0
+  %6 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
+  %7 = load %complextype*, %complextype** %6, align 8
+  %8 = getelementptr %complextype, %complextype* %7, i32 0, i32 0
+  %9 = load float, float* %8, align 4
+  %10 = load float, float* %r, align 4
+  %11 = fadd float %9, %10
+  store float %11, float* %5, align 4
+  %12 = getelementptr %complextype, %complextype* %sum, i32 0, i32 1
+  %13 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %this, i32 0, i32 1
+  %14 = load %complextype*, %complextype** %13, align 8
+  %15 = getelementptr %complextype, %complextype* %14, i32 0, i32 1
+  %16 = load float, float* %15, align 4
+  %17 = load float, float* %i, align 4
+  %18 = fadd float %16, %17
+  store float %18, float* %12, align 4
   br label %return
 
 return:                                           ; preds = %.entry
@@ -136,15 +153,26 @@ define i32 @main(i32 %0, i8** %1) {
   %19 = load float, float* %18, align 4
   %20 = alloca float, align 4
   store float %19, float* %20, align 4
-  %21 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %17, float* %20)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %21, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0))
-  %22 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %23 = load float, float* %22, align 4
-  %24 = fcmp une float %23, 2.000000e+00
-  br i1 %24, label %then, label %else
+  %21 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, float* %17, float* %20)
+  %22 = call i64 @_lfortran_str_len(i8* %21)
+  %23 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc = bitcast i8* %23 to %string_descriptor*
+  %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %21, i8** %24, align 8
+  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %22, i64* %25, align 4
+  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %27 = load i8*, i8** %26, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %27, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @4, i32 0, i32 0))
+  %28 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
+  %29 = load float, float* %28, align 4
+  %30 = fcmp une float %29, 2.000000e+00
+  br i1 %30, label %then, label %else
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @8, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @9, i32 0, i32 0))
+  %31 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  %32 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @6, i32 0, i32 0), i8* %31, i8* %32)
   call void @exit(i32 1)
   br label %ifcont
 
@@ -152,13 +180,15 @@ else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %25 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
-  %26 = load float, float* %25, align 4
-  %27 = fcmp une float %26, 2.000000e+00
-  br i1 %27, label %then3, label %else4
+  %33 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %34 = load float, float* %33, align 4
+  %35 = fcmp une float %34, 2.000000e+00
+  br i1 %35, label %then3, label %else4
 
 then3:                                            ; preds = %ifcont
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @11, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @12, i32 0, i32 0))
+  %36 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  %37 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %36, i8* %37)
   call void @exit(i32 1)
   br label %ifcont5
 
@@ -166,60 +196,77 @@ else4:                                            ; preds = %ifcont
   br label %ifcont5
 
 ifcont5:                                          ; preds = %else4, %then3
-  %28 = alloca %complextype_polymorphic, align 8
-  %29 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %28, i32 0, i32 0
-  store i64 0, i64* %29, align 4
-  %30 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %28, i32 0, i32 1
-  store %complextype* %c, %complextype** %30, align 8
-  call void @__module_complex_module_real_add_subrout(%complextype_polymorphic* %28, float* %fpzero, float* %negfpone, %complextype* %a)
-  %31 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %32 = load float, float* %31, align 4
-  %33 = alloca float, align 4
-  store float %32, float* %33, align 4
-  %34 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
-  %35 = load float, float* %34, align 4
-  %36 = alloca float, align 4
-  store float %35, float* %36, align 4
-  %37 = call i8* (i8*, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, float* %33, float* %36)
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %37, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0))
-  %38 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
-  %39 = load float, float* %38, align 4
-  %40 = fcmp une float %39, 1.000000e+00
-  br i1 %40, label %then6, label %else7
-
-then6:                                            ; preds = %ifcont5
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @18, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @16, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @17, i32 0, i32 0))
-  call void @exit(i32 1)
-  br label %ifcont8
-
-else7:                                            ; preds = %ifcont5
-  br label %ifcont8
-
-ifcont8:                                          ; preds = %else7, %then6
-  %41 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %38 = alloca %complextype_polymorphic, align 8
+  %39 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %38, i32 0, i32 0
+  store i64 0, i64* %39, align 4
+  %40 = getelementptr %complextype_polymorphic, %complextype_polymorphic* %38, i32 0, i32 1
+  store %complextype* %c, %complextype** %40, align 8
+  call void @__module_complex_module_real_add_subrout(%complextype_polymorphic* %38, float* %fpzero, float* %negfpone, %complextype* %a)
+  %41 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
   %42 = load float, float* %41, align 4
-  %43 = fcmp une float %42, 1.000000e+00
-  br i1 %43, label %then9, label %else10
+  %43 = alloca float, align 4
+  store float %42, float* %43, align 4
+  %44 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %45 = load float, float* %44, align 4
+  %46 = alloca float, align 4
+  store float %45, float* %46, align 4
+  %47 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([6 x i8], [6 x i8]* @serialization_info.11, i32 0, i32 0), i32 0, i32 0, float* %43, float* %46)
+  %48 = call i64 @_lfortran_str_len(i8* %47)
+  %49 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc6 = bitcast i8* %49 to %string_descriptor*
+  %50 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc6, i32 0, i32 0
+  store i8* %47, i8** %50, align 8
+  %51 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc6, i32 0, i32 1
+  store i64 %48, i64* %51, align 4
+  %52 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc6, i32 0, i32 0
+  %53 = load i8*, i8** %52, align 8
+  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %53, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
+  %54 = getelementptr %complextype, %complextype* %a, i32 0, i32 0
+  %55 = load float, float* %54, align 4
+  %56 = fcmp une float %55, 1.000000e+00
+  br i1 %56, label %then7, label %else8
 
-then9:                                            ; preds = %ifcont8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([11 x i8], [11 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0))
+then7:                                            ; preds = %ifcont5
+  %57 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.13, i32 0, i32 0), align 8
+  %58 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.15, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @10, i32 0, i32 0), i8* %57, i8* %58)
   call void @exit(i32 1)
-  br label %ifcont11
+  br label %ifcont9
 
-else10:                                           ; preds = %ifcont8
-  br label %ifcont11
+else8:                                            ; preds = %ifcont5
+  br label %ifcont9
 
-ifcont11:                                         ; preds = %else10, %then9
+ifcont9:                                          ; preds = %else8, %then7
+  %59 = getelementptr %complextype, %complextype* %a, i32 0, i32 1
+  %60 = load float, float* %59, align 4
+  %61 = fcmp une float %60, 1.000000e+00
+  br i1 %61, label %then10, label %else11
+
+then10:                                           ; preds = %ifcont9
+  %62 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.17, i32 0, i32 0), align 8
+  %63 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.19, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %62, i8* %63)
+  call void @exit(i32 1)
+  br label %ifcont12
+
+else11:                                           ; preds = %ifcont9
+  br label %ifcont12
+
+ifcont12:                                         ; preds = %else11, %then10
   call void @_lpython_free_argv()
   br label %return
 
-return:                                           ; preds = %ifcont11
+return:                                           ; preds = %ifcont12
   ret i32 0
 }
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare i8* @_lcompilers_string_format_fortran(i8*, i8*, i32, i32, ...)
+declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i32, i32, ...)
+
+declare i64 @_lfortran_str_len(i8*)
+
+declare i8* @_lfortran_malloc(i64)
 
 declare void @_lcompilers_print_error(i8*, ...)
 

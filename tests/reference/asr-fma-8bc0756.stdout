@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             pi:
                                 (Variable
@@ -57,6 +58,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             r:
                                 (Variable
@@ -76,6 +78,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             s1:
@@ -111,6 +114,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             s2:
                                 (Variable
@@ -145,6 +149,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             x:
                                 (Variable
@@ -170,6 +175,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             z:
@@ -204,6 +210,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -285,6 +292,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -316,6 +324,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -467,11 +476,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (Var 2 b)
@@ -536,11 +548,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (Var 2 b)

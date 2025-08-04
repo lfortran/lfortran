@@ -129,7 +129,7 @@ ASR:
                                                                     Default
                                                                     (Pointer
                                                                         (Class
-                                                                            3 ~abstract_type
+                                                                            3 ~unlimited_polymorphic_type
                                                                             []
                                                                         )
                                                                     )
@@ -155,7 +155,7 @@ ASR:
                                                     ()
                                                     Default
                                                     (Class
-                                                        3 ~abstract_type
+                                                        3 ~unlimited_polymorphic_type
                                                         []
                                                     )
                                                     Source
@@ -163,14 +163,14 @@ ASR:
                                                     Required
                                                     .false.
                                                 ),
-                                            ~abstract_type:
+                                            ~unlimited_polymorphic_type:
                                                 (StructType
                                                     (SymbolTable
                                                         4
                                                         {
 
                                                         })
-                                                    ~abstract_type
+                                                    ~unlimited_polymorphic_type
                                                     []
                                                     Source
                                                     Public

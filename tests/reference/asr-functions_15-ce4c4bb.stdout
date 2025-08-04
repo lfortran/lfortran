@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             f:
@@ -71,6 +73,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -90,6 +93,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -241,11 +245,14 @@
                             [(Var 4 a)
                             (Var 4 b)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 4 a)
                             NotEq
@@ -259,6 +266,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (Var 4 b)
                             NotEq
@@ -294,7 +302,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -328,6 +338,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -347,6 +358,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -368,6 +380,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -387,6 +400,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             e:
@@ -408,6 +422,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -427,6 +442,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -458,6 +474,7 @@
                                     (Var 3 e)
                                     (Var 3 f)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 3 d)]
@@ -489,6 +506,7 @@
                                             .false.
                                         )
                                         (If
+                                            ()
                                             (IntrinsicElementalFunction
                                                 Present
                                                 [(Var 3 e)]
@@ -550,6 +568,7 @@
                                             .false.
                                         )
                                         (If
+                                            ()
                                             (IntrinsicElementalFunction
                                                 Present
                                                 [(Var 3 e)]
@@ -602,7 +621,9 @@
                                 )
                         })
                     functions_15_module_1
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

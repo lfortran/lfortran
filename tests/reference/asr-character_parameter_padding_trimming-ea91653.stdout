@@ -17,10 +17,10 @@
                                         12
                                         ["2   ", "2   ", "2   "]
                                         (Array
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            PointerToDataArray
                                         )
                                         ColMajor
                                     )
@@ -28,19 +28,19 @@
                                         12
                                         ["2   ", "2   ", "2   "]
                                         (Array
-                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            PointerToDataArray
                                         )
                                         ColMajor
                                     )
                                     Parameter
                                     (Array
-                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -50,6 +50,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             p_trim:
@@ -62,10 +63,10 @@
                                         3
                                         ["2", "2", "2"]
                                         (Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            PointerToDataArray
                                         )
                                         ColMajor
                                     )
@@ -73,19 +74,19 @@
                                         3
                                         ["2", "2", "2"]
                                         (Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [((IntegerConstant 1 (Integer 4) Decimal)
                                             (IntegerConstant 3 (Integer 4) Decimal))]
-                                            FixedSizeArray
+                                            PointerToDataArray
                                         )
                                         ColMajor
                                     )
                                     Parameter
                                     (Array
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
-                                        FixedSizeArray
+                                        PointerToDataArray
                                     )
                                     ()
                                     Source
@@ -95,6 +96,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x_pad:
@@ -105,14 +107,14 @@
                                     Local
                                     (StringConstant
                                         "apple"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "apple   "
-                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -121,6 +123,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x_trim:
@@ -131,14 +134,14 @@
                                     Local
                                     (StringConstant
                                         "apple"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "ap"
-                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 2 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -147,6 +150,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             y_pad:
@@ -157,14 +161,14 @@
                                     Local
                                     (StringConstant
                                         "Ball"
-                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "Ball      "
-                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -173,6 +177,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             y_trim:
@@ -183,14 +188,14 @@
                                     Local
                                     (StringConstant
                                         "Ball"
-                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "Bal"
-                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -199,6 +204,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             z_pad:
@@ -212,25 +218,25 @@
                                         (StringConcat
                                             (Var 2 x_pad)
                                             (Var 2 y_pad)
-                                            (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             (StringConstant
                                                 "apple   Ball      "
-                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
                                         (Var 2 x_pad)
-                                        (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 26 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "apple   Ball      apple   "
-                                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
                                         "apple   Ball      apple       "
-                                        (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -239,6 +245,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             z_trim:
@@ -252,25 +259,25 @@
                                         (StringConcat
                                             (Var 2 x_trim)
                                             (Var 2 y_trim)
-                                            (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 5 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                             (StringConstant
                                                 "apBal"
-                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                         )
                                         (Var 2 x_trim)
-                                        (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 7 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                         (StringConstant
                                             "apBalap"
-                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (StringConstant
                                         "apBal"
-                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Parameter
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -279,6 +286,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -289,23 +297,23 @@
                             (StringConcat
                                 (StringConstant
                                     "|"
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (Var 2 x_pad)
-                                (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 9 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                 (StringConstant
                                     "|apple   "
-                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )
                             (StringConstant
                                 "|"
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 10 (Integer 8) Decimal) ExpressionLength DescriptorString)
                             (StringConstant
                                 "|apple   |"
-                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                     )
@@ -317,7 +325,9 @@
                             ()
                             [(Var 2 p_pad)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -335,7 +345,9 @@
                             ()
                             [(Var 2 p_trim)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

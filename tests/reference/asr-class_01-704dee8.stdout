@@ -37,12 +37,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Real 4)]
                                         []
                                         .true.
-                                        6 circle
+                                        .false.
                                     )
-                                    ()
+                                    6 circle
                                     Source
                                     Public
                                     Required
@@ -50,6 +50,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             circle:
@@ -74,10 +75,10 @@
                                 (Real 4)
                             ))]
                             (StructType
-                                []
+                                [(Real 4)]
                                 []
                                 .true.
-                                6 circle
+                                .false.
                             )
                             ()
                         )
@@ -122,7 +123,7 @@
                                         3
                                         {
                                             area:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     area
                                                     ()
@@ -133,7 +134,7 @@
                                                     .false.
                                                 ),
                                             print:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     print
                                                     ()
@@ -162,9 +163,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [radius]
                                     []
@@ -210,6 +218,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -221,12 +230,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Private
                                                     Required
@@ -235,15 +244,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle_area
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 circle
+                                            .false.
                                         )]
                                         (Real 4)
                                         Source
@@ -332,6 +342,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             this:
                                                 (Variable
@@ -343,12 +354,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .false.
-                                                        2 circle
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 circle
                                                     Source
                                                     Private
                                                     Required
@@ -357,15 +368,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     circle_print
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .false.
-                                            2 circle
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -399,7 +411,7 @@
                                             ()
                                             [(StringConstant
                                                 "Circle: r = "
-                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (StructInstanceMember
                                                 (Var 5 this)
@@ -409,11 +421,13 @@
                                             )
                                             (StringConstant
                                                 " area = "
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 5 area)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -456,10 +470,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     class_circle1
+                    ()
                     [class_circle1]
+                    .false.
                     .false.
                     .false.
                 )

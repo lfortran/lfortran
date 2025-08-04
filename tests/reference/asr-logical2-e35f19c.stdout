@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -69,6 +71,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (LogicalBinOp
                             (Var 2 a)
                             And
@@ -79,13 +82,13 @@
                         [(Print
                             (StringConstant
                                 "Line 1 - Condition is true"
-                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         [(Print
                             (StringConstant
                                 "Line 1 - Condition is false"
-                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 27 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )]

@@ -1,8 +1,6 @@
 module Math_integer_m
 
   implicit none
-  private
-  public :: add_integer
 
 contains
 
@@ -45,8 +43,6 @@ end module
 module Math_real_m
 
   implicit none
-  private
-  public :: add_real
 
 contains
 

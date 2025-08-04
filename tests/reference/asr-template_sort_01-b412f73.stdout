@@ -7,16 +7,6 @@
                     (SymbolTable
                         18
                         {
-                            lt_integer:
-                                (ExternalSymbol
-                                    18
-                                    lt_integer
-                                    5 lt_integer
-                                    template_sort_01_m
-                                    []
-                                    lt_integer
-                                    Public
-                                ),
                             lt_my_type:
                                 (ExternalSymbol
                                     18
@@ -25,16 +15,6 @@
                                     template_sort_01_type
                                     []
                                     lt_my_type
-                                    Public
-                                ),
-                            lt_real:
-                                (ExternalSymbol
-                                    18
-                                    lt_real
-                                    5 lt_real
-                                    template_sort_01_m
-                                    []
-                                    lt_real
                                     Public
                                 ),
                             my_type:
@@ -116,6 +96,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -136,6 +117,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -155,6 +137,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -229,6 +212,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -249,6 +233,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -268,6 +253,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -349,6 +335,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -371,6 +358,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -392,6 +380,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -448,6 +437,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             u:
                                                 (Variable
@@ -470,6 +460,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -491,6 +482,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -525,6 +517,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             lt:
                                                 (Function
@@ -552,6 +545,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -571,6 +565,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -593,6 +588,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -657,6 +653,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -676,6 +673,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             i:
@@ -697,6 +695,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -717,6 +716,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -736,6 +736,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             pivot:
@@ -758,6 +759,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -792,6 +794,7 @@
                                                     (Var 11 low)
                                                     (Var 11 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 11 low)
                                                             Lt
@@ -840,6 +843,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     8 lt
                                                                     ()
@@ -1017,6 +1021,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1039,6 +1044,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1060,6 +1066,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1131,6 +1138,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     qsort_t
@@ -1172,6 +1180,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1192,6 +1201,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1211,6 +1221,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1281,6 +1292,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -1301,6 +1313,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             tmp:
                                                                 (Variable
@@ -1320,6 +1333,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1381,12 +1395,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1394,6 +1408,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             rhs:
@@ -1406,12 +1421,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1419,6 +1434,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             tmp:
@@ -1431,12 +1447,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1445,21 +1461,22 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     __asr_swp2
                                                     (FunctionType
                                                         [(StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )
                                                         (StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )]
                                                         ()
                                                         Source
@@ -1519,6 +1536,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             qsort_integer:
                                                 (Function
@@ -1549,6 +1567,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -1568,6 +1587,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             i:
@@ -1589,6 +1609,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -1608,6 +1629,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             low:
@@ -1629,6 +1651,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -1648,6 +1671,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1680,6 +1704,7 @@
                                                     (Var 15 low)
                                                     (Var 15 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 15 low)
                                                             Lt
@@ -1726,6 +1751,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_integer
                                                                     ()
@@ -1879,16 +1905,16 @@
                                                                     Default
                                                                     (Array
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         [(()
                                                                         ())]
                                                                         DescriptorArray
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Private
                                                                     Required
@@ -1896,6 +1922,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             high:
@@ -1917,6 +1944,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1936,6 +1964,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             last:
@@ -1957,6 +1986,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             low:
                                                                 (Variable
@@ -1977,6 +2007,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -1988,12 +2019,12 @@
                                                                     ()
                                                                     Default
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
-                                                                    ()
+                                                                    5 my_type
                                                                     Source
                                                                     Private
                                                                     Required
@@ -2002,16 +2033,17 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     qsort_my_type
                                                     (FunctionType
                                                         [(Array
                                                             (StructType
-                                                                []
+                                                                [(Real 4)]
                                                                 []
                                                                 .true.
-                                                                5 my_type
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
@@ -2037,6 +2069,7 @@
                                                     (Var 17 low)
                                                     (Var 17 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 17 low)
                                                             Lt
@@ -2052,10 +2085,10 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -2088,6 +2121,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_my_type
                                                                     ()
@@ -2097,10 +2131,10 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -2131,10 +2165,10 @@
                                                                         (Var 17 last)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -2145,10 +2179,10 @@
                                                                         (Var 17 i)
                                                                         ())]
                                                                         (StructType
-                                                                            []
+                                                                            [(Real 4)]
                                                                             []
                                                                             .true.
-                                                                            5 my_type
+                                                                            .false.
                                                                         )
                                                                         ColMajor
                                                                         ()
@@ -2174,10 +2208,10 @@
                                                                 )
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -2188,10 +2222,10 @@
                                                                 (Var 17 high)
                                                                 ())]
                                                                 (StructType
-                                                                    []
+                                                                    [(Real 4)]
                                                                     []
                                                                     .true.
-                                                                    5 my_type
+                                                                    .false.
                                                                 )
                                                                 ColMajor
                                                                 ()
@@ -2207,10 +2241,10 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -2231,10 +2265,10 @@
                                                                 DescriptorArray
                                                                 (Array
                                                                     (StructType
-                                                                        []
+                                                                        [(Real 4)]
                                                                         []
                                                                         .true.
-                                                                        5 my_type
+                                                                        .false.
                                                                     )
                                                                     [(()
                                                                     ())]
@@ -2289,6 +2323,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             high:
                                                                 (Variable
@@ -2308,6 +2343,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             i:
@@ -2329,6 +2365,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             last:
                                                                 (Variable
@@ -2348,6 +2385,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             low:
@@ -2369,6 +2407,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             pivot:
                                                                 (Variable
@@ -2388,6 +2427,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2420,6 +2460,7 @@
                                                     (Var 16 low)
                                                     (Var 16 high)]
                                                     [(If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 16 low)
                                                             Lt
@@ -2466,6 +2507,7 @@
                                                             )
                                                             ())
                                                             [(If
+                                                                ()
                                                                 (FunctionCall
                                                                     5 lt_real
                                                                     ()
@@ -2627,6 +2669,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             xm:
                                                 (Variable
@@ -2639,16 +2682,16 @@
                                                     Default
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Real 4)]
                                                             []
                                                             .true.
-                                                            5 my_type
+                                                            .false.
                                                         )
                                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                                         (IntegerConstant 10 (Integer 4) Decimal))]
                                                         FixedSizeArray
                                                     )
-                                                    ()
+                                                    5 my_type
                                                     Source
                                                     Private
                                                     Required
@@ -2656,6 +2699,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             xr:
@@ -2681,6 +2725,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -2746,10 +2791,10 @@
                                                 (Var 14 i)
                                                 ())]
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 ColMajor
                                                 ()
@@ -2766,10 +2811,10 @@
                                                     ()
                                                 ))]
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 ()
                                             )
@@ -2825,10 +2870,10 @@
                                             DescriptorArray
                                             (Array
                                                 (StructType
-                                                    []
+                                                    [(Real 4)]
                                                     []
                                                     .true.
-                                                    5 my_type
+                                                    .false.
                                                 )
                                                 [((IntegerConstant 1 (Integer 4) Decimal)
                                                 (IntegerConstant 10 (Integer 4) Decimal))]
@@ -2845,7 +2890,9 @@
                                             ()
                                             [(Var 14 xi)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -2854,7 +2901,9 @@
                                             ()
                                             [(Var 14 xr)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -2863,20 +2912,24 @@
                                             ()
                                             [(Var 14 xm)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     template_sort_01_m
+                    ()
                     [template_sort_01_type
                     template_sort_01_m]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -2910,12 +2963,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 my_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 my_type
                                                     Source
                                                     Public
                                                     Required
@@ -2923,6 +2976,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             res:
@@ -2944,6 +2998,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -2955,12 +3010,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Real 4)]
                                                         []
                                                         .true.
-                                                        2 my_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 my_type
                                                     Source
                                                     Public
                                                     Required
@@ -2969,21 +3024,22 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     lt_my_type
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 my_type
+                                            .false.
                                         )
                                         (StructType
-                                            []
+                                            [(Real 4)]
                                             []
                                             .true.
-                                            2 my_type
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -3052,9 +3108,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     my_type
+                                    (StructType
+                                        [(Real 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [d]
                                     []
@@ -3068,7 +3131,9 @@
                                 )
                         })
                     template_sort_01_type
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -18,7 +18,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -32,6 +32,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             str:
@@ -55,6 +56,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             user_data:
                                 (Variable
@@ -67,7 +69,7 @@
                                     Default
                                     (Allocatable
                                         (Array
-                                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -82,6 +84,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     string_04
@@ -91,6 +94,7 @@
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         ()
                         ()
@@ -102,13 +106,13 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Mr. "
-                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -119,13 +123,13 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Rowan "
-                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -136,13 +140,13 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "Atkinson"
-                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -152,6 +156,7 @@
                         [((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 5 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         ()
                         ()
@@ -163,13 +168,13 @@
                             [(()
                             (IntegerConstant 1 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "h"
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -180,13 +185,13 @@
                             [(()
                             (IntegerConstant 2 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "e"
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -197,13 +202,13 @@
                             [(()
                             (IntegerConstant 3 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -214,13 +219,13 @@
                             [(()
                             (IntegerConstant 4 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "l"
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -231,13 +236,13 @@
                             [(()
                             (IntegerConstant 5 (Integer 4) Decimal)
                             ())]
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             ColMajor
                             ()
                         )
                         (StringConstant
                             "o"
-                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
@@ -247,14 +252,14 @@
                             ()
                             [(StringConstant
                                 "Here is "
-                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (ArrayItem
                                 (Var 2 user_data)
                                 [(()
                                 (IntegerConstant 1 (Integer 4) Decimal)
                                 ())]
-                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
                             )
@@ -263,7 +268,7 @@
                                 [(()
                                 (IntegerConstant 2 (Integer 4) Decimal)
                                 ())]
-                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
                             )
@@ -272,12 +277,14 @@
                                 [(()
                                 (IntegerConstant 3 (Integer 4) Decimal)
                                 ())]
-                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 40 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 ColMajor
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -286,7 +293,9 @@
                             ()
                             [(Var 2 greetings)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -294,6 +303,7 @@
                         [((Var 2 str)
                         []
                         (IntegerConstant 8 (Integer 4) Decimal)
+                        ()
                         ())]
                         ()
                         ()
@@ -301,48 +311,43 @@
                     )
                     (Assignment
                         (Var 2 str)
-                        (StringPhysicalCast
-                            (StringConstant
-                                "abcd"
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength PointerString)
-                            )
-                            PointerString
-                            DescriptorString
-                            (Allocatable
-                                (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                            )
-                            ()
+                        (StringConstant
+                            "abcd"
+                            (String 1 (IntegerConstant 4 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                         ()
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StringLen
                                 (StringSection
-                                    (StringPhysicalCast
+                                    (Var 2 str)
+                                    (IntegerConstant 2 (Integer 4) Decimal)
+                                    (StringLen
                                         (Var 2 str)
-                                        DescriptorString
-                                        PointerString
-                                        (Allocatable
-                                            (String 1 (StringLen
+                                        (Integer 4)
+                                        ()
+                                    )
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    (String 1 (IntegerBinOp
+                                        (IntegerBinOp
+                                            (StringLen
                                                 (Var 2 str)
                                                 (Integer 4)
                                                 ()
-                                            ) ExpressionLength PointerString)
+                                            )
+                                            Sub
+                                            (IntegerConstant 2 (Integer 4) Decimal)
+                                            (Integer 4)
+                                            ()
                                         )
-                                        ()
-                                    )
-                                    (IntegerBinOp
-                                        (IntegerConstant 2 (Integer 4) Decimal)
-                                        Sub
+                                        Add
                                         (IntegerConstant 1 (Integer 4) Decimal)
                                         (Integer 4)
-                                        (IntegerConstant 1 (Integer 4) Decimal)
-                                    )
-                                    ()
-                                    (IntegerConstant 1 (Integer 4) Decimal)
-                                    (String 1 () DeferredLength PointerString)
+                                        ()
+                                    ) ExpressionLength DescriptorString)
                                     ()
                                 )
                                 (Integer 4)

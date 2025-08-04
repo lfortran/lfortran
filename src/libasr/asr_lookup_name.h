@@ -23,8 +23,8 @@ namespace LCompilers::LFortran {
                 if (test_loc_and_set_span(x.base.base.loc)) {
                     const ASR::symbol_t* sym = this->symbol_get_past_external_(x.m_external);
                     this->handle_symbol(sym);
-                    if ( ASR::is_a<ASR::ClassProcedure_t>(*sym) ) {
-                        this->handle_symbol(ASR::down_cast<ASR::ClassProcedure_t>(sym)->m_proc);
+                    if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ) {
+                        this->handle_symbol(ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
                     }
                 }
             }
@@ -40,8 +40,8 @@ namespace LCompilers::LFortran {
                 if (test_loc_and_set_span(x.base.base.loc)) {
                     const ASR::symbol_t* sym = this->symbol_get_past_external_(x.m_name);
                     this->handle_symbol(sym);
-                    if ( ASR::is_a<ASR::ClassProcedure_t>(*sym) ) {
-                        this->handle_symbol(ASR::down_cast<ASR::ClassProcedure_t>(sym)->m_proc);
+                    if ( ASR::is_a<ASR::StructMethodDeclaration_t>(*sym) ) {
+                        this->handle_symbol(ASR::down_cast<ASR::StructMethodDeclaration_t>(sym)->m_proc);
                     }
                 }
             }

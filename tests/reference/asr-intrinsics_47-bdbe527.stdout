@@ -51,6 +51,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             l:
                                 (Variable
@@ -70,6 +71,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -344,35 +346,24 @@
                         (Var 2 l)
                         (IntrinsicArrayFunction
                             All
-                            [(ArrayPhysicalCast
-                                (ArrayConstructor
-                                    [(LogicalConstant
-                                        .false.
-                                        (Logical 4)
-                                    )
-                                    (Var 2 a)
-                                    (LogicalConstant
-                                        .true.
-                                        (Logical 4)
-                                    )]
-                                    (Array
-                                        (Logical 4)
-                                        [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 5 (Integer 4) Decimal))]
-                                        FixedSizeArray
-                                    )
-                                    ()
-                                    ColMajor
+                            [(ArrayConstructor
+                                [(LogicalConstant
+                                    .false.
+                                    (Logical 4)
                                 )
-                                FixedSizeArray
-                                DescriptorArray
+                                (Var 2 a)
+                                (LogicalConstant
+                                    .true.
+                                    (Logical 4)
+                                )]
                                 (Array
                                     (Logical 4)
                                     [((IntegerConstant 1 (Integer 4) Decimal)
-                                    (IntegerConstant 5 (Integer 4) Decimal))]
+                                    ())]
                                     DescriptorArray
                                 )
                                 ()
+                                ColMajor
                             )]
                             0
                             (Logical 4)
@@ -382,6 +373,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (Var 2 l)
                         [(ErrorStop
                             ()

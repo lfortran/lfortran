@@ -1079,11 +1079,10 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
                     && !ASRUtils::is_aggregate_type(param->m_type))) {
                     args += "&" + src;
                 } else if (param->m_intent == ASRUtils::intent_out) {
-                    if (ASR::is_a<ASR::List_t>(*param->m_type)) {
-                        ASR::List_t* list_type = ASR::down_cast<ASR::List_t>(param->m_type);
-                        if (list_type->m_type->type == ASR::ttypeType::CPtr){
-                            args += "&" + src;
-                        }
+                    if (ASR::is_a<ASR::List_t>(*param->m_type) || 
+                        ASR::is_a<ASR::Dict_t>(*param->m_type) || 
+                        ASR::is_a<ASR::Tuple_t>(*param->m_type)) {
+                        args += "&" + src;
                     } else {
                         args += src;
                     }
@@ -1392,11 +1391,37 @@ PyMODINIT_FUNC PyInit_lpython_module_)" + fn_name + R"((void) {
         } else if ( is_target_tup && is_value_tup ) {
             ASR::Tuple_t* tup_target = ASR::down_cast<ASR::Tuple_t>(ASRUtils::expr_type(x.m_target));
             std::string dc_func = c_ds_api->get_tuple_deepcopy_func(tup_target);
-            src += indent + dc_func + "(" + value + ", &" + target + ");\n";
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::symbol_t *target_sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(target_sym);
+                    if (v->m_intent == ASRUtils::intent_out) {
+                        src += indent + dc_func + "(" + value + ", " + target + ");\n\n";
+                    } else {
+                        src += indent + dc_func + "(" + value + ", &" + target + ");\n\n";
+                    }
+                }
+            } else {
+                src += indent + dc_func + "(" + value + ", &" + target + ");\n\n";
+            }
+
         } else if ( is_target_dict && is_value_dict ) {
             ASR::Dict_t* d_target = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(x.m_target));
             std::string dc_func = c_ds_api->get_dict_deepcopy_func(d_target);
-            src += indent + dc_func + "(&" + value + ", &" + target + ");\n";
+            if (ASR::is_a<ASR::Var_t>(*x.m_target)) {
+                ASR::symbol_t *target_sym = ASR::down_cast<ASR::Var_t>(x.m_target)->m_v;
+                if (ASR::is_a<ASR::Variable_t>(*target_sym)) {
+                    ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(target_sym);
+                    if (v->m_intent == ASRUtils::intent_out) {
+                        src += indent + dc_func + "(&" + value + ", " + target + ");\n\n";
+                    } else {
+                        src += indent + dc_func + "(&" + value + ", &" + target + ");\n\n";
+                    }
+                }
+            } else {
+                src += indent + dc_func + "(&" + value + ", &" + target + ");\n\n";
+            }
+
         } else {
             if( is_c ) {
                 std::string alloc = "";

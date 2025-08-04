@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -50,6 +51,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -75,6 +77,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -125,11 +128,14 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )
                                         )
                                         (If
+                                            ()
                                             (RealCompare
                                                 (IntrinsicElementalFunction
                                                     Abs
@@ -177,7 +183,9 @@
                                 )
                         })
                     _lcompilers_mlir_gpu_offloading
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -210,6 +218,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -229,6 +238,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -254,6 +264,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -309,6 +320,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             n:
                                 (Variable
@@ -328,6 +340,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -353,6 +366,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })

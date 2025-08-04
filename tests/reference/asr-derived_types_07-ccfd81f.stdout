@@ -35,12 +35,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             message:
@@ -52,15 +53,16 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 256 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 256 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -73,19 +75,29 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Logical 4)
+                                                        (Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        2 logger_type
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 logger_type
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             unit:
@@ -100,22 +112,32 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     final_logger
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Logical 4)
+                                            (Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            2 logger_type
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -133,7 +155,7 @@
                                     [(Var 4 self)]
                                     []
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -168,6 +190,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             log_units:
                                                 (Variable
@@ -195,6 +218,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             max_width:
                                                 (Variable
@@ -215,9 +239,25 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     logger_type
+                                    (StructType
+                                        [(Logical 4)
+                                        (Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [add_blank_line
                                     log_units
@@ -233,7 +273,9 @@
                                 )
                         })
                     derived_types_07_stdlib_logger
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

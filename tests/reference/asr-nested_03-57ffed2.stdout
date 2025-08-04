@@ -66,7 +66,9 @@
                                                             ()
                                                             [(IntegerConstant 5 (Integer 4) Decimal)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -75,7 +77,9 @@
                                                             ()
                                                             [(Var 3 x)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )]
@@ -103,6 +107,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -140,7 +145,7 @@
                                     (Print
                                         (StringConstant
                                             "b()"
-                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (SubroutineCall
@@ -157,7 +162,9 @@
                                 )
                         })
                     nested_03_a
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

@@ -32,6 +32,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             x2:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             y1:
@@ -78,6 +80,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             y2:
                                 (Variable
@@ -104,6 +107,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     intrinsics_15
@@ -114,7 +118,9 @@
                             [(Var 2 y1)
                             (Var 2 y2)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

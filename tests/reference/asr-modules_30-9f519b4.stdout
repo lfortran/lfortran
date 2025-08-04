@@ -51,7 +51,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -60,6 +60,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             self:
@@ -72,12 +73,20 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        7 executable_config
+                                                        .false.
                                                     )
-                                                    ()
+                                                    7 executable_config
                                                     Source
                                                     Public
                                                     Required
@@ -86,17 +95,26 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     default_executable
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            7 executable_config
+                                            .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -121,15 +139,7 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (Var 9 name)
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 () AssumedLength DescriptorString)
-                                            )
-                                            ()
-                                        )
+                                        (Var 9 name)
                                         ()
                                         .false.
                                     )
@@ -142,17 +152,9 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (StringConstant
-                                                "app"
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            ()
+                                        (StringConstant
+                                            "app"
+                                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         ()
                                         .false.
@@ -166,17 +168,9 @@
                                             )
                                             ()
                                         )
-                                        (StringPhysicalCast
-                                            (StringConstant
-                                                "main.f90"
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
-                                            )
-                                            ()
+                                        (StringConstant
+                                            "main.f90"
+                                            (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                         ()
                                         .false.
@@ -213,6 +207,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             name:
                                                 (Variable
@@ -234,6 +229,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             source_dir:
@@ -257,9 +253,24 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     executable_config
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [name
                                     source_dir
@@ -275,8 +286,10 @@
                                 )
                         })
                     fpm_manifest_executable_modules_30
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 ),
             fpm_manifest_modules_30:
@@ -309,16 +322,6 @@
                                     (SymbolTable
                                         10
                                         {
-                                            1_executable_config:
-                                                (ExternalSymbol
-                                                    10
-                                                    1_executable_config
-                                                    7 executable_config
-                                                    fpm_manifest_executable_modules_30
-                                                    []
-                                                    executable_config
-                                                    Public
-                                                ),
                                             1_package_config_t_executable:
                                                 (ExternalSymbol
                                                     10
@@ -349,12 +352,35 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (StructType
+                                                                    [(Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )
+                                                                    (Allocatable
+                                                                        (String 1 () DeferredLength DescriptorString)
+                                                                    )]
+                                                                    []
+                                                                    .true.
+                                                                    .false.
+                                                                )
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 package_config_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 package_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -362,6 +388,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             root:
@@ -373,7 +400,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -383,17 +410,41 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     package_defaults
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (Array
+                                                    (StructType
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
+                                                        []
+                                                        .true.
+                                                        .false.
+                                                    )
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 package_config_t
+                                            .false.
                                         )
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -416,10 +467,18 @@
                                             (Allocatable
                                                 (Array
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        10 1_executable_config
+                                                        .false.
                                                     )
                                                     [(()
                                                     ())]
@@ -430,6 +489,7 @@
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 1 (Integer 4) Decimal))]
+                                        ()
                                         ()
                                         ())]
                                         ()
@@ -446,10 +506,18 @@
                                                 (Allocatable
                                                     (Array
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            10 1_executable_config
+                                                            .false.
                                                         )
                                                         [(()
                                                         ())]
@@ -462,38 +530,27 @@
                                             (IntegerConstant 1 (Integer 4) Decimal)
                                             ())]
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
                                                 []
                                                 .true.
-                                                10 1_executable_config
+                                                .false.
                                             )
                                             ColMajor
                                             ()
                                         ))
-                                        ((StringPhysicalCast
-                                            (StructInstanceMember
-                                                (Var 10 package)
-                                                10 1_package_config_t_name
-                                                (Allocatable
-                                                    (String 1 () DeferredLength DescriptorString)
-                                                )
-                                                ()
-                                            )
-                                            DescriptorString
-                                            PointerString
+                                        ((StructInstanceMember
+                                            (Var 10 package)
+                                            10 1_package_config_t_name
                                             (Allocatable
-                                                (String 1 (StringLen
-                                                    (StructInstanceMember
-                                                        (Var 10 package)
-                                                        10 1_package_config_t_name
-                                                        (Allocatable
-                                                            (String 1 () DeferredLength DescriptorString)
-                                                        )
-                                                        ()
-                                                    )
-                                                    (Integer 4)
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                             )
                                             ()
                                         ))]
@@ -507,8 +564,10 @@
                                 )
                         })
                     fpm_manifest_modules_30
+                    ()
                     [fpm_manifest_package_modules_30
                     fpm_manifest_executable_modules_30]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -544,17 +603,25 @@
                                                     (Allocatable
                                                         (Array
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                4 executable_config
+                                                                .false.
                                                             )
                                                             [(()
                                                             ())]
                                                             DescriptorArray
                                                         )
                                                     )
-                                                    ()
+                                                    4 executable_config
                                                     Source
                                                     Public
                                                     Required
@@ -562,6 +629,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             name:
@@ -585,9 +653,39 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     package_config_t
+                                    (StructType
+                                        [(Allocatable
+                                            (Array
+                                                (StructType
+                                                    [(Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [name
                                     executable]
@@ -602,8 +700,10 @@
                                 )
                         })
                     fpm_manifest_package_modules_30
+                    ()
                     [fpm_manifest_executable_modules_30]
                     .true.
+                    .false.
                     .false.
                 ),
             modules_30:
@@ -618,7 +718,7 @@
                     [(Print
                         (StringConstant
                             "running modules_30 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

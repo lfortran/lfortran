@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -45,9 +46,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        8 t1
+                                                        .false.
                                                     )
-                                                    ()
+                                                    8 t1
                                                     Source
                                                     Public
                                                     Optional
@@ -55,6 +56,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -64,7 +66,7 @@
                                             []
                                             []
                                             .false.
-                                            8 t1
+                                            .false.
                                         )]
                                         (Logical 4)
                                         Source
@@ -93,7 +95,7 @@
                                         9
                                         {
                                             f:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     9
                                                     f
                                                     ()
@@ -105,6 +107,12 @@
                                                 )
                                         })
                                     t1
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -118,8 +126,10 @@
                                 )
                         })
                     abc
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 ),
             x:
@@ -182,12 +192,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                []
+                                                                []
+                                                                .false.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        4 t2
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 t2
                                                     Source
                                                     Public
                                                     Required
@@ -196,15 +213,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     sub
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    []
+                                                    []
+                                                    .false.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            4 t2
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -221,6 +246,7 @@
                                     []
                                     [(Var 6 self)]
                                     [(If
+                                        ()
                                         (FunctionCall
                                             6 1_f
                                             ()
@@ -235,7 +261,7 @@
                                                         []
                                                         []
                                                         .false.
-                                                        4 t1
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -246,7 +272,9 @@
                                                 ()
                                                 [(IntegerConstant 1 (Integer 4) Decimal)]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )
                                         )]
@@ -287,10 +315,10 @@
                                                             []
                                                             []
                                                             .false.
-                                                            4 t1
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    4 t1
                                                     Source
                                                     Public
                                                     Required
@@ -299,9 +327,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     t2
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [val]
                                     []
@@ -315,8 +357,10 @@
                                 )
                         })
                     y
+                    ()
                     [abc]
                     .true.
+                    .false.
                     .false.
                 )
         })

@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             int_inp2:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_amin0:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_amin1:
                                 (Variable
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_dmin1:
@@ -106,6 +110,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_min:
                                 (Variable
@@ -125,6 +130,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_min0:
@@ -146,6 +152,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             output_min1:
                                 (Variable
@@ -165,6 +172,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             output_min_different_kinds:
@@ -186,6 +194,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp1:
                                 (Variable
@@ -205,6 +214,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             real_inp2:
@@ -226,6 +236,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp3:
                                 (Variable
@@ -245,6 +256,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             real_inp4:
@@ -266,6 +278,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp5:
                                 (Variable
@@ -286,6 +299,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             real_inp6:
                                 (Variable
@@ -305,6 +319,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -394,11 +409,14 @@
                             ()
                             [(Var 2 output_min)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -443,6 +461,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -462,7 +481,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -485,11 +504,14 @@
                             ()
                             [(Var 2 output_min0)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 output_min0)
                             NotEq
@@ -503,6 +525,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -522,7 +545,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -550,11 +573,14 @@
                             ()
                             [(Var 2 output_amin0)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -591,6 +617,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -610,7 +637,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -638,11 +665,14 @@
                             ()
                             [(Var 2 output_min1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 output_min1)
                             NotEq
@@ -656,6 +686,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -675,7 +706,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -698,11 +729,14 @@
                             ()
                             [(Var 2 output_amin1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -739,6 +773,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -758,7 +793,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -781,11 +816,14 @@
                             ()
                             [(Var 2 output_dmin1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -830,6 +868,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -849,7 +888,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []
@@ -877,11 +916,14 @@
                             ()
                             [(Var 2 output_min_different_kinds)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (RealCompare
                             (IntrinsicElementalFunction
                                 Abs
@@ -921,6 +963,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (TypeInquiry
                                 Kind
@@ -940,7 +983,7 @@
                         [(ErrorStop
                             (StringConstant
                                 "Incorrect kind for min"
-                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 22 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                         []

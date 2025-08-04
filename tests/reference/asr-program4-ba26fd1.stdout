@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -51,6 +52,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             c:
                                                 (Variable
@@ -70,6 +72,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             saved:
@@ -96,6 +99,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -187,6 +191,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -206,6 +211,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -227,6 +233,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -246,6 +253,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             saved1:
@@ -273,6 +281,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             saved2:
                                                 (Variable
@@ -292,6 +301,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -420,6 +430,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             y:
                                 (Variable
@@ -440,6 +451,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -459,6 +471,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -501,11 +514,13 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -528,11 +543,13 @@
                             ()
                             [(StringConstant
                                 "7.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -555,11 +572,13 @@
                             ()
                             [(StringConstant
                                 "6.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -582,11 +601,13 @@
                             ()
                             [(StringConstant
                                 "8.0 == "
-                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

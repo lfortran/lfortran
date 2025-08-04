@@ -31,6 +31,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             datetime:
                                                 (Variable
@@ -50,6 +51,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             float:
@@ -71,6 +73,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             int:
                                                 (Variable
@@ -90,6 +93,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             invalid:
@@ -111,6 +115,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             string:
                                                 (Variable
@@ -131,9 +136,21 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     enum_type
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [invalid
                                     string
@@ -165,10 +182,15 @@
                                         ((IntegerConstant 104 (Integer 4) Decimal))
                                         ((IntegerConstant 105 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            4 enum_type
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -180,20 +202,30 @@
                                         ((IntegerConstant 104 (Integer 4) Decimal))
                                         ((IntegerConstant 105 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .true.
-                                            4 enum_type
+                                            .false.
                                         )
                                     )
                                     Parameter
                                     (StructType
-                                        []
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
                                         []
                                         .true.
-                                        4 enum_type
+                                        .false.
                                     )
-                                    ()
+                                    4 enum_type
                                     Source
                                     Public
                                     Required
@@ -202,11 +234,14 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     derived_types_14_module
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 ),
             derived_types_14_module1:
@@ -228,7 +263,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -237,6 +272,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             res:
@@ -258,11 +294,12 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     check
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Logical 4)
                                         Source
                                         Implementation
@@ -376,7 +413,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -385,6 +422,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             vtype:
@@ -406,11 +444,12 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_get_value_type
                                     (FunctionType
-                                        [(String 1 () AssumedLength PointerString)]
+                                        [(String 1 () AssumedLength DescriptorString)]
                                         (Integer 4)
                                         Source
                                         Implementation
@@ -426,6 +465,7 @@
                                     [check]
                                     [(Var 6 raw)]
                                     [(If
+                                        ()
                                         (FunctionCall
                                             2 check
                                             ()
@@ -449,6 +489,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (FunctionCall
                                             2 check
                                             ()
@@ -472,6 +513,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (FunctionCall
                                             2 check
                                             ()
@@ -495,6 +537,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (FunctionCall
                                             2 check
                                             ()
@@ -518,6 +561,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (FunctionCall
                                             2 check
                                             ()
@@ -569,8 +613,10 @@
                                 )
                         })
                     derived_types_14_module1
+                    ()
                     [derived_types_14_module
                     derived_types_14_module1]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -586,7 +632,7 @@
                     [(Print
                         (StringConstant
                             "running derived_types_14 main program"
-                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 37 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

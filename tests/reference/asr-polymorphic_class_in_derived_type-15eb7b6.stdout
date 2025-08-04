@@ -26,10 +26,10 @@
                                                             []
                                                             []
                                                             .false.
-                                                            3 ~abstract_type
+                                                            .true.
                                                         )
                                                     )
-                                                    ()
+                                                    3 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -37,6 +37,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             value2:
@@ -53,10 +54,10 @@
                                                             []
                                                             []
                                                             .false.
-                                                            3 ~abstract_type
+                                                            .true.
                                                         )
                                                     )
-                                                    ()
+                                                    3 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -65,15 +66,22 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
-                                            ~abstract_type:
+                                            ~unlimited_polymorphic_type:
                                                 (Struct
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
                                                         })
-                                                    ~abstract_type
+                                                    ~unlimited_polymorphic_type
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .true.
+                                                    )
                                                     []
                                                     []
                                                     []
@@ -87,6 +95,27 @@
                                                 )
                                         })
                                     dict_item
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .true.
+                                            )
+                                        )
+                                        (Allocatable
+                                            (StructType
+                                                []
+                                                []
+                                                .false.
+                                                .true.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [value
                                     value2]
@@ -101,7 +130,9 @@
                                 )
                         })
                     fortuno_types
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

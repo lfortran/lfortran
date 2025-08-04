@@ -24,12 +24,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -44,12 +45,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -64,12 +66,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -127,12 +130,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -147,12 +151,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -167,12 +172,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -209,7 +215,7 @@
                                         .false.
                                     )]
                                     (Var 5 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -231,12 +237,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -251,12 +258,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -271,12 +279,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -313,7 +322,7 @@
                                         .false.
                                     )]
                                     (Var 6 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -335,12 +344,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -355,12 +365,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -375,12 +386,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -416,7 +428,7 @@
                                         .false.
                                     )]
                                     (Var 4 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -438,12 +450,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -471,7 +484,7 @@
                                         .false.
                                     )]
                                     (Var 8 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -493,12 +506,13 @@
                                                     (Integer 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -526,14 +540,16 @@
                                         .false.
                                     )]
                                     (Var 7 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     math_integer_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -559,12 +575,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -579,12 +596,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -599,12 +617,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -662,12 +681,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -682,12 +702,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -702,12 +723,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -744,7 +766,7 @@
                                         .false.
                                     )]
                                     (Var 13 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -766,12 +788,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -786,12 +809,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -806,12 +830,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -848,7 +873,7 @@
                                         .false.
                                     )]
                                     (Var 14 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -870,12 +895,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -890,12 +916,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -910,12 +937,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -951,7 +979,7 @@
                                         .false.
                                     )]
                                     (Var 11 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -973,12 +1001,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1009,7 +1038,7 @@
                                         .false.
                                     )]
                                     (Var 16 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -1031,12 +1060,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             x:
@@ -1051,12 +1081,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             y:
@@ -1071,12 +1102,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1112,7 +1144,7 @@
                                         .false.
                                     )]
                                     (Var 12 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
@@ -1134,12 +1166,13 @@
                                                     (Real 4)
                                                     ()
                                                     Source
-                                                    Private
+                                                    Public
                                                     Required
                                                     .false.
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -1170,14 +1203,16 @@
                                         .false.
                                     )]
                                     (Var 15 result)
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     math_real_m
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -1424,6 +1459,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1446,6 +1482,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1467,6 +1504,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1523,6 +1561,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     magma_r
@@ -1561,6 +1600,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             r:
                                                                 (Variable
@@ -1583,6 +1623,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             total:
                                                                 (Variable
@@ -1604,6 +1645,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1660,6 +1702,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             triple_l:
                                                 (Function
@@ -1687,6 +1730,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1708,6 +1752,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1790,6 +1835,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -1811,6 +1857,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1879,7 +1926,9 @@
                                 )
                         })
                     triple_m
+                    ()
                     [triple_m]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -2032,6 +2081,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             tar:
                                                 (Variable
@@ -2051,6 +2101,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             triple_add_l:
@@ -2077,6 +2128,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2096,6 +2148,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2168,6 +2221,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2187,6 +2241,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2284,16 +2339,18 @@
                                             ()
                                             [(StringConstant
                                                 "tal = "
-                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 25 tal)
                                             (StringConstant
                                                 " tar = "
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 25 tar)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -2327,6 +2384,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             tmaxr:
                                                 (Variable
@@ -2346,6 +2404,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             triple_max_l:
@@ -2372,6 +2431,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2391,6 +2451,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2463,6 +2524,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2482,6 +2544,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2585,16 +2648,18 @@
                                             ()
                                             [(StringConstant
                                                 "tmaxl ="
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 31 tmaxl)
                                             (StringConstant
                                                 " tmaxr ="
-                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 31 tmaxr)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -2628,6 +2693,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             tmr:
                                                 (Variable
@@ -2647,6 +2713,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             triple_minus_l:
@@ -2673,6 +2740,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2692,6 +2760,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2764,6 +2833,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             t:
                                                                 (Variable
@@ -2783,6 +2853,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2886,16 +2957,18 @@
                                             ()
                                             [(StringConstant
                                                 "tml = "
-                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 28 tml)
                                             (StringConstant
                                                 " tmr = "
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 28 tmr)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -2937,10 +3010,12 @@
                                 )
                         })
                     use_triple_m
+                    ()
                     [math_integer_m
                     math_real_m
                     triple_m
                     use_triple_m]
+                    .false.
                     .false.
                     .false.
                 )

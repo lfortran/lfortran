@@ -83,7 +83,7 @@
                                                     Default
                                                     (Pointer
                                                         (Array
-                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -97,6 +97,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             f_string@f_string~genericprocedure:
@@ -129,6 +130,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -196,6 +198,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             dir_handle:
                                                 (Variable
@@ -215,6 +218,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             f_string@f_string_cptr:
@@ -248,6 +252,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     list_files
@@ -274,6 +279,7 @@
                                             (Logical 4)
                                         )
                                         [(If
+                                            ()
                                             (LogicalNot
                                                 (PointerAssociated
                                                     (Var 18 dir_entry_c)
@@ -323,8 +329,10 @@
                                 )
                         })
                     fpm_filesystem
+                    ()
                     [fpm_strings
                     iso_c_binding]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -401,6 +409,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             s:
                                                                 (Variable
@@ -420,6 +429,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -466,6 +476,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -487,6 +498,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -511,42 +523,27 @@
                                     [(Var 6 cptr)]
                                     [(Assignment
                                         (Var 6 s)
-                                        (StringPhysicalCast
-                                            (FunctionCall
-                                                4 f_string_cptr_n
+                                        (FunctionCall
+                                            4 f_string_cptr_n
+                                            ()
+                                            [((Var 6 cptr))
+                                            ((FunctionCall
+                                                6 c_strlen
                                                 ()
-                                                [((Var 6 cptr))
-                                                ((FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ))]
-                                                (String 1 (FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength PointerString)
+                                                [((Var 6 cptr))]
+                                                (Integer 8)
                                                 ()
                                                 ()
-                                            )
-                                            PointerString
-                                            DescriptorString
-                                            (Allocatable
-                                                (String 1 (FunctionCall
-                                                    6 c_strlen
-                                                    ()
-                                                    [((Var 6 cptr))]
-                                                    (Integer 8)
-                                                    ()
-                                                    ()
-                                                ) ExpressionLength DescriptorString)
-                                            )
+                                            ))]
+                                            (String 1 (FunctionCall
+                                                6 c_strlen
+                                                ()
+                                                [((Var 6 cptr))]
+                                                (Integer 8)
+                                                ()
+                                                ()
+                                            ) ExpressionLength DescriptorString)
+                                            ()
                                             ()
                                         )
                                         ()
@@ -582,6 +579,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             n:
                                                 (Variable
@@ -602,6 +600,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             s:
                                                 (Variable
@@ -612,7 +611,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (Var 8 n) ExpressionLength PointerString)
+                                                    (String 1 (Var 8 n) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -621,6 +620,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -632,7 +632,7 @@
                                             1
                                             (Integer 8)
                                             ()
-                                        ) ExpressionLength PointerString)
+                                        ) ExpressionLength DescriptorString)
                                         Source
                                         Implementation
                                         ()
@@ -669,7 +669,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -682,6 +682,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             f_string:
@@ -705,12 +706,13 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     f_string~genericprocedure
                                     (FunctionType
                                         [(Array
-                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
@@ -764,9 +766,18 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     string_t
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [s]
                                     []
@@ -780,9 +791,11 @@
                                 )
                         })
                     fpm_strings
+                    ()
                     [iso_c_binding
                     fpm_strings]
                     .true.
+                    .false.
                     .false.
                 ),
             iso_c_binding:

@@ -16,7 +16,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 8 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -25,6 +25,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             time:
@@ -36,7 +37,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 10 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             values:
@@ -71,6 +73,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             zone:
                                 (Variable
@@ -81,7 +84,7 @@
                                     ()
                                     ()
                                     Default
-                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -90,6 +93,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -200,13 +204,15 @@
                         (StringFormat
                             (StringConstant
                                 "(a,2x,a,2x,a)"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(Var 2 date)
                             (Var 2 time)
                             (Var 2 zone)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -214,11 +220,13 @@
                         (StringFormat
                             (StringConstant
                                 "(8i5)"
-                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 5 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             [(Var 2 values)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

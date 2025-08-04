@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             p1:
                                 (Variable
@@ -48,6 +49,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             t1:
                                 (Variable
@@ -67,6 +69,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             t2:
@@ -88,6 +91,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     associate_03
@@ -98,11 +102,14 @@
                             [(Var 2 t1)
                             (Var 2 t2)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 t1)
                             Gt
@@ -124,7 +131,9 @@
                             ()
                             [(Var 2 p1)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -135,6 +144,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i)
                             Eq

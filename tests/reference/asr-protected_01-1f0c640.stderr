@@ -1,0 +1,5 @@
+semantic error: Variable temp_c is PROTECTED and cannot appear in LHS of assignment
+  --> tests/errors/protected_01.f90:19:3
+   |
+19 |   temp_c = 10
+   |   ^^^^^^ 

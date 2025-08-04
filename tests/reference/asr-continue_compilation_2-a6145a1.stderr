@@ -242,11 +242,11 @@ semantic error: Keyword argument not found
 196 |     type(Circle) :: myCircle3 = Circle(mykeyword=10)
     |                                 ^^^^^^^^^^^^^^^^^^^^ 'mykeyword' keyword argument not found
 
-semantic error: Incompatible ranks in assignment
-   --> tests/errors/continue_compilation_2.f90:199:5
+semantic error: Incompatible ranks 2 and 1 in assignment
+   --> tests/errors/continue_compilation_2.f90:199:36
     |
 199 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
-    |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+    |                                    ^^^^^^^^^^^^^^^^^^^^ 
 
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
@@ -473,7 +473,7 @@ semantic error: Step expression (Increment) in DO loop cannot be zero
 319 |     do i_2 = 1, 5, 0
     |                    ^ 
 
-semantic error: Arguments to dprod must be real(4)
+semantic error: first argument of `dprod` must have kind equal to 4
    --> tests/errors/continue_compilation_2.f90:323:13
     |
 323 |     print*, dprod(4.23_8, 4.3_8)
@@ -509,19 +509,19 @@ semantic error: Type mismatch in argument at argument (1); passed `real` to `int
 334 |     print *, f(42.9)
     |                ^^^^ 
 
-semantic error: Argument to Ichar must have length one
+semantic error: Argument 1 to Ichar must have length 1
    --> tests/errors/continue_compilation_2.f90:336:13
     |
 336 |     print*, ichar("okay")
     |             ^^^^^^^^^^^^^ 
 
-semantic error: first argument of `idint` must have kind equals to 8
+semantic error: first argument of `idint` must have kind equal to 8
    --> tests/errors/continue_compilation_2.f90:338:14
     |
 338 |     print *, idint(4.5)
     |              ^^^^^^^^^^ 
 
-semantic error: first argument of `ifix` must have kind equals to 4
+semantic error: first argument of `ifix` must have kind equal to 4
    --> tests/errors/continue_compilation_2.f90:340:14
     |
 340 |     print *, ifix(4.23_8)
@@ -754,3 +754,81 @@ semantic error: Unequal character lengths in MERGE intrinsic
     |
 438 |     print*, merge("okay", "ok", .true.)
     |             ^^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `idint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:440:14
+    |
+440 |     print *, idint(4.23)
+    |              ^^^^^^^^^^^ 
+
+semantic error: first argument of `idint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:441:14
+    |
+441 |     print *, idint(idint_kind_mismatch)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument 1 to Ichar must have length 1
+   --> tests/errors/continue_compilation_2.f90:443:14
+    |
+443 |     print *, ichar(ichar_runtime)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `dprod` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:445:14
+    |
+445 |     print *, dprod(dprod_1, dprod_2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: second argument of `dprod` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:446:14
+    |
+446 |     print *, dprod(dprod_3, dprod_2)
+    |              ^^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `idnint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:448:14
+    |
+448 |     print *, idnint(3.5)
+    |              ^^^^^^^^^^^ 
+
+semantic error: first argument of `idnint` must have kind equal to 8
+   --> tests/errors/continue_compilation_2.f90:449:14
+    |
+449 |     print *, idnint(idnint_runtime)
+    |              ^^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: first argument of `ifix` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:451:14
+    |
+451 |     print *, ifix(4.23_8)
+    |              ^^^^^^^^^^^^ 
+
+semantic error: first argument of `ifix` must have kind equal to 4
+   --> tests/errors/continue_compilation_2.f90:452:14
+    |
+452 |     print *, ifix(ifix_runtime)
+    |              ^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:454:14
+    |
+454 |     print *, min(.true., .false.)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:455:14
+    |
+455 |     print *, min(min_max, min_max)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:457:14
+    |
+457 |     print *, max(.true., .false.)
+    |              ^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Arguments to min0 must be of real, integer or character type
+   --> tests/errors/continue_compilation_2.f90:458:14
+    |
+458 |     print *, max(min_max, min_max)
+    |              ^^^^^^^^^^^^^^^^^^^^^ 

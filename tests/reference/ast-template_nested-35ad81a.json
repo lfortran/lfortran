@@ -2,11 +2,11 @@
     "basename": "ast-template_nested-35ad81a",
     "cmd": "lfortran --show-ast --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/template_nested.f90",
-    "infile_hash": "4c88b98f588e9904db7b2e700e0c8aab2ffae39f54edeec14fbf4599",
+    "infile_hash": "b575d8ddebeed199be34078f7dfa99b5995ec81d1e730014775e9f5c",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "ast-template_nested-35ad81a.stdout",
-    "stdout_hash": "59d8c7c08d34823d6f0707db0e89bdb7a6a2a3fca9a6f57c228a23f6",
+    "stdout_hash": "239dad3482ddb1cd5e4d1590ef4aba264d986201403c1eefe87ea851",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

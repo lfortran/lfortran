@@ -19,7 +19,9 @@
                                 )
                         })
                     fpm_cmd_install_modules_34
+                    ()
                     [fpm_modules_34]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -40,8 +42,10 @@
                                 )
                         })
                     fpm_manifest_modules_34
+                    ()
                     [fpm_manifest_package_modules_34]
                     .true.
+                    .false.
                     .false.
                 ),
             fpm_manifest_package_modules_34:
@@ -75,6 +79,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             version:
                                                 (Variable
@@ -86,12 +91,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )]
                                                         []
                                                         .true.
-                                                        15 version_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    15 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -100,9 +112,31 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     package_config_t
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (StructType
+                                            [(Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [version_t]
                                     [name
                                     version]
@@ -127,8 +161,10 @@
                                 )
                         })
                     fpm_manifest_package_modules_34
+                    ()
                     [fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                 ),
             fpm_modules_34:
@@ -176,16 +212,6 @@
                                                                     version_t
                                                                     Public
                                                                 ),
-                                                            fpm_versioning_modules_34_version_t:
-                                                                (ExternalSymbol
-                                                                    6
-                                                                    fpm_versioning_modules_34_version_t
-                                                                    10 version_t
-                                                                    fpm_versioning_modules_34
-                                                                    []
-                                                                    version_t
-                                                                    Public
-                                                                ),
                                                             ii:
                                                                 (Variable
                                                                     6
@@ -207,6 +233,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     associate_block
@@ -219,7 +246,9 @@
                                                             ()
                                                             [(Var 6 ii)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -231,10 +260,17 @@
                                                             (Var 5 package)
                                                             6 1_package_config_t_version
                                                             (StructType
-                                                                []
+                                                                [(Allocatable
+                                                                    (Array
+                                                                        (Integer 4)
+                                                                        [(()
+                                                                        ())]
+                                                                        DescriptorArray
+                                                                    )
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                6 fpm_versioning_modules_34_version_t
+                                                                .false.
                                                             )
                                                             ()
                                                         )
@@ -259,6 +295,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             package:
                                                 (Variable
@@ -270,12 +307,27 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )
+                                                        (StructType
+                                                            [(Allocatable
+                                                                (Array
+                                                                    (Integer 4)
+                                                                    [(()
+                                                                    ())]
+                                                                    DescriptorArray
+                                                                )
+                                                            )]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )]
                                                         []
                                                         .true.
-                                                        4 package_config_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    4 package_config_t
                                                     Source
                                                     Public
                                                     Required
@@ -283,6 +335,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             version:
@@ -306,15 +359,31 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     build_model
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
+                                            (StructType
+                                                [(Allocatable
+                                                    (Array
+                                                        (Integer 4)
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )]
                                             []
                                             .true.
-                                            4 package_config_t
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -351,9 +420,11 @@
                                 )
                         })
                     fpm_modules_34
+                    ()
                     [fpm_manifest_modules_34
                     fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                 ),
             fpm_versioning_modules_34:
@@ -386,12 +457,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        10 version_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -399,6 +477,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             string:
@@ -422,15 +501,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     as_string
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            10 version_t
+                                            .false.
                                         )]
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
@@ -482,12 +569,19 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (Array
+                                                                (Integer 4)
+                                                                [(()
+                                                                ())]
+                                                                DescriptorArray
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        10 version_t
+                                                        .false.
                                                     )
-                                                    ()
+                                                    10 version_t
                                                     Source
                                                     Public
                                                     Required
@@ -495,6 +589,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             string:
@@ -518,15 +613,23 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     to_string
                                     (FunctionType
                                         [(StructType
-                                            []
+                                            [(Allocatable
+                                                (Array
+                                                    (Integer 4)
+                                                    [(()
+                                                    ())]
+                                                    DescriptorArray
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            10 version_t
+                                            .false.
                                         )
                                         (Allocatable
                                             (String 1 () DeferredLength DescriptorString)
@@ -584,9 +687,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     11
                                                     to_string
                                                     ()
@@ -598,6 +702,19 @@
                                                 )
                                         })
                                     version_t
+                                    (StructType
+                                        [(Allocatable
+                                            (Array
+                                                (Integer 4)
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [num]
                                     []
@@ -611,8 +728,10 @@
                                 )
                         })
                     fpm_versioning_modules_34
+                    ()
                     [fpm_versioning_modules_34]
                     .true.
+                    .false.
                     .false.
                 ),
             modules_34:
@@ -627,7 +746,7 @@
                     [(Print
                         (StringConstant
                             "running modules_34 program"
-                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 26 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

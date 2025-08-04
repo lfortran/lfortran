@@ -32,6 +32,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             i64:
                                 (Variable
@@ -57,6 +58,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             y:
@@ -93,6 +95,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             z:
                                 (Variable
@@ -128,6 +131,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     intrinsics_23
@@ -140,7 +144,9 @@
                             (Var 2 y)
                             (Var 2 z)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -188,7 +194,9 @@
                                 )
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

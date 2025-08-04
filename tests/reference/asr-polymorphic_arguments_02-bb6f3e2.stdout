@@ -15,14 +15,14 @@
                                     Local
                                     (StringConstant
                                         "c"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     (StringConstant
                                         "c"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                     Save
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     ()
                                     Source
                                     Public
@@ -31,6 +31,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             i_value:
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             l_value:
@@ -77,6 +79,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             r_value:
@@ -109,6 +112,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             str:
                                 (GenericProcedure
@@ -135,9 +139,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        3 ~abstract_type
+                                                        .true.
                                                     )
-                                                    ()
+                                                    3 ~unlimited_polymorphic_type
                                                     Source
                                                     Public
                                                     Required
@@ -145,6 +149,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             str_scalar:
@@ -166,15 +171,22 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
-                                            ~abstract_type:
+                                            ~unlimited_polymorphic_type:
                                                 (Struct
                                                     (SymbolTable
                                                         4
                                                         {
                                                             
                                                         })
-                                                    ~abstract_type
+                                                    ~unlimited_polymorphic_type
+                                                    (StructType
+                                                        []
+                                                        []
+                                                        .false.
+                                                        .true.
+                                                    )
                                                     []
                                                     []
                                                     []
@@ -193,7 +205,7 @@
                                             []
                                             []
                                             .false.
-                                            3 ~abstract_type
+                                            .true.
                                         )]
                                         (Integer 4)
                                         Source
@@ -236,11 +248,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -272,11 +287,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -308,11 +326,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -344,11 +365,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -380,11 +404,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -416,11 +443,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -452,11 +482,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar
@@ -488,11 +521,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (FunctionCall
                                 2 str_scalar

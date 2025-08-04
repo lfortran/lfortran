@@ -35,6 +35,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             sp:
                                 (Variable
@@ -64,6 +65,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     print_intrinsics
@@ -73,7 +75,7 @@
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_sp)  =\""
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -97,10 +99,12 @@
                             )
                             (StringConstant
                                 "\""
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -109,7 +113,7 @@
                             ()
                             [(StringConstant
                                 "pi=acos(-1.0_dp)  =\""
-                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 20 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (IntrinsicElementalFunction
                                 Acos
@@ -133,10 +137,12 @@
                             )
                             (StringConstant
                                 "\""
-                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

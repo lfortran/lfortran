@@ -587,6 +587,16 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                         length = PassUtils::get_bound(array, i + 1, "ubound", al);
                     }
                 }
+                if ( ASRUtils::is_integer(*ASRUtils::expr_type(length)) ) {
+                    ASR::Integer_t* int_type = ASR::down_cast<ASR::Integer_t>(ASRUtils::type_get_past_array(
+                                                ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(length))));
+                    if (int_type->m_kind != 4) {
+                        // we know by default dimensions are construced as `4`
+                        length = ASRUtils::EXPR(ASRUtils::make_Cast_t_value(al, length->base.loc, length, ASR::cast_kindType::IntegerToInteger,
+                            ASRUtils::TYPE(ASR::make_Integer_t(al, length->base.loc, 4))));
+                    }
+
+                }
                 dims.push_back(al, length);
             }
         }
@@ -707,6 +717,15 @@ class EditProcedureCallsVisitor : public ASR::ASRPassBaseWalkVisitor<EditProcedu
                     xx.n_args = new_args.size();
                     return;
                 }
+            }
+
+            // Currently we don't transform class procedure functions
+            if (ASR::is_a<ASR::StructMethodDeclaration_t>(*subrout_sym)) {
+                subrout_sym = ASRUtils::symbol_get_past_external(
+                    ASRUtils::symbol_get_past_StructMethodDeclaration(subrout_sym));
+                update_args_for_pass_arr_by_data_funcs_passed_as_callback(x);
+                not_to_be_erased.insert(subrout_sym);
+                return;
             }
             if( !can_edit_call(x.m_args, x.n_args) ) {
                 not_to_be_erased.insert(subrout_sym);
@@ -1021,7 +1040,8 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
                     ASR::is_a<ASR::Program_t>(*item.second) ||
                     ASR::is_a<ASR::Function_t>(*item.second) ||
                     ASR::is_a<ASR::Struct_t>(*item.second) ||
-                    ASR::is_a<ASR::Block_t>(*item.second)) {
+                    ASR::is_a<ASR::Block_t>(*item.second) ||
+                    ASR::is_a<ASR::AssociateBlock_t>(*item.second)) {
                     SymbolTable* current_scope_copy = current_scope;
                     visit_symbol(*item.second);
                     current_scope = current_scope_copy;
@@ -1061,6 +1081,9 @@ class RemoveArrayByDescriptorProceduresVisitor : public PassUtils::PassVisitor<R
             visit_Unit(x);
         }
 
+        void visit_AssociateBlock(const ASR::AssociateBlock_t& x) {
+            visit_Unit(x);
+        }
 };
 
 void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
@@ -1075,7 +1098,7 @@ void pass_array_by_data(Allocator &al, ASR::TranslationUnit_t &unit,
     RemoveArrayByDescriptorProceduresVisitor x(al, v, not_to_be_erased);
     if ( !pass_options.skip_removal_of_unused_procedures_in_pass_array_by_data ) {
         /*
-            If separate compilation is enabled using `--generate-object-code`, then we don't
+            If separate compilation is enabled using `--separate-compilation`, then we don't
             drop the original ( unused ) procedures. This is for the module procedures where when
             loaded from other file transformation may or maynot take place and then while linking
             it shows missing symbol. There can be multiple reasons:

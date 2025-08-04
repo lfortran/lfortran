@@ -51,25 +51,41 @@ end function diag_rsp_mat
 class ReplaceFunctionCall : public ASR::BaseExprReplacer<ReplaceFunctionCall>
 {
 private :
-    // TODO : for sure use a visitor.
-    // It's soooooo hardCoded
-    std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> get_externalSymbols(ASR::expr_t* expr){
-        std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> externalSymbols_vec;
-        switch (expr->type){
-            case ASR::exprType::StringLen :{
-                ASR::StringLen_t* str_len = ASR::down_cast<ASR::StringLen_t>(expr);
-                return get_externalSymbols(str_len->m_arg);
-            } case ASR::exprType::FunctionCall :{
-                ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expr);
-                if(ASR::is_a<ASR::ExternalSymbol_t>(*func_call->m_name)){
-                    return {std::make_pair(ASR::down_cast<ASR::ExternalSymbol_t>(func_call->m_name), &func_call->m_name)};
-                }
-                break;
-            } default :{
-                return externalSymbols_vec;
-            }
+    /*
+        *Used to iterate over the functionCall node (function call in declaration)
+        to get the externalSymbols, so we can duplicate them again in the new helper function
+
+        * e.g. : `character(foo_ret_int(foo_ret_char())) :: str`
+        assume `foo_ret_char` is an externalSymbol in the current function, moving the call into
+        the helper function requires creating an externalSymbol node tailored for the new helper function scope.
+    */ 
+    class getExternalSymbol : public ASR::BaseWalkVisitor<getExternalSymbol>{
+        std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> &collected_external_symbols; // Collector
+        public :
+
+        getExternalSymbol
+        (std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> &v):collected_external_symbols(v){
+            
         }
-        return externalSymbols_vec;
+        void visit_expr(const ASR::expr_t &x){
+            if(x.type == ASR::FunctionCall){
+                if(ASR::is_a<ASR::ExternalSymbol_t>(*ASR::down_cast<ASR::FunctionCall_t>(&x)->m_name)){
+                    ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(&x);
+                    collected_external_symbols.push_back({
+                        ASR::down_cast<ASR::ExternalSymbol_t>(func_call->m_name),
+                        &func_call->m_name
+                    });
+                }
+            } 
+            ASR::BaseVisitor<getExternalSymbol>::visit_expr(x);
+        }
+    };
+
+    std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> get_externalSymbols(ASR::expr_t* expr){
+        std::vector<std::pair<ASR::ExternalSymbol_t*,ASR::symbol_t**>> v;
+        getExternalSymbol get_external_symbols(v);
+        get_external_symbols.visit_expr(*expr);
+        return v;
     }
 
     void collect_and_create_new_externalSymbols(ASR::expr_t* expr){
@@ -185,7 +201,15 @@ public:
         } else if (is_a<ASR::StringLen_t>(*arg)) {
             ASR::StringLen_t* str_len = ASR::down_cast<ASR::StringLen_t>(arg);
             helper_get_arg_indices_used(str_len->m_arg, indices);
-        } else if (is_a<ASR::Var_t>(*arg)) {
+        } else if (is_a<ASR::StringPhysicalCast_t>(*arg)){
+            ASR::StringPhysicalCast_t* str_cast = ASR::down_cast<ASR::StringPhysicalCast_t>(arg);
+            helper_get_arg_indices_used(str_cast->m_arg, indices);
+        } else if (is_a<ASR::StringConcat_t>(*arg)) {
+            ASR::StringConcat_t* str_concat = ASR::down_cast<ASR::StringConcat_t>(arg);
+            helper_get_arg_indices_used(str_concat->m_left, indices);
+            helper_get_arg_indices_used(str_concat->m_right, indices);
+        }
+         else if (is_a<ASR::Var_t>(*arg)) {
             int arg_num = -1;
             int i = 0;
             std::map<std::string, LCompilers::ASR::symbol_t *> func_scope = current_scope->get_scope();
@@ -200,6 +224,13 @@ public:
             if (!exists_in_arginfo(arg_num, indices)) {
                 indices.push_back(info);
             }
+        } else if (is_a<ASR::LogicalNot_t>(*arg)) {
+            ASR::LogicalNot_t* not_expr = ASR::down_cast<ASR::LogicalNot_t>(arg);
+            helper_get_arg_indices_used(not_expr->m_arg, indices);
+        } else if (is_a<ASR::LogicalBinOp_t>(*arg)) {
+            ASR::LogicalBinOp_t* logical_binop = ASR::down_cast<ASR::LogicalBinOp_t>(arg);
+            helper_get_arg_indices_used(logical_binop->m_left, indices);
+            helper_get_arg_indices_used(logical_binop->m_right, indices);
         }
     }
 
@@ -296,8 +327,8 @@ public:
                         new_call_args.p, new_call_args.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         *current_expr = new_function_call;
 
         ASR::expr_t* function_call_for_return_var = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
@@ -306,20 +337,43 @@ public:
                         args_for_return_var.p, args_for_return_var.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         call_for_return_var = function_call_for_return_var;
         new_function_scope = new_function_scope_copy;
     }
 
-    void replace_StringLen(ASR::StringLen_t *x) {
+    /* 
+        *Replaces expressions returning non-scalar 
+        in the length member of the ASR::string type
+        * Handles : 
+        - `ASR::StrLen`
+        - `ASR::FunctionCall`
+    */
+    void stringLength_replacer(ASR::expr_t *x) {
         if( newargsp != nullptr /*Processing FunctionParam*/) {
-            return BaseExprReplacer<ReplaceFunctionCall>::replace_StringLen(x);
+            switch(x->type){
+                case ASR::StringLen:
+                    return BaseExprReplacer<ReplaceFunctionCall>::replace_StringLen(ASR::down_cast<ASR::StringLen_t>(x));
+                case ASR::FunctionCall:
+                    return BaseExprReplacer<ReplaceFunctionCall>::replace_FunctionCall(ASR::down_cast<ASR::FunctionCall_t>(x));
+                default : 
+                    throw LCompilersException("Unhandled case");
+            }
         }
+
         if (!current_scope || !assignment_value) return;
         std::vector<ArgInfo> indices;
-        helper_get_arg_indices_used(x->m_arg, indices);
-
+        switch(x->type){
+            case ASR::StringLen:
+                helper_get_arg_indices_used(ASR::down_cast<ASR::StringLen_t>(x)->m_arg, indices);
+                break;
+            case ASR::FunctionCall:
+                get_arg_indices_used_functioncall(ASR::down_cast<ASR::FunctionCall_t>(x), indices);
+                break;
+            default : 
+                throw LCompilersException("Unhandled case");
+        }
         SymbolTable* global_scope = current_scope->parent;
         SetChar current_function_dependencies; current_function_dependencies.clear(al);
         SymbolTable* new_scope = al.make_new<SymbolTable>(global_scope);
@@ -327,14 +381,14 @@ public:
         new_function_scope = new_scope;
 
         ASRUtils::SymbolDuplicator sd(al);
-        ASRUtils::ASRBuilder b(al, x->base.base.loc);
+        ASRUtils::ASRBuilder b(al, x->base.loc);
         Vec<ASR::expr_t*> new_args; new_args.reserve(al, indices.size());
         Vec<ASR::call_arg_t> new_call_args; new_call_args.reserve(al, indices.size());
         Vec<ASR::call_arg_t> args_for_return_var; args_for_return_var.reserve(al, indices.size());
 
         Vec<ASR::stmt_t*> new_body; new_body.reserve(al, 1);
         std::string new_function_name = global_scope->get_unique_name("__lcompilers_created_helper_function_", false);
-        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.base.loc, 4));
+        ASR::ttype_t* integer_type = ASRUtils::TYPE(ASR::make_Integer_t(al, x->base.loc, 4));
         ASR::expr_t* return_var = b.Variable(new_scope, new_scope->get_unique_name("__lcompilers_return_var_", false), integer_type, ASR::intentType::ReturnVar);
 
         for (auto arg: indices) {
@@ -370,7 +424,7 @@ public:
         
         collect_and_create_new_externalSymbols(assignment_value);
         new_body.push_back(al, b.Assignment(return_var, assignment_value));
-        ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.base.loc,
+        ASR::asr_t* new_function = ASRUtils::make_Function_t_util(al, x->base.loc,
                     new_scope, s2c(al, new_function_name), current_function_dependencies.p, current_function_dependencies.n,
                     new_args.p, new_args.n,
                     new_body.p, new_body.n,
@@ -382,24 +436,24 @@ public:
         ASR::symbol_t* new_function_sym = ASR::down_cast<ASR::symbol_t>(new_function);
         global_scope->add_or_overwrite_symbol(new_function_name, new_function_sym);
 
-        ASR::expr_t* new_function_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
+        ASR::expr_t* new_function_call = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.loc,
                         new_function_sym,
                         new_function_sym,
                         new_call_args.p, new_call_args.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         *current_expr = new_function_call;
 
-        ASR::expr_t* function_call_for_return_var = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.base.loc,
+        ASR::expr_t* function_call_for_return_var = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, x->base.loc,
                         new_function_sym,
                         new_function_sym,
                         args_for_return_var.p, args_for_return_var.n,
                         integer_type,
                         nullptr,
-                        nullptr,
-                        false));
+                        nullptr
+                        ));
         call_for_return_var = function_call_for_return_var;
         new_function_scope = new_function_scope_copy;
     }
@@ -441,13 +495,21 @@ private:
                 return expr_contains_functionCall_with_Nonscalar_return(
                     ASR::down_cast<ASR::ArraySize_t>(expr)->m_v);
             case ASR::exprType::FunctionCall:{
-                bool any_arg = false; /*any_arg_is_nonScalar_return_funcCall*/
                 ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expr);
-                for(size_t i = 0;i < func_call->n_args; i++){
-                    return any_arg & 
-                        expr_contains_functionCall_with_Nonscalar_return(func_call->m_args[i].m_value);
+                bool found_non_scalar_return = false;
+                for(size_t i = 0;(i < func_call->n_args) && !found_non_scalar_return; i++){
+                    found_non_scalar_return |= expr_contains_functionCall_with_Nonscalar_return(func_call->m_args[i].m_value);
                 }
+                return found_non_scalar_return;
                 break;
+            }
+            case ASR::StringPhysicalCast:
+                return expr_contains_functionCall_with_Nonscalar_return(ASR::down_cast<ASR::StringPhysicalCast_t>(expr)->m_arg);
+            case ASR::StringConcat:{
+                ASR::StringConcat_t* str_concat = ASR::down_cast<ASR::StringConcat_t>(expr);
+                return 
+                    expr_contains_functionCall_with_Nonscalar_return(str_concat->m_left) || 
+                    expr_contains_functionCall_with_Nonscalar_return(str_concat->m_right);
             }
             default :
                 return false; // NOTE : This isn't accurate as we only handle 3 cases above.
@@ -571,7 +633,14 @@ public:
         if (x.m_len && expr_contains_functionCall_with_Nonscalar_return(x.m_len)) {
             ASR::expr_t** current_expr_copy = current_expr;
             current_expr = const_cast<ASR::expr_t**>(&(x.m_len));
-            this->call_replacer_(x.m_len);
+            { // Same as `this->call_replacer_()`. We did in here to workaround. In general this needs a refactor.
+                replacer.current_expr = current_expr;
+                replacer.current_scope = current_scope;
+                replacer.assignment_value = x.m_len;
+                replacer.stringLength_replacer(*current_expr);
+                replacer.current_scope = nullptr;
+                replacer.assignment_value = nullptr;
+            }
             current_expr = current_expr_copy;
         }
     }
@@ -653,9 +722,11 @@ public:
             ASR::symbol_t* sym = ASR::down_cast<ASR::symbol_t>(asr_owner);
             if (ASR::is_a<ASR::Function_t>(*sym)) {
                 func = ASR::down_cast2<ASR::Function_t>(current_scope->asr_owner);
+            } else {
+                return;
             }
         } else {
-            LCompilersException("Visiting FunctionType should happen inside a function scope\n");
+            return;
         }
 
         ASR::ttype_t* return_var_type = x.m_return_var_type;

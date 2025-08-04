@@ -63,6 +63,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -74,12 +75,14 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .false.
-                                                        2 toml_date
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -87,6 +90,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -96,10 +100,12 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Integer 4)
+                                            (Integer 4)]
                                             []
                                             .false.
-                                            2 toml_date
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -120,6 +126,7 @@
                                         [((Var 6 lhs)
                                         []
                                         (IntegerConstant 10 (Integer 4) Decimal)
+                                        ()
                                         ())]
                                         ()
                                         ()
@@ -134,7 +141,7 @@
                                         [(StringFormat
                                             (StringConstant
                                                 "(i4.4,\"-\",i2.2,\"-\",i2.2)"
-                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             [(StructInstanceMember
                                                 (Var 6 rhs)
@@ -155,7 +162,9 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )]
                                         ()
@@ -235,6 +244,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -246,12 +256,37 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Integer 4)
+                                                                (Integer 4)]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )
+                                                        (Allocatable
+                                                            (StructType
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
+                                                                []
+                                                                .true.
+                                                                .false.
+                                                            )
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 toml_datetime
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_datetime
                                                     Source
                                                     Private
                                                     Required
@@ -259,6 +294,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             temporary:
@@ -282,6 +318,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     datetime_to_string
@@ -290,10 +327,35 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Integer 4)
+                                                    (Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )
+                                            (Allocatable
+                                                (StructType
+                                                    [(Integer 4)
+                                                    (Allocatable
+                                                        (Integer 4)
+                                                    )
+                                                    (Integer 4)
+                                                    (Integer 4)
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
+                                                    )]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                            )]
                                             []
                                             .false.
-                                            2 toml_datetime
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -311,6 +373,7 @@
                                     [(Var 8 lhs)
                                     (Var 8 rhs)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -318,10 +381,12 @@
                                                 8 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        2 toml_date
+                                                        .false.
                                                     )
                                                 )
                                                 ()
@@ -339,16 +404,19 @@
                                                 8 1_toml_datetime_date
                                                 (Allocatable
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Integer 4)
+                                                        (Integer 4)]
                                                         []
                                                         .true.
-                                                        2 toml_date
+                                                        .false.
                                                     )
                                                 )
                                                 ()
                                             )
                                         )
                                         (If
+                                            ()
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
@@ -356,10 +424,18 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -377,10 +453,18 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -388,41 +472,11 @@
                                             )
                                             (Assignment
                                                 (Var 8 lhs)
-                                                (StringPhysicalCast
-                                                    (StringConcat
-                                                        (StringPhysicalCast
-                                                            (Var 8 lhs)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (Var 8 lhs)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (StringPhysicalCast
-                                                            (Var 8 temporary)
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (Var 8 temporary)
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (String 1 () ExpressionLength PointerString)
-                                                        ()
-                                                    )
-                                                    PointerString
-                                                    DescriptorString
+                                                (StringConcat
+                                                    (Var 8 lhs)
+                                                    (Var 8 temporary)
                                                     (Allocatable
-                                                        (String 1 () ExpressionLength DescriptorString)
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
                                                     ()
                                                 )
@@ -432,6 +486,7 @@
                                             []
                                         )]
                                         [(If
+                                            ()
                                             (IntrinsicImpureFunction
                                                 Allocated
                                                 [(StructInstanceMember
@@ -439,10 +494,18 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -458,10 +521,18 @@
                                                     8 1_toml_datetime_time
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 toml_time
+                                                            .false.
                                                         )
                                                     )
                                                     ()
@@ -475,10 +546,18 @@
                                                         8 1_toml_datetime_time
                                                         (Allocatable
                                                             (StructType
-                                                                []
+                                                                [(Integer 4)
+                                                                (Allocatable
+                                                                    (Integer 4)
+                                                                )
+                                                                (Integer 4)
+                                                                (Integer 4)
+                                                                (Allocatable
+                                                                    (String 1 () DeferredLength DescriptorString)
+                                                                )]
                                                                 []
                                                                 .true.
-                                                                2 toml_time
+                                                                .false.
                                                             )
                                                         )
                                                         ()
@@ -570,6 +649,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -589,6 +669,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             minute:
@@ -610,6 +691,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             second:
                                                 (Variable
@@ -630,6 +712,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             self:
                                                 (Variable
@@ -641,12 +724,20 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .true.
-                                                        2 toml_time
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -654,6 +745,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             zone:
@@ -665,7 +757,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Private
@@ -675,6 +767,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     new_toml_time
@@ -683,12 +776,20 @@
                                         (Integer 4)
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .true.
-                                            2 toml_time
+                                            .false.
                                         )
                                         Source
                                         Implementation
@@ -708,6 +809,7 @@
                                     (Var 9 millisec)
                                     (Var 9 zone)]
                                     [(If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 hour)]
@@ -729,6 +831,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 minute)]
@@ -750,6 +853,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 second)]
@@ -771,6 +875,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 millisec)]
@@ -794,6 +899,7 @@
                                         []
                                     )
                                     (If
+                                        ()
                                         (IntrinsicElementalFunction
                                             Present
                                             [(Var 9 zone)]
@@ -810,15 +916,7 @@
                                                 )
                                                 ()
                                             )
-                                            (StringPhysicalCast
-                                                (Var 9 zone)
-                                                PointerString
-                                                DescriptorString
-                                                (Allocatable
-                                                    (String 1 () AssumedLength DescriptorString)
-                                                )
-                                                ()
-                                            )
+                                            (Var 9 zone)
                                             ()
                                             .false.
                                         )]
@@ -906,6 +1004,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             rhs:
                                                 (Variable
@@ -917,12 +1016,20 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)
+                                                        (Allocatable
+                                                            (Integer 4)
+                                                        )
+                                                        (Integer 4)
+                                                        (Integer 4)
+                                                        (Allocatable
+                                                            (String 1 () DeferredLength DescriptorString)
+                                                        )]
                                                         []
                                                         .false.
-                                                        2 toml_time
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -930,6 +1037,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -939,10 +1047,18 @@
                                             (String 1 () DeferredLength DescriptorString)
                                         )
                                         (StructType
-                                            []
+                                            [(Integer 4)
+                                            (Allocatable
+                                                (Integer 4)
+                                            )
+                                            (Integer 4)
+                                            (Integer 4)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )]
                                             []
                                             .false.
-                                            2 toml_time
+                                            .false.
                                         )]
                                         ()
                                         Source
@@ -960,6 +1076,7 @@
                                     [(Var 7 lhs)
                                     (Var 7 rhs)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(StructInstanceMember
@@ -978,6 +1095,7 @@
                                             [((Var 7 lhs)
                                             []
                                             (IntegerConstant 12 (Integer 4) Decimal)
+                                            ()
                                             ())]
                                             ()
                                             ()
@@ -992,7 +1110,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2,\".\",i3.3)"
-                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 33 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 7 rhs)
@@ -1021,7 +1139,9 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )]
                                             ()
@@ -1033,6 +1153,7 @@
                                             [((Var 7 lhs)
                                             []
                                             (IntegerConstant 8 (Integer 4) Decimal)
+                                            ()
                                             ())]
                                             ()
                                             ()
@@ -1047,7 +1168,7 @@
                                             [(StringFormat
                                                 (StringConstant
                                                     "(i2.2,\":\",i2.2,\":\",i2.2)"
-                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 24 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                 )
                                                 [(StructInstanceMember
                                                     (Var 7 rhs)
@@ -1068,7 +1189,9 @@
                                                     ()
                                                 )]
                                                 FormatFortran
-                                                (String 1 () ExpressionLength CString)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
                                                 ()
                                             )]
                                             ()
@@ -1078,32 +1201,14 @@
                                         )]
                                     )
                                     (If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
-                                            [(StringPhysicalCast
-                                                (StructInstanceMember
-                                                    (Var 7 rhs)
-                                                    7 1_toml_time_zone
-                                                    (Allocatable
-                                                        (String 1 () DeferredLength DescriptorString)
-                                                    )
-                                                    ()
-                                                )
-                                                DescriptorString
-                                                PointerString
+                                            [(StructInstanceMember
+                                                (Var 7 rhs)
+                                                7 1_toml_time_zone
                                                 (Allocatable
-                                                    (String 1 (StringLen
-                                                        (StructInstanceMember
-                                                            (Var 7 rhs)
-                                                            7 1_toml_time_zone
-                                                            (Allocatable
-                                                                (String 1 () DeferredLength DescriptorString)
-                                                            )
-                                                            ()
-                                                        )
-                                                        (Integer 4)
-                                                        ()
-                                                    ) ExpressionLength PointerString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )]
@@ -1113,72 +1218,26 @@
                                         )
                                         [(Assignment
                                             (Var 7 lhs)
-                                            (StringPhysicalCast
-                                                (StringConcat
-                                                    (StringPhysicalCast
-                                                        (Var 7 lhs)
-                                                        DescriptorString
-                                                        PointerString
+                                            (StringConcat
+                                                (Var 7 lhs)
+                                                (IntrinsicElementalFunction
+                                                    StringTrim
+                                                    [(StructInstanceMember
+                                                        (Var 7 rhs)
+                                                        7 1_toml_time_zone
                                                         (Allocatable
-                                                            (String 1 (StringLen
-                                                                (Var 7 lhs)
-                                                                (Integer 4)
-                                                                ()
-                                                            ) ExpressionLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                         )
                                                         ()
+                                                    )]
+                                                    0
+                                                    (Allocatable
+                                                        (String 1 () DeferredLength DescriptorString)
                                                     )
-                                                    (IntrinsicElementalFunction
-                                                        StringTrim
-                                                        [(StringPhysicalCast
-                                                            (StructInstanceMember
-                                                                (Var 7 rhs)
-                                                                7 1_toml_time_zone
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
-                                                            DescriptorString
-                                                            PointerString
-                                                            (Allocatable
-                                                                (String 1 (StringLen
-                                                                    (StructInstanceMember
-                                                                        (Var 7 rhs)
-                                                                        7 1_toml_time_zone
-                                                                        (Allocatable
-                                                                            (String 1 () DeferredLength DescriptorString)
-                                                                        )
-                                                                        ()
-                                                                    )
-                                                                    (Integer 4)
-                                                                    ()
-                                                                ) ExpressionLength PointerString)
-                                                            )
-                                                            ()
-                                                        )]
-                                                        0
-                                                        (String 1 (StringLen
-                                                            (StructInstanceMember
-                                                                (Var 7 rhs)
-                                                                7 1_toml_time_zone
-                                                                (Allocatable
-                                                                    (String 1 () DeferredLength DescriptorString)
-                                                                )
-                                                                ()
-                                                            )
-                                                            (Integer 4)
-                                                            ()
-                                                        ) ExpressionLength PointerString)
-                                                        ()
-                                                    )
-                                                    (String 1 () ExpressionLength PointerString)
                                                     ()
                                                 )
-                                                PointerString
-                                                DescriptorString
                                                 (Allocatable
-                                                    (String 1 () ExpressionLength DescriptorString)
+                                                    (String 1 () DeferredLength DescriptorString)
                                                 )
                                                 ()
                                             )
@@ -1217,6 +1276,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             month:
                                                 (Variable
@@ -1237,9 +1297,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     4
                                                     to_string
                                                     rhs
@@ -1268,6 +1329,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1278,6 +1340,14 @@
                                                 )
                                         })
                                     toml_date
+                                    (StructType
+                                        [(Integer 4)
+                                        (Integer 4)
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [year
                                     month
@@ -1307,13 +1377,15 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Integer 4)
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            2 toml_date
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 toml_date
                                                     Source
                                                     Private
                                                     Required
@@ -1321,6 +1393,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             time:
@@ -1334,13 +1407,21 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)
+                                                            (Allocatable
+                                                                (Integer 4)
+                                                            )
+                                                            (Integer 4)
+                                                            (Integer 4)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )]
                                                             []
                                                             .true.
-                                                            2 toml_time
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 toml_time
                                                     Source
                                                     Private
                                                     Required
@@ -1349,9 +1430,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     5
                                                     to_string
                                                     rhs
@@ -1370,6 +1452,37 @@
                                                 )
                                         })
                                     toml_datetime
+                                    (StructType
+                                        [(Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Integer 4)
+                                                (Integer 4)]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )
+                                        (Allocatable
+                                            (StructType
+                                                [(Integer 4)
+                                                (Allocatable
+                                                    (Integer 4)
+                                                )
+                                                (Integer 4)
+                                                (Integer 4)
+                                                (Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )]
+                                                []
+                                                .true.
+                                                .false.
+                                            )
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [date
                                     time]
@@ -1406,6 +1519,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             millisec:
                                                 (Variable
@@ -1428,6 +1542,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             minute:
                                                 (Variable
@@ -1447,6 +1562,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             second:
@@ -1468,9 +1584,10 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             to_string:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     to_string
                                                     rhs
@@ -1501,6 +1618,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             ~assign:
                                                 (CustomOperator
@@ -1511,6 +1629,20 @@
                                                 )
                                         })
                                     toml_time
+                                    (StructType
+                                        [(Integer 4)
+                                        (Allocatable
+                                            (Integer 4)
+                                        )
+                                        (Integer 4)
+                                        (Integer 4)
+                                        (Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [hour
                                     minute
@@ -1535,7 +1667,9 @@
                                 )
                         })
                     tomlf_datetime
+                    ()
                     [tomlf_datetime]
+                    .false.
                     .false.
                     .false.
                 )

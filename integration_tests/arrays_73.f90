@@ -13,7 +13,7 @@ contains
         integer, intent(inout) :: A3(:,:)
         integer, intent(inout) :: A2(:,:,:)
         integer, intent(inout) :: tmp(:,:)
-
+        integer, save :: X(4) = [2,1,4,3]
         A1(:,[2,1]) = A3(:,[2,3])
         if (A1(1,1) /= 7 .or. A1(2,1) /= 8 .or. A1(3,1) /= 9 .or. &
             & A1(1,2) /= 4 .or. A1(2,2) /= 5 .or. A1(3,2) /= 6 .or. &
@@ -30,6 +30,7 @@ contains
             & A1(1,3) /= 5 .or. A1(2,3) /= 6 .or. A1(3,3) /= 9) error stop
 
         !! TODO: Handle cases by creating Temporary for RHS where LHS and RHS has common variable
-
+        A(X) = A
+        if (any(A /= [2, 1, 4, 3])) error stop
     end subroutine
 end program

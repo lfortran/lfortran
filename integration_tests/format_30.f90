@@ -18,4 +18,5 @@ program format_30
     print "(ES300.0)", 1.0
     print "(ES0.8)", tiny(1.0_8)
     print "(ES0.8)", huge(1.0_8)
+    print "(E14.7)", 0.0
 end program format_30

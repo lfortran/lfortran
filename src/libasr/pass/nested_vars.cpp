@@ -189,6 +189,7 @@ public:
                 visit_symbol(*sym);
             } else {
                 ASR::Variable_t *v = ASR::down_cast<ASR::Variable_t>(sym);
+                visit_ttype(*v->m_type);
                 // If the variable is not defined in the current scope, it is a
                 // "needed global" since we need to be able to access it from the
                 // nested procedure.
@@ -257,10 +258,6 @@ public:
     void replace_ArrayPhysicalCast(ASR::ArrayPhysicalCast_t* x) {
         ASR::BaseExprReplacer<ReplacerNestedVars>::replace_ArrayPhysicalCast(x);
         x->m_old = ASRUtils::extract_physical_type(ASRUtils::expr_type(x->m_arg));
-    }
-
-    void replace_Array(ASR::Array_t* /*x*/) {
-        return ;
     }
 
     void replace_ArrayBroadcast(ASR::ArrayBroadcast_t* x) {
@@ -353,15 +350,13 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                     nested_var_to_ext_var[it2] = std::make_pair(module_name, dup_sym);
                     continue;
                 }
+                ASR::symbol_t* m_derived_type_or_class_type = nullptr;
                 if( ASR::is_a<ASR::StructType_t>(*var_type_)) {
                     ASR::symbol_t* derived_type_or_class_type = nullptr;
-                    ASR::StructType_t* struct_t = nullptr;
-                    if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
-                        struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
-                        derived_type_or_class_type = struct_t->m_derived_type;
-                    }
+                    ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(var_type_);
+                    derived_type_or_class_type = var->m_type_declaration;
                     if( current_scope->get_counter() != ASRUtils::symbol_parent_symtab(derived_type_or_class_type)->get_counter() ) {
-                        ASR::symbol_t* m_derived_type_or_class_type = current_scope->get_symbol(
+                        m_derived_type_or_class_type = current_scope->get_symbol(
                             ASRUtils::symbol_name(derived_type_or_class_type));
                         if( m_derived_type_or_class_type == nullptr ) {
                             if (!ASR::is_a<ASR::Program_t>(
@@ -390,15 +385,15 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                             }
                         }
                         if (ASR::is_a<ASR::StructType_t>(*var_type_)) {
-                            var_type_ = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(
+                            var_type_ = ASRUtils::make_StructType_t_util(
                                             al,
                                             struct_t->base.base.loc,
                                             m_derived_type_or_class_type,
-                                            ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct));
+                                            ASR::down_cast<ASR::StructType_t>(var_type_)->m_is_cstruct);
                         }
                         if( ASR::is_a<ASR::Array_t>(*var_type) ) {
                             ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(var_type);
-                            var_type = ASRUtils::make_Array_t_util(al, struct_t->base.base.loc,
+                            var_type = ASRUtils::make_Array_t_util(al, var->base.base.loc,
                                 var_type_, array_t->m_dims, array_t->n_dims);
                         } else {
                             var_type = var_type_;
@@ -409,15 +404,41 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                         }
                     }
                 }
-                if( (ASRUtils::is_array(var_type) && !is_pointer) ||
-                    is_allocatable ) {
+                if( (ASRUtils::is_array(var_type) && !is_pointer) ) {
                     var_type = ASRUtils::duplicate_type_with_empty_dims(al, var_type);
                     var_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, var_type->base.loc,
                         ASRUtils::type_get_past_allocatable(var_type)));
                 }
+                // Create proper string type (a ointer deferred-length string)
+                if(ASRUtils::is_string_only(var_type)){ // e.g -> `character(len=foo()) :: str`
+                    ASR::String_t* str = ASRUtils::get_string_type(var_type);
+                    if(str->m_len_kind == ASR::AssumedLength ||
+                        (str->m_len && !ASRUtils::is_value_constant(str->m_len))){
+                        var_type = 
+                            ASRUtils::TYPE(
+                                ASR::make_Pointer_t(al, str->base.base.loc,
+                                    ASRUtils::TYPE(ASR::make_String_t(al, str->base.base.loc, 1,
+                                        nullptr, ASR::DeferredLength, ASR::DescriptorString))));
+                    }
+                } else if(ASRUtils::is_array_of_strings(var_type)){ // e.g -> `character(len=foo()) :: str(10)`
+                    ASR::Array_t* array_t = ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable_pointer(var_type));
+                    ASR::String_t* string_t = ASRUtils::get_string_type(var_type);
+                    if(string_t->m_len_kind == ASR::AssumedLength || (string_t->m_len && !ASRUtils::is_value_constant(string_t->m_len))){
+                        // Create a new ASR::String node, To avoid using the original one.
+                        array_t->m_type = ASRUtils::TYPE(ASR::make_String_t(al, string_t->base.base.loc, 1,
+                                            nullptr, ASR::DeferredLength, ASR::DescriptorString));
+                    }
+                }
+                if(is_allocatable && !ASRUtils::is_allocatable_or_pointer(var_type) ){ // Revert allocatable type back again
+                    var_type = ASRUtils::TYPE(ASR::make_Allocatable_t(al, var_type->base.loc, var_type));
+                }
+                ASR::symbol_t* type_decl = nullptr;
+                if (m_derived_type_or_class_type) {
+                    type_decl = m_derived_type_or_class_type;
+                }
                 ASR::expr_t *sym_expr = PassUtils::create_auxiliary_variable(
                     it2->base.loc, new_ext_var, al, current_scope, var_type,
-                    ASR::intentType::Unspecified);
+                    ASR::intentType::Unspecified, type_decl, nullptr);
                 ASR::symbol_t* sym = ASR::down_cast<ASR::Var_t>(sym_expr)->m_v;
                 nested_var_to_ext_var[it2] = std::make_pair(module_name, sym);
             }
@@ -425,8 +446,9 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
                                             /* a_symtab */ current_scope,
                                             /* a_name */ s2c(al, module_name),
                                             nullptr,
+                                            nullptr,
                                             0,
-                                            false, false);
+                                            false, false, false);
             if (is_any_variable_externally_defined) {
                 // this module is externally defined, so we mark it as external
                 current_scope->mark_all_variables_external(al);
@@ -600,10 +622,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name));
     }
 
-    void visit_Array(const ASR::Array_t& /*x*/) {
-        return ;
-    }
-
     void visit_ArrayBroadcast(const ASR::ArrayBroadcast_t& x) {
         ASR::expr_t** current_expr_copy_269 = current_expr;
         current_expr = const_cast<ASR::expr_t**>(&(x.m_array));
@@ -667,26 +685,35 @@ public:
                                             ASR::down_cast<ASR::Variable_t>(
                                                 ASRUtils::symbol_get_past_external(ext_sym))->m_type))
                                    && ASR::is_a<ASR::Program_t>(*ASRUtils::get_asr_owner((ext_sym)))) {
-                            ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(ASRUtils::type_get_past_array(
-                                                    ASRUtils::type_get_past_allocatable_pointer(
-                                                        ASR::down_cast<ASR::Variable_t>(
-                                                            ASRUtils::symbol_get_past_external(ext_sym))->m_type)));
+                            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(
+                                    ASRUtils::symbol_get_past_external(ext_sym));
                             // Import the Struct as an `ExternalSymbol` into `Program`
+                            std::string sym_name, module_name = "";
+                            ASR::symbol_t* m_external = nullptr;
+                            if (ASR::is_a<ASR::ExternalSymbol_t>(*var->m_type_declaration)) {
+                                sym_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(var->m_type_declaration));
+                                m_external = ASRUtils::symbol_get_past_external(var->m_type_declaration);
+                                module_name = ASR::down_cast<ASR::ExternalSymbol_t>(
+                                                            var->m_type_declaration)->m_module_name;
+                            } else {
+                                sym_name = ASRUtils::symbol_name(var->m_type_declaration);
+                                m_external = var->m_type_declaration;
+                                module_name = ASR::down_cast<ASR::ExternalSymbol_t>(ext_sym)->m_module_name;
+                            }
                             ASR::symbol_t* st_sym = ASR::down_cast<ASR::symbol_t>(
                                                     ASR::make_ExternalSymbol_t(
                                                         al,
-                                                        st->m_derived_type->base.loc,
+                                                        var->base.base.loc,
                                                         current_scope,
-                                                        ASRUtils::symbol_name(st->m_derived_type),
-                                                        st->m_derived_type,
-                                                        ASR::down_cast<ASR::ExternalSymbol_t>(
-                                                            ext_sym)->m_module_name,
+                                                        s2c(al, sym_name),
+                                                        m_external,
+                                                        s2c(al, module_name),
                                                         nullptr,
                                                         0,
-                                                        ASRUtils::symbol_name(st->m_derived_type),
+                                                        ASRUtils::symbol_name(var->m_type_declaration),
                                                         ASR::accessType::Public));
-                            if (!current_scope->get_symbol(ASRUtils::symbol_name(st->m_derived_type))) {
-                                current_scope->add_symbol(ASRUtils::symbol_name(st->m_derived_type), st_sym);
+                            if (!current_scope->get_symbol(ASRUtils::symbol_name(var->m_type_declaration))) {
+                                current_scope->add_symbol(ASRUtils::symbol_name(var->m_type_declaration), st_sym);
                             }
                         }
                         ASR::symbol_t* sym_ = sym;
@@ -718,14 +745,16 @@ public:
                             ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration &&
                             ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external
                             (ASR::down_cast<ASR::Variable_t>(sym_)->m_type_declaration));
-                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || is_sym_allocatable_or_pointer ) {
+                        if( ASRUtils::is_array(ASRUtils::symbol_type(sym)) || ASRUtils::is_pointer(ASRUtils::symbol_type(ext_sym)) ) {
                             ASR::stmt_t *associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                                        target, val, current_scope));
+                                                        target, val));
                             body.push_back(al, associate);
-                            if( is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
+                            // TODO : Remove the following if block (See integration test `arrays_87.f90`)
+                            if(ASRUtils::is_array(ASRUtils::symbol_type(sym)) &&
+                                is_ext_sym_allocatable_or_pointer && is_sym_allocatable_or_pointer
                                 && ASRUtils::EXPR2VAR(val)->m_storage != ASR::storage_typeType::Parameter ) {
                                 associate = ASRUtils::STMT(ASRUtils::make_Associate_t_util(al, t->base.loc,
-                                    val, target, current_scope));
+                                    val, target));
                                 assigns_at_end.push_back(associate);
                             }
                         } else if (is_procedure_variable) {
@@ -804,19 +833,13 @@ public:
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
                 ASR::Variable_t* v = ASR::down_cast<ASR::Variable_t>(item.second);
                 if (ASR::is_a<ASR::StructType_t>(*ASRUtils::type_get_past_array(
-                        ASRUtils::type_get_past_allocatable_pointer(v->m_type)))
-                    && !ASRUtils::is_class_type(
-                        ASRUtils::type_get_past_allocatable_pointer(v->m_type))) {
-                    // Fix the ttype of variables to point to the imported Struct (as ExternalSymbol)
-                    ASR::StructType_t* st = ASR::down_cast<ASR::StructType_t>(
-                                                ASRUtils::type_get_past_array(
-                                                    ASRUtils::type_get_past_allocatable_pointer(
-                                                        v->m_type)));
-                    ASR::down_cast<ASR::StructType_t>(
-                        ASRUtils::type_get_past_array(
-                            ASRUtils::type_get_past_allocatable_pointer(
-                                v->m_type)))->m_derived_type = current_scope->get_symbol(
-                                                                ASRUtils::symbol_name(st->m_derived_type));
+                        ASRUtils::type_get_past_allocatable_pointer(v->m_type)))) {
+                    // Fix the type_declaration of variables to point to the imported Struct (as ExternalSymbol)
+                    ASR::symbol_t* type_decl = v->m_type_declaration;
+                    if ( current_scope->get_symbol(ASRUtils::symbol_name(type_decl)) ) {
+                        ASR::down_cast<ASR::Variable_t>(item.second)->m_type_declaration = current_scope->get_symbol(
+                                                                                                ASRUtils::symbol_name(type_decl));
+                    }
                 }
             }
         }

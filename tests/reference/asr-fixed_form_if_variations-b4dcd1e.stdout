@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     f
@@ -50,7 +51,9 @@
                             ()
                             [(Var 2 a)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -70,6 +73,7 @@
                     main
                     []
                     [(If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
@@ -83,7 +87,7 @@
                         [(Print
                             (StringConstant
                                 "first branch"
-                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 12 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                         (GoToTarget
@@ -93,7 +97,7 @@
                         [(Print
                             (StringConstant
                                 "second branch"
-                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 13 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )]
                     )
@@ -108,6 +112,7 @@
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
@@ -122,6 +127,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Gt
@@ -139,6 +145,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Lt

@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     main
@@ -35,6 +36,7 @@
                         1000
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerConstant 0 (Integer 4) Decimal)
                             Lt
@@ -58,6 +60,7 @@
                         100
                     )
                     (Select
+                        ()
                         (Var 2 k)
                         [(CaseStmt
                             [(IntegerConstant 100 (Integer 4) Decimal)]
@@ -93,7 +96,7 @@
                     (Print
                         (StringConstant
                             "run"
-                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )]
                 )

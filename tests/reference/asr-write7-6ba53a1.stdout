@@ -13,7 +13,7 @@
                                         3
                                         {
                                             pwf:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     pwf
                                                     ()
@@ -24,7 +24,7 @@
                                                     .false.
                                                 ),
                                             pwunf:
-                                                (ClassProcedure
+                                                (StructMethodDeclaration
                                                     3
                                                     pwunf
                                                     ()
@@ -50,6 +50,12 @@
                                                 )
                                         })
                                     person
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     []
                                     []
@@ -79,9 +85,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 person
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 person
                                                     Source
                                                     Public
                                                     Required
@@ -89,6 +95,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             iomsg:
@@ -100,7 +107,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -109,6 +116,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             iostat:
@@ -130,6 +138,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iotype:
                                                 (Variable
@@ -140,7 +149,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -149,6 +158,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             pfmt:
@@ -160,7 +170,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                    (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -169,6 +179,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             unit:
@@ -189,6 +200,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             vlist:
@@ -215,6 +227,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     pwf
@@ -223,10 +236,10 @@
                                             []
                                             []
                                             .false.
-                                            2 person
+                                            .false.
                                         )
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)
+                                        (String 1 () AssumedLength DescriptorString)
                                         (Array
                                             (Integer 4)
                                             [(()
@@ -234,7 +247,7 @@
                                             DescriptorArray
                                         )
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -279,9 +292,9 @@
                                                         []
                                                         []
                                                         .false.
-                                                        2 person
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 person
                                                     Source
                                                     Public
                                                     Required
@@ -289,6 +302,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             iomsg:
@@ -300,7 +314,7 @@
                                                     ()
                                                     ()
                                                     Default
-                                                    (String 1 () AssumedLength PointerString)
+                                                    (String 1 () AssumedLength DescriptorString)
                                                     ()
                                                     Source
                                                     Public
@@ -309,6 +323,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             iostat:
@@ -330,6 +345,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             unit:
                                                 (Variable
@@ -350,6 +366,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     pwunf
@@ -358,11 +375,11 @@
                                             []
                                             []
                                             .false.
-                                            2 person
+                                            .false.
                                         )
                                         (Integer 4)
                                         (Integer 4)
-                                        (String 1 () AssumedLength PointerString)]
+                                        (String 1 () AssumedLength DescriptorString)]
                                         ()
                                         Source
                                         Implementation
@@ -389,7 +406,9 @@
                                 )
                         })
                     write7_mod
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

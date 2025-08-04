@@ -178,10 +178,11 @@ public:
                     sub += indent + name + "->" + itr.first + " = " + mem_var_name + ";\n";
                 }
             } else if( ASR::is_a<ASR::StructType_t>(*mem_type) ) {
-                ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(mem_type);
-                ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
-                    ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
-                allocate_array_members_of_struct(struct_type_t, sub, indent, "(&(" + name + "->" + itr.first + "))");
+                // TODO: StructType
+                // ASR::StructType_t* struct_t = ASR::down_cast<ASR::StructType_t>(mem_type);
+                // ASR::Struct_t* struct_type_t = ASR::down_cast<ASR::Struct_t>(
+                //     ASRUtils::symbol_get_past_external(struct_t->m_derived_type));
+                // allocate_array_members_of_struct(struct_type_t, sub, indent, "(&(" + name + "->" + itr.first + "))");
             }
         }
     }
@@ -360,8 +361,7 @@ public:
                     sub = format_type_c(dims, type_name, v.m_name, use_ref, dummy);
                 }
             } else if(ASR::is_a<ASR::StructType_t>(*t2)) {
-                ASR::StructType_t *t = ASR::down_cast<ASR::StructType_t>(t2);
-                std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
+                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                 if( is_array ) {
                     bool is_fixed_size = true;
                     std::string dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
@@ -432,8 +432,7 @@ public:
                 }
             } else if (ASR::is_a<ASR::StructType_t>(*v_m_type)) {
                 std::string indent(indentation_level*indentation_spaces, ' ');
-                ASR::StructType_t *t = ASR::down_cast<ASR::StructType_t>(v_m_type);
-                std::string der_type_name = ASRUtils::symbol_name(t->m_derived_type);
+                std::string der_type_name = ASRUtils::symbol_name(v.m_type_declaration);
                  if( is_array ) {
                     bool is_fixed_size = true;
                     dims = convert_dims_c(n_dims, m_dims, v_m_type, is_fixed_size, true);
@@ -469,7 +468,7 @@ public:
                     } else {
                         sub += " = &" + value_var_name + ";\n";
                         ASR::Struct_t* der_type_t = ASR::down_cast<ASR::Struct_t>(
-                        ASRUtils::symbol_get_past_external(t->m_derived_type));
+                        ASRUtils::symbol_get_past_external(v.m_type_declaration));
                         allocate_array_members_of_struct(der_type_t, sub, indent, std::string(v.m_name));
                         sub.pop_back();
                         sub.pop_back();
@@ -533,12 +532,20 @@ public:
             } else if (ASR::is_a<ASR::Tuple_t>(*v_m_type)) {
                 ASR::Tuple_t* t = ASR::down_cast<ASR::Tuple_t>(v_m_type);
                 std::string tuple_type_c = c_ds_api->get_tuple_type(t);
-                sub = format_type_c("", tuple_type_c, v.m_name,
+                std::string name = v.m_name;
+                if (v.m_intent == ASRUtils::intent_out) {
+                    name = "*" + name;
+                }
+                sub = format_type_c("", tuple_type_c, name,
                                     false, false);
             } else if (ASR::is_a<ASR::Dict_t>(*v_m_type)) {
                 ASR::Dict_t* t = ASR::down_cast<ASR::Dict_t>(v_m_type);
                 std::string dict_type_c = c_ds_api->get_dict_type(t);
-                sub = format_type_c("", dict_type_c, v.m_name,
+                std::string name = v.m_name;
+                if (v.m_intent == ASRUtils::intent_out) {
+                    name = "*" + name;
+                }
+                sub = format_type_c("", dict_type_c, name,
                                     false, false);
             } else if (ASR::is_a<ASR::CPtr_t>(*v_m_type)) {
                 sub = format_type_c("", "void*", v.m_name, false, false);

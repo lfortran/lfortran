@@ -53,13 +53,15 @@ private:
 
     std::set<std::pair<uint64_t, std::string>> const_assigned;
 
-    bool symbol_visited;
+    // checks whether we've visited any `Var`, which isn't a global `Variable`
+    bool non_global_symbol_visited;
     bool _return_var_or_intent_out = false;
     bool _processing_dims = false;
+    const ASR::expr_t* current_expr {}; // current expression being visited 
 
 public:
     VerifyVisitor(bool check_external, diag::Diagnostics &diagnostics) : check_external{check_external},
-        diagnostics{diagnostics}, symbol_visited{false} {}
+        diagnostics{diagnostics}, non_global_symbol_visited{false} {}
 
     // Requires the condition `cond` to be true. Raise an exception otherwise.
     #define require(cond, error_msg) ASRUtils::require_impl((cond), (error_msg), x.base.base.loc, diagnostics);
@@ -398,25 +400,25 @@ public:
         BaseWalkVisitor<VerifyVisitor>::visit_Assignment(x);
     }
 
-    void visit_ClassProcedure(const ClassProcedure_t &x) {
+    void visit_StructMethodDeclaration(const StructMethodDeclaration_t &x) {
         require(x.m_name != nullptr,
-            "The ClassProcedure::m_name cannot be nullptr");
+            "The StructMethodDeclaration::m_name cannot be nullptr");
         require(x.m_proc != nullptr,
-            "The ClassProcedure::m_proc cannot be nullptr");
+            "The StructMethodDeclaration::m_proc cannot be nullptr");
         require(x.m_proc_name != nullptr,
-            "The ClassProcedure::m_proc_name cannot be nullptr");
+            "The StructMethodDeclaration::m_proc_name cannot be nullptr");
 
         SymbolTable *symtab = x.m_parent_symtab;
         require(symtab != nullptr,
-            "ClassProcedure::m_parent_symtab cannot be nullptr");
+            "StructMethodDeclaration::m_parent_symtab cannot be nullptr");
         require(symtab->get_symbol(std::string(x.m_name)) != nullptr,
-            "ClassProcedure '" + std::string(x.m_name) + "' not found in parent_symtab symbol table");
+            "StructMethodDeclaration '" + std::string(x.m_name) + "' not found in parent_symtab symbol table");
         symbol_t *symtab_sym = symtab->get_symbol(std::string(x.m_name));
         const symbol_t *current_sym = &x.base;
         require(symtab_sym == current_sym,
-            "ClassProcedure's parent symbol table does not point to it");
+            "StructMethodDeclaration's parent symbol table does not point to it");
         require(id_symtab_map.find(symtab->counter) != id_symtab_map.end(),
-            "ClassProcedure::m_parent_symtab must be present in the ASR ("
+            "StructMethodDeclaration::m_parent_symtab must be present in the ASR ("
                 + std::string(x.m_name) + ")");
 
         ASR::Function_t* x_m_proc = ASR::down_cast<ASR::Function_t>(x.m_proc);
@@ -536,7 +538,7 @@ public:
         std::vector<std::string> struct_dependencies;
         for (auto &a : x.m_symtab->get_scope()) {
             this->visit_symbol(*a.second);
-            if( ASR::is_a<ASR::ClassProcedure_t>(*a.second) ||
+            if( ASR::is_a<ASR::StructMethodDeclaration_t>(*a.second) ||
                 ASR::is_a<ASR::GenericProcedure_t>(*a.second) ||
                 ASR::is_a<ASR::Struct_t>(*a.second) ||
                 ASR::is_a<ASR::Union_t>(*a.second) ||
@@ -544,15 +546,19 @@ public:
                 ASR::is_a<ASR::CustomOperator_t>(*a.second) ) {
                 continue ;
             }
+            if ( ASR::is_a<ASR::Variable_t>(*a.second) ) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(a.second);
+                if ( var->m_type_declaration ) {
+                    struct_dependencies.push_back(
+                        std::string(ASRUtils::symbol_name(var->m_type_declaration)));
+                }
+            }
             // TODO: Uncomment the following line
             // ASR::ttype_t* var_type = ASRUtils::extract_type(ASRUtils::symbol_type(a.second));
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
             char* aggregate_type_name = nullptr;
             ASR::symbol_t* sym = nullptr;
-            if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                sym = ASR::down_cast<ASR::StructType_t>(var_type)->m_derived_type;
-                aggregate_type_name = ASRUtils::symbol_name(sym);
-            } else if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
+            if( ASR::is_a<ASR::EnumType_t>(*var_type) ) {
                 sym = ASR::down_cast<ASR::EnumType_t>(var_type)->m_enum_type;
                 aggregate_type_name = ASRUtils::symbol_name(sym);
             } else if( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
@@ -705,7 +711,34 @@ public:
                         " must reduce to a compile time constant.");
             }
         }
-
+        if(ASRUtils::is_character(*x.m_type)){
+            String_t* str = down_cast<String_t>(ASRUtils::extract_type(x.m_type));
+            require(str->m_len_kind != ASR::ImplicitLength,
+                "Variable symbol of string type can't have a length of kind \"ImplicitLength\"")
+            if(str->m_len_kind == ASR::DeferredLength){
+                /* 
+                    String type Varaible + DeferredLength ==> Must be allocatable or pointer(atleast for Fortran frontend)
+                    String type Expressions + DeferredLength ==> Dont' have to be allocatable or pointer.
+                */ 
+                require(ASRUtils::is_allocatable(x.m_type) || ASRUtils::is_pointer(x.m_type) ,
+                    "Variable of string type with length kind \"DeferredLength\" must be allocatable OR pointer");
+            }
+            if(x.m_abi == abiType::BindC && 
+                x.m_intent != ASR::Local /*Input OR Output*/){
+                if(ASRUtils::is_string_only(x.m_type) && 
+                    str->m_physical_type == CChar){ // Exclude array of strings
+                    require(str->m_len_kind == ASR::ExpressionLength, 
+                        "Cbind character variable that isn't local must have length kind \"ExpressionLength\"");
+                    int64_t len = 0; ASRUtils::extract_value(str->m_len, len);
+                    require(len == 1,
+                        "Cbind character variable that isn't local must have length 1");
+                }
+            }
+            if(str->m_physical_type == ASR::CChar){
+                require(x.m_intent != ASR::Local,
+                    "CChar-string-physical type shouldn't be used with local variables");
+            }
+        }
         if (x.m_symbolic_value)
             visit_expr(*x.m_symbolic_value);
         if (x.m_value)
@@ -735,9 +768,20 @@ public:
                 "Variable " + std::string(x.m_name) + " depends on " +
                 std::string(variable_dependencies[i]) + " but isn't found in its dependency list.");
         }
+        if ( ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type)) ) {
+            require(x.m_type_declaration != nullptr,
+                "Variable " + std::string(x.m_name) + " of type StructType must have a type declaration.");
+        }
         current_name = current_name_copy;
     }
 
+    void visit_expr(const expr_t &b){
+        const ASR::expr_t* expr_tmp = current_expr;
+        current_expr = &b;
+        BaseWalkVisitor<VerifyVisitor>::visit_expr(b);
+        current_expr = expr_tmp;
+    }
+    
     void visit_ExternalSymbol(const ExternalSymbol_t &x) {
         if (check_external) {
             require(x.m_external != nullptr,
@@ -816,13 +860,17 @@ public:
     // nodes that have symbol in their fields:
 
     void visit_Var(const Var_t &x) {
-        symbol_visited = true;
         require(x.m_v != nullptr,
             "Var_t::m_v cannot be nullptr");
         std::string x_mv_name = ASRUtils::symbol_name(x.m_v);
         ASR::symbol_t *s = x.m_v;
         if (check_external) {
             s = ASRUtils::symbol_get_past_external(x.m_v);
+        }
+        if (is_a<ASR::Variable_t>(*s) && is_a<ASR::ExternalSymbol_t>(*x.m_v)) {
+            non_global_symbol_visited = false;
+        } else {
+            non_global_symbol_visited = true;
         }
         require(is_a<Variable_t>(*s) || is_a<Function_t>(*s)
                 || is_a<ASR::Enum_t>(*s) || is_a<ASR::ExternalSymbol_t>(*s),
@@ -969,8 +1017,8 @@ public:
                     "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' is a Variable, but the type is not FunctionType");
             } else {
                 require(ASR::is_a<ASR::Function_t>(*s) ||
-                        ASR::is_a<ASR::ClassProcedure_t>(*s),
-                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or ClassProcedure.");
+                        ASR::is_a<ASR::StructMethodDeclaration_t>(*s),
+                    "SubroutineCall::m_name '" + std::string(symbol_name(x.m_name)) + "' must be a Function or StructMethodDeclaration.");
             }
         }
 
@@ -1009,31 +1057,6 @@ public:
                 "' cannot point outside of its symbol table");
     }
 
-    SymbolTable *get_dt_symtab(ASR::symbol_t *dt) {
-        LCOMPILERS_ASSERT(dt)
-        SymbolTable *symtab = ASRUtils::symbol_symtab(ASRUtils::symbol_get_past_external(dt));
-        require_with_loc(symtab,
-            "m_dt::m_v::m_type::class/derived_type must point to a symbol with a symbol table",
-            dt->base.loc);
-        return symtab;
-    }
-
-    SymbolTable *get_dt_symtab(ASR::expr_t *dt) {
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
-        ASR::symbol_t *type_sym=nullptr;
-        switch (t2->type) {
-            case (ASR::ttypeType::StructType): {
-                type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
-                break;
-            }
-            default :
-                require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a type with a symbol table (StructType)",
-                    dt->base.loc);
-        }
-        return get_dt_symtab(type_sym);
-    }
-
     ASR::symbol_t *get_parent_type_dt(ASR::symbol_t *dt) {
         ASR::symbol_t *parent = nullptr;
         switch (dt->type) {
@@ -1051,35 +1074,18 @@ public:
         return parent;
     }
 
-    ASR::symbol_t *get_parent_type_dt(ASR::expr_t *dt) {
-        ASR::ttype_t *t2 = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(dt));
-        ASR::symbol_t *type_sym=nullptr;
-        ASR::symbol_t *parent = nullptr;
-        switch (t2->type) {
-            case (ASR::ttypeType::StructType): {
-                type_sym = ASR::down_cast<ASR::StructType_t>(t2)->m_derived_type;
-                type_sym = ASRUtils::symbol_get_past_external(type_sym);
-                ASR::Struct_t* der_type = ASR::down_cast<ASR::Struct_t>(type_sym);
-                parent = der_type->m_parent;
-                break;
-            }
-            default :
-                require_with_loc(false,
-                    "m_dt::m_v::m_type must point to a StructType type",
-                    dt->base.loc);
-        }
-        return parent;
-    }
-
     void visit_PointerNullConstant(const PointerNullConstant_t& x) {
         require(x.m_type != nullptr, "null() must have a type");
+        if ( x.m_var_expr != nullptr ) {
+            visit_expr(*x.m_var_expr);
+        }
     }
 
     void visit_FunctionType(const FunctionType_t& x) {
 
-        #define verify_nonscoped_ttype(ttype) symbol_visited = false; \
+        #define verify_nonscoped_ttype(ttype) non_global_symbol_visited = false; \
             visit_ttype(*ttype); \
-            require(symbol_visited == false, \
+            require(non_global_symbol_visited == false, \
                     "ASR::ttype_t in ASR::FunctionType" \
                     " cannot be tied to a scope."); \
 
@@ -1161,7 +1167,7 @@ public:
             require(ASR::is_a<ASR::Function_t>(*fn) ||
                     (ASR::is_a<ASR::Variable_t>(*fn) &&
                     ASR::is_a<ASR::FunctionType_t>(*ASRUtils::symbol_type(fn))) ||
-                    ASR::is_a<ASR::ClassProcedure_t>(*fn),
+                    ASR::is_a<ASR::StructMethodDeclaration_t>(*fn),
                 "FunctionCall::m_name must be a Function or Variable with FunctionType");
         }
 
@@ -1175,16 +1181,10 @@ public:
         visit_ttype(*x.m_type);
     }
 
-    void visit_StructType(const StructType_t &x) {
-        std::string symbol_owner = "global scope";
-        if( ASRUtils::get_asr_owner(x.m_derived_type) ) {
-            symbol_owner = ASRUtils::symbol_name(ASRUtils::get_asr_owner(x.m_derived_type));
+    void visit_StructType(const StructType_t& x) {
+        for (size_t i = 0; i < x.n_data_member_types; i++) {
+            visit_ttype(*x.m_data_member_types[i]);
         }
-        require(symtab_in_scope(current_symtab, x.m_derived_type),
-            "StructType::m_derived_type '" +
-            std::string(ASRUtils::symbol_name(x.m_derived_type)) +
-            "' cannot point outside of its symbol table, owner: " +
-            symbol_owner);
     }
 
     void visit_ArrayConstructor(const ArrayConstructor_t& x) {
@@ -1234,6 +1234,10 @@ public:
         visit_ttype(*x.m_type);
         require(x.n_dims != 0, "Array type cannot have 0 dimensions.")
         require(!ASR::is_a<ASR::Array_t>(*x.m_type), "Array type cannot be nested.")
+        if(ASRUtils::is_character(*x.m_type)){
+            require(x.m_physical_type != ASR::FixedSizeArray,
+                "Array of strings' physical type shouldn't be \"FixedSizeArray\"")
+        }
         _processing_dims = true;
         for (size_t i = 0; i < x.n_dims; i++) {
             visit_dimension(x.m_dims[i]);
@@ -1268,6 +1272,70 @@ public:
         visit_ttype(*x.m_type);
     }
 
+    void visit_String(const String_t &x){
+/*General Check on the length*/ 
+        if(x.m_len){
+            require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
+                "String length must be of type INTEGER,"
+                "found " + 
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len)));
+        }
+// Check Positive Length
+        if(x.m_len && ASRUtils::is_value_constant(x.m_len)){
+            int64_t len{};
+            ASRUtils::is_value_constant(x.m_len, len);
+            require(len >= 0,
+                "String length must be length >= 0\nCurrent length is -> " + std::to_string(len));
+        }
+/*Check Valid String type state based on the physical type*/
+        if (x.m_physical_type == DescriptorString ||
+            x.m_physical_type == CChar){
+            std::string type_as_str = (x.m_physical_type == DescriptorString) ? "\"DescriptorString\"" : "\"CChar\"";
+            if(x.m_len){
+                require(x.m_len_kind == ExpressionLength,
+                    "String of physical type " +
+                    type_as_str +
+                    " + existing length => must have length kind of \"ExpressionLength\".")
+            } else {
+                require(x.m_len_kind == AssumedLength ||
+                        x.m_len_kind == DeferredLength ||
+                        x.m_len_kind == ImplicitLength,
+                    "String of physical type " +
+                    type_as_str +
+                    " + non-existing length => must have length kind of"
+                    " \"AssumedLength\" OR \"DeferredLength\" OR \"ImplicitLength\".")
+            }
+        } else {
+            throw LCompilersException("PhysicalType not checked (Probably a new physical type).");
+        }
+/*Check if implicitLength is used correctly*/
+        if(x.m_len_kind == ASR::ImplicitLength){
+            require(current_expr && ASR::is_a<ASR::StringPhysicalCast_t>(*current_expr),
+                "Implicit length kind must appear in StringPhysicalCast expression.");
+        }
+        BaseWalkVisitor<VerifyVisitor>::visit_String(x);
+    }
+    void visit_StringPhysicalCast(const StringPhysicalCast_t &x){
+        require(x.m_type, "x.m_type cannot be nullptr");
+        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringPhysicalCast should be of string type");
+        ASR::String_t* str = ASR::down_cast<ASR::String_t>(x.m_type);
+        require(!str->m_len,
+            "StringPhysicalCast return type shouldn't have length "
+            "(Length should be implicit).")
+        require(str->m_len_kind == ImplicitLength,
+            "StringPhysicalCast expression should have length kind of \"ImplicitLength\".")
+        BaseWalkVisitor<VerifyVisitor>::visit_StringPhysicalCast(x);
+    }
+    void visit_StringSection(const StringSection_t &x){
+        require(x.m_start, "StringSection start member must be provided")
+        require(x.m_end, "StringSection end member must be provided")
+        require(x.m_step, "StringSection step member must be provided")
+        require(ASR::is_a<ASR::String_t>(*x.m_type), "StringSection return type must be a string")
+        require(ASRUtils::get_string_type(x.m_type)->m_len, "StringSection's string-return node must have length expression (NOT nullptr)")
+        BaseWalkVisitor<VerifyVisitor>::visit_StringSection(x);
+    }
+
+
     void visit_Allocate(const Allocate_t &x) {
         if(check_external){
             for( size_t i = 0; i < x.n_args; i++ ) {
@@ -1275,6 +1343,19 @@ public:
                         ASR::is_a<ASR::Pointer_t>(*ASRUtils::expr_type(x.m_args[i].m_a)),
                     "Allocate should only be called with  Allocatable or Pointer type inputs, found " +
                     std::string(ASRUtils::get_type_code(ASRUtils::expr_type(x.m_args[i].m_a))));
+                ASR::ttype_t* alloc_arg_type = x.m_args[i].m_type;
+                if ( alloc_arg_type && ASRUtils::is_struct(*alloc_arg_type) && x.m_args[i].m_sym_subclass != nullptr) {
+                    require(ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(x.m_args[i].m_sym_subclass)),
+                        "Allocate::m_sym_subclass must point to a Struct_t when the m_a member is of a type StructType");
+                }
+                // Check Allocating a string OR an array of string with deferred length
+                // Not providing length in Allocate statement with non-deferredLength is permissible
+                if(!x.m_source &&
+                    ASRUtils::is_character(*ASRUtils::expr_type(x.m_args[i].m_a)) && 
+                    ASRUtils::get_string_type(ASRUtils::expr_type(x.m_args[i].m_a))->m_len_kind == ASR::DeferredLength){
+                    require(x.m_args[i].m_len_expr,
+                        "Allocating a variable that's a string of deferred length requires providing a length to allocate with");
+                }
             }
 
             if( x.m_source == nullptr ) {

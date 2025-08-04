@@ -31,6 +31,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             dp:
                                 (Variable
@@ -60,6 +61,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             i4:
                                 (Variable
@@ -79,6 +81,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             i8:
@@ -100,6 +103,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             w4:
                                 (Variable
@@ -120,6 +124,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             w8:
                                 (Variable
@@ -139,6 +144,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -227,7 +233,9 @@
                             ()
                             [(Var 2 ans)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -280,11 +288,14 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
@@ -298,6 +309,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i8)
                             NotEq
@@ -364,11 +376,14 @@
                             [(Var 2 i4)
                             (Var 2 i8)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i4)
                             NotEq
@@ -382,6 +397,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 i8)
                             NotEq

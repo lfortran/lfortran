@@ -187,7 +187,7 @@ intrinsic_funcs_args = {
     "Repeat": [
         {
             "args": [("char", "int")],
-            "ret_type_arg_idx": 0
+            "return": "allocatable_deferred_string()"
         }
     ],
     "StringContainsSet": [
@@ -311,7 +311,8 @@ intrinsic_funcs_args = {
     "Idnint": [
         {
             "args": [("real",)],
-            "return": "int32"
+            "return": "int32",
+            "kind_validation": [{"first":{0: 8}}]
         }
     ],
     "Anint": [
@@ -494,12 +495,14 @@ intrinsic_funcs_args = {
     "Ifix": [
         {
             "args": [("real",)],
-            "return": "int32"
+            "return": "int32",
+            "kind_validation": [{"first":{0: 4}}]
         }
     ],
     "Idint": [
         {
             "args": [("real",)],
+            "kind_validation": [{"first":{0: 8}}],
             "return": "int32"
         }
     ],
@@ -717,9 +720,16 @@ intrinsic_funcs_args = {
             "ret_type_arg_idx": 0
         }
     ],
+    "Loc": [
+        {
+            "args": [("any",)],
+            "return": "int32"
+        }
+    ],
     "Dprod": [
         {
             "args": [("real", "real")],
+            "kind_validation": [{"first":{0: 4}}, {"second":{1: 4}}],
             "return": "real64"
         }
     ],
@@ -766,7 +776,10 @@ intrinsic_funcs_args = {
         {
             "args": [("char",)],
             "return": "int32",
-            "kind_arg": True
+            "kind_arg": True,
+            "char_len_validation": [
+                {1: {0: {"min": 1, "max": 1}}}
+            ]
         },
     ],
     "Char": [
@@ -857,7 +870,7 @@ intrinsic_funcs_args = {
     "StringTrim": [
         {
             "args": [("char",)],
-            "ret_type_arg_idx": 0
+            "return" : "allocatable_deferred_string()"
         }
     ],
 }
@@ -873,6 +886,7 @@ compile_time_only_fn = [
     "Rank",
     "Tiny",
     "Huge",
+    "Loc",
     "BitSize",
     "NewLine",
     "Kind",
@@ -1005,6 +1019,34 @@ def add_create_func_arg_type_src(func_name):
             src += 4 * indent + f'append_error(diag, "Kind of all the arguments of {func_name} must be the same", loc);\n'
             src += 4 * indent + f'return nullptr;\n'
             src += 3 * indent + '}\n'
+        kind_validation_info = arg_info.get("kind_validation", [])
+        if kind_validation_info != []:
+            src += 3 * indent + "int kind = 0;\n"
+        for validation_item in kind_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]
+                required_kind = list(arg_spec.values())[0]
+                src += 3 * indent + f"kind = ASRUtils::extract_kind_from_ttype_t(expr_type(args[{arg_pos}]));\n"
+                src += 3 * indent + f"if(kind != {required_kind}) " + "{\n"
+                src += 4 * indent + f'append_error(diag, "{arg_name} argument of `{func_name.lower()}` must have kind equal to {required_kind}", loc);\n'
+                src += 4 * indent + f'return nullptr;\n'
+                src += 3 * indent + '}\n'
+        char_len_validation_info = arg_info.get("char_len_validation", [])
+        for validation_item in char_len_validation_info:
+            for arg_name, arg_spec in validation_item.items():
+                arg_pos = list(arg_spec.keys())[0]
+                constraint = list(arg_spec.values())[0]
+                src += 3 * indent + f'if (ASR::is_a<ASR::String_t>(*arg_type{arg_pos})) {{\n'
+                src += 4 * indent + f'int64_t len = ASRUtils::get_fixed_string_len(arg_type{arg_pos});\n'
+                if constraint["min"] == constraint["max"]:
+                    src += 4 * indent + f'if (len != -1 && len != {constraint["min"]}) {{\n'
+                    src += 5 * indent + f'append_error(diag, "Argument {arg_name} to {func_name} must have length {constraint["min"]}", loc);\n'
+                else:
+                    src += 4 * indent + f'if (len != -1 && (len < {constraint["min"]} || len > {constraint["max"]})) {{\n'
+                    src += 5 * indent + f'append_error(diag, "Argument {arg_name} to {func_name} must have length between {constraint["min"]} and {constraint["max"]}", loc);\n'
+                src += 5 * indent + 'return nullptr;\n'
+                src += 4 * indent + '}\n'
+                src += 3 * indent + '}\n'
         src += 2 * indent + "}\n"
     src += 2 * indent + "else {\n"
     src += 3 * indent + f'append_error(diag, "Unexpected number of args, {func_name} takes {no_of_args_msg} arguments, found " + std::to_string(args.size()), loc);\n'

@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_1:
                                 (Variable
@@ -45,6 +46,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             __libasr_created_variable_2:
@@ -66,6 +68,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             __libasr_created_variable_3:
                                 (Variable
@@ -85,6 +88,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             __libasr_created_variable_4:
@@ -106,6 +110,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             a:
                                 (Variable
@@ -126,6 +131,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             b:
                                 (Variable
@@ -145,6 +151,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             f:
@@ -171,6 +178,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_x_present_:
                                                 (Variable
@@ -191,6 +199,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -210,6 +219,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -389,11 +399,14 @@
                             [(Var 4 a)
                             (Var 4 b)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 4 a)
                             NotEq
@@ -407,6 +420,7 @@
                         []
                     )
                     (If
+                        ()
                         (RealCompare
                             (Var 4 b)
                             NotEq
@@ -450,7 +464,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -484,6 +500,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             b:
                                                 (Variable
@@ -503,6 +520,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             c:
@@ -524,6 +542,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             d:
                                                 (Variable
@@ -543,6 +562,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             e:
@@ -564,6 +584,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             f:
                                                 (Variable
@@ -583,6 +604,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             is_d_present_:
@@ -604,6 +626,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             is_e_present_:
                                                 (Variable
@@ -623,6 +646,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -658,6 +682,7 @@
                                     (Var 3 is_e_present_)
                                     (Var 3 f)]
                                     [(If
+                                        ()
                                         (Var 3 is_d_present_)
                                         [(Assignment
                                             (Var 3 a)
@@ -683,6 +708,7 @@
                                             .false.
                                         )
                                         (If
+                                            ()
                                             (Var 3 is_e_present_)
                                             [(Assignment
                                                 (Var 3 b)
@@ -738,6 +764,7 @@
                                             .false.
                                         )
                                         (If
+                                            ()
                                             (Var 3 is_e_present_)
                                             [(Assignment
                                                 (Var 3 b)
@@ -784,7 +811,9 @@
                                 )
                         })
                     functions_15_module_1
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 )

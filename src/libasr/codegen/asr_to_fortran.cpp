@@ -92,6 +92,15 @@ public:
             } case (ASR::binopType::Pow) : {
                 last_expr_precedence = Precedence::Pow;
                 return "**";
+            } case (ASR::binopType::BitOr) : {
+                last_expr_precedence = Precedence::Or;
+                return " .or. ";
+            } case (ASR::binopType::BitAnd) : {
+                last_expr_precedence = Precedence::And;
+                return " .and. ";
+            } case (ASR::binopType::BitXor) : {
+                last_expr_precedence = Precedence::Eqv;
+                return " .eqv. ";
             } default : {
                 throw LCompilersException("Binop type not implemented");
             }
@@ -195,6 +204,8 @@ public:
                         case ASR::string_length_kindType::DeferredLength:
                             r += ":";
                             break;
+                        case ASR::ImplicitLength:
+                            throw LCompilersException("Shouldn't be visited (Can't deduce its length, It's not a variable).");
                     }
                 }
                 r += ", kind=";
@@ -222,7 +233,11 @@ public:
                     }
 
                     if (len.length() == 0) {
-                        bounds += ":";
+                        if ( start.length() != 0 ) {
+                            bounds += start + ":";
+                        } else {
+                            bounds += ":";
+                        }
                     } else {
                         if (start.length() == 0 || start == "1") {
                             bounds += len;
@@ -231,22 +246,17 @@ public:
                         }
                     }
                 }
-                r = get_type(arr_type->m_type) + ", dimension(" + bounds + ")";
+                r = get_type(arr_type->m_type, type_decl) + ", dimension(" + bounds + ")";
                 break;
             } case ASR::ttypeType::Allocatable: {
-                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type) + ", allocatable";
+                r = get_type(down_cast<ASR::Allocatable_t>(t)->m_type, type_decl) + ", allocatable";
                 break;
             } case ASR::ttypeType::Pointer: {
-                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type) + ", pointer";
+                r = get_type(down_cast<ASR::Pointer_t>(t)->m_type, type_decl) + ", pointer";
                 break;
             } case ASR::ttypeType::StructType: {
-                ASR::StructType_t* struct_type = down_cast<ASR::StructType_t>(t);
-                std::string struct_name = ASRUtils::symbol_name(struct_type->m_derived_type);
-                if (struct_type->m_is_cstruct) {
-                    r = "type(";
-                } else {
-                    r = "class(";
-                }
+                std::string struct_name = ASRUtils::symbol_name(type_decl);
+                r = "type(";
                 r += struct_name;
                 r += ")";
                 if (std::find(import_struct_type.begin(), import_struct_type.end(),
@@ -660,7 +670,16 @@ public:
 
     void visit_Struct(const ASR::Struct_t &x) {
         std::string r = indent;
-        r += "type :: ";
+        r += "type";
+        if (x.m_parent) {
+            r += ", extends(";
+            r += std::string(ASR::down_cast<ASR::Struct_t>(x.m_parent)->m_name);
+            r += ")";
+        }
+        if (x.m_is_abstract) {
+            r += ", abstract";
+        }
+        r += " :: ";
         r.append(x.m_name);
         handle_line_truncation(r, 2);
         r += "\n";
@@ -673,6 +692,17 @@ public:
                 r += src;
             }
         }
+
+        std::vector<std::string> class_procedure_order = ASRUtils::determine_class_procedure_declaration_order(x.m_symtab);
+        if (class_procedure_order.size() > 0) r += "contains\n";
+        for (auto &item : class_procedure_order) {
+            ASR::symbol_t* class_procedure_sym = x.m_symtab->get_symbol(item);
+            if (is_a<ASR::StructMethodDeclaration_t>(*class_procedure_sym)) {
+                visit_symbol(*class_procedure_sym);
+                r += src;
+            }
+        }
+
         dec_indent();
         r += "end type ";
         r.append(x.m_name);
@@ -750,7 +780,11 @@ public:
             visit_expr(*x.m_symbolic_value);
             r += src;
         } else if (x.m_value) {
-            r += " = ";
+            if (ASR::is_a<ASR::PointerNullConstant_t>(*x.m_value)) {
+                r += " => ";
+            } else {
+                r += " = ";
+            }
             visit_expr(*x.m_value);
             r += src;
         } else if (x.m_symbolic_value) {
@@ -763,7 +797,29 @@ public:
         src = r;
     }
 
-    // void visit_ClassProcedure(const ASR::ClassProcedure_t &x) {}
+    void visit_StructMethodDeclaration(const ASR::StructMethodDeclaration_t &x) {
+        std::string r = indent;
+        r += "procedure";
+        if (x.m_is_deferred) {
+            if (strcmp(x.m_name, x.m_proc_name)) {
+                r += "(";
+                r += std::string(x.m_proc_name);
+                r += ")";
+            }
+            r += ", deferred";
+            r += " :: ";
+            r += std::string(x.m_name);
+        } else {
+            r += " :: ";
+            r += std::string(x.m_name);
+            if (strcmp(x.m_name, x.m_proc_name)) {
+                r += " => ";
+                r += std::string(x.m_proc_name);
+            }
+        }
+        r += "\n";
+        src = r;
+    }
 
     // void visit_AssociateBlock(const ASR::AssociateBlock_t &x) {}
 
@@ -778,6 +834,17 @@ public:
         std::string r = indent;
         r += "allocate(";
         for (size_t i = 0; i < x.n_args; i ++) {
+            if (x.m_args[i].m_type) {
+                visit_ttype(*x.m_args[i].m_type);
+                r += src;
+                r += " :: ";
+            }
+            if (x.m_args[i].m_len_expr) {
+                r += "character(len=";
+                visit_expr(*x.m_args[i].m_len_expr);
+                r += src;
+                r += ") :: ";
+            }
             visit_expr(*x.m_args[i].m_a);
             r += src;
             if (x.m_args[i].n_dims > 0) {
@@ -790,6 +857,11 @@ public:
                 r += ")";
             }
             if (i < x.n_args-1) r += ", ";
+        }
+        if (x.m_stat) {
+            r += ", stat=";
+            visit_expr(*x.m_stat);
+            r += src;
         }
         r += ")";
         handle_line_truncation(r, 2);
@@ -1226,7 +1298,11 @@ public:
     void visit_SubroutineCall(const ASR::SubroutineCall_t &x) {
         std::string r = indent;
         r += "call ";
-        r += ASRUtils::symbol_name(x.m_name);
+        if (x.m_dt) {
+            visit_expr(*x.m_dt);
+            r += src + "%";
+        }
+        r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
             visit_expr(*x.m_args[i].m_value);
@@ -1348,7 +1424,11 @@ public:
         if (x.m_original_name) {
             r += ASRUtils::symbol_name(x.m_original_name);
         } else {
-            r += ASRUtils::symbol_name(x.m_name);
+            if (x.m_dt) {
+                visit_expr(*x.m_dt);
+                r += src + "%";
+            }
+            r += ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_name));
         }
         r += "(";
         for (size_t i = 0; i < x.n_args; i ++) {
@@ -1907,7 +1987,21 @@ public:
         src = r;
     }
 
-    // void visit_BitCast(const ASR::BitCast_t &x) {}
+    void visit_BitCast(const ASR::BitCast_t &x) {
+        std::string r = "transfer(";
+        visit_expr(*x.m_source);
+        r += src;
+        r += ", ";
+        visit_expr(*x.m_mold);
+        r += src;
+        if (x.m_size) {
+            r += ", ";
+            visit_expr(*x.m_size);
+            r += src;
+        }
+        r += ")";
+        src = r;
+    }
 
     void visit_StructInstanceMember(const ASR::StructInstanceMember_t &x) {
         std::string r;
@@ -2052,7 +2146,10 @@ public:
 
     // void visit_SizeOfType(const ASR::SizeOfType_t &x) {}
 
-    // void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {}
+    void visit_PointerNullConstant(const ASR::PointerNullConstant_t &x) {
+        (void)x; // suppress unused warning
+        src = "null()";
+    }
 
     // void visit_PointerAssociated(const ASR::PointerAssociated_t &x) {}
 
@@ -2106,6 +2203,12 @@ public:
         src = r;
     }
 
+    /******************************* Ttype ********************************/
+    void visit_StructType(const ASR::StructType_t &/*x*/) {
+        std::string r = indent;
+        // r += ASRUtils::symbol_name(x.m_derived_type);
+        src = r;
+    }
 };
 
 Result<std::string> asr_to_fortran(ASR::TranslationUnit_t &asr,

@@ -51,9 +51,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     base
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [i]
                                     []
@@ -75,22 +82,22 @@
                                         2 base
                                         [((IntegerConstant 10 (Integer 4) Decimal))]
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 base
+                                            .false.
                                         )
                                         ()
                                     )
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 base
+                                        .false.
                                     )
-                                    ()
+                                    2 base
                                     Source
                                     Public
                                     Required
@@ -98,6 +105,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             bptr:
@@ -111,13 +119,13 @@
                                     Default
                                     (Pointer
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .false.
-                                            2 base
+                                            .false.
                                         )
                                     )
-                                    ()
+                                    2 base
                                     Source
                                     Public
                                     Required
@@ -125,6 +133,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             child:
@@ -151,9 +160,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     child
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [j]
                                     []
@@ -175,12 +191,12 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 child
+                                        .false.
                                     )
-                                    ()
+                                    2 child
                                     Source
                                     Public
                                     Required
@@ -188,6 +204,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             perform_select_type:
@@ -206,13 +223,13 @@
                                                     Default
                                                     (Pointer
                                                         (StructType
-                                                            []
+                                                            [(Integer 4)]
                                                             []
                                                             .false.
-                                                            2 base
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    2 base
                                                     Source
                                                     Public
                                                     Required
@@ -220,6 +237,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~select_type_block_:
@@ -244,7 +262,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "base type: component value: "
-                                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                                (String 1 (IntegerConstant 28 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -253,11 +271,14 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -308,7 +329,7 @@
                                                             ()
                                                             [(StringConstant
                                                                 "child type: component values: "
-                                                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                                (String 1 (IntegerConstant 30 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -323,11 +344,14 @@
                                                                 ()
                                                             )]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -346,6 +370,7 @@
                                                         []
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (StructInstanceMember
                                                                 (Var 5 bptr)
@@ -369,10 +394,10 @@
                                     (FunctionType
                                         [(Pointer
                                             (StructType
-                                                []
+                                                [(Integer 4)]
                                                 []
                                                 .false.
-                                                2 base
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -391,6 +416,7 @@
                                     [(Var 5 bptr)]
                                     [(SelectType
                                         (Var 5 bptr)
+                                        ()
                                         [(TypeStmtName
                                             2 base
                                             [(BlockCall
@@ -423,10 +449,10 @@
                             [((IntegerConstant 20 (Integer 4) Decimal))
                             ((IntegerConstant 30 (Integer 4) Decimal))]
                             (StructType
-                                []
+                                [(Integer 4)]
                                 []
                                 .true.
-                                2 child
+                                .false.
                             )
                             ()
                         )
@@ -443,7 +469,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -463,7 +491,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

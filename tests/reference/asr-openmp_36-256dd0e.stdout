@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -46,6 +47,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             res:
                                 (Variable
@@ -65,6 +67,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -106,7 +109,9 @@
                             ()
                             [(Var 2 res)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

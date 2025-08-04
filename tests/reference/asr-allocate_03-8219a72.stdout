@@ -37,6 +37,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             f:
                                 (Function
@@ -72,6 +73,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -111,6 +113,7 @@
                                         (IntegerConstant 3 (Integer 4) Decimal))
                                         ((IntegerConstant 1 (Integer 4) Decimal)
                                         (IntegerConstant 3 (Integer 4) Decimal))]
+                                        ()
                                         ()
                                         ())]
                                         ()
@@ -167,6 +170,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -197,6 +201,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -247,11 +252,14 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (ArrayItem
                                                 (Var 4 x)
@@ -306,11 +314,14 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (ArrayItem
                                                 (Var 4 x)
@@ -404,6 +415,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     h
@@ -435,6 +447,7 @@
                                     [f]
                                     [(Var 5 c)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(Var 5 c)]
@@ -475,11 +488,14 @@
                                                 ()
                                             )]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (ArrayItem
                                                 (Var 5 c)
@@ -551,6 +567,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             stat:
                                 (Variable
@@ -571,6 +588,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     allocate_03
@@ -590,12 +608,14 @@
                         ((IntegerConstant 1 (Integer 4) Decimal)
                         (IntegerConstant 3 (Integer 4) Decimal))]
                         ()
+                        ()
                         ())]
                         (Var 2 stat)
                         ()
                         ()
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (Var 2 stat)
                             NotEq
@@ -651,6 +671,7 @@
                         .false.
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (ArrayItem
                                 (Var 2 c)
@@ -696,7 +717,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

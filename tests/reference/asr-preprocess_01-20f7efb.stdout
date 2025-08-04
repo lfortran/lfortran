@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     preprocess_01
@@ -57,7 +58,7 @@
                     (Print
                         (StringConstant
                             "Else condition"
-                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 14 (Integer 4) Decimal) ExpressionLength DescriptorString)
                         )
                     )
                     (Assignment
@@ -71,7 +72,9 @@
                             ()
                             [(Var 2 x)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )

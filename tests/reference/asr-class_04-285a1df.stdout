@@ -91,9 +91,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     bar_a
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [a]
                                     []
@@ -129,9 +136,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     bar_b
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [b]
                                     []
@@ -167,9 +181,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     bar_c
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [c]
                                     []
@@ -191,12 +212,17 @@
                                     ()
                                     Default
                                     (StructType
-                                        []
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
                                         []
                                         .true.
-                                        2 foo_c
+                                        .false.
                                     )
-                                    ()
+                                    2 foo_c
                                     Source
                                     Public
                                     Required
@@ -204,6 +230,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             foo_a:
@@ -221,12 +248,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 bar_a
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 bar_a
                                                     Source
                                                     Public
                                                     Required
@@ -235,9 +262,21 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     foo_a
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_a]
                                     [m_bar_a]
                                     []
@@ -264,12 +303,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 bar_b
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 bar_b
                                                     Source
                                                     Public
                                                     Required
@@ -278,9 +317,21 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     foo_b
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_b]
                                     [m_bar_b]
                                     []
@@ -307,12 +358,12 @@
                                                     ()
                                                     Default
                                                     (StructType
-                                                        []
+                                                        [(Integer 4)]
                                                         []
                                                         .true.
-                                                        2 bar_c
+                                                        .false.
                                                     )
-                                                    ()
+                                                    2 bar_c
                                                     Source
                                                     Public
                                                     Required
@@ -321,9 +372,21 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     foo_c
+                                    (StructType
+                                        [(StructType
+                                            [(Integer 4)]
+                                            []
+                                            .true.
+                                            .false.
+                                        )]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     [bar_c]
                                     [m_bar_c]
                                     []
@@ -344,10 +407,10 @@
                                 (Var 2 foo)
                                 2 1_foo_a_m_bar_a
                                 (StructType
-                                    []
+                                    [(Integer 4)]
                                     []
                                     .true.
-                                    2 bar_a
+                                    .false.
                                 )
                                 ()
                             )
@@ -369,10 +432,10 @@
                                 (Var 2 foo)
                                 2 1_foo_b_m_bar_b
                                 (StructType
-                                    []
+                                    [(Integer 4)]
                                     []
                                     .true.
-                                    2 bar_b
+                                    .false.
                                 )
                                 ()
                             )
@@ -390,10 +453,10 @@
                                 (Var 2 foo)
                                 2 1_foo_c_m_bar_c
                                 (StructType
-                                    []
+                                    [(Integer 4)]
                                     []
                                     .true.
-                                    2 bar_c
+                                    .false.
                                 )
                                 ()
                             )
@@ -413,10 +476,10 @@
                                     (Var 2 foo)
                                     2 1_foo_a_m_bar_a
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 bar_a
+                                        .false.
                                     )
                                     ()
                                 )
@@ -425,7 +488,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -437,10 +502,10 @@
                                     (Var 2 foo)
                                     2 1_foo_b_m_bar_b
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 bar_b
+                                        .false.
                                     )
                                     ()
                                 )
@@ -449,7 +514,9 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -461,10 +528,10 @@
                                     (Var 2 foo)
                                     2 1_foo_c_m_bar_c
                                     (StructType
-                                        []
+                                        [(Integer 4)]
                                         []
                                         .true.
-                                        2 bar_c
+                                        .false.
                                     )
                                     ()
                                 )
@@ -473,11 +540,14 @@
                                 ()
                             )]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (IntegerBinOp
                                 (IntegerBinOp
@@ -486,10 +556,10 @@
                                             (Var 2 foo)
                                             2 1_foo_a_m_bar_a
                                             (StructType
-                                                []
+                                                [(Integer 4)]
                                                 []
                                                 .true.
-                                                2 bar_a
+                                                .false.
                                             )
                                             ()
                                         )
@@ -503,10 +573,10 @@
                                             (Var 2 foo)
                                             2 1_foo_b_m_bar_b
                                             (StructType
-                                                []
+                                                [(Integer 4)]
                                                 []
                                                 .true.
-                                                2 bar_b
+                                                .false.
                                             )
                                             ()
                                         )
@@ -523,10 +593,10 @@
                                         (Var 2 foo)
                                         2 1_foo_c_m_bar_c
                                         (StructType
-                                            []
+                                            [(Integer 4)]
                                             []
                                             .true.
-                                            2 bar_c
+                                            .false.
                                         )
                                         ()
                                     )

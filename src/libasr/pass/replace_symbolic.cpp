@@ -100,8 +100,8 @@ public:
             call_args.push_back(al, call_arg);
         }
         return ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al, loc,
-            sym, sym, call_args.p, call_args.n, return_type, nullptr, nullptr,
-            false));
+            sym, sym, call_args.p, call_args.n, return_type, nullptr, nullptr
+            ));
     }
 
     ASR::symbol_t *create_bindc_function(const Location &loc,
@@ -118,13 +118,13 @@ public:
             for (auto &type: args_type) {
                 std::string arg_name = "x_0" + std::to_string(i); i++;
                 args.push_back(al, b.Variable(fn_symtab, arg_name, type,
-                    ASR::intentType::In, ASR::abiType::BindC, true));
+                    ASR::intentType::In, nullptr, ASR::abiType::BindC, true));
             }
             ASR::expr_t *return_var = nullptr;
             if ( return_type ) {
                 char *return_var_name = s2c(al, "_lpython_return_variable");
                 return_var = b.Variable(fn_symtab, return_var_name, return_type,
-                    ASR::intentType::ReturnVar, ASR::abiType::BindC, false);
+                    ASR::intentType::ReturnVar, nullptr, ASR::abiType::BindC, false);
             }
 
             Vec<ASR::stmt_t *> body; body.reserve(al, 1);
@@ -200,13 +200,17 @@ public:
     ASR::expr_t* basic_str(const Location& loc, ASR::expr_t *x) {
         ASR::symbol_t* basic_str_sym = create_bindc_function(loc,
             "basic_str", {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc))},
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
+             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString)));
+                ASR::string_physical_typeType::CChar)));
         return FunctionCall(loc, basic_str_sym, {x},
-            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, nullptr,
+            ASRUtils::TYPE(ASR::make_String_t(al, loc, 1, 
+             ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString)));
+                ASR::string_physical_typeType::CChar)));
     }
 
     ASR::expr_t* basic_get_type(const Location& loc, ASR::expr_t* value) {
@@ -237,9 +241,11 @@ public:
     ASR::stmt_t *symbol_set(const Location &loc, ASR::expr_t *target, ASR::expr_t *value) {
         ASR::symbol_t* symbol_set_sym = create_bindc_function(loc, "symbol_set",
             {ASRUtils::TYPE(ASR::make_CPtr_t(al, loc)), ASRUtils::TYPE(
-            ASR::make_String_t(al, loc, 1, nullptr,
+            ASR::make_String_t(al, loc, 1, 
+                ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, 1, 
+                    ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))),
                 ASR::string_length_kindType::ExpressionLength,
-                ASR::string_physical_typeType::CString))});
+                ASR::string_physical_typeType::CChar))});
         return SubroutineCall(loc, symbol_set_sym, {target, value});
     }
 
@@ -393,7 +399,7 @@ public:
                     ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, xx.base.base.loc, 0, type2))));
 
                 // statement 2
-                ASR::expr_t* value2 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, xx.base.base.loc, CPtr_type));
+                ASR::expr_t* value2 = ASRUtils::EXPR(ASR::make_PointerNullConstant_t(al, xx.base.base.loc, CPtr_type, nullptr));
 
                 // statement 3
                 ASR::expr_t* get_pointer_node = ASRUtils::EXPR(ASR::make_GetPointer_t(al, xx.base.base.loc,
@@ -490,7 +496,7 @@ public:
                     1, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, error_str.size(),
                         ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 8)))),
                     ASR::string_length_kindType::ExpressionLength,
-                    ASR::string_physical_typeType::PointerString));
+                    ASR::string_physical_typeType::DescriptorString));
                 ASR::expr_t* error = ASRUtils::EXPR(ASR::make_StringConstant_t(al, loc, s2c(al, error_str), str_type));
                 ASR::stmt_t *stmt3 = ASRUtils::STMT(ASR::make_Assert_t(al, loc, test, error));
                 pass_result.push_back(al, stmt3);
@@ -654,7 +660,7 @@ public:
                             SymbolTable* block_symtab = al.make_new<SymbolTable>(current_scope);
                             char *tmp_var_name = s2c(al, "tmp");
                             ASR::expr_t* tmp_var = b.Variable(block_symtab, tmp_var_name, CPtr_type,
-                                ASR::intentType::Local, ASR::abiType::Source, false);
+                                ASR::intentType::Local, nullptr, ASR::abiType::Source, false);
                             Vec<ASR::stmt_t*> block_body; block_body.reserve(al, 1);
                             ASR::stmt_t* block_stmt1 = ASRUtils::STMT(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, tmp_var,
                                 basic_new_heap(x.base.base.loc), nullptr, false));
@@ -737,7 +743,7 @@ public:
             } else {
                 function_call = basic_compare(xx.base.base.loc, "basic_neq", s->m_left, s->m_right);
             }
-            ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_If_t(al, xx.base.base.loc, function_call,
+            ASR::stmt_t* stmt = ASRUtils::STMT(ASR::make_If_t(al, xx.base.base.loc, nullptr, function_call,
                 xx.m_body, xx.n_body, xx.m_orelse, xx.n_orelse));
             pass_result.push_back(al, stmt);
         }

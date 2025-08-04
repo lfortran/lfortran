@@ -26,6 +26,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             solver:
                                 (ExternalSymbol
@@ -69,11 +70,13 @@
                             ()
                             [(StringConstant
                                 "r ="
-                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 3 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                             (Var 7 r)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]
@@ -111,6 +114,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -157,6 +161,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             iter:
                                                 (Variable
@@ -177,6 +182,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             solver:
                                                 (Variable
@@ -196,6 +202,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -249,11 +256,13 @@
                                             ()
                                             [(StringConstant
                                                 "before:"
-                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 3 f_val)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -295,11 +304,13 @@
                                             ()
                                             [(StringConstant
                                                 "after:"
-                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                (String 1 (IntegerConstant 6 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                             )
                                             (Var 3 f_val)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
@@ -338,6 +349,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 )
                                                         })
                                                     getx
@@ -362,11 +374,13 @@
                                                             ()
                                                             [(StringConstant
                                                                 "x in getx"
-                                                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength PointerString)
+                                                                (String 1 (IntegerConstant 9 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                                             )
                                                             (Var 5 x)]
                                                             FormatFortran
-                                                            (String 1 () ExpressionLength CString)
+                                                            (Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
                                                             ()
                                                         )
                                                     )
@@ -401,6 +415,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             sub1:
                                                 (Variable
@@ -420,6 +435,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             tmp:
@@ -441,6 +457,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             x:
                                                 (Variable
@@ -461,6 +478,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             y:
                                                 (Variable
@@ -480,6 +498,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -511,10 +530,11 @@
                                     (Print
                                         (StringConstant
                                             "in sub1"
-                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength PointerString)
+                                            (String 1 (IntegerConstant 7 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                         )
                                     )
                                     (If
+                                        ()
                                         (IntegerCompare
                                             (Var 5 iter)
                                             Eq
@@ -566,7 +586,9 @@
                                 )
                         })
                     recursion_02
+                    ()
                     [recursion_02]
+                    .false.
                     .false.
                     .false.
                 )

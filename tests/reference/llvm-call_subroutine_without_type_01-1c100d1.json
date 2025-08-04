@@ -1,0 +1,13 @@
+{
+    "basename": "llvm-call_subroutine_without_type_01-1c100d1",
+    "cmd": "lfortran --no-color --show-llvm {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/call_subroutine_without_type_01.f90",
+    "infile_hash": "ce99f763025dfbf26699804852ec0efd7bd0dca27e30830aded2fa9a",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "llvm-call_subroutine_without_type_01-1c100d1.stdout",
+    "stdout_hash": "e869898a92b55ec691379de90d61ccfd006de4f087f03d31a90712dc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

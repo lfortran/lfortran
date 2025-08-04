@@ -23,7 +23,7 @@
                                                     Default
                                                     (Allocatable
                                                         (Array
-                                                            (String 1 () DeferredLength PointerString)
+                                                            (String 1 () DeferredLength DescriptorString)
                                                             [(()
                                                             ())]
                                                             DescriptorArray
@@ -38,6 +38,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             table:
                                                 (Variable
@@ -50,13 +51,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            3 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    3 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -64,6 +66,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             toml_parse:
@@ -121,7 +124,7 @@
                                     (FunctionType
                                         [(Allocatable
                                             (Array
-                                                (String 1 () DeferredLength PointerString)
+                                                (String 1 () DeferredLength DescriptorString)
                                                 [(()
                                                 ())]
                                                 DescriptorArray
@@ -142,6 +145,7 @@
                                     []
                                     [(Var 3 input)]
                                     [(If
+                                        ()
                                         (IntrinsicImpureFunction
                                             Allocated
                                             [(Var 3 table)]
@@ -173,8 +177,10 @@
                                 )
                         })
                     module_52_fpm_cmd_new
+                    ()
                     [module_52_tomlf_de
                     module_52_tomlf_type]
+                    .false.
                     .false.
                     .false.
                 ),
@@ -216,7 +222,7 @@
                                                     ()
                                                     Default
                                                     (Array
-                                                        (String 1 () AssumedLength PointerString)
+                                                        (String 1 () AssumedLength DescriptorString)
                                                         [(()
                                                         ())]
                                                         DescriptorArray
@@ -230,6 +236,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             error:
                                                 (Variable
@@ -242,13 +249,16 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            5 toml_error
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_error
                                                     Source
                                                     Public
                                                     Optional
@@ -256,6 +266,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             table:
@@ -269,13 +280,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            5 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -284,30 +296,35 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_string
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Logical 4)]
                                                 []
                                                 .true.
-                                                5 toml_table
+                                                .false.
                                             )
                                         )
                                         (Array
-                                            (String 1 () AssumedLength PointerString)
+                                            (String 1 () AssumedLength DescriptorString)
                                             [(()
                                             ())]
                                             DescriptorArray
                                         )
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                5 toml_error
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -349,13 +366,16 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Allocatable
+                                                                (String 1 () DeferredLength DescriptorString)
+                                                            )
+                                                            (Integer 4)]
                                                             []
                                                             .true.
-                                                            5 toml_error
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_error
                                                     Source
                                                     Public
                                                     Optional
@@ -363,6 +383,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             table:
@@ -376,13 +397,14 @@
                                                     Default
                                                     (Allocatable
                                                         (StructType
-                                                            []
+                                                            [(Logical 4)
+                                                            (Logical 4)]
                                                             []
                                                             .true.
-                                                            5 toml_table
+                                                            .false.
                                                         )
                                                     )
-                                                    ()
+                                                    5 toml_table
                                                     Source
                                                     Public
                                                     Required
@@ -390,6 +412,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             unit:
@@ -411,25 +434,30 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_parse_unit
                                     (FunctionType
                                         [(Allocatable
                                             (StructType
-                                                []
+                                                [(Logical 4)
+                                                (Logical 4)]
                                                 []
                                                 .true.
-                                                5 toml_table
+                                                .false.
                                             )
                                         )
                                         (Integer 4)
                                         (Allocatable
                                             (StructType
-                                                []
+                                                [(Allocatable
+                                                    (String 1 () DeferredLength DescriptorString)
+                                                )
+                                                (Integer 4)]
                                                 []
                                                 .true.
-                                                5 toml_error
+                                                .false.
                                             )
                                         )]
                                         ()
@@ -467,9 +495,11 @@
                                 )
                         })
                     module_52_tomlf_de
+                    ()
                     [module_52_tomlf_error
                     module_52_tomlf_type]
                     .true.
+                    .false.
                     .false.
                 ),
             module_52_tomlf_error:
@@ -503,6 +533,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             stat:
                                                 (Variable
@@ -523,9 +554,19 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_error
+                                    (StructType
+                                        [(Allocatable
+                                            (String 1 () DeferredLength DescriptorString)
+                                        )
+                                        (Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [stat
                                     message]
@@ -540,8 +581,10 @@
                                 )
                         })
                     module_52_tomlf_error
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 ),
             module_52_tomlf_type:
@@ -579,6 +622,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             inline:
                                                 (Variable
@@ -605,9 +649,17 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     toml_table
+                                    (StructType
+                                        [(Logical 4)
+                                        (Logical 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [implicit
                                     inline]
@@ -622,8 +674,10 @@
                                 )
                         })
                     module_52_tomlf_type
+                    ()
                     []
                     .true.
+                    .false.
                     .false.
                 )
         })

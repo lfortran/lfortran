@@ -95,7 +95,7 @@ class ArrayVarAddressCollector: public ASR::CallReplacerOnExpressionsVisitor<Arr
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
     }
@@ -110,16 +110,6 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
 
     FixTypeVisitor(Allocator& al_) {
         (void)al_;      // Explicitly mark the parameter as unused
-    }
-
-    void visit_StructType(const ASR::StructType_t& x) {
-        std::string derived_type_name = ASRUtils::symbol_name(x.m_derived_type);
-        if( x.m_derived_type == current_scope->resolve_symbol(derived_type_name) ) {
-            return ;
-        }
-
-        ASR::StructType_t& xx = const_cast<ASR::StructType_t&>(x);
-        xx.m_derived_type = current_scope->resolve_symbol(derived_type_name);
     }
 
     void visit_Cast(const ASR::Cast_t& x) {
@@ -143,11 +133,12 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
 
     void visit_FunctionCall(const ASR::FunctionCall_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_FunctionCall(x);
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
         ASR::FunctionCall_t& xx = const_cast<ASR::FunctionCall_t&>(x);
-        if( !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
+        if( (x.m_dt && !ASRUtils::is_array(ASRUtils::expr_type(x.m_dt))) ||
+            !ASRUtils::is_array(ASRUtils::expr_type(x.m_args[0].m_value)) ) {
             xx.m_type = ASRUtils::extract_type(xx.m_type);
             xx.m_value = nullptr;
         }
@@ -185,6 +176,11 @@ class FixTypeVisitor: public ASR::CallReplacerOnExpressionsVisitor<FixTypeVisito
 
     void visit_StringCompare(const ASR::StringCompare_t& x) {
         ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StringCompare(x);
+        visit_ArrayOp(x);
+    }
+
+    void visit_StringConcat(const ASR::StringConcat_t& x){
+        ASR::CallReplacerOnExpressionsVisitor<FixTypeVisitor>::visit_StringConcat(x);
         visit_ArrayOp(x);
     }
 
@@ -633,7 +629,7 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                     ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
                 current_scope->add_symbol(index_var_name, index);
                 ASR::expr_t* index_expr = ASRUtils::EXPR(ASR::make_Var_t(al, loc, index));
-                if ((i == offset_for_array_indices - 1) && is_value_array &&
+                if ((i == offset_for_array_indices - 1) && is_value_array && j < rhs_array_indices_args.size() &&
                         rhs_array_indices_args[j].m_left != nullptr) {
                     index2var[index_expr] = std::make_pair(rhs_array_indices_args[j].m_left, IndexType::ScalarIndex);
                 } else {
@@ -884,6 +880,17 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
                 al, loc, realloc_var, builder.i32(i + 1), int32, nullptr));
             realloc_dims.push_back(al, realloc_dim);
         }
+        ASR::expr_t* realloc_str_len {};
+        if(ASRUtils::is_character(*ASRUtils::expr_type(realloc_var))){
+            ASR::expr_t* len_value{}; // Compile-Time Length
+            int64_t len {};
+            if(ASRUtils::is_value_constant(ASR::down_cast<ASR::String_t>(
+                ASRUtils::extract_type(ASRUtils::expr_type(realloc_var)))->m_len), len) {
+                len_value = builder.i32(len);
+            }
+            realloc_str_len = ASRUtils::EXPR(ASR::make_StringLen_t(
+                al, loc, realloc_var, int32, len_value));
+        }
 
         Vec<ASR::alloc_arg_t> alloc_args; alloc_args.reserve(al, 1);
         ASR::alloc_arg_t alloc_arg;
@@ -891,8 +898,9 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         alloc_arg.m_a = target;
         alloc_arg.m_dims = realloc_dims.p;
         alloc_arg.n_dims = realloc_dims.size();
-        alloc_arg.m_len_expr = nullptr;
+        alloc_arg.m_len_expr = realloc_str_len;
         alloc_arg.m_type = nullptr;
+        alloc_arg.m_sym_subclass = nullptr;
         alloc_args.push_back(al, alloc_arg);
 
         pass_result.push_back(al, ASRUtils::STMT(ASR::make_ReAlloc_t(
@@ -1017,12 +1025,11 @@ class ArrayOpVisitor: public ASR::CallReplacerOnExpressionsVisitor<ArrayOpVisito
         fix_type_args.reserve(al, 2);
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_target)));
         fix_type_args.push_back(al, const_cast<ASR::expr_t**>(&(xx.m_value)));
-
         generate_loop(x, vars, fix_type_args, loc);
     }
 
     void visit_SubroutineCall(const ASR::SubroutineCall_t& x) {
-        if( !PassUtils::is_elemental(x.m_name) ) {
+        if( !ASRUtils::is_elemental(x.m_name) ) {
             return ;
         }
         const Location loc = x.base.base.loc;

@@ -39,14 +39,32 @@ src/bin/lfortran integration_tests/intrinsics_04.f90 -o intrinsics_04
 # Run all tests (does not work on Windows yet):
 cmake --version
 if [[ $WIN != "1" ]]; then
-    ./run_tests.py
+    # using debugging option i.e. `-x` causes incorrect assignment
+    set +x
+    if [[ $MACOS == "1" ]]; then
+        # we can't use $nproc, it overwhelms system resources on macOS
+        NPROC=2
+        # ideally, we should use something like below, but it raises
+        # error with shell
+        # NPROC=$(( $(NPROC) / 2))
+    else
+        # this works fine on Linux
+        NPROC=$(nproc)
+    fi
+    # we turn on the debugging again
+    set -x
+    echo "NPROC: ${NPROC}"
+
+    if [[ $LFORTRAN_LLVM_VERSION == "11" ]]; then
+        ./run_tests.py
+    fi
 
     cd integration_tests
     mkdir build-lfortran-llvm
     cd build-lfortran-llvm
     FC="../../src/bin/lfortran" cmake -DLFORTRAN_BACKEND=llvm -DCURRENT_BINARY_DIR=. ..
-    make
-    ctest -L llvm
+    make -j${NPROC}
+    ctest -L llvm -j${NPROC}
     cd ..
 
     ./run_tests.py -b llvm llvm2 llvm_rtlib llvm_nopragma

@@ -76,6 +76,9 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
 
     void replace_IntrinsicElementalFunction(ASR::IntrinsicElementalFunction_t* x) {
         if (x->m_intrinsic_id == static_cast<int64_t>(ASRUtils::IntrinsicElementalFunctions::Present)) {
+            if (!ASR::is_a<ASR::Var_t>(*x->m_args[0])) {
+                return;
+            }
             ASR::symbol_t* present_arg = ASR::down_cast<ASR::Var_t>(x->m_args[0])->m_v;
             size_t i;
             for( i = 0; i < f->n_args; i++ ) {
@@ -87,9 +90,11 @@ class ReplacePresentCalls: public ASR::BaseExprReplacer<ReplacePresentCalls> {
                 }
             }
 
-            *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
-                                ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
-            return;
+            if (i < f->n_args) {
+                *current_expr = ASRUtils::EXPR(ASR::make_Var_t(al, x->base.base.loc,
+                                    ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v));
+                return;
+            }
         }
         for (size_t i = 0; i < x->n_args; i++) {
             ASR::expr_t** current_expr_copy_12 = current_expr;
@@ -346,8 +351,8 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     bool is_nopass { false };
     bool is_class_procedure { false };
-    if (ASR::is_a<ASR::ClassProcedure_t>(*func_sym)) {
-        ASR::ClassProcedure_t* class_proc = ASR::down_cast<ASR::ClassProcedure_t>(func_sym);
+    if (ASR::is_a<ASR::StructMethodDeclaration_t>(*func_sym)) {
+        ASR::StructMethodDeclaration_t* class_proc = ASR::down_cast<ASR::StructMethodDeclaration_t>(func_sym);
         func_sym = class_proc->m_proc;
         is_nopass = class_proc->m_is_nopass;
         is_class_procedure = true;
@@ -372,7 +377,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
         return false;
     }
 
-    // when `func` is a ClassProcedure **without** nopass, then the
+    // when `func` is a StructMethodDeclaration **without** nopass, then the
     // first argument of FunctionType is "this" (i.e. the class instance)
     // which is depicted in `func.n_args` while isn't depicted in
     // `x.n_args` (as it only represents the "FunctionCall" arguments)
@@ -413,10 +418,11 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
                         dims.push_back(al, dim);
                     }
                     arg_type = ASRUtils::TYPE(ASR::make_Array_t(al, arg_type->base.loc,
-                                array_t->m_type, dims.p, dims.size(), ASR::array_physical_typeType::FixedSizeArray));
+                                array_t->m_type, dims.p, dims.size(),
+                                ASRUtils::is_character(*array_t->m_type)? ASR::PointerToDataArray : ASR::FixedSizeArray));
                 }
                 ASR::expr_t* m_arg_i = PassUtils::create_auxiliary_variable(
-                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl);
+                    x.m_args[i - is_method].loc, m_arg_i_name, al, scope, arg_type, ASR::intentType::Local, arg_decl, func->m_args[j]);
                 arg_type = ASRUtils::expr_type(m_arg_i);
                 if( ASRUtils::is_array(arg_type) &&
                     ASRUtils::extract_physical_type(arg_type) !=
@@ -510,7 +516,7 @@ bool fill_new_args(Vec<ASR::call_arg_t>& new_args, Allocator& al,
     }
     // new_args.size() is either
     //      - equal to func->n_args
-    //      - one less than func->n_args (in case of ClassProcedure without nopass)
+    //      - one less than func->n_args (in case of StructMethodDeclaration without nopass)
     LCOMPILERS_ASSERT(func->n_args == new_args.size() + is_method);
     return true;
 }
@@ -541,7 +547,7 @@ class ReplaceFunctionCallsWithOptionalArguments: public ASR::BaseExprReplacer<Re
         *current_expr = ASRUtils::EXPR(ASRUtils::make_FunctionCall_t_util(al,
                             x->base.base.loc, x->m_name, x->m_original_name,
                             new_args.p, new_args.size(), x->m_type, x->m_value,
-                            x->m_dt, ASRUtils::get_class_proc_nopass_val((*x).m_name)));
+                            x->m_dt));
         new_func_calls.insert(*current_expr);
     }
 
@@ -590,7 +596,7 @@ class ReplaceSubroutineCallsWithOptionalArgumentsVisitor : public PassUtils::Pas
             pass_result.push_back(al, ASRUtils::STMT(ASRUtils::make_SubroutineCall_t_util(al,
                                     x.base.base.loc, x.m_name, x.m_original_name,
                                     new_args.p, new_args.size(), x.m_dt,
-                                    nullptr, false, ASRUtils::get_class_proc_nopass_val(x.m_name))));
+                                    nullptr, false)));
         }
 };
 

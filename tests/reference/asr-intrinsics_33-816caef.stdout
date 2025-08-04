@@ -16,35 +16,35 @@
                             (StringConcat
                                 (StringConstant
                                     "This is record 1."
-                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                                 (TypeInquiry
                                     NewLine
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     (StringConstant
                                         "A"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
-                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     (StringConstant
                                         "\n"
-                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength PointerString)
+                                        (String 1 (IntegerConstant 1 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                     )
                                 )
-                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 18 (Integer 8) Decimal) ExpressionLength DescriptorString)
                                 (StringConstant
                                     "This is record 1.\n"
-                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength PointerString)
+                                    (String 1 (IntegerConstant 18 (Integer 4) Decimal) ExpressionLength DescriptorString)
                                 )
                             )
                             (StringConstant
                                 "This is record 2."
-                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 17 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
-                            (String 1 (IntegerConstant 35 (Integer 8) Decimal) ExpressionLength PointerString)
+                            (String 1 (IntegerConstant 35 (Integer 8) Decimal) ExpressionLength DescriptorString)
                             (StringConstant
                                 "This is record 1.\nThis is record 2."
-                                (String 1 (IntegerConstant 35 (Integer 4) Decimal) ExpressionLength PointerString)
+                                (String 1 (IntegerConstant 35 (Integer 4) Decimal) ExpressionLength DescriptorString)
                             )
                         )
                     )]

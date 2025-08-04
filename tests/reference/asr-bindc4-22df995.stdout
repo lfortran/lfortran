@@ -76,6 +76,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             j:
                                 (Variable
@@ -95,6 +96,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             newshape:
@@ -121,6 +123,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             queries:
                                 (Variable
@@ -141,6 +144,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             queries2:
                                 (Variable
@@ -150,9 +154,11 @@
                                     Local
                                     (PointerNullConstant
                                         (CPtr)
+                                        ()
                                     )
                                     (PointerNullConstant
                                         (CPtr)
+                                        ()
                                     )
                                     Default
                                     (CPtr)
@@ -164,6 +170,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             x:
@@ -194,6 +201,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             xv:
                                 (Variable
@@ -220,6 +228,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             y:
@@ -250,6 +259,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             yv:
                                 (Variable
@@ -276,6 +286,7 @@
                                     .true.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 )
                         })
@@ -407,7 +418,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -431,7 +444,9 @@
                             )
                             (Var 2 queries)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -499,7 +514,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -533,7 +550,9 @@
                             )
                             (Var 2 queries)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -601,7 +620,9 @@
                                         ()
                                     )]
                                     FormatFortran
-                                    (String 1 () ExpressionLength CString)
+                                    (Allocatable
+                                        (String 1 () DeferredLength DescriptorString)
+                                    )
                                     ()
                                 )
                             )]
@@ -610,6 +631,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries)
                             (PointerToCPtr
@@ -643,6 +665,7 @@
                         []
                     )
                     (If
+                        ()
                         (LogicalNot
                             (PointerAssociated
                                 (Var 2 queries)
@@ -663,6 +686,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries)
                             (PointerToCPtr
@@ -679,6 +703,7 @@
                         []
                     )
                     (If
+                        ()
                         (PointerAssociated
                             (Var 2 queries2)
                             ()
@@ -694,6 +719,7 @@
                         (Var 2 queries)
                         (PointerNullConstant
                             (CPtr)
+                            ()
                         )
                         ()
                         .false.

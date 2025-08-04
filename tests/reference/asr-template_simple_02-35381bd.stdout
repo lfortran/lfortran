@@ -7,16 +7,6 @@
                     (SymbolTable
                         14
                         {
-                            cast_integer:
-                                (ExternalSymbol
-                                    14
-                                    cast_integer
-                                    2 cast_integer
-                                    template_simple_02_m
-                                    []
-                                    cast_integer
-                                    Public
-                                ),
                             cast_r:
                                 (ExternalSymbol
                                     14
@@ -25,16 +15,6 @@
                                     template_simple_02_m
                                     []
                                     cast_r
-                                    Public
-                                ),
-                            cast_real:
-                                (ExternalSymbol
-                                    14
-                                    cast_real
-                                    2 cast_real
-                                    template_simple_02_m
-                                    []
-                                    cast_real
                                     Public
                                 ),
                             generic_sum:
@@ -106,6 +86,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -125,6 +106,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -186,6 +168,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -207,6 +190,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -257,6 +241,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     cast_r
@@ -288,6 +273,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             res:
                                                 (Variable
@@ -307,6 +293,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -373,6 +360,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -395,6 +383,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -416,6 +405,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -475,6 +465,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -496,6 +487,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -556,6 +548,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -576,6 +569,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             n:
                                                                 (Variable
@@ -595,6 +589,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             res:
@@ -617,6 +612,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -674,6 +670,7 @@
                                                         .false.
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 12 n)
                                                             Gt
@@ -760,6 +757,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     generic_sum
@@ -808,6 +806,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -830,6 +829,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             rhs:
                                                                 (Variable
@@ -851,6 +851,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -907,6 +908,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             u:
                                                 (Variable
@@ -929,6 +931,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             v:
                                                 (Variable
@@ -950,6 +953,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 )
                                         })
@@ -994,6 +998,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1013,6 +1018,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             n:
@@ -1034,6 +1040,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -1053,6 +1060,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1104,6 +1112,7 @@
                                                         .false.
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 16 n)
                                                             Gt
@@ -1192,6 +1201,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1211,6 +1221,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             n:
@@ -1232,6 +1243,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -1251,6 +1263,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1302,6 +1315,7 @@
                                                         .false.
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 18 n)
                                                             Gt
@@ -1390,6 +1404,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             i:
                                                                 (Variable
@@ -1409,6 +1424,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 ),
                                                             n:
@@ -1430,6 +1446,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             res:
                                                                 (Variable
@@ -1449,6 +1466,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1500,6 +1518,7 @@
                                                         .false.
                                                     )
                                                     (If
+                                                        ()
                                                         (IntegerCompare
                                                             (Var 19 n)
                                                             Gt
@@ -1583,6 +1602,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             a_r:
                                                 (Variable
@@ -1608,6 +1628,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             i:
                                                 (Variable
@@ -1627,6 +1648,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             s_i:
@@ -1648,6 +1670,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             s_r:
                                                 (Variable
@@ -1667,6 +1690,7 @@
                                                     .false.
                                                     .false.
                                                     ()
+                                                    .false.
                                                     .false.
                                                 ),
                                             ~add:
@@ -1701,6 +1725,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1721,6 +1746,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1740,6 +1766,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -1804,6 +1831,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             arg1:
                                                                 (Variable
@@ -1824,6 +1852,7 @@
                                                                     .false.
                                                                     ()
                                                                     .false.
+                                                                    .false.
                                                                 ),
                                                             ret:
                                                                 (Variable
@@ -1843,6 +1872,7 @@
                                                                     .false.
                                                                     .false.
                                                                     ()
+                                                                    .false.
                                                                     .false.
                                                                 )
                                                         })
@@ -2024,7 +2054,9 @@
                                             ()
                                             [(Var 13 s_i)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )
@@ -2033,19 +2065,23 @@
                                             ()
                                             [(Var 13 s_r)]
                                             FormatFortran
-                                            (String 1 () ExpressionLength CString)
+                                            (Allocatable
+                                                (String 1 () DeferredLength DescriptorString)
+                                            )
                                             ()
                                         )
                                     )]
                                     ()
-                                    Private
+                                    Public
                                     .false.
                                     .false.
                                     ()
                                 )
                         })
                     template_simple_02_m
+                    ()
                     [template_simple_02_m]
+                    .false.
                     .false.
                     .false.
                 )

@@ -32,6 +32,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 ),
                             all_zeros:
                                 (Variable
@@ -51,6 +52,7 @@
                                     .false.
                                     .false.
                                     ()
+                                    .false.
                                     .false.
                                 ),
                             bits_kind:
@@ -103,6 +105,7 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     bits_02
@@ -112,7 +115,9 @@
                             ()
                             [(Var 2 block_size)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -121,7 +126,9 @@
                             ()
                             [(Var 2 all_zeros)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )
@@ -130,7 +137,9 @@
                             ()
                             [(Var 2 all_ones)]
                             FormatFortran
-                            (String 1 () ExpressionLength CString)
+                            (Allocatable
+                                (String 1 () DeferredLength DescriptorString)
+                            )
                             ()
                         )
                     )]

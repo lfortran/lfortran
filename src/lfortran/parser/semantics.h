@@ -325,6 +325,12 @@ static inline ast_t* VAR_DECL_PRAGMA2(Allocator &al, Location &loc,
             p.m_a, l, \
             REDUCE_ARGS(p.m_a, x), x.size())
 
+#define ATTR_TYPE_LIST(x, attr_list, l) make_AttrTypeList_t( \
+            p.m_a, l, \
+            decl_typeType::Type##x, \
+            VEC_CAST(attr_list, decl_attribute), \
+            attr_list.n)
+
 #define IMPORT0(x, trivia, l) make_Import_t( \
             p.m_a, l, \
             nullptr, 0, \
@@ -2621,6 +2627,13 @@ return make_Submodule_t(al, a_loc,
         VEC_CAST(contains, procedure_decl), contains.size())
 #define DERIVED_TYPE2(name, attr, trivia, l) \
         TYPEPARAMETER0(p.m_a, attr, name, trivia, l)
+
+
+#define LF_UNION_TYPE(attr, name, trivia, decl, l) make_Union_t(p.m_a, l, \
+        name2char(name), \
+        trivia_cast(trivia), \
+        VEC_CAST(attr, decl_attribute), attr.size(), \
+        DECLS(decl), decl.size())
 
 ast_t* TYPEPARAMETER0(Allocator &al,
         const ast_t *attr,

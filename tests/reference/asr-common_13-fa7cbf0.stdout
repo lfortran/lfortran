@@ -51,6 +51,7 @@
                     common_13
                     []
                     [(If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 1 struct_instance_myblock)
@@ -69,6 +70,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntegerCompare
                             (StructInstanceMember
                                 (Var 1 struct_instance_myblock)
@@ -87,6 +89,7 @@
                         []
                     )
                     (If
+                        ()
                         (IntrinsicArrayFunction
                             Any
                             [(ArrayPhysicalCast
@@ -196,9 +199,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     arrblock
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [myarr]
                                     []
@@ -233,7 +243,7 @@
                                             []
                                             []
                                             .true.
-                                            2 arrblock
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -253,7 +263,7 @@
                                             []
                                             []
                                             .true.
-                                            2 arrblock
+                                            .false.
                                         )
                                     )
                                     Default
@@ -261,9 +271,9 @@
                                         []
                                         []
                                         .true.
-                                        2 arrblock
+                                        .false.
                                     )
-                                    ()
+                                    2 arrblock
                                     Source
                                     Public
                                     Required
@@ -272,10 +282,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_arrblock
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -308,6 +321,7 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 ),
                                             myzero:
                                                 (Variable
@@ -328,9 +342,16 @@
                                                     .false.
                                                     ()
                                                     .false.
+                                                    .false.
                                                 )
                                         })
                                     myblock
+                                    (StructType
+                                        []
+                                        []
+                                        .true.
+                                        .false.
+                                    )
                                     []
                                     [myint
                                     myzero]
@@ -357,7 +378,7 @@
                                             []
                                             []
                                             .true.
-                                            4 myblock
+                                            .false.
                                         )
                                     )
                                     (StructConstant
@@ -368,7 +389,7 @@
                                             []
                                             []
                                             .true.
-                                            4 myblock
+                                            .false.
                                         )
                                     )
                                     Default
@@ -376,9 +397,9 @@
                                         []
                                         []
                                         .true.
-                                        4 myblock
+                                        .false.
                                     )
-                                    ()
+                                    4 myblock
                                     Source
                                     Public
                                     Required
@@ -387,10 +408,13 @@
                                     .false.
                                     ()
                                     .false.
+                                    .false.
                                 )
                         })
                     file_common_block_myblock
+                    ()
                     []
+                    .false.
                     .false.
                     .false.
                 ),
@@ -417,6 +441,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                     .false.
                 ),
             myblock:
@@ -448,6 +473,7 @@
                     .false.
                     ()
                     .false.
+                    .false.
                 ),
             myzero:
                 (Variable
@@ -467,6 +493,7 @@
                     .false.
                     .false.
                     ()
+                    .false.
                     .false.
                 ),
             struct_instance_arrblock:
