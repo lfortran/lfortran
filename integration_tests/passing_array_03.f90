@@ -12,7 +12,7 @@ MODULE passing_array_03_mod
     END FUNCTION test_01
 
     subroutine test_entry
-        INTEGER, DIMENSION(4,2) :: value
+        INTEGER, DIMENSION(6,2) :: value
         integer :: ret
         ret =  test_01(value)
         print *, ret

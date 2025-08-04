@@ -57,7 +57,7 @@ MODULE passing_array_01_mod
       len = 20
       arr = [(i, i = 1, 40)]
       ! All calls would accept the passed array,
-      ! because the passed array's length is greater than expected in the function
+      ! because the passed array's length is greater than or equal to the expected length in the function
 
       ret =  test_01_interface (len,arr)
       print * , ret

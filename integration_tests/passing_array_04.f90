@@ -13,12 +13,12 @@ MODULE passing_array_04_mod
 
     subroutine test_entry
         integer :: len
-        INTEGER, DIMENSION(4, 2) :: value
+        INTEGER, DIMENSION(6, 2) :: value
         INTEGER :: ret
-        len = 2
+        len = 3
         ret = test_01(len,value)
         print * , ret
-        if(ret /= 8) error stop 
+        if(ret /= 12) error stop 
     end subroutine test_entry
  
 END MODULE passing_array_04_mod
