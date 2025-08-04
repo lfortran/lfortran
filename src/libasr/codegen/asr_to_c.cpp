@@ -31,6 +31,16 @@ public:
 
     int counter;
 
+    bool target_offload_enabled;
+    std::vector<std::string> kernel_func_names;
+    int kernel_counter=0; // To generate unique kernel names
+    std::string current_kernel_name; // Track current kernel for wrapper
+    std::vector<std::pair<std::string, ASR::OMPMap_t*>> map_vars; // Track map vars for target offload
+    std::string indent() {
+        return std::string(indentation_level * indentation_spaces, ' ');
+    }
+    std ::string kernel_func_code;
+
     ASRToCVisitor(diag::Diagnostics &diag, CompilerOptions &co,
                   int64_t default_lower_bound)
          : BaseCCPPVisitor(diag, co.platform, co, false, false, true, default_lower_bound),
@@ -618,6 +628,15 @@ R"(
 #include <lfortran_intrinsics.h>
 
 )";
+        if(compiler_options.target_offload_enabled) {
+            head += R"(
+#ifdef USE_GPU
+#include<cuda_runtime.h>
+#else
+#include"cpu_impl.h"
+#endif
+)";
+        }
 
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
@@ -1416,6 +1435,133 @@ R"(    // Initialise Numpy
         src = "_lfortran_str_item(" + str + ", " + idx + ")";
     }
 
+    std::string generate_map_clauses(ASR::OMPMap_t* m) {
+        std::string result = " map(";
+        
+        std::string map_type;
+        if (m->m_type == ASR::map_typeType::To) {
+            map_type = "to";
+        } else if (m->m_type == ASR::map_typeType::From) {
+            map_type = "from";
+        } else if (m->m_type == ASR::map_typeType::ToFrom) {
+            map_type = "tofrom";
+        } else if (m->m_type == ASR::map_typeType::Alloc) {
+            map_type = "alloc";
+        } else if (m->m_type == ASR::map_typeType::Release) {
+            map_type = "release";
+        } else if (m->m_type == ASR::map_typeType::Delete) {
+            map_type = "delete";
+        }
+        
+        std::vector<std::string> all_mappings;
+        
+        for (size_t j = 0; j < m->n_vars; j++) {
+            if (m->m_vars[j]->type == ASR::exprType::Var) {
+                ASR::Variable_t* var = ASRUtils::EXPR2VAR(m->m_vars[j]);
+                std::string var_name;
+                visit_expr(*m->m_vars[j]);
+                var_name = src;
+                
+                if (is_allocatable_array(var)) {
+                    std::vector<std::string> struct_mappings = generate_struct_mappings(var_name, var, map_type);
+                    all_mappings.insert(all_mappings.end(), struct_mappings.begin(), struct_mappings.end());
+                } else if (ASRUtils::is_array(var->m_type)) {
+                    all_mappings.push_back(generate_array_mapping(var_name, var, map_type));
+                } else {
+                    all_mappings.push_back(map_type + ": " + var_name);
+                }
+            } else {
+                throw CodeGenError("Unsupported OpenMP map variable type: " +
+                    std::to_string((int)m->m_vars[j]->type));
+            }
+        }
+        
+        if (all_mappings.size() == 1) {
+            result += all_mappings[0] + ")";
+        } else {
+            result = "";
+            for (size_t i = 0; i < all_mappings.size(); i++) {
+                result += " map(" + all_mappings[i] + ")";
+            }
+        }
+        
+        return result;
+    }
+
+    bool is_allocatable_array(ASR::Variable_t* var) {
+        return ASR::is_a<ASR::Allocatable_t>(*var->m_type) || 
+            (ASRUtils::is_array(var->m_type) && 
+                ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(var->m_type))->m_physical_type == ASR::array_physical_typeType::DescriptorArray);
+    }
+
+    std::vector<std::string> generate_struct_mappings(const std::string& var_name, ASR::Variable_t* var, const std::string& base_map_type) {
+        std::vector<std::string> mappings;
+        
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(var->m_type);
+        if (ASRUtils::is_array(type)) {
+            ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(type);
+            
+            // 1. Map the data array with proper slice notation
+            std::string data_mapping;
+            if (base_map_type == "to") {
+                data_mapping = "to: " + var_name + "->data[0:";
+            } else if (base_map_type == "from") {
+                data_mapping = "from: " + var_name + "->data[0:";
+            } else {
+                data_mapping = "tofrom: " + var_name + "->data[0:";
+            }
+            
+            if (arr_type->n_dims == 1) {
+                // For 1D arrays, we need to determine the size at runtime
+                data_mapping += var_name + "->dims[0].length-1]";
+            } else {
+                // Multi-dimensional arrays need more complex slice calculation
+                std::string total_size = var_name + "->dims[0].length";
+                for (size_t i = 1; i < arr_type->n_dims; i++) {
+                    total_size += "*" + var_name + "->dims[" + std::to_string(i) + "].length";
+                }
+                data_mapping += total_size + "-1]";
+            }
+            mappings.push_back(data_mapping);
+            
+            // 2. Map dimension descriptors (usually 'to' since they're metadata)
+            for (size_t i = 0; i < arr_type->n_dims; i++) {
+                std::string dim_mapping = "to: " + var_name + "->dims[" + std::to_string(i) + "].lower_bound, " +
+                                        var_name + "->dims[" + std::to_string(i) + "].length, " +
+                                        var_name + "->dims[" + std::to_string(i) + "].stride";
+                mappings.push_back(dim_mapping);
+            }
+            
+            // 3. Map other struct members as needed
+            mappings.push_back("to: " + var_name + "->n_dims");
+            
+            // Map offset - use 'from' if base is 'from' or 'tofrom', otherwise 'to'
+            if (base_map_type == "from" || base_map_type == "tofrom") {
+                mappings.push_back("from: " + var_name + "->offset");
+            } else {
+                mappings.push_back("to: " + var_name + "->offset");
+            }
+        }
+        
+        return mappings;
+    }
+
+    std::string generate_array_mapping(const std::string& var_name, ASR::Variable_t* var, const std::string& map_type) {
+        ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var->m_type);
+        
+        std::string mapping = map_type + ": " + var_name+ "->data";
+        
+        if (arr_type->n_dims == 1 && arr_type->m_dims[0].m_start && arr_type->m_dims[0].m_length) {
+            mapping += "[";
+            visit_expr(*arr_type->m_dims[0].m_start);
+            std::string start = src;
+            visit_expr(*arr_type->m_dims[0].m_length);
+            std::string length = src;
+            mapping += start + ":" + length + "]";
+        }
+        
+        return mapping;
+    }
     void visit_StringLen(const ASR::StringLen_t &x) {
         CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_arg);
