@@ -6153,6 +6153,35 @@ static inline ASR::asr_t* make_print_t_util(Allocator& al, const Location& loc,
     }
 }
 
+template <typename SemanticAbort>
+inline void check_simple_intent_mismatch(diag::Diagnostics &diag, ASR::Function_t* f, const Vec<ASR::call_arg_t>& args) {
+    
+    for (size_t i = 0; i < args.size(); i++) {
+        ASR::expr_t* passed_arg_expr = args[i].m_value;
+        if (passed_arg_expr && ASR::is_a<ASR::Var_t>(*passed_arg_expr)) {
+            ASR::symbol_t* passed_sym = ASR::down_cast<ASR::Var_t>(passed_arg_expr)->m_v;
+            if (ASR::is_a<ASR::Variable_t>(*passed_sym)) {
+                ASR::Variable_t* passed_var = ASR::down_cast<ASR::Variable_t>(passed_sym);
+                if (passed_var->m_intent == ASR::intentType::In) {
+                   
+                    if (i < f->n_args) {
+                        ASR::Variable_t* callee_param = ASRUtils::EXPR2VAR(f->m_args[i]);
+                        if (callee_param->m_intent == ASR::intentType::Out ||
+                            callee_param->m_intent == ASR::intentType::InOut) {
+                            diag.add(diag::Diagnostic(
+                                "Argument `" + std::string(passed_var->m_name) +
+                                "` with intent(in) passed to a dummy argument with modifying intent",
+                                diag::Level::Error, diag::Stage::Semantic, {
+                                    diag::Label("", {passed_arg_expr->base.loc})
+                                }));
+                            throw SemanticAbort();
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
 
 static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
     ASR::call_arg_t* a_args, size_t n_args, ASR::expr_t* a_dt, ASR::stmt_t** cast_stmt,

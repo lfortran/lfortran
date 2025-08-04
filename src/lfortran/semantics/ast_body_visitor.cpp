@@ -4217,6 +4217,11 @@ public:
         bool nopass = false;
         process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
 
+        // checking for intent mismatch   
+        if (f) { 
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
+        }
+
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
             case (ASR::symbolType::Function) : {

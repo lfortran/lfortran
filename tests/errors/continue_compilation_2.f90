@@ -58,25 +58,25 @@ module continue_compilation_2_mod
         INTEGER, INTENT(IN) :: sub_a
     END SUBROUTINE faulty_subroutine
 
+    subroutine sub_a(val_a)
+        integer, intent(in) :: val_a
+        call sub_b(val_a)
+    end subroutine sub_a
 
+    subroutine sub_b(val_b)
+        integer, intent(inout) :: val_b
+    end subroutine sub_b
 
+    function outer_func(val_a) result(res)
+        integer, intent(in) :: val_a
+        integer :: res
+        res = inner_func(val_a)
+    end function outer_func
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    function inner_func(val_b) result(res)
+        integer, intent(inout) :: val_b
+        integer :: res
+    end function inner_func
 
 
 
@@ -204,9 +204,9 @@ program continue_compilation_2
     real(4) ::idnint_runtime = 3.5
     real(8) :: ifix_runtime = 4.23
     logical :: min_max = .true.
+    integer :: intent_bug_sub_x = 10
 
 
-    
 
 
 
@@ -456,6 +456,9 @@ program continue_compilation_2
     !max
     print *, max(.true., .false.)
     print *, max(min_max, min_max)
+    !nested intent
+    call sub_a(intent_bug_sub_x)
+    print *, outer_func(intent_bug_sub_x)
 
     contains
     logical function f(x)

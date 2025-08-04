@@ -260,6 +260,18 @@ semantic error: Cannot assign to an intent(in) variable `y`
 41 |         y = 99  
    |         ^ 
 
+semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/errors/continue_compilation_2.f90:63:20
+   |
+63 |         call sub_b(val_a)
+   |                    ^^^^^ 
+
+semantic error: Argument `val_a` with intent(in) passed to a dummy argument with modifying intent
+  --> tests/errors/continue_compilation_2.f90:73:26
+   |
+73 |         res = inner_func(val_a)
+   |                          ^^^^^ 
+
 semantic error: shape argument specified in c_f_pointer even though fptr is not an array.
    --> tests/errors/continue_compilation_2.f90:238:38
     |
