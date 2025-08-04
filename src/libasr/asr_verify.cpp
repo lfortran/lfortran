@@ -557,6 +557,10 @@ public:
             }
             // TODO: Uncomment the following line
             // ASR::ttype_t* var_type = ASRUtils::extract_type(ASRUtils::symbol_type(a.second));
+            if (ASR::is_a<ASR::Function_t>(*a.second)) {
+                std::string s = ASR::down_cast<ASR::Function_t>(a.second)->m_name;
+                if (s == "__init__") continue;  // Ignore python __init__ in class
+            }
             ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(a.second));
             char* aggregate_type_name = nullptr;
             ASR::symbol_t* sym = nullptr;
