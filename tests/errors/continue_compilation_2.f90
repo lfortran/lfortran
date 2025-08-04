@@ -456,13 +456,14 @@ program continue_compilation_2
     !max
     print *, max(.true., .false.)
     print *, max(min_max, min_max)
+    !nested intent
+    call sub_a(intent_bug_sub_x)
+    print *, outer_func(intent_bug_sub_x)
 
     contains
     logical function f(x)
         integer, intent(in), optional :: x
         f = PRESENT(x)
     end function
-    call sub_a(intent_bug_sub_x)
-    print *, outer_func(intent_bug_sub_x)
 
 end program

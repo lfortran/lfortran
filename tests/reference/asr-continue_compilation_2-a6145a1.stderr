@@ -62,12 +62,6 @@ tokenizer error: Token '@' is not recognized in `format` statement
 436 |     100 FORMAT(A10, @)
     |                     ^ 
 
-syntax error: Token 'call' is unexpected here
-   --> tests/errors/continue_compilation_2.f90:465:5
-    |
-465 |     call sub_a(intent_bug_sub_x)
-    |     ^^^^ 
-
 semantic error: Global name is already being used
   --> tests/errors/continue_compilation_2.f90:24:1 - 25:21
    |
@@ -521,11 +515,11 @@ semantic error: Invalid argument `start` supplied
 332 |     FLUSH(unit=10, start=100)
     |     ^^^^^^^^^^^^^^^^^^^^^^^^^ 
 
-semantic error: Function 'f' not found (not user defined nor intrinsic)
-   --> tests/errors/continue_compilation_2.f90:334:14
+semantic error: Type mismatch in argument at argument (1); passed `real` to `integer`.
+   --> tests/errors/continue_compilation_2.f90:334:16
     |
 334 |     print *, f(42.9)
-    |              ^^^^^^^ 
+    |                ^^^^ 
 
 semantic error: Argument 1 to Ichar must have length 1
    --> tests/errors/continue_compilation_2.f90:336:13
