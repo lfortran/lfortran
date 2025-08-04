@@ -39,7 +39,7 @@ do i = lbound(x, 1), ubound(x, 1)
     end do
 end do
 
-if (c_associated(queries, c_loc(x(0, 0)))) error stop
+if (.not. c_associated(queries, c_loc(x(1, 1)))) error stop
 if (.not. c_associated(queries, c_loc(x))) error stop
 if (c_associated(queries, c_loc(y))) error stop
 if (c_associated(queries2)) error stop
