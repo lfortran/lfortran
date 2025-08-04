@@ -11547,7 +11547,7 @@ public:
                     start_new_block(elseBB);
                     llvm::Value* desc_size = arr_descr->get_array_size(arg, nullptr, 4);
                     llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
-                    llvm_utils->generate_runtime_error(builder->CreateICmpNE(desc_size, pointer_size),
+                    llvm_utils->generate_runtime_error(builder->CreateICmpSLT(desc_size, pointer_size),
                             "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                             "Tried to match size %d of argument number %d, but expected size is %d\n",
                             builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
@@ -11584,7 +11584,7 @@ public:
                     } else {
                         llvm::Value* fixed_size = llvm::ConstantInt::get(llvm_utils->getIntType(4), ASRUtils::get_fixed_size_of_array(fixed_size_type));
                         llvm::Value* pointer_size = get_array_size_from_asr_type(arr_cast->m_type);
-                        llvm_utils->generate_runtime_error(builder->CreateICmpNE(fixed_size, pointer_size),
+                        llvm_utils->generate_runtime_error(builder->CreateICmpSLT(fixed_size, pointer_size),
                                 "Runtime error: Array size mismatch in subroutine '%s'\n\n"
                                 "Tried to match size %d of argument number %d, but expected size is %d\n",
                                 builder->CreateGlobalStringPtr(ASRUtils::symbol_name(x.m_name)),
