@@ -1,0 +1,195 @@
+#include <inttypes.h>
+
+#include <stdlib.h>
+#include <stdbool.h>
+#include <stdio.h>
+#include <string.h>
+#include <lfortran_intrinsics.h>
+
+
+#ifdef USE_GPU
+#include<cuda_runtime.h>
+#else
+#include"cpu_impl.h"
+#endif
+
+struct dimension_descriptor
+{
+    int32_t lower_bound, length, stride;
+};
+
+struct r32
+{
+    float *data;
+    struct dimension_descriptor dims[32];
+    int32_t n_dims;
+    int32_t offset;
+    bool is_allocated;
+};
+
+
+
+
+// Implementations
+#ifdef USE_GPU
+__global__
+#endif
+void compute_kernel_0(struct r32 *a, struct r32 *b, int i_n) {
+    int i = blockIdx.x * blockDim.x + threadIdx.x + 1;
+    if (i <= i_n) {
+            a->data[((0 + (a->dims[0].stride * (i - a->dims[0].lower_bound))) + a->offset)] = (float)(i) + b->data[((0 + (b->dims[0].stride * (i - b->dims[0].lower_bound))) + b->offset)]*(float)(340);
+    }
+}
+
+#ifndef USE_GPU
+void compute_kernel_0_wrapper(void **args) {
+    struct r32 *a = *(struct r32**)args[0];
+    struct r32 *b = *(struct r32**)args[1];
+    int i_n = *(int*)args[2];
+    compute_kernel_0(a, b, i_n);
+}
+#endif
+
+#ifndef USE_GPU
+void compute_kernel_wrapper(void **args, void *func) {
+    if (func == (void*)compute_kernel_0) {
+        compute_kernel_0_wrapper(args);
+        return;
+    }
+    fprintf(stderr, "Unknown kernel function\n");
+    exit(1);
+}
+#endif
+int main(int argc, char* argv[])
+{
+    _lpython_set_argv(argc, argv);
+    int32_t __libasr_index_0_;
+    struct r32 a_value;
+    struct r32* a = &a_value;
+    float *a_data;
+    a->data = a_data;
+    a->n_dims = 1;
+    a->offset = 0;
+    a->dims[0].lower_bound = 1;
+    a->dims[0].length = 0;
+    a->dims[0].stride = 1;
+    struct r32 b_value;
+    struct r32* b = &b_value;
+    float *b_data;
+    b->data = b_data;
+    b->n_dims = 1;
+    b->offset = 0;
+    b->dims[0].lower_bound = 1;
+    b->dims[0].length = 0;
+    b->dims[0].stride = 1;
+    int32_t i;
+    a->n_dims = 1;
+    a->dims[0].lower_bound = 1;
+    a->dims[0].length = 10000000;
+    a->dims[0].stride = 1;
+    a->data = (float*) _lfortran_malloc(1*a->dims[0].length*sizeof(float));
+    a->is_allocated = true;
+    b->n_dims = 1;
+    b->dims[0].lower_bound = 1;
+    b->dims[0].length = 10000000;
+    b->dims[0].stride = 1;
+    b->data = (float*) _lfortran_malloc(1*b->dims[0].length*sizeof(float));
+    b->is_allocated = true;
+    for (__libasr_index_0_=((int32_t)b->dims[1-1].lower_bound); __libasr_index_0_<=((int32_t) b->dims[1-1].length + b->dims[1-1].lower_bound - 1); __libasr_index_0_++) {
+        b->data[((0 + (b->dims[0].stride * (__libasr_index_0_ - b->dims[0].lower_bound))) + b->offset)] = (float)(5);
+    }
+
+    float *d_a_data = NULL;
+    float *d_b_data = NULL;
+    cudaError_t err;
+    size_t a_data_size = a->dims[0].length * sizeof(float);
+    err = cudaMalloc((void**)&d_a_data, a_data_size);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for a_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    size_t b_data_size = b->dims[0].length * sizeof(float);
+    err = cudaMalloc((void**)&d_b_data, b_data_size);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for b_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(d_a_data, a->data, a_data_size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy H2D failed for a_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(d_b_data, b->data, b_data_size, cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy H2D failed for b_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    struct r32 h_a_copy = *a;
+    h_a_copy.data = d_a_data;
+    struct r32 h_b_copy = *b;
+    h_b_copy.data = d_b_data;
+    struct r32 *d_a_struct = NULL;
+    err = cudaMalloc((void**)&d_a_struct, sizeof(struct r32));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for d_a_struct: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    struct r32 *d_b_struct = NULL;
+    err = cudaMalloc((void**)&d_b_struct, sizeof(struct r32));
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMalloc failed for d_b_struct: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(d_a_struct, &h_a_copy, sizeof(struct r32), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy H2D failed for d_a_struct: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(d_b_struct, &h_b_copy, sizeof(struct r32), cudaMemcpyHostToDevice);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy H2D failed for d_b_struct: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    int i_n = 10000000;
+    int threads_per_block = 256;
+    int blocks = (i_n + threads_per_block - 1) / threads_per_block;
+    dim3 grid_dim = {blocks, 1, 1};
+    dim3 block_dim = {threads_per_block, 1, 1};
+    void *kernel_args[] = {&d_a_struct, &d_b_struct, &i_n};
+    err = cudaLaunchKernel((void*)compute_kernel_0, grid_dim, block_dim, kernel_args, 0, NULL);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaLaunchKernel failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaDeviceSynchronize();
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaDeviceSynchronize failed: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(a->data, d_a_data, a_data_size, cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy D2H failed for a_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    err = cudaMemcpy(b->data, d_b_data, b_data_size, cudaMemcpyDeviceToHost);
+    if (err != cudaSuccess) {
+        fprintf(stderr, "cudaMemcpy D2H failed for b_data: %s\n", cudaGetErrorString(err));
+        exit(1);
+    }
+    cudaFree(d_a_data);
+    cudaFree(d_a_struct);
+    cudaFree(d_b_data);
+    cudaFree(d_b_struct);
+
+    printf("%f%s%f\n", a->data[((0 + (a->dims[0].stride * (5 - a->dims[0].lower_bound))) + a->offset)], " ", b->data[((0 + (b->dims[0].stride * (5 - b->dims[0].lower_bound))) + b->offset)]);
+    if (a->data[((0 + (a->dims[0].stride * (5 - a->dims[0].lower_bound))) + a->offset)] != (float)(1705)) {
+        fprintf(stderr, "ERROR STOP");
+        exit(1);
+    }
+    if (b->data[((0 + (b->dims[0].stride * (5 - b->dims[0].lower_bound))) + b->offset)] != (float)(5)) {
+        fprintf(stderr, "ERROR STOP");
+        exit(1);
+    }
+    // FIXME: implicit deallocate(a, b, );
+    return 0;
+}
