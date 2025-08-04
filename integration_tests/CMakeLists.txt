@@ -2492,6 +2492,8 @@ RUN(NAME openmp_66 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_67 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_68 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
 RUN(NAME openmp_69 LABELS llvm_omp  gfortran GFORTRAN_ARGS -fopenmp)
+RUN(NAME openmp_72 LABELS target_offload)
+RUN(NAME openmp_71 LABELS target_offload)
 
 RUN(NAME nullify_01 LABELS gfortran fortran llvm)
 RUN(NAME nullify_02 LABELS gfortran fortran llvm)
