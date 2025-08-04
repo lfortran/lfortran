@@ -1568,6 +1568,172 @@ R"(    // Initialise Numpy
         src = "strlen(" + src + ")";
     }
 
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (!target_offload_enabled) {
+            // Codegen for --show-c: Generate OpenMP pragmas
+            std::string opening_pragma;
+            if (x.m_region == ASR::omp_region_typeType::Parallel) {
+                opening_pragma = "#pragma omp parallel ";
+            } else if (x.m_region == ASR::omp_region_typeType::Do) {
+                opening_pragma = "#pragma omp for ";
+            } else if (x.m_region == ASR::omp_region_typeType::Sections) {
+                opening_pragma = "#pragma omp sections ";
+            } else if (x.m_region == ASR::omp_region_typeType::Single) {
+                opening_pragma = "#pragma omp single ";
+            } else if (x.m_region == ASR::omp_region_typeType::Critical) {
+                opening_pragma = "#pragma omp critical ";
+            } else if (x.m_region == ASR::omp_region_typeType::Atomic) {
+                opening_pragma = "#pragma omp atomic ";
+            } else if (x.m_region == ASR::omp_region_typeType::Barrier) {
+                opening_pragma = "#pragma omp barrier ";
+            } else if (x.m_region == ASR::omp_region_typeType::Task) {
+                opening_pragma = "#pragma omp task ";
+            } else if (x.m_region == ASR::omp_region_typeType::Taskwait) {
+                opening_pragma = "#pragma omp taskwait ";
+            } else if (x.m_region == ASR::omp_region_typeType::Master) {
+                opening_pragma = "#pragma omp master ";
+            } else if (x.m_region == ASR::omp_region_typeType::ParallelDo) {
+                opening_pragma = "#pragma omp parallel for ";
+            } else if (x.m_region == ASR::omp_region_typeType::ParallelSections) {
+                opening_pragma = "#pragma omp parallel sections ";
+            } else if (x.m_region == ASR::omp_region_typeType::Taskloop) {
+                opening_pragma = "#pragma omp taskloop ";
+            } else if (x.m_region == ASR::omp_region_typeType::Target) {
+                opening_pragma = "#pragma omp target ";
+            } else if (x.m_region == ASR::omp_region_typeType::Teams) {
+                opening_pragma = "#pragma omp teams ";
+            } else if (x.m_region == ASR::omp_region_typeType::DistributeParallelDo) {
+                opening_pragma = "#pragma omp distribute parallel for ";
+            } else if (x.m_region == ASR::omp_region_typeType::Distribute) {
+                opening_pragma = "#pragma omp distribute ";
+            } else {
+                throw CodeGenError("Unsupported OpenMP region type: " + std::to_string((int)x.m_region));
+            }
+
+            std::string clauses;
+            for(size_t i=0;i<x.n_clauses;i++) {
+                ASR::omp_clause_t* clause = x.m_clauses[i];
+                if (ASR::is_a<ASR::OMPPrivate_t>(*clause)) {
+                    ASR::OMPPrivate_t* c = ASR::down_cast<ASR::OMPPrivate_t>(clause);
+                    clauses += " private(";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPShared_t>(*clause)) {
+                    ASR::OMPShared_t* c = ASR::down_cast<ASR::OMPShared_t>(clause);
+                    clauses += " shared(";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPNumTeams_t>(*clause)) {
+                    ASR::OMPNumTeams_t* c = ASR::down_cast<ASR::OMPNumTeams_t>(clause);
+                    clauses += " num_teams(";
+                    visit_expr(*c->m_num_teams);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPThreadLimit_t>(*clause)) {
+                    ASR::OMPThreadLimit_t* c = ASR::down_cast<ASR::OMPThreadLimit_t>(clause);
+                    clauses += " thread_limit(";
+                    visit_expr(*c->m_thread_limit);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPSchedule_t>(*clause)) {
+                    ASR::OMPSchedule_t* c = ASR::down_cast<ASR::OMPSchedule_t>(clause);
+                    clauses += " schedule(";
+                    if (c->m_kind == ASR::schedule_typeType::Static) {
+                        clauses += "static";
+                    } else if (c->m_kind == ASR::schedule_typeType::Dynamic) {
+                        clauses += "dynamic";
+                    } else if (c->m_kind == ASR::schedule_typeType::Guided) {
+                        clauses += "guided";
+                    } else if (c->m_kind == ASR::schedule_typeType::Auto) {
+                        clauses += "auto";
+                    } else if (c->m_kind == ASR::schedule_typeType::Runtime) {
+                        clauses += "runtime";
+                    }
+                    if (c->m_chunk_size) {
+                        clauses += ", ";
+                        visit_expr(*c->m_chunk_size);
+                        clauses += src;
+                    }
+                    clauses += ")";
+                } else if (ASR::is_a<ASR::OMPReduction_t>(*clause)) {
+                    ASR::OMPReduction_t* c = ASR::down_cast<ASR::OMPReduction_t>(clause);
+                    clauses += " reduction(";
+                    std::string op;
+                    if(c->m_operator == ASR::reduction_opType::ReduceAdd) {
+                        op += "+";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMul) {
+                        op += "*";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceSub) {
+                        op += "-";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMAX) {
+                        op += "max";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMIN) {
+                        op += "min";
+                    } else {
+                        throw CodeGenError("Unsupported OpenMP reduction operator: " +
+                            std::to_string((int)c->m_operator));
+                    }
+                    clauses += op + ": ";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPDevice_t>(*clause)) {
+                    ASR::OMPDevice_t* c = ASR::down_cast<ASR::OMPDevice_t>(clause);
+                    clauses += " device(";
+                    visit_expr(*c->m_device);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPMap_t>(*clause)) {
+                    ASR::OMPMap_t* m = ASR::down_cast<ASR::OMPMap_t>(clause);
+                    std::string map_clauses = generate_map_clauses(m);
+                    clauses += map_clauses;
+                }
+            }
+            
+            opening_pragma += clauses;
+            
+            if (x.m_region == ASR::omp_region_typeType::Barrier || 
+                x.m_region == ASR::omp_region_typeType::Taskwait) {
+                // These are standalone directives
+                src = opening_pragma + "\n";
+                return;
+            }
+            
+
+            std::string body;
+            for(size_t i=0;i<x.n_body;i++) {
+                this->visit_stmt(*x.m_body[i]);
+                body += src;
+            }
+            if(x.m_region != ASR::omp_region_typeType::Target && x.m_region != ASR::omp_region_typeType::Teams &&
+               x.m_region != ASR::omp_region_typeType::DistributeParallelDo &&
+               x.m_region != ASR::omp_region_typeType::Distribute) {
+                src = opening_pragma + "{\n" + body + "}\n";
+            } else {
+                src =  opening_pragma + "\n" + body + "\n";
+            }
+        } else {
+            // CodeGen for --target-offload: Generate CUDA code
+        }
+    }
+
 };
 
 Result<std::string> asr_to_c(Allocator & /*al*/, ASR::TranslationUnit_t &asr,
