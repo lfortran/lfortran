@@ -493,7 +493,7 @@ namespace LCompilers {
             llvm::Type* get_type_from_ttype_t_util(ASR::expr_t* expr, ASR::ttype_t* asr_type,
                                                    llvm::Module* module,
                                                    ASR::abiType asr_abi = ASR::abiType::Source);
-
+            // TODO: Refactor this function to be bug free.
             llvm::Type* get_type_from_ttype_t_util_from_symbol(ASR::symbol_t* sym,
                                                    ASR::ttype_t* asr_type,
                                                    llvm::Module* module,

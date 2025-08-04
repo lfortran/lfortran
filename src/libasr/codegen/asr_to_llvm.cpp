@@ -5847,9 +5847,10 @@ public:
                 if(ASRUtils::is_array(target_type) ){ // Fetch data ptr
                     LCOMPILERS_ASSERT(ASRUtils::extract_physical_type(target_type) ==
                         ASR::array_physical_typeType::DescriptorArray);
-                    llvm::Type* llvm_target_type = llvm_utils->get_type_from_ttype_t_util(x.m_target, target_type, module.get());
-                    llvm_target = llvm_utils->CreateLoad2(llvm_target_type, llvm_target);
-                    llvm_target = arr_descr->get_pointer_to_data(llvm_target);
+                    llvm::Type* target_type_llvm = llvm_utils->get_type_from_ttype_t_util(
+                        x.m_target, target_type, module.get());
+                    llvm_target = llvm_utils->CreateLoad2(target_type_llvm, llvm_target);
+                    llvm_target = arr_descr->get_pointer_to_data(x.m_target, target_type, llvm_target, module.get());
                 }
                 builder->CreateStore(llvm_value, llvm_target);
             } else if(ASRUtils::is_string_only(value_type)){ // Maybe we can handle this case in a string api function
@@ -8726,7 +8727,7 @@ public:
                     module.get());
             }
             tmp = llvm_utils->CreateLoad2(type_req, tmp);
-                loads++;
+            loads++;
         }
     }
 
@@ -10832,7 +10833,8 @@ public:
                                             // Local variable or Dummy out argument
                                             // of type CPtr is a void**, so we
                                             // have to load it
-                                            tmp = llvm_utils->CreateLoad(tmp);
+                                            llvm::Type* cptr_type = llvm::Type::getInt8PtrTy(context);
+                                            tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
                                         }
                                     } else {
                                         if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
@@ -10887,6 +10889,7 @@ public:
                                     !ASRUtils::is_class_type(ASRUtils::type_get_past_allocatable_pointer(arg->m_type))) {
                                     // TODO: Remove call to ASRUtils::check_equal_type
                                     // pass(rhs) is not respected in integration_tests/class_08.f90
+
                                     tmp = llvm_utils->CreateLoad(tmp);
                                 }
                                 if (ASRUtils::is_class_type(
