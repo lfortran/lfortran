@@ -10,6 +10,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -30,6 +32,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -49,7 +53,9 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 doubleprecision
+                []
                 None
             )
             [(SimpleAttribute
@@ -69,7 +75,9 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 integer
+                []
                 None
             )
             [(SimpleAttribute
@@ -89,7 +97,9 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 real
+                []
                 None
             )
             [(SimpleAttribute
@@ -109,7 +119,9 @@
                 TypeProcedure
                 []
                 ()
+                ()
                 complex
+                []
                 None
             )
             [(SimpleAttribute
@@ -130,6 +142,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -150,6 +164,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -169,6 +185,7 @@
                 []
                 []
                 []
+                []
             )
             Equal
             ())]
@@ -180,6 +197,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -200,6 +219,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute

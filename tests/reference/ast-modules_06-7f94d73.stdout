@@ -41,11 +41,14 @@
         [(Function
             b
             []
+            []
             [(AttrType
                 TypeInteger
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()
@@ -116,11 +119,14 @@
         [(Function
             a
             []
+            []
             [(AttrType
                 TypeInteger
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()
@@ -139,6 +145,7 @@
                 a
                 (+ 3 (FuncCallOrArray
                     b
+                    []
                     []
                     []
                     []

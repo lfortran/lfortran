@@ -20,11 +20,14 @@
         [(Function
             b
             []
+            []
             [(AttrType
                 TypeInteger
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()
@@ -43,6 +46,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -71,6 +76,7 @@
                     []
                     []
                     []
+                    []
                 )
                 ()
             )
@@ -83,11 +89,14 @@
             [(Function
                 d
                 []
+                []
                 [(AttrType
                     TypeInteger
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )]
                 ()
@@ -138,6 +147,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -155,6 +166,7 @@
             c
             (FuncCallOrArray
                 b
+                []
                 []
                 []
                 []

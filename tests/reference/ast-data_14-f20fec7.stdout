@@ -10,6 +10,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -30,6 +32,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(AttrDimension
@@ -60,12 +64,15 @@
                         []
                         []
                         []
+                        []
                     )]
                     (AttrType
                         TypeInteger
                         []
                         ()
                         ()
+                        ()
+                        []
                         None
                     )
                     i

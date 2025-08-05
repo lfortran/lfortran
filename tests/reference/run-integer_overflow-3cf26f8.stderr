@@ -1,1 +1,5 @@
-Error: Value 2147483648 is out of integer(4) range (file).
+semantic error: Incompatible format: LFortran Modfile was generated using version '0.16.0-11643-g8847b48a8-dirty', but current LFortran version is '0.16.0-11646-g1ffb4aa61-dirty'
+ --> tests/errors/integer_overflow.f90:9:5
+  |
+9 |     open(newunit=unit_no, file=filename, status='unknown', iostat=ios)
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ 

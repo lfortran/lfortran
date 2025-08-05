@@ -199,6 +199,8 @@
                             []
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -219,6 +221,8 @@
                             []
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(AttrIntent
@@ -497,6 +501,7 @@
         []
         [(Function
             f
+            []
             [(operator)]
             []
             ()
@@ -519,6 +524,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(AttrIntent

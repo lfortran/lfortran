@@ -36,6 +36,7 @@
                 []
                 []
                 []
+                []
             )]
             ()
         )
@@ -44,6 +45,7 @@
             ()
             (/= (FuncCallOrArray
                 sxvals
+                []
                 []
                 []
                 []
@@ -69,11 +71,14 @@
         [(Function
             sxvals
             []
+            []
             [(AttrType
                 TypeInteger
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )]
             ()

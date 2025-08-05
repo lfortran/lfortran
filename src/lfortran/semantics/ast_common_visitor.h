@@ -3560,10 +3560,9 @@ public:
                                     al, x.m_vartype->base.loc, 
                                     AST::decl_typeType::TypeType,
                                     nullptr, 0, x.m_vartype, 
-                                    nullptr, AST::symbolType::None)));
+                                    nullptr, nullptr, nullptr, 0, AST::symbolType::None)));
 
                 LCOMPILERS_ASSERT(sym_type);
-
 
                 bool is_char_type = sym_type->m_type == AST::decl_typeType::TypeCharacter;
                

@@ -10,6 +10,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec
@@ -36,6 +38,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 [(LetterSpec

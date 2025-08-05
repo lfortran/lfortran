@@ -18,6 +18,8 @@
                 Value)]
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -43,6 +45,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(AttrIntent
@@ -68,6 +72,8 @@
                 Value)]
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -97,6 +103,8 @@
                 Value)]
                 ()
                 ()
+                ()
+                []
                 None
             )
             []
@@ -117,6 +125,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -144,6 +154,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -172,6 +184,7 @@
                     []
                     []
                     []
+                    []
                 )])
                 ([b
                 (FuncCallOrArray
@@ -184,6 +197,7 @@
                     []
                     []
                     []
+                    []
                 )])]
             )]
             []
@@ -193,6 +207,7 @@
             details
             []
             ()
+            []
             []
             [(Declaration
                 ()
@@ -208,6 +223,8 @@
                     []
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -228,6 +245,8 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 []
@@ -279,6 +298,8 @@
                 []
                 ()
                 ()
+                ()
+                []
                 None
             )
             [(AttrIntent
@@ -306,9 +327,13 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -336,9 +361,13 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -366,9 +395,13 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -396,9 +429,13 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute
@@ -426,9 +463,13 @@
                     Value)]
                     ()
                     ()
+                    ()
+                    []
                     None
                 )
                 ()
+                ()
+                []
                 None
             )
             [(SimpleAttribute

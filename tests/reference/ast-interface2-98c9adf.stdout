@@ -38,7 +38,9 @@
                             TypeClass
                             []
                             ()
+                            ()
                             porous_drag_model
+                            []
                             None
                         )
                         [(AttrIntent
@@ -58,7 +60,9 @@
                             TypeType
                             []
                             ()
+                            ()
                             parameter_list
+                            []
                             None
                         )
                         [(SimpleAttribute

@@ -34,6 +34,7 @@
             [(InterfaceProc
                 (Function
                     f
+                    []
                     [(a)
                     (b)]
                     [(AttrType
@@ -43,6 +44,8 @@
                         Value)]
                         ()
                         ()
+                        ()
+                        []
                         None
                     )]
                     r
@@ -64,6 +67,8 @@
                             Value)]
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(SimpleAttribute
@@ -89,6 +94,8 @@
                             Value)]
                             ()
                             ()
+                            ()
+                            []
                             None
                         )
                         [(SimpleAttribute
