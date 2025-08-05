@@ -51,12 +51,13 @@ MODULE passing_array_01_mod
     SUBROUTINE test_entry
       implicit none
       INTEGER :: len
-      INTEGER, DIMENSION(6) :: arr
+      INTEGER, DIMENSION(40) :: arr
+      INTEGER :: i
       INTEGER :: ret
       len = 20
-      arr = [1,2,3,4,5,6]
+      arr = [(i, i = 1, 40)]
       ! All calls would accept the passed array,
-      ! as they don't have compile-time array size to compare against.
+      ! because the passed array's length is greater than or equal to the expected length in the function
 
       ret =  test_01_interface (len,arr)
       print * , ret

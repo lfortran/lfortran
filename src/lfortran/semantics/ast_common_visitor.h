@@ -9985,6 +9985,10 @@ public:
                     }
                 }
             }
+            if (ASR::is_a<ASR::Function_t>(*f2) && !ASRUtils::is_intrinsic_symbol(f2)) {
+                ASR::Function_t *f = ASR::down_cast<ASR::Function_t>(f2);
+                ASRUtils::check_simple_intent_mismatch<SemanticAbort>(diag, f, args);
+            }
             if (x.n_member >= 1) {
                 tmp = create_FunctionCallWithASTNode(x, v, args_with_mdt, true);
             } else {

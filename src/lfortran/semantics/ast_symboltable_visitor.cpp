@@ -870,8 +870,8 @@ public:
         }
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
 
+        is_Function = true;
         for (size_t i=0; i<x.n_decl; i++) {
-            is_Function = true;
             if (!AST::is_a<AST::Require_t>(*x.m_decl[i])) {
                 try {
                     visit_unit_decl2(*x.m_decl[i]);
@@ -879,8 +879,8 @@ public:
                     if ( !compiler_options.continue_compilation ) throw e;
                 }
             }
-            is_Function = false;
         }
+        is_Function = false;
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
@@ -899,6 +899,7 @@ public:
         func_type->m_abi = ASR::abiType::Source;
         func_type->m_deftype = ASR::deftypeType::Implementation;
         parent_scope->overwrite_symbol(x.m_name, ASR::down_cast<ASR::symbol_t>(tmp));
+        current_scope = parent_scope;
     }
 
     void visit_Subroutine(const AST::Subroutine_t &x) {

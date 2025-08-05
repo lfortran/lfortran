@@ -2977,7 +2977,8 @@ public:
             } else {
                 if (ASR::is_a<ASR::Variable_t>(*sym)) {
                     auto v = ASR::down_cast<ASR::Variable_t>(sym);
-                    if (ASR::is_a<ASR::Integer_t>(*v->m_type) || ASR::is_a<ASR::Real_t>(*v->m_type) || ASR::is_a<ASR::Logical_t>(*v->m_type)) {
+                    if (ASR::is_a<ASR::Integer_t>(*v->m_type) || ASR::is_a<ASR::Real_t>(*v->m_type) || ASR::is_a<ASR::Logical_t>(*v->m_type)
+                        || ASR::is_a<ASR::Complex_t>(*v->m_type)) {
                         if (ASRUtils::is_array(v->m_type)) {
                             return false;
                         } else {
@@ -4215,6 +4216,11 @@ public:
         Vec<ASR::call_arg_t> args;
         bool nopass = false;
         process_call_args_and_kwargs(x, args, original_sym, diag, v_expr, al, nopass);
+
+        // checking for intent mismatch   
+        if (f) { 
+            ASRUtils::check_simple_intent_mismatch<SemanticAbort>(this->diag, f, args);
+        }
 
         ASR::symbol_t *final_sym=nullptr;
         switch (original_sym->type) {
