@@ -115,7 +115,7 @@ program continue_compilation_1
       integer :: elements(n)
     end type
     type(bspline_3d) :: s3_in_program
-
+    integer:: boz_1 = int(Z'1234567890ABCDEF1')
 
 
 
