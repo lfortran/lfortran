@@ -869,6 +869,7 @@ public:
             new_func_args.push_back(al, exprstmt_duplicator.duplicate_expr(proc_interface->m_args[i]));
         }
         ASR::expr_t* new_func_return_var = exprstmt_duplicator.duplicate_expr(proc_interface->m_return_var);
+        ASR::ttype_t* new_func_signature = exprstmt_duplicator.duplicate_ttype(proc_interface->m_function_signature);
 
         is_Function = true;
         for (size_t i=0; i<x.n_decl; i++) {
@@ -884,7 +885,7 @@ public:
 
         tmp = ASR::make_Function_t(al, x.base.base.loc, current_scope,
                                    proc_interface->m_name,
-                                   proc_interface->m_function_signature,
+                                   new_func_signature,
                                    nullptr, 0,
                                    new_func_args.p,
                                    new_func_args.size(),
