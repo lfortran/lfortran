@@ -708,17 +708,16 @@ within character string edit descriptor
 
 E.g.; "('Number : ', I 2, 5 X, A)" becomes '('Number : ', I2, 5X, A)'
 */
-char* remove_spaces_except_quotes(const char* format) {
-    int len = strlen(format);
-    char* cleaned_format = malloc(len + 1);
+char* remove_spaces_except_quotes(const char* format, const int64_t len, int* cleaned_format_len) {
+    char* cleaned_format = malloc(len + 1);   // +1 for optional '\0' at end
 
-    int i = 0, j = 0;
+    int j = 0;
     // don't remove blank spaces from within character
     // string editor descriptor
     bool in_quotes = false;
     char current_quote = '\0';
 
-    while (format[i] != '\0') {
+    for (int i = 0; i < len; i++) {
         char c = format[i];
         if (c == '"' || c == '\'') {
             if (i == 0 || format[i - 1] != '\\') {
@@ -735,11 +734,10 @@ char* remove_spaces_except_quotes(const char* format) {
         if (!isspace(c) || in_quotes) {
             cleaned_format[j++] = c; // copy non-space characters or any character within quotes
         }
-
-        i++;
     }
 
-    cleaned_format[j] = '\0';
+    cleaned_format[j] = '\0';       // optional for printing or debugging
+    *cleaned_format_len = j;
     return cleaned_format;
 }
 
@@ -1553,12 +1551,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     int64_t format_values_count = 0,item_start_idx=0;
     char** format_values;
     char* modified_input_string;
-    char* cleaned_format = remove_spaces_except_quotes(format);
+    int len = 0;
+    char* cleaned_format = remove_spaces_except_quotes(format, format_len, &len);
     if (!cleaned_format) {
         free_serialization_info(&s_info);
         return NULL;
     }
-    int len = strlen(cleaned_format);
     modified_input_string = (char*)malloc((len+1) * sizeof(char));
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
