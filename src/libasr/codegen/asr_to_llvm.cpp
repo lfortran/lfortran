@@ -10664,7 +10664,7 @@ public:
             // --- Non-string path ---
             // Evaluate once
             this->visit_expr_wrapper(arg, true);
-            main_data = tmp;  // integer/real/etc value
+            llvm::Value* val = tmp;  // integer/real/etc value
             main_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));  // no length for non-string
 
             // Determine correct printf specifier
@@ -10676,6 +10676,8 @@ public:
             fmt_str.clear();
             for (auto& f : fmt_parts)
                 fmt_str += f;
+            llvm::Value* as_i64 = builder->CreateSExtOrBitCast(val, llvm::Type::getInt64Ty(context));
+            main_data = builder->CreateIntToPtr(as_i64, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
         fmt_str += "%s";
         llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
