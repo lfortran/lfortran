@@ -3101,6 +3101,23 @@ public:
         ASR::expr_t* to_return = ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc,
             ASR::down_cast<ASR::symbol_t>(return_var)));
 
+        tmp = ASRUtils::make_Function_t_util(
+            al, x.base.base.loc,
+            /* a_symtab */ current_scope,
+            /* a_name */ s2c(al, var_name),
+            /* m_dependency */ nullptr,
+            /* n_dependency */ 0,
+            /* a_args */ args.p,
+            /* n_args */ args.size(),
+            /* a_body */ nullptr,
+            /* n_body */ 0,
+            /* a_return_var */ to_return,
+            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
+            nullptr, false, false, false, false, false, nullptr, 0,
+            false, false, false);
+        ASR::symbol_t* fn_sym = ASR::down_cast<ASR::symbol_t>(tmp);
+        parent_scope->add_or_overwrite_symbol(var_name, fn_sym);
+
         Vec<ASR::stmt_t*> body;
         body.reserve(al, 1);
         this->visit_expr(*x.m_value);
@@ -3121,22 +3138,12 @@ public:
         ASRUtils::make_ArrayBroadcast_t_util(al, x.base.base.loc, to_return, value);
         body.push_back(al, ASR::down_cast<ASR::stmt_t>(ASRUtils::make_Assignment_t_util(al, x.base.base.loc, to_return, value, nullptr, compiler_options.po.realloc_lhs)));
 
-        tmp = ASRUtils::make_Function_t_util(
-            al, x.base.base.loc,
-            /* a_symtab */ current_scope,
-            /* a_name */ s2c(al, var_name),
-            /* m_dependency */ current_function_dependencies.p,
-            /* n_dependency */ current_function_dependencies.size(),
-            /* a_args */ args.p,
-            /* n_args */ args.size(),
-            /* a_body */ body.p,
-            /* n_body */ body.size(),
-            /* a_return_var */ to_return,
-            ASR::abiType::Source, ASR::accessType::Public, ASR::deftypeType::Implementation,
-            nullptr, false, false, false, false, false, nullptr, 0,
-            false, false, false);
+        ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(fn_sym);
+        fn->m_body = body.p;
+        fn->n_body = body.n;
+        fn->m_dependencies = current_function_dependencies.p;
+        fn->n_dependencies = current_function_dependencies.n;
         current_function_dependencies.clear(al);
-        parent_scope->add_or_overwrite_symbol(var_name, ASR::down_cast<ASR::symbol_t>(tmp));
         current_scope = parent_scope;
     }
 

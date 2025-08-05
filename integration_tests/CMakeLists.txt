@@ -2178,6 +2178,7 @@ RUN(NAME statement_02 LABELS gfortran llvmImplicit)
 RUN(NAME statement_03 LABELS gfortran llvmImplicit)
 RUN(NAME statement_04 LABELS llvm gfortran llvmImplicit)
 RUN(NAME statement_05 LABELS llvm gfortran llvmImplicit)
+RUN(NAME statement_06 LABELS llvm gfortran)
 
 RUN(NAME data_implied_do_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME data_implied_do_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
