@@ -1594,7 +1594,7 @@ public:
                     if (return_type->m_attr && return_type->m_attr && return_type->m_attr->type == AST::decl_attributeType::AttrType) {
                         AST::AttrType_t *return_attr_type = AST::down_cast<AST::AttrType_t>(return_type->m_attr);
 
-                        if (return_attr_type->m_type == AST::decl_typeType::TypeLF_List) {
+                        if (return_attr_type->m_type == AST::decl_typeType::TypeList) {
                             ASR::symbol_t *type_declaration;
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);

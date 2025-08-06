@@ -4742,7 +4742,7 @@ public:
             // ONLY supposed to be used for LFortran specific types
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
 
-            if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
+            if (sym_type->m_type == AST::decl_typeType::TypeDict) {
                 if (sym_type->n_attr != 2) {
                     diag.add(Diagnostic(
                         "Dict declaration needs exactly two types",
@@ -4758,7 +4758,7 @@ public:
                                                        is_allocatable, dims, var_sym, type_declaration, abi);
 
                 return ASRUtils::TYPE(ASR::make_Dict_t(al, sym_type->base.base.loc, key_type, value_type));
-            } else if (sym_type->m_type == AST::decl_typeType::TypeLF_Tuple) {
+            } else if (sym_type->m_type == AST::decl_typeType::TypeTuple) {
                 if (sym_type->n_attr < 1) {
                     diag.add(Diagnostic(
                         "Tuple declaration needs atleast one type",
@@ -7648,7 +7648,7 @@ public:
 
     }
 
-    ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Len(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7678,7 +7678,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFGetItem(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_GetItem(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 2 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_get_item expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7786,7 +7786,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFPop(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Pop(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 2 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_pop expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7857,7 +7857,7 @@ public:
     }
 
 
-    ASR::asr_t* create_LFConcat(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Concat(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_concat expects no keyword arguments",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -7935,7 +7935,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFEq(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Eq(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_eq expects no keyword arguments",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -9035,15 +9035,15 @@ public:
                 if ( var_name == "_lfortran_unsigned")
                     tmp = create_unsigned_const(x);
                 else if ( var_name == "_lfortran_len")
-                    tmp = create_LFLen(x);
+                    tmp = create_Len(x);
                 else if ( var_name == "_lfortran_get_item")
-                    tmp = create_LFGetItem(x);
+                    tmp = create_GetItem(x);
                 else if ( var_name == "_lfortran_pop")
-                    tmp = create_LFPop(x);
+                    tmp = create_Pop(x);
                 else if ( var_name == "_lfortran_concat")
-                    tmp = create_LFConcat(x);
+                    tmp = create_Concat(x);
                 else if ( var_name == "_lfortran_eq")
-                    tmp = create_LFEq(x);
+                    tmp = create_Eq(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
                 else if ( var_name == "_lfortran_list_count")

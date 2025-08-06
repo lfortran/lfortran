@@ -372,12 +372,12 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %token <string> KW_WRITE
 
 // LFortran specific
-%token <string> KW_LF_LIST
-%token <string> KW_LF_SET
-%token <string> KW_LF_DICT
-%token <string> KW_LF_TUPLE
-%token <string> KW_LF_UNION_TYPE
-%token <string> KW_LF_END_UNION_TYPE
+%token <string> KW_LIST
+%token <string> KW_SET
+%token <string> KW_DICT
+%token <string> KW_TUPLE
+%token <string> KW_UNION_TYPE
+%token <string> KW_END_UNION_TYPE
 
 %type <vec_ast> intrinsic_type_spec_list
 %type <ast> union_type_decl
@@ -764,8 +764,8 @@ derived_type_decl
 
 
 union_type_decl
-    : KW_LF_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
-            $$ = LF_UNION_TYPE($2, $3, TRIVIA($4, $7, @$), $5, @$); }
+    : KW_UNION_TYPE var_modifiers id sep var_decl_star lf_end_union_type sep {
+            $$ = UNION_TYPE($2, $3, TRIVIA($4, $7, @$), $5, @$); }
     ;
 
 template_decl
@@ -817,7 +817,7 @@ end_type
     ;
 
 lf_end_union_type
-    : KW_LF_END_UNION_TYPE id_opt
+    : KW_END_UNION_TYPE id_opt
     ;
 
 derived_type_contains_opt
@@ -1576,10 +1576,10 @@ intrinsic_type_spec
     | KW_DOUBLE_PRECISION { $$ = ATTR_TYPE(DoublePrecision, @$); }
     | KW_DOUBLE KW_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
     | KW_DOUBLE_COMPLEX { $$ = ATTR_TYPE(DoubleComplex, @$); }
-    | KW_LF_LIST "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_List, $3, @$); }
-    | KW_LF_SET "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(LF_Set, $3, @$); }
-    | KW_LF_DICT "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Dict, $3, @$); }
-    | KW_LF_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(LF_Tuple, $3, @$); }
+    | KW_LIST "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(List, $3, @$); }
+    | KW_SET "(" intrinsic_type_spec ")" { $$ = ATTR_TYPE_ATTR(Set, $3, @$); }
+    | KW_DICT "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Dict, $3, @$); }
+    | KW_TUPLE "(" intrinsic_type_spec_list ")" { $$ = ATTR_TYPE_LIST(Tuple, $3, @$); }
     ;
 
 intrinsic_type_spec_list
@@ -2741,8 +2741,8 @@ id
     | KW_WHERE { $$ = SYMBOL($1, @$); }
     | KW_WHILE { $$ = SYMBOL($1, @$); }
     | KW_WRITE { $$ = SYMBOL($1, @$); }
-    | KW_LF_LIST { $$ = SYMBOL($1, @$); }
-    | KW_LF_SET { $$ = SYMBOL($1, @$); }
-    | KW_LF_DICT { $$ = SYMBOL($1, @$); }
-    | KW_LF_TUPLE { $$ = SYMBOL($1, @$); }
+    | KW_LIST { $$ = SYMBOL($1, @$); }
+    | KW_SET { $$ = SYMBOL($1, @$); }
+    | KW_DICT { $$ = SYMBOL($1, @$); }
+    | KW_TUPLE { $$ = SYMBOL($1, @$); }
     ;
