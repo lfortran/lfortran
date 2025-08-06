@@ -797,7 +797,7 @@ semantic error: Invalid syntax of derived type for array constructor
    --> tests/errors/continue_compilation_1.f90:342:12
     |
 342 |     arr = [type(MyClass) :: v1, v2, v3]
-    |            ^^^^^^^^^^^^^ help: use just the derived type name 'ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type)', without the keyword 'type'
+    |            ^^^^^^^^^^^^^ help: use just the derived type name 'myclass', without the keyword 'type'
 
 semantic error: Class type `NonExistingType` is not defined
    --> tests/errors/continue_compilation_1.f90:344:11
