@@ -2098,6 +2098,16 @@ public:
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
                     ASR::symbol_t* sym = var->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if ( ASR::is_a<ASR::List_t>(*var_type)
+                            || ASR::is_a<ASR::Dict_t>(*var_type) 
+                            || ASR::is_a<ASR::Set_t>(*var_type)
+                            || ASR::is_a<ASR::Tuple_t>(*var_type)) {
+
+                    diag.add(diag::Diagnostic(
+                        "Type `" + ASRUtils::type_to_str_fortran(var_type) + "` is not allowed inside Union",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {})}));
+                    throw SemanticAbort();
                 }
             }
             if( aggregate_type_name ) {
