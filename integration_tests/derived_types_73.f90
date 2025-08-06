@@ -26,9 +26,10 @@ program derived_types_73
   c%y = 2
   c%parent_t = p 
   if (c%a /= 10 .or. c%b /= 20) error stop
-  ! call assign_struct_members(c%parent_t)          !! TODO: handle this case
-  ! c%parent_t = parent_t(100, 200)                 !! TODO: handle this case
-  ! if (c%a /= 100 .or. c%b /= 200) error stop
+  call assign_struct_members(c%parent_t)
+  if (c%a /= 100 .or. c%b /= 200) error stop
+  c%parent_t = parent_t(150, 250)
+  if (c%a /= 150 .or. c%b /= 250) error stop
 contains
   
   subroutine assign_struct_members(p)

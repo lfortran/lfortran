@@ -3171,6 +3171,16 @@ public:
                 // TODO: Select type by comparing with vtab
             }
         }
+        if (ASR::is_a<ASR::Struct_t>(*symbol_get_past_external(x.m_m))) {
+            ASR::Struct_t* member_struct = down_cast<ASR::Struct_t>(symbol_get_past_external(x.m_m));
+            std::string member_name = member_struct->m_name;
+            while( dertype2parent.find(current_der_type_name) != dertype2parent.end() &&
+                        (current_der_type_name != member_name)) {
+                tmp = llvm_utils->create_gep2(name2dertype[current_der_type_name], tmp, 0);
+                current_der_type_name = dertype2parent[current_der_type_name];
+            }
+            return;
+        }
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
