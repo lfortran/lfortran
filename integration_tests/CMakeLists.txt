@@ -157,6 +157,11 @@ macro(RUN_UTIL RUN_FAIL RUN_NAME RUN_FILE_NAME RUN_LABELS RUN_EXTRAFILES RUN_EXT
                 OUTPUT_FILE ${c_file}
                 RESULT_VARIABLE convert_result
             )
+            configure_file(
+                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h.in
+                ${CMAKE_SOURCE_DIR}/../src/libasr/config.h
+                @ONLY
+            )
             add_executable(${name}
                 ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/lfortran_intrinsics.c
                 ${CMAKE_SOURCE_DIR}/../src/libasr/runtime/cpu_impl.c
