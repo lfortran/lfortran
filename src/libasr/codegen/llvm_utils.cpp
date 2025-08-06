@@ -2380,7 +2380,8 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
 
 }
 
-    llvm::Value* LLVMUtils::is_equal_pointer_string(llvm::Value* left, llvm::Value* right) {
+    llvm::Value* LLVMUtils::is_equal_pointer_string(llvm::Value* left, llvm::Value* right) 
+    {
         str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
         llvm::Value* null_char = llvm::ConstantInt::get(llvm::Type::getInt8Ty(context),
                                                     llvm::APInt(8, '\0'));
@@ -2429,7 +2430,9 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         return builder->CreateICmpEQ(l, r);
     }
 
-    llvm::Value* LLVMUtils::is_equal_descriptor_string(llvm::Value* left, llvm::Value* right) {
+    llvm::Value* LLVMUtils::is_equal_descriptor_string(llvm::Value* left, llvm::Value* right, 
+        ASR::String_t* type /*left and right are assumed to have single type*/) 
+    {
         if (left->getType() == string_descriptor) {
             llvm::Value* tmp = CreateAlloca(string_descriptor);
             builder->CreateStore(left, tmp);
@@ -2437,77 +2440,95 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         }
 
         if (right->getType() == string_descriptor) {
-            llvm::Value* tmp = CreateAlloca(string_descriptor);
+            llvm::Value* tmp =  CreateAlloca(string_descriptor);
             builder->CreateStore(right, tmp);
             right = tmp;
         }
 
-        llvm::Value* left_string_body = CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                           create_gep2(string_descriptor, left, 0));
-        llvm::Value* left_string_size = CreateLoad2(llvm::Type::getInt64Ty(context),
-                                           create_gep2(string_descriptor, left, 1));
-        llvm::Value* right_string_body = CreateLoad2(llvm::Type::getInt8Ty(context)->getPointerTo(),
-                                           create_gep2(string_descriptor, right, 0));
-        llvm::Value* right_string_size = CreateLoad2(llvm::Type::getInt64Ty(context),
-                                           create_gep2(string_descriptor, right, 1));
+        llvm::Value* l_str_data, *l_str_len;
+        llvm::Value* r_str_data, *r_str_len;
+        std::tie(l_str_data, l_str_len) = get_string_length_data(type, left);
+        std::tie(r_str_data, r_str_len) = get_string_length_data(type, right);
 
-        llvm::Value *cond = builder->CreateICmpEQ(left_string_size, right_string_size);
-        llvm::Function *fn = builder->GetInsertBlock()->getParent();
-        llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then", fn);
-        llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
-        llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
-        builder->CreateCondBr(cond, thenBB, elseBB);
-        builder->SetInsertPoint(thenBB);
+        /* Equivalent in C++
+            bool result = true;
+            if(l_str_len != r_str_len){
+                result = false;
+            } else {
+                int i = 0;
+                while(i < l_str_len){
+                    if(l_str_data[i] != r_str_data[i++]){
+                        result = false;
+                        break;
+                    } else {
+                        continue;
+                    }
+                }
+            }
+        */
+        llvm::Type* const res_type = llvm::Type::getInt1Ty(context);
+        llvm::Type* const i64_t = llvm::Type::getInt64Ty(context);
+        llvm::Type* const i8_t = llvm::Type::getInt8Ty(context);
+        llvm::Value* const is_matching_strings = builder->CreateAlloca(res_type, nullptr, "is_matching_strings");
+        builder->CreateStore(llvm::ConstantInt::get(res_type, true), is_matching_strings);
 
-        str_cmp_itr = LLVMUtils::CreateAlloca(llvm::Type::getInt32Ty(context));
 
-        llvm::Value* idx = str_cmp_itr;
-        LLVM::CreateStore(*builder,
-            llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 0)),
-            idx);
-        llvm::BasicBlock *loophead = llvm::BasicBlock::Create(context, "loop.head");
-        llvm::BasicBlock *loopbody = llvm::BasicBlock::Create(context, "loop.body");
-        llvm::BasicBlock *loopend = llvm::BasicBlock::Create(context, "loop.end");
+        { /* Outter if-else */
+            llvm::Value *cond = builder->CreateICmpNE(l_str_len, r_str_len);
+            llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then");
+            llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+            llvm::BasicBlock *ifcont = llvm::BasicBlock::Create(context, "ifcont");
+            builder->CreateCondBr(cond, thenBB, elseBB);
 
-        // head
-        start_new_block(loophead);
-        {
-            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-            llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                llvm::Type::getInt8Ty(context), left_string_body, i));
-            llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-                llvm::Type::getInt8Ty(context), right_string_body, i));
-            llvm::Value* cond = builder->CreateICmpEQ(l, r);
-            llvm::Value* i_64 = builder->CreateZExt(i, llvm::Type::getInt64Ty(context));
-            cond = builder->CreateAnd(cond, builder->CreateICmpSLE(i_64, left_string_size));
-            builder->CreateCondBr(cond, loopbody, loopend);
+            start_new_block(thenBB);
+            { // then
+                builder->CreateStore(llvm::ConstantInt::get(res_type, false), is_matching_strings);
+                builder->CreateBr(ifcont);
+            }
+
+            start_new_block(elseBB);
+            { // else (while loop)
+                llvm::Value* i = builder->CreateAlloca(i64_t, nullptr, "i");
+                builder->CreateStore(llvm::ConstantInt::get(i64_t, llvm::APInt(64, 0)), i);
+
+                llvm::BasicBlock* loop_head = llvm::BasicBlock::Create(context, "loop.head");
+                llvm::BasicBlock* loop_body = llvm::BasicBlock::Create(context, "loop.body");
+                llvm::BasicBlock* loop_end  = llvm::BasicBlock::Create(context, "loop.end");
+                start_new_block(loop_head);
+                { // loop head
+                    llvm::Value* cond = builder->CreateICmpSLE(builder->CreateLoad(i64_t, i), l_str_len);
+                    builder->CreateCondBr(cond, loop_body, loop_end);
+                }
+                start_new_block(loop_body);
+                { // loop body (inner if-else)
+                    llvm::BasicBlock *thenBB = llvm::BasicBlock::Create(context, "then");
+                    llvm::BasicBlock *elseBB = llvm::BasicBlock::Create(context, "else");
+
+                    llvm::Value* l_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, l_str_data, builder->CreateLoad(i64_t, i)));
+                    llvm::Value* r_char = builder->CreateLoad(i8_t, builder->CreateGEP(i8_t, r_str_data, builder->CreateLoad(i64_t, i)));
+
+                    llvm::Value* cond = builder->CreateICmpNE(l_char, r_char);
+
+                    /* i++ */
+                    builder->CreateStore(builder->CreateAdd(builder->CreateLoad(i64_t, i), llvm::ConstantInt::get(context, llvm::APInt(64, 1))), i);
+
+                    builder->CreateCondBr(cond, thenBB, elseBB);
+
+                    start_new_block(thenBB);
+                    { // then
+                        builder->CreateStore(llvm::ConstantInt::get(res_type, false), is_matching_strings);
+                        builder->CreateBr(loop_end);
+                    }
+                    start_new_block(elseBB);
+                    { // else
+                        builder->CreateBr(loop_head);
+                    }
+                }
+                start_new_block(loop_end); // Do nothing
+            }
+            start_new_block(ifcont); // Do nothing
         }
-
-        // body
-        start_new_block(loopbody);
-        {
-            llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-            i = builder->CreateAdd(i, llvm::ConstantInt::get(llvm::Type::getInt32Ty(context),
-                                    llvm::APInt(32, 1)));
-            LLVM::CreateStore(*builder, i, idx);
-        }
-
-        builder->CreateBr(loophead);
-
-        // end
-        start_new_block(loopend);
-        builder->CreateBr(mergeBB);
-
-        start_new_block(elseBB);
-        builder->CreateBr(mergeBB);
-
-        start_new_block(mergeBB);
-        llvm::Value* i = LLVMUtils::CreateLoad2(llvm::Type::getInt32Ty(context), idx);
-        llvm::Value* l = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-            llvm::Type::getInt8Ty(context), left_string_body, i));
-        llvm::Value* r = LLVMUtils::CreateLoad2(llvm::Type::getInt8Ty(context), create_ptr_gep2(
-            llvm::Type::getInt8Ty(context), right_string_body, i));
-        return builder->CreateAnd(builder->CreateICmpEQ(l, r), builder->CreateICmpEQ(left_string_size, right_string_size));
+        return builder->CreateLoad(res_type, is_matching_strings);
     }
 
 
@@ -2530,7 +2551,7 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
                 if (string_type == ASR::string_physical_typeType::CChar)
                     return is_equal_pointer_string(left, right);
                 else 
-                    return is_equal_descriptor_string(left, right);
+                    return is_equal_descriptor_string(left, right, ASRUtils::get_string_type(asr_type));
             }
             case ASR::ttypeType::Tuple: {
                 ASR::Tuple_t* tuple_type = ASR::down_cast<ASR::Tuple_t>(asr_type);
@@ -5522,24 +5543,23 @@ llvm::Value* LLVMUtils::handle_global_nonallocatable_stringArray(Allocator& al, 
         llvm::BasicBlock *mergeBB = llvm::BasicBlock::Create(context, "ifcont");
         builder->CreateCondBr(cond, thenBB, elseBB);
         builder->SetInsertPoint(thenBB);
+        llvm::Value* const type_size_ = llvm::ConstantInt::get(context,llvm::APInt(32, type_size));
         llvm::Value* new_capacity = builder->CreateMul(llvm::ConstantInt::get(context,
                                                        llvm::APInt(32, 2)), capacity);
         new_capacity = builder->CreateAdd(new_capacity, llvm::ConstantInt::get(context,
                                                         llvm::APInt(32, 1)));
-        llvm::Value* arg_size = builder->CreateMul(llvm::ConstantInt::get(context,
-                                                   llvm::APInt(32, type_size)),
-                                                   new_capacity);
+        llvm::Value* arg_size = builder->CreateMul(type_size_, new_capacity);
         llvm::Value* copy_data_ptr = get_pointer_to_list_data_using_type(list_type, list);
         llvm::Value* copy_data = llvm_utils->CreateLoad2(el_type->getPointerTo() ,copy_data_ptr);
         copy_data = LLVM::lfortran_realloc(context, *module, *builder,
                                            copy_data, arg_size);
-        { //Initialize newly allocated memory 
-            llvm::Value* whole_size = builder->CreateMul(
-                                            llvm::ConstantInt::get(context,llvm::APInt(32, type_size)),
-                                            capacity);
+        { // Initialize newly allocated memory
+            llvm::Value* newly_allocated_capacity = builder->CreateSub(new_capacity, capacity);
+            llvm::Value* newly_allocated_capacity_whole_size = builder->CreateMul(type_size_, newly_allocated_capacity);
+            llvm::Value* old_capacity_whole_size = builder->CreateMul(type_size_, capacity);
             llvm::Type* const realloc_ret_type = llvm::Type::getInt8Ty(context);
-            llvm::Value* unset_new_memory = builder->CreateGEP(realloc_ret_type, copy_data, whole_size);
-            builder->CreateMemSet(unset_new_memory, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), whole_size, llvm::MaybeAlign());
+            llvm::Value* unset_new_memory = builder->CreateGEP(realloc_ret_type, copy_data, old_capacity_whole_size);
+            builder->CreateMemSet(unset_new_memory, llvm::ConstantInt::get(context, llvm::APInt(8, 0)), newly_allocated_capacity_whole_size, llvm::MaybeAlign());
         }
         copy_data = builder->CreateBitCast(copy_data, el_type->getPointerTo());
         builder->CreateStore(copy_data, copy_data_ptr);

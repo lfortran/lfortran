@@ -443,7 +443,7 @@ namespace LCompilers {
 
             llvm::Value* is_equal_pointer_string(llvm::Value* left, llvm::Value* right);
 
-            llvm::Value* is_equal_descriptor_string(llvm::Value* left, llvm::Value* right);
+            llvm::Value* is_equal_descriptor_string(llvm::Value* left, llvm::Value* right, ASR::String_t* type);
 
             llvm::Value* is_equal_by_value(llvm::Value* left, llvm::Value* right,
                                            llvm::Module* module, ASR::ttype_t* asr_type);
