@@ -343,7 +343,8 @@ namespace LCompilers {
             if( current_scope->get_symbol(str_name) == nullptr ||
                 !ASRUtils::check_equal_type(
                     ASRUtils::symbol_type(current_scope->get_symbol(str_name)),
-                    var_type, true
+                    var_type, ASRUtils::get_expr_from_sym(
+                        al, current_scope->get_symbol(str_name)), var, true
                 ) ) {
                 ASR::symbol_t* type_decl = nullptr;
                 if ( var != nullptr ) {
@@ -392,7 +393,7 @@ namespace LCompilers {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
-                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
+                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type, nullptr, nullptr) &&
                               idx_var->m_symbolic_value == nullptr) ) {
                             idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
@@ -437,7 +438,7 @@ namespace LCompilers {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
-                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
+                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type, nullptr, nullptr) &&
                               idx_var->m_symbolic_value == nullptr) ) {
                             idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
@@ -481,7 +482,7 @@ namespace LCompilers {
                     ASR::symbol_t* idx_sym = current_scope->get_symbol(idx_var_name);
                     if( ASR::is_a<ASR::Variable_t>(*idx_sym) ) {
                         ASR::Variable_t* idx_var = ASR::down_cast<ASR::Variable_t>(idx_sym);
-                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type) &&
+                        if( !(ASRUtils::check_equal_type(idx_var->m_type, int32_type, nullptr, nullptr) &&
                               idx_var->m_symbolic_value == nullptr) ) {
                             idx_var_name = current_scope->get_unique_name(idx_var_name, false);
                         }
@@ -1488,7 +1489,7 @@ namespace LCompilers {
                 ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, x, k);
                 ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var,
                     al, current_scope);
-                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type) ) {
+                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                         al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                 }
@@ -1538,7 +1539,7 @@ namespace LCompilers {
                 ASR::expr_t* curr_init = ASRUtils::fetch_ArrayConstant_value(al, x, k);
                 ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_vars,
                     al, current_scope);
-                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type) ) {
+                if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                     curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                         al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                 }
@@ -1589,7 +1590,7 @@ namespace LCompilers {
                         }, current_scope, result_vec);
                     } else {
                         ASR::expr_t* res = PassUtils::create_array_ref(arr_var, idx_var, al, current_scope);
-                        if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type) ) {
+                        if( perform_cast && !ASRUtils::types_equal(ASRUtils::expr_type(curr_init), casted_type, nullptr, nullptr) ) {
                             curr_init = ASRUtils::EXPR(ASR::make_Cast_t(
                                 al, curr_init->base.loc, curr_init, cast_kind, casted_type, nullptr));
                         }

@@ -108,8 +108,9 @@ static inline void verify_array_int_real_cmplx(ASR::expr_t* array, ASR::ttype_t*
     int array_n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
     ASRUtils::require_impl(array_n_dims > 0, "Input to " + intrinsic_func_name + " intrinsic must always be an array",
         loc, diagnostics);
+    // `check_equal_type` will return `false` automatically for types that are not same, so pass `nullptr` for `expr`
     ASRUtils::require_impl(ASRUtils::check_equal_type(
-        return_type, array_type, false),
+        return_type, array_type, nullptr, nullptr, false),
         intrinsic_func_name + " intrinsic must return an output of the same type as input", loc, diagnostics);
     int return_n_dims = ASRUtils::extract_n_dims_from_ttype(return_type);
     ASRUtils::require_impl(return_n_dims == 0,
@@ -128,8 +129,9 @@ static inline void verify_array_int_real(ASR::expr_t* array, ASR::ttype_t* retur
     int array_n_dims = ASRUtils::extract_n_dims_from_ttype(array_type);
     ASRUtils::require_impl(array_n_dims > 0, "Input to " + intrinsic_func_name + " intrinsic must always be an array",
         loc, diagnostics);
+    // `check_equal_type` will return `false` automatically for types that are not same, so pass `nullptr` for `expr`
     ASRUtils::require_impl(ASRUtils::check_equal_type(
-        return_type, array_type, false),
+        return_type, array_type, nullptr, nullptr, false),
         intrinsic_func_name + " intrinsic must return an output of the same type as input", loc, diagnostics);
     int return_n_dims = ASRUtils::extract_n_dims_from_ttype(return_type);
     ASRUtils::require_impl(return_n_dims == 0,
@@ -152,8 +154,9 @@ static inline void verify_array_dim(ASR::expr_t* array, ASR::expr_t* dim,
     ASRUtils::require_impl(ASRUtils::is_integer(*ASRUtils::expr_type(dim)),
         "`dim` argument must be an integer", loc, diagnostics);
 
+    // `check_equal_type` will return `false` automatically for types that are not same, so pass `nullptr` for `expr`
     ASRUtils::require_impl(ASRUtils::check_equal_type(
-        return_type, array_type, false),
+        return_type, array_type, nullptr, nullptr, false),
         intrinsic_func_name + " intrinsic must return an output of the same type as input", loc, diagnostics);
     int return_n_dims = ASRUtils::extract_n_dims_from_ttype(return_type);
     ASRUtils::require_impl(array_n_dims == return_n_dims + 1,
@@ -921,7 +924,7 @@ static inline ASR::expr_t* instantiate_ArrIntrinsic(Allocator &al,
             bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                     ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
             if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                    arg_type) && orig_array_rank == rank) {
+                    arg_type, f->m_args[0], new_args[0].m_value) && orig_array_rank == rank) {
                 return builder.Call(s, new_args, return_type, nullptr);
             } else {
                 new_func_name += std::to_string(i);
@@ -2252,7 +2255,7 @@ namespace Eoshift {
             append_error(diag, "The argument `shift` in `eoshift` must be of type Integer", shift->base.loc);
             return nullptr;
         }
-        if( is_boundary_present && (!ASRUtils::check_equal_type(type_boundary, type_array))) {
+        if( is_boundary_present && (!ASRUtils::check_equal_type(type_boundary, type_array, boundary, array))) {
             append_error(diag, "'boundary' argument of 'eoshift' intrinsic must be a scalar of same type as array type", boundary->base.loc);
             return nullptr;
         }
@@ -2649,7 +2652,7 @@ namespace IanyIall {
                 bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
                 if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        ASRUtils::expr_type(new_args[0].m_value), true) && orig_array_rank == rank) {
+                        ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
                     return builder.Call(s, new_args, return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);
@@ -3005,7 +3008,7 @@ namespace AnyAll {
                 bool same_allocatable_type = (ASRUtils::is_allocatable(arg_type) ==
                                         ASRUtils::is_allocatable(ASRUtils::expr_type(f->m_args[0])));
                 if (same_allocatable_type && ASRUtils::types_equal(ASRUtils::expr_type(f->m_args[0]),
-                        ASRUtils::expr_type(new_args[0].m_value), true) && orig_array_rank == rank) {
+                        ASRUtils::expr_type(new_args[0].m_value), f->m_args[0], new_args[0].m_value, true) && orig_array_rank == rank) {
                     return builder.Call(s, new_args, logical_return_type, nullptr);
                 } else {
                     new_func_name += std::to_string(i);

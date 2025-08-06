@@ -69,7 +69,7 @@ ASR::asr_t* make_Binop_util(Allocator &al, const Location& loc, ASR::binopType b
 ASR::asr_t* make_Cmpop_util(Allocator &al, const Location& loc, ASR::cmpopType cmpop,
                         ASR::expr_t* lexpr, ASR::expr_t* rexpr, ASR::ttype_t* ttype);
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions=false);
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions=false);
 
 static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_error_message=true);
 
@@ -203,6 +203,25 @@ static inline ASR::FunctionType_t* get_FunctionType(ASR::symbol_t* x) {
         LCOMPILERS_ASSERT(false);
     }
     return func_type;
+}
+
+static inline ASR::Function_t* get_function(ASR::symbol_t* x)
+{
+    ASR::symbol_t* a_name = ASRUtils::symbol_get_past_external(x);
+
+    if (ASR::is_a<ASR::Function_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(a_name);
+    } else if (ASR::is_a<ASR::Variable_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::Variable_t>(a_name)->m_type_declaration));
+    } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name)) {
+        return ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
+            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name)->m_proc));
+    } else {
+        LCOMPILERS_ASSERT(false);
+    }
+    
+    return nullptr;
 }
 
 static inline const ASR::symbol_t *symbol_get_past_external(const ASR::symbol_t *f)
@@ -425,9 +444,6 @@ static inline ASR::ttype_t* symbol_type(const ASR::symbol_t *f)
     return nullptr;
 }
 
-// Recursively creates a Var node expression from a symbol.
-// For Variable: returns Var node for the variable.
-// For Function: resolves m_return_var, gets the variable, and returns Var node for it.
 static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) {
     sym = ASRUtils::symbol_get_past_external(sym);
     switch (sym->type) {
@@ -435,9 +451,7 @@ static inline ASR::expr_t* get_expr_from_sym(Allocator& al, ASR::symbol_t* sym) 
             return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
         }
         case ASR::symbolType::Function: {
-            ASR::Function_t* fn = ASR::down_cast<ASR::Function_t>(sym);
-            ASR::Var_t* ret_var = ASR::down_cast<ASR::Var_t>(fn->m_return_var);
-            return get_expr_from_sym(al, ret_var->m_v);
+            return ASRUtils::EXPR(ASR::make_Var_t(al, sym->base.loc, sym));
         }
         default: {
             throw LCompilersException("get_expr_from_sym: Only Variable and Function symbols are supported.");
@@ -3732,7 +3746,7 @@ inline bool expr_equal(ASR::expr_t* x, ASR::expr_t* y) {
         case ASR::exprType::Var: {
             ASR::Var_t* var_x = ASR::down_cast<ASR::Var_t>(x);
             ASR::Var_t* var_y = ASR::down_cast<ASR::Var_t>(y);
-            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), true);
+            return check_equal_type(expr_type(&var_x->base), expr_type(&var_y->base), x, y, true);
         }
         case ASR::exprType::IntegerConstant: {
             ASR::IntegerConstant_t* intconst_x = ASR::down_cast<ASR::IntegerConstant_t>(x);
@@ -3792,7 +3806,7 @@ inline bool dimensions_compatible(ASR::dimension_t* dims_a, size_t n_dims_a,
     return (total_a == -1) || (total_b == -1) || (total_a >= total_b);
 }
 
-inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
+inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions=false) {
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
@@ -3823,7 +3837,7 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::Array): {
                 ASR::Array_t* a2 = ASR::down_cast<ASR::Array_t>(a);
                 ASR::Array_t* b2 = ASR::down_cast<ASR::Array_t>(b);
-                if( !types_equal(a2->m_type, b2->m_type) ) {
+                if( !types_equal(a2->m_type, b2->m_type, a_expr, b_expr) ) {
                     return false;
                 }
 
@@ -3877,17 +3891,16 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::List) : {
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
-                return types_equal(a2->m_type, b2->m_type);
+                return types_equal(a2->m_type, b2->m_type, a_expr, b_expr);
             }
             case (ASR::ttypeType::StructType) : {
-                ASR::StructType_t *st1 = ASR::down_cast<ASR::StructType_t>(a);
-                ASR::StructType_t *st2 = ASR::down_cast<ASR::StructType_t>(b);
-                
-                if (st1->n_data_member_types != st2->n_data_member_types) return false;
-                for (size_t i = 0; i < st1->n_data_member_types; i++) {
-                    if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
+                ASR::Struct_t* x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
+                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
+
+                if (!is_derived_type_similar(x_struct, y_struct)) {
+                    return false;
                 }
 
                 return true;
@@ -3906,17 +3919,23 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+
+                ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
+                ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
                     return false;
                 }
                 for( size_t i = 0; i < a2->n_arg_types; i++ ) {
-                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], true) ) {
+                    if( !types_equal(a2->m_arg_types[i], b2->m_arg_types[i], left_func->m_args[i],
+                         right_func->m_args[i], true) ) {
                         return false;
                     }
                 }
-                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, true) ) {
+                if( !types_equal(a2->m_return_var_type, b2->m_return_var_type, left_func->m_return_var,
+                     right_func->m_return_var, true) ) {
                     return false;
                 }
                 return true;
@@ -3928,8 +3947,9 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
 }
 
 inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
-    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs,
+    std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbol_t*>> subs, ASR::expr_t* a_expr, ASR::expr_t* b_expr,
     bool check_for_dimensions=false) {
+    ASR::Struct_t* a_struct = nullptr;
     // TODO: If anyone of the input or argument is derived type then
     // add support for checking member wise types and do not compare
     // directly. From stdlib_string len(pattern) error
@@ -3945,6 +3965,9 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     if (ASR::is_a<ASR::TypeParameter_t>(*a)) {
         ASR::TypeParameter_t* a_tp = ASR::down_cast<ASR::TypeParameter_t>(a);
         a = subs[a_tp->m_param].first;
+        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(a))) {
+            a_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(subs[a_tp->m_param].second));
+        }
     }
     if (a->type == b->type) {
         // TODO: check dims
@@ -3953,7 +3976,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::Array): {
                 ASR::Array_t* a2 = ASR::down_cast<ASR::Array_t>(a);
                 ASR::Array_t* b2 = ASR::down_cast<ASR::Array_t>(b);
-                if( !types_equal_with_substitution(a2->m_type, b2->m_type, subs) ) {
+                if( !types_equal_with_substitution(a2->m_type, b2->m_type, subs, a_expr, b_expr) ) {
                     return false;
                 }
 
@@ -4007,17 +4030,21 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case (ASR::ttypeType::List) : {
                 ASR::List_t *a2 = ASR::down_cast<ASR::List_t>(a);
                 ASR::List_t *b2 = ASR::down_cast<ASR::List_t>(b);
-                return types_equal_with_substitution(a2->m_type, b2->m_type, subs);
+                return types_equal_with_substitution(a2->m_type, b2->m_type, subs, nullptr, nullptr);
             }
-            case (ASR::ttypeType::StructType) : {                
-                ASR::StructType_t *st1 = ASR::down_cast<ASR::StructType_t>(a);
-                ASR::StructType_t *st2 = ASR::down_cast<ASR::StructType_t>(b);
-                
-                if (st1->n_data_member_types != st2->n_data_member_types) return false;
-                for (size_t i = 0; i < st1->n_data_member_types; i++) {
-                    if (!types_equal(st1->m_data_member_types[i], st2->m_data_member_types[i])) {
-                        return false;
-                    }
+            case (ASR::ttypeType::StructType) : {          
+                ASR::Struct_t* x_struct = nullptr;
+                if (a_struct) {
+                    x_struct = a_struct;
+                } else {
+                    x_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                        ASRUtils::get_struct_sym_from_struct_expr(a_expr)));
+                }
+                ASR::Struct_t* y_struct = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_struct_sym_from_struct_expr(b_expr)));
+
+                if (!is_derived_type_similar(x_struct, y_struct)) {
+                    return false;
                 }
 
                 return true;
@@ -4036,17 +4063,21 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
                 ASR::FunctionType_t* b2 = ASR::down_cast<ASR::FunctionType_t>(b);
+
+                ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(a_expr));
+                ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(b_expr));
+
                 if( a2->n_arg_types != b2->n_arg_types ||
                     (a2->m_return_var_type != nullptr && b2->m_return_var_type == nullptr) ||
                     (a2->m_return_var_type == nullptr && b2->m_return_var_type != nullptr) ) {
                     return false;
                 }
                 for( size_t i = 0; i < a2->n_arg_types; i++ ) {
-                    if( !types_equal_with_substitution(a2->m_arg_types[i], b2->m_arg_types[i], subs, true) ) {
+                    if( !types_equal_with_substitution(a2->m_arg_types[i], b2->m_arg_types[i], subs, left_func->m_args[i], right_func->m_args[i], true) ) {
                         return false;
                     }
                 }
-                if( !types_equal_with_substitution(a2->m_return_var_type, b2->m_return_var_type, subs, true) ) {
+                if( !types_equal_with_substitution(a2->m_return_var_type, b2->m_return_var_type, subs, left_func->m_return_var, right_func->m_return_var, true) ) {
                     return false;
                 }
                 return true;
@@ -4057,7 +4088,7 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
     return false;
 }
 
-inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_dimensions) {
+inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, ASR::expr_t* x_expr, ASR::expr_t* y_expr, bool check_for_dimensions) {
     ASR::ttype_t *x_underlying, *y_underlying;
     x_underlying = nullptr;
     y_underlying = nullptr;
@@ -4078,33 +4109,33 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         if( y_underlying ) {
             y = y_underlying;
         }
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     }
     if( ASR::is_a<ASR::Pointer_t>(*x) ||
         ASR::is_a<ASR::Pointer_t>(*y) ) {
         x = ASRUtils::type_get_past_pointer(x);
         y = ASRUtils::type_get_past_pointer(y);
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if( ASR::is_a<ASR::Allocatable_t>(*x) ||
                ASR::is_a<ASR::Allocatable_t>(*y) ) {
         x = ASRUtils::type_get_past_allocatable(x);
         y = ASRUtils::type_get_past_allocatable(y);
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::List_t>(*x) && ASR::is_a<ASR::List_t>(*y)) {
         x = ASR::down_cast<ASR::List_t>(x)->m_type;
         y = ASR::down_cast<ASR::List_t>(y)->m_type;
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::Set_t>(*x) && ASR::is_a<ASR::Set_t>(*y)) {
         x = ASR::down_cast<ASR::Set_t>(x)->m_type;
         y = ASR::down_cast<ASR::Set_t>(y)->m_type;
-        return check_equal_type(x, y);
+        return check_equal_type(x, y, x_expr, y_expr);
     } else if (ASR::is_a<ASR::Dict_t>(*x) && ASR::is_a<ASR::Dict_t>(*y)) {
         ASR::ttype_t *x_key_type = ASR::down_cast<ASR::Dict_t>(x)->m_key_type;
         ASR::ttype_t *y_key_type = ASR::down_cast<ASR::Dict_t>(y)->m_key_type;
         ASR::ttype_t *x_value_type = ASR::down_cast<ASR::Dict_t>(x)->m_value_type;
         ASR::ttype_t *y_value_type = ASR::down_cast<ASR::Dict_t>(y)->m_value_type;
-        return (check_equal_type(x_key_type, y_key_type) &&
-                check_equal_type(x_value_type, y_value_type));
+        return (check_equal_type(x_key_type, y_key_type, nullptr, nullptr) &&
+                check_equal_type(x_value_type, y_value_type, nullptr, nullptr));
     } else if (ASR::is_a<ASR::Tuple_t>(*x) && ASR::is_a<ASR::Tuple_t>(*y)) {
         ASR::Tuple_t *a = ASR::down_cast<ASR::Tuple_t>(x);
         ASR::Tuple_t *b = ASR::down_cast<ASR::Tuple_t>(y);
@@ -4113,7 +4144,7 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         }
         bool result = true;
         for (size_t i=0; i<a->n_type; i++) {
-            result = result && check_equal_type(a->m_type[i], b->m_type[i]);
+            result = result && check_equal_type(a->m_type[i], b->m_type[i], nullptr, nullptr);
             if (!result) {
                 return false;
             }
@@ -4128,13 +4159,17 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
     } else if (ASR::is_a<ASR::FunctionType_t>(*x) && ASR::is_a<ASR::FunctionType_t>(*y)) {
         ASR::FunctionType_t* left_ft = ASR::down_cast<ASR::FunctionType_t>(x);
         ASR::FunctionType_t* right_ft = ASR::down_cast<ASR::FunctionType_t>(y);
+
+        ASR::Function_t* left_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(x_expr));
+        ASR::Function_t* right_func = const_cast<ASR::Function_t*>(ASRUtils::get_function_from_expr(y_expr));
+
         if (left_ft->n_arg_types != right_ft->n_arg_types) {
             return false;
         }
         bool result;
         for (size_t i=0; i<left_ft->n_arg_types; i++) {
             result = check_equal_type(left_ft->m_arg_types[i],
-                        right_ft->m_arg_types[i]);
+                        right_ft->m_arg_types[i], left_func->m_args[i], right_func->m_args[i]);
             if (!result) return false;
         }
         if (left_ft->m_return_var_type == nullptr &&
@@ -4143,12 +4178,12 @@ inline bool check_equal_type(ASR::ttype_t* x, ASR::ttype_t* y, bool check_for_di
         } else if (left_ft->m_return_var_type != nullptr &&
                 right_ft->m_return_var_type != nullptr) {
                 return check_equal_type(left_ft->m_return_var_type,
-                        right_ft->m_return_var_type);
+                        right_ft->m_return_var_type, left_func->m_return_var, right_func->m_return_var);
         }
         return false;
     }
 
-    return types_equal(x, y, check_for_dimensions);
+    return types_equal(x, y, x_expr, y_expr, check_for_dimensions);
 }
 
 inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_t* value) {
@@ -6192,17 +6227,8 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
         is_method = false;
     }
     ASR::FunctionType_t* func_type = get_FunctionType(a_name);
-    ASR::Function_t* func = nullptr;
-    
-    if (ASR::is_a<ASR::Function_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(a_name_);
-    } else if (ASR::is_a<ASR::Variable_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::Variable_t>(a_name_)->m_type_declaration));
-    } else if (ASR::is_a<ASR::StructMethodDeclaration_t>(*a_name_)) {
-        func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(
-            ASR::down_cast<ASR::StructMethodDeclaration_t>(a_name_)->m_proc));
-    }
+    ASR::Function_t* func = ASRUtils::get_function(a_name);
+
     for( size_t i = 0; i < n_args; i++ ) {
         if( a_args[i].m_value == nullptr ) {
             continue;
@@ -6227,7 +6253,19 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
             !(ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(arg_type)) ||
               ASR::is_a<ASR::FunctionType_t>(*ASRUtils::type_get_past_array(orig_arg_type))) &&
             a_dt == nullptr ) {
-            if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type)) {
+                // Pass actual argument expression to `check_equal_type()` if the expression is
+                // `ASR::FunctionParam_t`.
+                ASR::expr_t* arg_expr = arg;
+                ASR::expr_t* orig_arg_expr = func->m_args[i + is_method];
+                if (ASR::is_a<ASR::FunctionParam_t>(*arg_expr)) {
+                    ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(arg_expr);
+                    arg_expr = func->m_args[func_param->m_param_number];
+                } 
+                if (ASR::is_a<ASR::FunctionParam_t>(*orig_arg_expr)) {
+                    ASR::FunctionParam_t* func_param = ASR::down_cast<ASR::FunctionParam_t>(orig_arg_expr);
+                    orig_arg_expr = func->m_args[func_param->m_param_number];
+                }
+            if (implicit_argument_casting && !ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr)) {
                 if (ASR::is_a<ASR::Function_t>(*a_name_)) {
                     // get current_scope
                     SymbolTable* current_scope = nullptr;
@@ -6331,8 +6369,7 @@ static inline void Call_t_body(Allocator& al, ASR::symbol_t* a_name,
                 // not setup to return errors, so we need to refactor things.
                 // For now we just do an assert.
                 /*TODO: Remove this if check once intrinsic procedures are implemented correctly*/
-                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type) || 
-                    ASRUtils::check_class_assignment_compatibility(orig_arg, arg),
+                LCOMPILERS_ASSERT_MSG( ASRUtils::check_equal_type(arg_type, orig_arg_type, arg_expr, orig_arg_expr),
                     "ASRUtils::check_equal_type(" + ASRUtils::get_type_code(arg_type) + ", " +
                         ASRUtils::get_type_code(orig_arg_type) + ")");
             }

@@ -158,12 +158,17 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
-            ASR::symbol_t* member_sym = ASRUtils::symbol_get_past_external(struct_instance_member->m_m);
-            if (ASR::is_a<ASR::Struct_t>(*member_sym)) {
-                return member_sym;
+            if (ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(struct_instance_member->m_m))) {
+                // Special case: Can have `StructInstanceMember` like `var%member` where `member` is
+                // parent struct of the struct used to declare `var`.
+                // Please see assignment `c%parent_t = p` in
+                // `integration_tests/derived_types_73.f90` for an example.
+                return ASRUtils::symbol_get_past_external(struct_instance_member->m_m);
+            } else {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(struct_instance_member->m_m)));
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
+                return var->m_type_declaration;
             }
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member_sym);
-            return var->m_type_declaration;
         }
         case ASR::exprType::ArrayConstructor: {
             ASR::ArrayConstructor_t* array_constructor = ASR::down_cast<ASR::ArrayConstructor_t>(expression);
@@ -565,7 +570,7 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
     if (!expr) {
         throw LCompilersException("Passed `ASR::expr_t expr` is nullptr.");
     }
-    if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::expr_type(expr))) {
+    if (!ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(ASRUtils::expr_type(expr)))) {
         throw LCompilersException("`ttype_t` of passed `ASR::expr_t expr` is not `ASR::exprType::FunctionType`.");
     }
 
@@ -1229,10 +1234,8 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
                         ASR::ttype_t* right_arg_type = ASRUtils::expr_type(func->m_args[1]);
-                        if( (ASRUtils::check_equal_type(left_arg_type, left_type) &&
-                            ASRUtils::check_equal_type(right_arg_type, right_type))
-                            || (ASRUtils::check_class_assignment_compatibility(func->m_args[0], left) &&
-                                ASRUtils::check_class_assignment_compatibility(func->m_args[1], right)) ) {
+                        if(ASRUtils::check_equal_type(left_arg_type, left_type, func->m_args[0], left) &&
+                            ASRUtils::check_equal_type(right_arg_type, right_type, func->m_args[1], right)) {
                             found = true;
                             Vec<ASR::call_arg_t> a_args;
                             a_args.reserve(al, 2);
@@ -1314,8 +1317,7 @@ void process_overloaded_unary_minus_function(ASR::symbol_t* proc, ASR::expr_t* o
     std::string matched_func_name = "";
     if( func->n_args == 1 ) {
         ASR::ttype_t* operand_arg_type = ASRUtils::expr_type(func->m_args[0]);
-        if (ASRUtils::check_equal_type(operand_arg_type, operand_type)
-            || ASRUtils::check_class_assignment_compatibility(func->m_args[0], operand)) {
+        if (ASRUtils::check_equal_type(operand_arg_type, operand_type, func->m_args[0], operand)) {
             found = true;
             Vec<ASR::call_arg_t> a_args;
             a_args.reserve(al, 1);
@@ -1507,8 +1509,8 @@ void process_overloaded_assignment_function(ASR::symbol_t* proc, ASR::expr_t* ta
     if( subrout->n_args == 2 ) {
         ASR::ttype_t* target_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
         ASR::ttype_t* value_arg_type = ASRUtils::expr_type(subrout->m_args[1]);
-        if( ASRUtils::types_equal(target_arg_type, target_type) &&
-            ASRUtils::types_equal(value_arg_type, value_type) ) {
+        if( ASRUtils::types_equal(target_arg_type, target_type, subrout->m_args[0], target) &&
+            ASRUtils::types_equal(value_arg_type, value_type, subrout->m_args[1], value) ) {
             std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
             std::string arg1_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[1])->m_v);
             if( pass_arg != nullptr ) {
@@ -1619,7 +1621,7 @@ void process_overloaded_read_write_function(std::string &read_write, ASR::symbol
     ASR::Function_t* subrout = ASR::down_cast<ASR::Function_t>(proc);
     std::string matched_subrout_name = "";
     ASR::ttype_t* func_arg_type = ASRUtils::expr_type(subrout->m_args[0]);
-    if( ASRUtils::types_equal(func_arg_type, arg_type) ) {
+    if( ASRUtils::types_equal(func_arg_type, arg_type, subrout->m_args[0], args[0]) ) {
         std::string arg0_name = ASRUtils::symbol_name(ASR::down_cast<ASR::Var_t>(subrout->m_args[0])->m_v);
         if( pass_arg != nullptr ) {
             std::string pass_arg_str = std::string(pass_arg);
@@ -2170,7 +2172,7 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                 }
                 if (s1 && s2) {
                     if (!ASRUtils::is_derived_type_similar(ASR::down_cast<ASR::Struct_t>(s1), ASR::down_cast<ASR::Struct_t>(s2))) return false;
-                } else if (!types_equal(arg1, arg2, !is_elemental)) {
+                } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }
             } else if (ASR::is_a<ASR::Function_t>(*sub_arg_sym)) {
@@ -2178,7 +2180,9 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
 
                 ASR::ttype_t *arg1 = ASRUtils::expr_type(args[i].m_value);
                 ASR::ttype_t *arg2 = f->m_function_signature;
-                if (!types_equal(arg1, arg2, false)) {
+                Allocator al(512);
+                if (!types_equal(arg1, arg2, args[i].m_value,
+                    ASRUtils::get_expr_from_sym(al, &f->base), false)) {
                     return false;
                 }
             }

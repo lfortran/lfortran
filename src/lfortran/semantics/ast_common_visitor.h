@@ -751,7 +751,7 @@ inline static void visit_Compare(Allocator &al, const AST::Compare_t &x,
 
     if( overloaded == nullptr ) {
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                    ASRUtils::expr_type(right))) {
+                                    ASRUtils::expr_type(right), left, right)) {
             diag.add(diag::Diagnostic(
                 "Operands of comparison operator are of different types",
                 Level::Error, Stage::Semantic, {
@@ -912,7 +912,7 @@ inline static void visit_BoolOp(Allocator &al, const AST::BoolOp_t &x,
     ASR::ttype_t *right_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(right));
 
     LCOMPILERS_ASSERT(
-        ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right)));
+        ASRUtils::check_equal_type(ASRUtils::expr_type(left), ASRUtils::expr_type(right), left, right));
 
     ASR::expr_t *value = nullptr;
     ASR::expr_t* left_expr_value = ASRUtils::expr_value(left);
@@ -2231,7 +2231,7 @@ public:
             this->visit_expr(*a->m_value[curr_value++]);
             ASR::expr_t* value = ASRUtils::EXPR(tmp);
             current_variable_type_ = temp_current_variable_type_;
-            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+            if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                 diag.add(Diagnostic(
                     "Type mismatch during data initialization",
                     Level::Error, Stage::Semantic, {
@@ -2282,7 +2282,7 @@ public:
                 }
                 this->visit_expr(*a->m_value[j]);
                 ASR::expr_t* value = ASRUtils::EXPR(tmp);
-                if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type)) {
+                if (!ASRUtils::types_equal(ASRUtils::expr_type(value), array_type->m_type, value, object)) {
                     diag.add(Diagnostic(
                         "Type mismatch during data initialization",
                         Level::Error, Stage::Semantic, {
@@ -2795,18 +2795,21 @@ public:
 			} else {
 			    var__ = ASRUtils::EXPR2VAR(ASRUtils::EXPR(tmp));
 			}
-			if (!ASRUtils::check_equal_type(var_->m_type, var__->m_type)) {
-			    diag.add(Diagnostic(
-					 "The order of variables in common block must be same in all programs",
-					 Level::Error, Stage::Semantic, {
-					     Label("",{x.base.base.loc})
-					 }));
-			    throw SemanticAbort();
-			} else {
-			    uint64_t hash = get_hash((ASR::asr_t*) var__);
+            if (!ASRUtils::check_equal_type(var_->m_type,
+                                            var__->m_type,
+                                            ASRUtils::get_expr_from_sym(al, &var_->base),
+                                            ASRUtils::get_expr_from_sym(al, &var__->base))) {
+                diag.add(Diagnostic(
+                    "The order of variables in common block must be same in all programs",
+                    Level::Error,
+                    Stage::Semantic,
+                    { Label("", { x.base.base.loc }) }));
+                throw SemanticAbort();
+            } else {
+                uint64_t hash = get_hash((ASR::asr_t*) var__);
 			    common_variables_hash[hash] = common_block_struct_sym;
-			}
-			if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
+            }
+            if (ASRUtils::is_array(var_->m_type) && ASR::is_a<ASR::ArrayItem_t>(*expr)) {
 			    /*
 			      Update type of original symbol
 			      case:
@@ -5719,7 +5722,7 @@ public:
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false, false,
                 dims, nullptr, type_declaration, ASR::abiType::Source);
             if (ASR::is_a<ASR::StructType_t>(*type)) {
-                std::string derived_type_name = "ASRUtils::symbol_name(ASR::down_cast<ASR::StructType_t>(type)->m_derived_type)"; // TODO: fix this regression
+                std::string derived_type_name = ASRUtils::symbol_name(type_declaration);
                 diag.add(Diagnostic(
                     "Invalid syntax of derived type for array constructor",
                     Level::Error, Stage::Semantic, {
@@ -5763,9 +5766,6 @@ public:
         ASR::ttype_t* extracted_type { type ? ASRUtils::extract_type(type) : nullptr };
         size_t n_elements = 0;
         for (size_t i=0; i<x.n_args; i++) {
-            this->visit_expr(*x.m_args[0]);
-            static ASR::expr_t* first_element = ASRUtils::EXPR(tmp);
-
             this->visit_expr(*x.m_args[i]);
             ASR::expr_t *expr = ASRUtils::EXPR(tmp);
 
@@ -5789,15 +5789,13 @@ public:
             } else if (is_type_spec_ommitted) {
                 // as the "type-spec" is omitted, each element should be the same type
                 ASR::ttype_t* extracted_new_type = ASRUtils::extract_type(expr_type);
-                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type)
-                    && (!ASRUtils::check_class_assignment_compatibility(first_element, expr)
-                        || !ASRUtils::check_class_assignment_compatibility(expr, first_element))) {
+                if (!ASRUtils::check_equal_type(extracted_new_type, extracted_type, expr, expr)) {
                     diag.add(Diagnostic("Element in `" + ASRUtils::type_to_str_with_type(extracted_type) +
                         "` array constructor is `" + ASRUtils::type_to_str_with_type(extracted_new_type) + "`",
                         Level::Error, Stage::Semantic, {Label("",{expr->base.loc})}));
                     throw SemanticAbort();
                 }
-            } else if (!ASRUtils::check_equal_type(expr_type, type)) {
+            } else if (!ASRUtils::check_equal_type(expr_type, type, expr, expr)) {
                 ImplicitCastRules::set_converted_value(al, expr->base.loc,
                     &expr, expr_type, type, diag);
             }
@@ -6501,7 +6499,7 @@ public:
                     }
                 }
 
-                if(!ASRUtils::check_equal_type(arg_type,orig_arg_type) &&
+                if(!ASRUtils::check_equal_type(arg_type,orig_arg_type, arg, func->m_args[i]) &&
                     !ASRUtils::check_class_assignment_compatibility(func->m_args[i], arg)){
                     std::string arg_str = ASRUtils::type_to_str_fortran(arg_type);
                     std::string orig_arg_str = ASRUtils::type_to_str_fortran(orig_arg_type);
@@ -7715,7 +7713,7 @@ public:
         } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
             ASR::ttype_t* key_type = dict_type->m_key_type;
-            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type)) {
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type, nullptr, nullptr)) {
                 std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type);
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
                 diag.add(Diagnostic(
@@ -7825,7 +7823,7 @@ public:
         } else if (ASR::is_a<ASR::Dict_t>(*ASRUtils::expr_type(args[0]))) {
             ASR::Dict_t* dict_type = ASR::down_cast<ASR::Dict_t>(ASRUtils::expr_type(args[0]));
             ASR::ttype_t* key_type = dict_type->m_key_type;
-            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type)) {
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(args[1]), key_type, nullptr, nullptr)) {
                 std::string contained_type_str = ASRUtils::type_to_str_fortran(key_type);
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[1]));
                 diag.add(Diagnostic(
@@ -7874,7 +7872,7 @@ public:
                 right = ASRUtils::EXPR(tmp);
                 right_type = ASRUtils::get_contained_type(ASRUtils::expr_type(right));
 
-                if (!ASRUtils::check_equal_type(list_el_type, right_type)) {
+                if (!ASRUtils::check_equal_type(list_el_type, right_type, nullptr, nullptr)) {
                     std::string contained_type_str = ASRUtils::type_to_str_fortran(list_el_type);
                     std::string arg_type_str = ASRUtils::type_to_str_fortran(right_type);
                     diag.add(Diagnostic(
@@ -7949,7 +7947,7 @@ public:
         ASR::ttype_t* left_type = ASRUtils::expr_type(left), *right_type = ASRUtils::expr_type(right);
 
 
-        if (!ASRUtils::check_equal_type(left_type, right_type)){
+        if (!ASRUtils::check_equal_type(left_type, right_type, left, right)) {
                 std::string left_type_str = ASRUtils::type_to_str_python(left_type);
                 std::string right_type_str = ASRUtils::type_to_str_python(right_type);
                 diag.add(Diagnostic(
@@ -8001,7 +7999,7 @@ public:
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
 
 
-            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                 std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                 diag.add(Diagnostic(
@@ -8040,7 +8038,7 @@ public:
         ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
 
 
-        if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+        if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
             std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
             std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
             diag.add(Diagnostic(
@@ -8085,7 +8083,7 @@ public:
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
 
 
-            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                 std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                 diag.add(Diagnostic(
@@ -8147,7 +8145,7 @@ public:
             ASR::ttype_t *arg_type = ASRUtils::expr_type(arg);
 
 
-            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type)) {
+            if (contained_type && !ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                 std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                 std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                 diag.add(Diagnostic(
@@ -9298,7 +9296,7 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (!unique_type || !ASRUtils::types_equal(type_, type)) {
+                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
                     unique_type = false;
                 }
             }
@@ -9513,7 +9511,7 @@ public:
             if( type == nullptr ) {
                 type = type_;
             } else {
-                if (!unique_type || !ASRUtils::types_equal(type_, type)) {
+                if (!unique_type || !ASRUtils::types_equal(type_, type, expr, expr)) {
                     unique_type = false;
                 }
             }
@@ -9619,7 +9617,7 @@ public:
         ASR::ttype_t* n_type = ASRUtils::expr_type(n);
         ASR::ttype_t* w_type = ASRUtils::expr_type(w);
 
-        if (!ASRUtils::check_equal_type(n_type, w_type)) {
+        if (!ASRUtils::check_equal_type(n_type, w_type, nullptr, nullptr)) {
             if (ASRUtils::is_integer(*n_type) && ASRUtils::is_integer(*w_type)) {
                 w = ASRUtils::EXPR(ASR::make_Cast_t(al, loc, w, ASR::cast_kindType::IntegerToInteger, n_type, nullptr));
             }
@@ -9973,7 +9971,7 @@ public:
                         ASR::ttype_t *dest_type = ASRUtils::expr_type(dest);
                         ASR::ttype_t *source_type = ASRUtils::expr_type(source);
 
-                        if (!ASRUtils::check_equal_type(dest_type, source_type)) {
+                        if (!ASRUtils::check_equal_type(dest_type, source_type, dest, source)) {
                             std::string dtype = ASRUtils::type_to_str_fortran(dest_type);
                             std::string stype = ASRUtils::type_to_str_fortran(source_type);
                             diag.add(Diagnostic(
@@ -10311,7 +10309,7 @@ public:
             ASRUtils::is_integer(*right_type)) {
             // Don't Check.
         } else if (!ASRUtils::check_equal_type(ASRUtils::expr_type(left),
-                                    ASRUtils::expr_type(right)) && overloaded == nullptr) {
+                                    ASRUtils::expr_type(right), left, right) && overloaded == nullptr) {
             std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(left));
             std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(right));
             diag.add(Diagnostic(
@@ -10496,7 +10494,8 @@ public:
                         // Handling local variables passed as instantiate's arguments
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
                         ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                        if (!ASRUtils::check_equal_type(arg_type, param_type)) {
+                        if (!ASRUtils::check_equal_type(arg_type, param_type, ASRUtils::get_expr_from_sym(
+                            al, arg_sym), ASRUtils::get_expr_from_sym(al, param_sym))) {
                             diag.add(Diagnostic("The type of " + arg + " does not match the type of " + param,
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
@@ -10616,7 +10615,7 @@ public:
                                                                source_type, dest_type, diag);
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, loc, binop, left, right, dest_type));
-                        if (!ASRUtils::check_equal_type(dest_type, return_type)) {
+                        if (!ASRUtils::check_equal_type(dest_type, return_type, f->m_args[1], f->m_return_var)) {
                             diag.add(Diagnostic("Unapplicable types for intrinsic operator " + op_name,
                                 Level::Error, Stage::Semantic, {Label("", {loc})}));
                             throw SemanticAbort();
@@ -10782,11 +10781,11 @@ public:
             ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
             if ((is_binary && func->n_args != 2) || (!is_binary && func->n_args != 1))
                 continue;
-            bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type);
+            bool args_match = ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[0]), left_type, func->m_args[0], first_operand);
             if (is_binary) {
                 args_match = args_match
                              && ASRUtils::check_equal_type(ASRUtils::expr_type(func->m_args[1]),
-                                                           right_type);
+                                                           right_type, func->m_args[1], second_operand);
             }
             if (!args_match)
                 continue;

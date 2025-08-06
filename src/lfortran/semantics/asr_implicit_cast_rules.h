@@ -111,9 +111,16 @@ public:
                                   ASR::expr_t **convert_can,
                                   ASR::ttype_t *source_type,
                                   ASR::ttype_t *dest_type, diag::Diagnostics &diag) {
-    if( ASRUtils::types_equal(source_type, dest_type, true) ) {
-        return;
-    }
+      if ((ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(source_type))
+           || ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(dest_type)))
+          || ((ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(source_type))
+               || ASR::is_a<ASR::FunctionType_t>(*ASRUtils::extract_type(dest_type))))) {
+          // No casting supported currently for `StructType` and `FunctionType`
+          return;
+      }
+      if (ASRUtils::types_equal(source_type, dest_type, nullptr, nullptr, true)) {
+          return;
+      }
 
     ASR::ttype_t *source_type2 = ASRUtils::type_get_past_array(
       ASRUtils::type_get_past_pointer(source_type));

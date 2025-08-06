@@ -1393,7 +1393,7 @@ public:
             if (ASRUtils::is_derived_type_similar(target_struct, value_struct)) {
                 tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
             }
-        } else if (ASRUtils::types_equal(target_type, value_type)) {
+        } else if (ASRUtils::types_equal(target_type, value_type, target, value)) {
             tmp = ASRUtils::make_Associate_t_util(al, x.base.base.loc, target, value);
         }
     }
@@ -1636,7 +1636,7 @@ public:
             for (size_t i = 0; i < alloc_args_vec.size(); i++) {
                 if ( alloc_args_vec[i].n_dims == 0 ) {
                     ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
-                    if ( ASRUtils::check_equal_type(mold_type, a_type) ) {
+                    if ( ASRUtils::check_equal_type(mold_type, a_type, mold, alloc_args_vec[i].m_a) ) {
                         if (ASRUtils::is_array(mold_type)) {
                             if (ASR::is_a<ASR::Array_t>(*mold_type) && ASR::down_cast<ASR::Array_t>(mold_type)->m_dims[0].m_length != nullptr) {
                                 ASR::Array_t* mold_array_type = ASR::down_cast<ASR::Array_t>(mold_type);
@@ -1725,8 +1725,7 @@ public:
                 }
                 ASR::ttype_t* source_type = ASRUtils::expr_type(source);
                 ASR::ttype_t* var_type = ASRUtils::expr_type(alloc_args_vec.p[i].m_a);
-                if (!ASRUtils::check_equal_type(source_type, var_type)
-                    && !ASRUtils::check_class_assignment_compatibility(alloc_args_vec.p[i].m_a, source)) {
+                if (!ASRUtils::check_equal_type(source_type, var_type, source, alloc_args_vec.p[i].m_a)) {
                     std::string source_type_str = ASRUtils::type_to_str_fortran(source_type);
                     std::string var_type_str = ASRUtils::type_to_str_fortran(var_type);
                     diag.add(Diagnostic(
@@ -3125,7 +3124,7 @@ public:
         ImplicitCastRules::set_converted_value(al, x.base.base.loc, &value,
                                         ASRUtils::expr_type(value),ASRUtils::expr_type(to_return), diag);
         if (!ASRUtils::check_equal_type(ASRUtils::expr_type(to_return),
-                                    ASRUtils::expr_type(value))) {
+                                    ASRUtils::expr_type(value), to_return, value)) {
             std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(to_return));
             std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
             diag.semantic_error_label(
@@ -3396,7 +3395,7 @@ public:
                 target->type == ASR::exprType::ArraySection ||
                 target->type == ASR::exprType::StructInstanceMember ||
                 target->type == ASR::exprType::UnionInstanceMember) &&
-                !ASRUtils::check_equal_type(target_type, value_type)) {
+                !ASRUtils::check_equal_type(target_type, value_type, target, value)) {
                 if (value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     int size = ASRUtils::get_fixed_size_of_array(ac->m_type);
@@ -3447,14 +3446,15 @@ public:
                     }
                 }
             }
-            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target), ASRUtils::expr_type(value)) &&
-                !ASRUtils::check_class_assignment_compatibility(target, value)) {
+            if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
+                                        ASRUtils::expr_type(value), target, value)) {
                 std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
                 std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
                 if(value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
-                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ASRUtils::fetch_ArrayConstant_value(al, ac, i)), ASRUtils::expr_type(target))) {
+                        ASR::expr_t* arr_const_val = ASRUtils::fetch_ArrayConstant_value(al, ac, i);
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(arr_const_val), ASRUtils::expr_type(target), arr_const_val, target)) {
                             diag.semantic_error_label(
                                 "Type mismatch in assignment, the types must be compatible",
                                 {target->base.loc, value->base.loc},
@@ -3464,7 +3464,7 @@ public:
                         }
                     }
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
+                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target), value, target)) {
                         diag.semantic_error_label(
                             "Type mismatch in assignment, the types must be compatible",
                             {target->base.loc, value->base.loc},
@@ -3475,7 +3475,7 @@ public:
                 } else if(value->type == ASR::exprType::ArrayConstructor) {
                     ASR::ArrayConstructor_t *ac = ASR::down_cast<ASR::ArrayConstructor_t>(value);
                     for (size_t i = 0; i < ac->n_args; i++) {
-                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target))) {
+                        if(!ASRUtils::check_equal_type(ASRUtils::expr_type(ac->m_args[i]), ASRUtils::expr_type(target), ac->m_args[i], target)) {
                             diag.semantic_error_label(
                                 "Type mismatch in assignment, the types must be compatible",
                                 {target->base.loc, value->base.loc},
@@ -3485,7 +3485,7 @@ public:
                         }
                     }
                     LCOMPILERS_ASSERT(ASRUtils::is_array(ac->m_type));
-                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target))) {
+                    if(!ASRUtils::check_equal_type(ac->m_type, ASRUtils::expr_type(target), value, target)) {
                         diag.semantic_error_label(
                             "Type mismatch in assignment, the types must be compatible",
                             {target->base.loc, value->base.loc},
@@ -3663,7 +3663,7 @@ public:
                 ASR::List_t *list_type = ASR::down_cast<ASR::List_t>(ASRUtils::expr_type(args[0]));
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
-                if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                     std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                     std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                     diag.add(Diagnostic(
@@ -3689,7 +3689,7 @@ public:
                 
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
 
-                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[2]))) {
+                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[2]), nullptr, nullptr)) {
                     std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                     std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]));
                     diag.add(Diagnostic(
@@ -3721,7 +3721,7 @@ public:
                 
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type(ASRUtils::expr_type(args[0]));
 
-                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[1]))) {
+                if (!ASRUtils::check_equal_type(contained_type, ASRUtils::expr_type(args[1]), nullptr, nullptr)) {
                     std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                     std::string arg_type_str = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(args[2]));
                     diag.add(Diagnostic(
@@ -3760,7 +3760,7 @@ public:
                 ASR::Set_t *set_type = ASR::down_cast<ASR::Set_t>(ASRUtils::expr_type(args[0]));
                 ASR::ttype_t *arg_type = ASRUtils::expr_type(args[1]);
                 ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)set_type);
-                if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                     std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                     std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                     diag.add(Diagnostic(
@@ -3782,7 +3782,7 @@ public:
                     ASR::ttype_t *arg_type = ASRUtils::expr_type(args[2]);
                     ASR::ttype_t *contained_type = ASRUtils::get_contained_type((ASR::ttype_t *)list_type);
 
-                    if (!ASRUtils::check_equal_type(contained_type, arg_type)) {
+                    if (!ASRUtils::check_equal_type(contained_type, arg_type, nullptr, nullptr)) {
                         std::string contained_type_str = ASRUtils::type_to_str_fortran(contained_type);
                         std::string arg_type_str = ASRUtils::type_to_str_fortran(arg_type);
                         diag.add(Diagnostic(
@@ -3812,7 +3812,7 @@ public:
 
                     ASR::ttype_t *dict_key_type = dict_type->m_key_type;
                     ASR::ttype_t *dict_value_type = dict_type->m_value_type;
-                    if (!ASRUtils::check_equal_type(dict_key_type, key_type)) {
+                    if (!ASRUtils::check_equal_type(dict_key_type, key_type, nullptr, nullptr)) {
                         std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_key_type);
                         std::string arg_type_str = ASRUtils::type_to_str_fortran(key_type);
                         diag.add(Diagnostic(
@@ -3824,7 +3824,7 @@ public:
                         throw SemanticAbort();
                     }
 
-                    if (!ASRUtils::check_equal_type(dict_value_type, value_type)) {
+                    if (!ASRUtils::check_equal_type(dict_value_type, value_type, nullptr, nullptr)) {
                         std::string contained_type_str = ASRUtils::type_to_str_fortran(dict_value_type);
                         std::string arg_type_str = ASRUtils::type_to_str_fortran(value_type);
                         diag.add(Diagnostic(

@@ -1739,7 +1739,8 @@ public:
                 if (ASRUtils::get_FunctionType(f2)->m_abi == ASR::abiType::ExternalUndefined ||
                     // TODO: Throw error when interface definition and implementation signatures are different
                     ASRUtils::get_FunctionType(f2)->m_deftype == ASR::deftypeType::Interface) {
-                    if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature)) {
+                    if (!ASRUtils::types_equal(f2->m_function_signature, func->m_function_signature, 
+                        ASRUtils::get_expr_from_sym(al, f1), ASRUtils::get_expr_from_sym(al, func_sym))) {
                         diag.add(diag::Diagnostic(
                             "Argument(s) or return type mismatch in interface and implementation",
                             diag::Level::Error, diag::Stage::Semantic, {
@@ -3951,7 +3952,8 @@ public:
                         // Handling local variables passed as instantiate's arguments
                         ASR::symbol_t *arg_sym = current_scope->resolve_symbol(arg);
                         ASR::ttype_t *arg_type = ASRUtils::symbol_type(arg_sym);
-                        if (!ASRUtils::check_equal_type(arg_type, param_type)) {
+                        if (!ASRUtils::check_equal_type(arg_type, param_type, ASRUtils::get_expr_from_sym(
+                            al, arg_sym), ASRUtils::get_expr_from_sym(al, param_sym))) {
                             diag.add(diag::Diagnostic(
                                 "The type of " + arg + " does not match the type of " + param,
                                 diag::Level::Error, diag::Stage::Semantic, {
@@ -4102,7 +4104,7 @@ public:
                                                                source_type, dest_type, diag);
                         return_type = ASRUtils::duplicate_type(al, ftype);
                         value = ASRUtils::EXPR(ASRUtils::make_Binop_util(al, x.base.base.loc, binop, left, right, dest_type));
-                        if (!ASRUtils::check_equal_type(dest_type, return_type)) {
+                        if (!ASRUtils::check_equal_type(dest_type, return_type, f->m_args[1], f->m_return_var)) {
                             diag.add(diag::Diagnostic(
                                 "Unapplicable types for intrinsic operator " + op_name,
                                 diag::Level::Error, diag::Stage::Semantic, {

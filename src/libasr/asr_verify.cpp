@@ -612,7 +612,7 @@ public:
                 "All members of EnumType must have their values to be set. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in "
                 + std::string(x.m_name) + " EnumType.");
-            require(ASRUtils::check_equal_type(itr_var->m_type, common_type),
+            require(ASRUtils::check_equal_type(itr_var->m_type, common_type, nullptr, nullptr),
                 "All members of EnumType must the same type. " +
                 std::string(itr_var->m_name) + " doesn't seem to follow this rule in " +
                 std::string(x.m_name) + " EnumType.");
