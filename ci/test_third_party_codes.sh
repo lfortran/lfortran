@@ -231,8 +231,8 @@ time_section "🧪 Testing stdlib (Less Workarounds)" '
 
   git clean -dfx
   git restore .
-  git checkout sc-lf-9
-  git checkout ac269856afa1a623b5a0d9a1968c6a70d43d69ea
+  git checkout sc-lf-11
+  git checkout 76e15075b73b5bab39adf24b70fe15973069dee2
   FC=$FC cmake . \
       -DTEST_DRIVE_BUILD_TESTING=OFF \
       -DBUILD_EXAMPLE=ON -DCMAKE_Fortran_COMPILER_WORKS=TRUE \
