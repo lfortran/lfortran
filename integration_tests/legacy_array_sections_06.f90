@@ -1,4 +1,4 @@
-module bspline_sub_module
+module legacy_array_sections_06_module
     contains
     subroutine dbtpcf(work)
       real(4),dimension(*), intent(out)     :: work 
@@ -9,13 +9,13 @@ module bspline_sub_module
       implicit none
       real(4),dimension(*),intent(out) :: q  
     end subroutine dbintk
-end module bspline_sub_module
-program main
-use bspline_sub_module
+end module legacy_array_sections_06_module
+program legacy_array_sections_06
+use legacy_array_sections_06_module
 implicit none
 real(4), dimension(10) :: work
 work = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
 call dbtpcf(work)
 print *, work
 if (any(work - [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0] > 1e-6)) error stop
-end program
+end program legacy_array_sections_06
