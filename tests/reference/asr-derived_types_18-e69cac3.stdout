@@ -130,7 +130,7 @@
                             (StructType
                                 [(Integer 4)]
                                 []
-                                .false.
+                                .true.
                                 .false.
                             )
                             ()
