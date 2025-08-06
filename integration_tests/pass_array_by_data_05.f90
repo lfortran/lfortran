@@ -39,6 +39,7 @@ function expression(x) result(y)
 real, intent(in) :: x(:)
 real :: y
 integer :: i
+y = 0.0
 do i = 1, size(x)
     y = y + x(i)
 end do
