@@ -11530,18 +11530,13 @@ public:
             }
             tmp = (ASR::asr_t*) replace_with_common_block_variables(expr);
         } else if (x_n_member == 1) {
-            if (x_m_member[0].n_args == 0) {
-                SymbolTable* scope = current_scope;
-                tmp = (ASR::asr_t*) replace_with_common_block_variables(
-                    ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope, nullptr, 0, x_m_member[1].m_args, x_m_member[1].n_args)));
-            } else {
-                // TODO: incorporate m_args
-                SymbolTable* scope = current_scope;
-                tmp = (ASR::asr_t*) replace_with_common_block_variables(
-                    ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
-                    to_lower(x_m_member[0].m_name), scope, x_m_member->m_args, x_m_member->n_args)));
-            }
+            // x_m_member[0].m_args ==> args of derived type variable
+            // x_m_member[1].m_args ==> args of member of that derived type variable
+            SymbolTable* scope = current_scope;
+            tmp = (ASR::asr_t*) replace_with_common_block_variables(
+                ASRUtils::EXPR(this->resolve_variable2(loc, to_lower(x_m_id),
+                to_lower(x_m_member[0].m_name), scope, x_m_member[0].m_args,
+                x_m_member[0].n_args, x_m_member[1].m_args, x_m_member[1].n_args)));
         } else {
             SymbolTable* scope = current_scope;
             tmp = (ASR::asr_t*) replace_with_common_block_variables(

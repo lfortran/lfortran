@@ -3207,6 +3207,7 @@ public:
         ptr_type[tmp] = llvm_utils->get_type_from_ttype_t_util(ASRUtils::get_expr_from_sym(al, x.m_m),
             member_type, module.get());
 #endif
+        member_type = ASRUtils::type_get_past_array(member_type);
         if( ASR::is_a<ASR::StructType_t>(*member_type) ) {
             ASR::symbol_t *s_sym = member->m_type_declaration;
             current_der_type_name = ASRUtils::symbol_name(
