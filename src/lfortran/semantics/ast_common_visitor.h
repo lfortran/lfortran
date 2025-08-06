@@ -2628,6 +2628,7 @@ public:
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
                 nullptr, 0, nullptr, nullptr));
+            ASRUtils::struct_names.insert(common_block_name);
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
@@ -5106,6 +5107,7 @@ public:
                         ASRUtils::symbol_name(v) == std::string("~unlimited_polymorphic_type")
                         ? true
                         : false));
+                        ASRUtils::map_struct_type_to_name(type, derived_type_name);
                     } else { 
                         diag.add(Diagnostic(
                             "Derived type `" + derived_type_name + "` is not defined",
@@ -5175,6 +5177,7 @@ public:
                                                 s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                 nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
                                                 nullptr, 0, nullptr, nullptr);
+                ASRUtils::struct_names.insert(derived_type_name);
                 ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                 ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -5732,7 +5735,7 @@ public:
             type = determine_type(x.base.base.loc, sym, x.m_vartype, false, false,
                 dims, nullptr, type_declaration, ASR::abiType::Source);
             if (ASR::is_a<ASR::StructType_t>(*type)) {
-                std::string derived_type_name = ASRUtils::symbol_name(type_declaration);
+                std::string derived_type_name = ASRUtils::type_to_str_fortran(type);
                 diag.add(Diagnostic(
                     "Invalid syntax of derived type for array constructor",
                     Level::Error, Stage::Semantic, {

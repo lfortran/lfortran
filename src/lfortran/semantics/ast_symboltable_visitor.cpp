@@ -2010,6 +2010,7 @@ public:
             s2c(al, to_lower(x.m_name)), nullptr, struct_dependencies.p, struct_dependencies.size(),
             data_member_names.p, data_member_names.size(), nullptr, 0,
             ASR::abiType::Source, dflt_access, false, is_abstract, nullptr, 0, nullptr, parent_sym);
+        ASRUtils::struct_names.insert(to_lower(x.m_name));
 
         ASR::symbol_t* derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
@@ -3256,6 +3257,10 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+            if (ASR::is_a<ASR::StructType_t>(*mv->m_type)) {
+                ASRUtils::map_struct_type_to_name(mv->m_type, 
+                    ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(mv->m_type_declaration)));
+            }
         } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
             // Check for any interface overriding a constructor for the struct
             ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
@@ -3293,6 +3298,8 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+            ASRUtils::struct_names.insert(cname);
+            ASRUtils::map_struct_type_to_name(mv->m_struct_signature, cname);
         } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
             ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
             ASR::asr_t *req = ASR::make_ExternalSymbol_t(

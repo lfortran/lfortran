@@ -337,6 +337,7 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             nullptr, 0, m_alignment, nullptr);
+        ASRUtils::struct_names.insert(new_sym_name);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
@@ -1213,6 +1214,7 @@ public:
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
             x->m_is_abstract, nullptr, 0, m_alignment, nullptr);
+        ASRUtils::struct_names.insert(new_sym_name);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);

@@ -867,6 +867,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
                 current_scope, s2c(al, thread_data_name), nullptr, nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, nullptr, 0, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
+            ASRUtils::struct_names.insert(thread_data_name);
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, thread_data_struct, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(thread_data_struct);
             struct_->m_struct_signature = struct_type;
@@ -2050,6 +2051,7 @@ class ParallelRegionVisitor :
             ASR::symbol_t* thread_data_struct = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(al, loc,
                 current_scope, s2c(al, thread_data_name), nullptr, nullptr, 0, involved_symbols_set.p, involved_symbols_set.n, nullptr, 0, ASR::abiType::Source,
                 ASR::accessType::Public, false, false, nullptr, 0, nullptr, nullptr));
+            ASRUtils::struct_names.insert(thread_data_name);
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, thread_data_struct, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(thread_data_struct);
             struct_->m_struct_signature = struct_type;
