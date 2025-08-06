@@ -11086,6 +11086,16 @@ public:
             throw SemanticAbort();
         }
         std::string boz_str = s.substr(2, s.size() - 2);
+        //Check if BOZ string has more than 64 Bits, else stoull Throws Error
+        if ((((s[0]=='b') || (s[0]=='B')) && (boz_str.size()> 65)) || 
+            (((s[0]=='o') || (s[0]=='O')) && (boz_str.size()> 22)) || 
+            (((s[0]=='z') || (s[0]=='Z')) && (boz_str.size()> 17))) {
+            std::string char_length = (s[0] == 'b' || s[0] == 'B') ? "64" : (s[0] == 'o' || s[0] == 'O') ? "21" : "16";
+            diag.add(Diagnostic("BOZ literal constants with '" + std::string(1, s[0]) + 
+                                "' prefix are only supported yet with at most '" + char_length + "' characters",
+                                Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
+            throw SemanticAbort();
+        }
         uint64_t boz_unsigned_int = std::stoull(boz_str, nullptr, base);
         //If current_variable_type is Real Type, convert BOZ String to ASR::Real 
         if ((current_variable_type_ != nullptr) && (ASR::is_a<ASR::Real_t>(*current_variable_type_)) ){
