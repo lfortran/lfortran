@@ -147,6 +147,7 @@ public:
     std::map<uint64_t, llvm::Value*> llvm_symtab_fn_arg;
     std::map<uint64_t, llvm::BasicBlock*> llvm_goto_targets;
     std::set<uint32_t> global_string_allocated;
+    std::vector<ASR::symbol_t*> struct_type_sym_alloca_in_branch;
     const ASR::Function_t *parent_function = nullptr;
 
     std::vector<llvm::BasicBlock*> loop_head; /* For saving the head of a loop,
@@ -4405,6 +4406,7 @@ public:
             llvm::APInt(64, get_class_hash(struct_type_sym)));
         builder->CreateStore(struct_type_hash, struct_type_hash_ptr);
         type2vtab[struct_type_sym][symtab] = vtab_obj;
+        struct_type_sym_alloca_in_branch.push_back(struct_type_sym);
         ASR::symbol_t* struct_type_ = struct_type_sym;
         bool base_found = false;
         while( !base_found ) {
@@ -7586,9 +7588,21 @@ public:
         strings_to_be_deallocated.reserve(al, 1);
         this->visit_expr_wrapper(x.m_test, true);
         llvm_utils->create_if_else(tmp, [&]() {
+            std::vector<ASR::symbol_t*> struct_type_sym_alloca_in_branch_copy = struct_type_sym_alloca_in_branch;
+            struct_type_sym_alloca_in_branch.clear();
             for (size_t i=0; i<x.n_body; i++) {
                 this->visit_stmt(*x.m_body[i]);
             }
+            // remove all `struct_type_sym` from `type2vtab`
+            for (ASR::symbol_t* sym : struct_type_sym_alloca_in_branch) {
+                if (type2vtab.find(sym) != type2vtab.end()) {
+                    type2vtab.erase(sym);
+                }
+                if (class2vtab.find(sym) != class2vtab.end()) {
+                    class2vtab.erase(sym);
+                }
+            }
+            struct_type_sym_alloca_in_branch = struct_type_sym_alloca_in_branch_copy;
         }, [&]() {
             for (size_t i=0; i<x.n_orelse; i++) {
                 this->visit_stmt(*x.m_orelse[i]);
