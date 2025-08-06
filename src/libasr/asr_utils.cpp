@@ -158,7 +158,11 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::StructInstanceMember: {
             ASR::StructInstanceMember_t* struct_instance_member = ASR::down_cast<ASR::StructInstanceMember_t>(expression);
-            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
+            ASR::symbol_t* member_sym = ASRUtils::symbol_get_past_external(struct_instance_member->m_m);
+            if (ASR::is_a<ASR::Struct_t>(*member_sym)) {
+                return member_sym;
+            }
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(member_sym);
             return var->m_type_declaration;
         }
         case ASR::exprType::ArrayConstructor: {
@@ -1125,7 +1129,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
             current_scope->add_symbol(mem_name, mem_es);
         }
         ASR::ttype_t* member_type = ASRUtils::make_StructType_t_util(al,
-            member_variable->base.base.loc, mem_es, false);
+            member_variable->base.base.loc, mem_es, true);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             mem_es, member_type, nullptr);
     } else {
