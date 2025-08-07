@@ -560,6 +560,68 @@ void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struc
 
 }
 
+ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression)
+{
+    switch (expression->type) {
+        case ASR::exprType::Var: {
+            // The symbol m_v has to be `Variable` or 'Function' for a Union expression.
+            if (ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+                return var->m_type_declaration;
+            } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
+                if (func->m_return_var != nullptr && ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(func->m_return_var))) {
+                   return ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(func->m_return_var));
+                } else {
+                    for (size_t i = 0; i < func->n_args; i++) {
+                        ASR::expr_t* arg = func->m_args[i];
+                        if (arg != nullptr) {
+                            ASR::symbol_t* union_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(arg));
+                            if (union_sym != nullptr) {
+                                return union_sym;
+                            }
+                        }
+                    }
+                    return nullptr;
+                }
+            } else if (ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
+                // If the Var is a Union, we return the symbol of the Union.
+                return ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v);
+            } else {
+                throw LCompilersException("Expected Var to be either Variable or Function type, but found: " +
+                                    std::to_string(ASR::down_cast<ASR::Var_t>(expression)->m_v->type));
+            }
+        }
+        case ASR::exprType::UnionInstanceMember: {
+            ASR::UnionInstanceMember_t* union_instance_member = ASR::down_cast<ASR::UnionInstanceMember_t>(expression);
+            ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(union_instance_member->m_m));
+            return var->m_type_declaration;
+        }
+        case ASR::exprType::FunctionCall: {
+            ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
+            // `func_call->m_dt` will be non-null for Union expressions
+            if ( func_call->m_dt != nullptr ){
+                // If `func_call->m_dt` is not null, it means that the function call
+                // is returning a union type.
+                return ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(func_call->m_dt));
+            } else {
+                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_call->m_name));
+                return ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(func->m_return_var));
+            }
+        }
+        case ASR::exprType::UnionConstructor: {
+            ASR::UnionConstructor_t* union_constructor = ASR::down_cast<ASR::UnionConstructor_t>(expression);
+            return union_constructor->m_dt_sym;
+        }
+        default: {
+            throw LCompilersException("get_union_sym_from_union_expr() not implemented for "
+                                + std::to_string(expression->type));
+            return nullptr;
+        }
+    }
+}
+
+
 // Recursively fetch `ASR::Function_t` from an `ASR::expr_t` if it has `FunctionType`.
 const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr) {
     if (!expr) {

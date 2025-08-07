@@ -3982,7 +3982,8 @@ public:
                         } else {
                             symbol_variable->m_type = type;
                         }
-                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
+                        if (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(symbol_variable->m_type))
+                            || ASR::is_a<ASR::UnionType_t>(*ASRUtils::extract_type(symbol_variable->m_type))) {
                             symbol_variable->m_type_declaration = type_declaration;
                         } else if ( type_declaration != nullptr ) {
                             // This is the case where the variable is implicitly declared `public :: xx`
@@ -4741,7 +4742,7 @@ public:
             // ONLY supposed to be used for LFortran specific types
             AST::AttrTypeList_t *sym_type = AST::down_cast<AST::AttrTypeList_t>(decl_attribute);
 
-            if (sym_type->m_type == AST::decl_typeType::TypeLF_Dict) {
+            if (sym_type->m_type == AST::decl_typeType::TypeDict) {
                 if (sym_type->n_attr != 2) {
                     diag.add(Diagnostic(
                         "Dict declaration needs exactly two types",
@@ -4757,7 +4758,7 @@ public:
                                                        is_allocatable, dims, var_sym, type_declaration, abi);
 
                 return ASRUtils::TYPE(ASR::make_Dict_t(al, sym_type->base.base.loc, key_type, value_type));
-            } else if (sym_type->m_type == AST::decl_typeType::TypeLF_Tuple) {
+            } else if (sym_type->m_type == AST::decl_typeType::TypeTuple) {
                 if (sym_type->n_attr < 1) {
                     diag.add(Diagnostic(
                         "Tuple declaration needs atleast one type",
@@ -5070,7 +5071,8 @@ public:
             } else if (v && ASRUtils::is_c_funptr(v, derived_type_name)) {
                 type = ASRUtils::TYPE(ASR::make_CPtr_t(al, loc));
             } else if (v && ASR::is_a<ASR::Union_t>(*v)) {
-                type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                type_declaration = v;
+                type = ASRUtils::get_union_type(al, loc, v);
             } else {
                 if (!v) {
                     if (is_template) { 
@@ -5119,7 +5121,7 @@ public:
                 type_declaration = v;
                 // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
-                    type = ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, v));
+                    type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
                     type = ASRUtils::make_StructType_t_util(al, loc, v, true);
                 }
@@ -5130,7 +5132,7 @@ public:
                         type));
                 }
             }
-        } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
+        } else if (sym_type->m_type == AST::decl_typeType::TypeList) {
             ASR::ttype_t* type = determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
                     is_argument);
@@ -5142,7 +5144,7 @@ public:
                                 is_argument);
 
             return ASRUtils::TYPE(ASR::make_List_t(al, loc, type)); 
-        }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
+        }  else if (sym_type->m_type == AST::decl_typeType::TypeSet) {
             return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
                     is_argument))); 
@@ -6871,7 +6873,7 @@ public:
             ASR::ttype_t* v_type = v_variable_m_type;
             ASR::symbol_t *derived_type = nullptr;
             if (ASR::is_a<ASR::UnionType_t>(*v_type)) {
-                derived_type = ASR::down_cast<ASR::UnionType_t>(v_type)->m_union_type;
+                derived_type = ASRUtils::symbol_get_past_external(v_variable->m_type_declaration);
             }
             ASR::Union_t *der_type;
             if (ASR::is_a<ASR::ExternalSymbol_t>(*derived_type)) {
@@ -7646,7 +7648,7 @@ public:
 
     }
 
-    ASR::asr_t* create_LFLen(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Len(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 1 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_len expects exactly one argument, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7676,7 +7678,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFGetItem(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_GetItem(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 2 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_get_item expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7784,7 +7786,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFPop(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Pop(const AST::FuncCallOrArray_t& x) {
         if (x.n_args != 2 || x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_pop expects exactly two arguments, got " +
                                 std::to_string(x.n_args) + " arguments instead.",
@@ -7855,7 +7857,7 @@ public:
     }
 
 
-    ASR::asr_t* create_LFConcat(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Concat(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_concat expects no keyword arguments",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -7933,7 +7935,7 @@ public:
         }
     }
 
-    ASR::asr_t* create_LFEq(const AST::FuncCallOrArray_t& x) {
+    ASR::asr_t* create_Eq(const AST::FuncCallOrArray_t& x) {
         if (x.n_keywords > 0) {
             diag.add(Diagnostic("_lfortran_eq expects no keyword arguments",
                                 Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
@@ -9033,15 +9035,15 @@ public:
                 if ( var_name == "_lfortran_unsigned")
                     tmp = create_unsigned_const(x);
                 else if ( var_name == "_lfortran_len")
-                    tmp = create_LFLen(x);
+                    tmp = create_Len(x);
                 else if ( var_name == "_lfortran_get_item")
-                    tmp = create_LFGetItem(x);
+                    tmp = create_GetItem(x);
                 else if ( var_name == "_lfortran_pop")
-                    tmp = create_LFPop(x);
+                    tmp = create_Pop(x);
                 else if ( var_name == "_lfortran_concat")
-                    tmp = create_LFConcat(x);
+                    tmp = create_Concat(x);
                 else if ( var_name == "_lfortran_eq")
-                    tmp = create_LFEq(x);
+                    tmp = create_Eq(x);
                 else if ( var_name == "_lfortran_list_constant")
                     tmp = create_ListConstant(x);
                 else if ( var_name == "_lfortran_list_count")

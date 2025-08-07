@@ -208,7 +208,7 @@ ttype
     | Tuple(ttype* type)
     | StructType(ttype* data_member_types, ttype* member_function_types, bool is_cstruct, bool is_unlimited_polymorphic)
     | EnumType(symbol enum_type)
-    | UnionType(symbol union_type)
+    | UnionType(ttype* data_member_types)
     | Dict(ttype key_type, ttype value_type)
     | Pointer(ttype type)
     | Allocatable(ttype type)

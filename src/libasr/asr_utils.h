@@ -78,6 +78,8 @@ const ASR::Function_t* get_function_from_expr(ASR::expr_t* expr);
 ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression);
 void set_struct_sym_to_struct_expr(ASR::expr_t* expression, ASR::symbol_t* struct_sym);
 
+ASR::symbol_t* get_union_sym_from_union_expr(ASR::expr_t* expression);
+
 static inline std::string extract_real(const char *s) {
     // TODO: this is inefficient. We should
     // convert this in the tokenizer where we know most information
@@ -1993,8 +1995,12 @@ static inline std::string get_type_code(const ASR::ttype_t *t, bool use_undersco
             break;
         }
         case ASR::ttypeType::UnionType: {
-            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            res = symbol_name(d->m_union_type);
+            if ( expr != nullptr ) {
+                ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_union_sym_from_union_expr(expr));
+                res = symbol_name(sym);
+            } else {
+                res = "UnionType";
+            }
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -2137,8 +2143,8 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             return "enum " + std::string(symbol_name(d->m_enum_type));
         }
         case ASR::ttypeType::UnionType: {
-            ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);
-            return "union " + std::string(symbol_name(d->m_union_type));
+            /*ASR::UnionType_t* d = ASR::down_cast<ASR::UnionType_t>(t);*/
+            return "UnionType";
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* p = ASR::down_cast<ASR::Pointer_t>(t);
@@ -3169,7 +3175,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
         case ASR::ttypeType::UnionType: {
             ASR::UnionType_t* tnew = ASR::down_cast<ASR::UnionType_t>(t);
             t_ = ASRUtils::TYPE(ASR::make_UnionType_t(al, t->base.loc,
-                tnew->m_union_type));
+                tnew->m_data_member_types, tnew->n_data_member_types));
             break;
         }
         case ASR::ttypeType::Pointer: {
@@ -3905,15 +3911,16 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b,
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                ASR::UnionType_t *u1 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *u2 = ASR::down_cast<ASR::UnionType_t>(b);
+                if (u1->n_data_member_types != u2->n_data_member_types) return false;
+                for (size_t i = 0; i < u1->n_data_member_types; i++) {
+                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i])) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
@@ -4035,15 +4042,17 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *a2 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *b2 = ASR::down_cast<ASR::UnionType_t>(b);
-                ASR::Union_t *a2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    a2->m_union_type));
-                ASR::Union_t *b2_type = ASR::down_cast<ASR::Union_t>(
-                                                ASRUtils::symbol_get_past_external(
-                                                    b2->m_union_type));
-                return a2_type == b2_type;
+                ASR::UnionType_t *u1 = ASR::down_cast<ASR::UnionType_t>(a);
+                ASR::UnionType_t *u2 = ASR::down_cast<ASR::UnionType_t>(b);
+                
+                if (u1->n_data_member_types != u2->n_data_member_types) return false;
+                for (size_t i = 0; i < u1->n_data_member_types; i++) {
+                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i])) {
+                        return false;
+                    }
+                }
+
+                return true;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
@@ -5345,6 +5354,18 @@ static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, int dim,
 static inline ASR::expr_t* get_size(ASR::expr_t* arr_expr, Allocator& al, bool for_type=true) {
     ASR::ttype_t* int32_type = ASRUtils::TYPE(ASR::make_Integer_t(al, arr_expr->base.loc, 4));
     return ASRUtils::EXPR(ASRUtils::make_ArraySize_t_util(al, arr_expr->base.loc, arr_expr, nullptr, int32_type, nullptr, for_type));
+}
+
+static inline ASR::ttype_t* get_union_type(Allocator &al, const Location &loc, ASR::symbol_t* union_sym) {
+    Vec<ASR::ttype_t *> member_type_vec;
+    member_type_vec.reserve(al, 1);
+    ASR::Union_t* union_sym_ = ASR::down_cast<ASR::Union_t>(union_sym);
+    for (size_t i=0;i<union_sym_->n_members;i++) {
+        ASR::symbol_t* member_sym = union_sym_->m_symtab->resolve_symbol(union_sym_->m_members[i]);
+        ASR::Variable_t* member_var = ASR::down_cast<ASR::Variable_t>(member_sym);
+        member_type_vec.push_back(al, member_var->m_type);
+    }
+    return ASRUtils::TYPE(ASR::make_UnionType_t(al, loc, member_type_vec.p, member_type_vec.n));
 }
 
 static inline ASR::Enum_t* get_Enum_from_symbol(ASR::symbol_t* s) {

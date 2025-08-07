@@ -1594,7 +1594,7 @@ public:
                     if (return_type->m_attr && return_type->m_attr && return_type->m_attr->type == AST::decl_attributeType::AttrType) {
                         AST::AttrType_t *return_attr_type = AST::down_cast<AST::AttrType_t>(return_type->m_attr);
 
-                        if (return_attr_type->m_type == AST::decl_typeType::TypeLF_List) {
+                        if (return_attr_type->m_type == AST::decl_typeType::TypeList) {
                             ASR::symbol_t *type_declaration;
                             Vec<ASR::dimension_t> dims;
                             dims.reserve(al, 0);
@@ -1997,7 +1997,7 @@ public:
                     ASR::symbol_t* sym = dt_variable->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
+                    ASR::symbol_t* sym = dt_variable->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 }
             }
@@ -2057,8 +2057,14 @@ public:
         current_scope = al.make_new<SymbolTable>(parent_scope);
         data_member_names.reserve(al, 0);
         is_derived_type = true;
+        ASR::accessType dflt_access_copy = dflt_access;
         for (size_t i=0; i<x.n_items; i++) {
-            this->visit_unit_decl2(*x.m_items[i]);
+            try {
+                this->visit_unit_decl2(*x.m_items[i]);
+            } catch (const SemanticAbort&) {
+                current_scope = parent_scope;
+                throw;
+            }
         }
 
         std::string sym_name = to_lower(x.m_name);
@@ -2083,22 +2089,36 @@ public:
             }
             char* aggregate_type_name = nullptr;
             if (item.first != "~unlimited_polymorphic_type") {
+                LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*item.second));
+                ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(item.second);
                 ASR::ttype_t* var_type = ASRUtils::type_get_past_pointer(ASRUtils::symbol_type(item.second));
                 if( ASR::is_a<ASR::StructType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(ASRUtils::EXPR(ASR::make_Var_t(al, x.base.base.loc, item.second))));
+                    ASR::symbol_t* sym = var->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
                 } else if ( ASR::is_a<ASR::UnionType_t>(*var_type) ) {
-                    ASR::symbol_t* sym = ASR::down_cast<ASR::UnionType_t>(var_type)->m_union_type;
+                    ASR::symbol_t* sym = var->m_type_declaration;
                     aggregate_type_name = ASRUtils::symbol_name(sym);
+                } else if ( ASR::is_a<ASR::List_t>(*var_type)
+                            || ASR::is_a<ASR::Dict_t>(*var_type) 
+                            || ASR::is_a<ASR::Set_t>(*var_type)
+                            || ASR::is_a<ASR::Tuple_t>(*var_type)) {
+
+                    diag.add(diag::Diagnostic(
+                        "Type `" + ASRUtils::type_to_str_fortran(var_type) + "` is not allowed inside Union",
+                        diag::Level::Error, diag::Stage::Semantic, {
+                            diag::Label("", {})}));
+                    throw SemanticAbort();
                 }
             }
             if( aggregate_type_name ) {
                 union_dependencies.push_back(al, aggregate_type_name);
             }
         }
-        tmp = ASR::make_Union_t(al, x.base.base.loc, current_scope, s2c(al, to_lower(x.m_name)), 
-                                union_dependencies.p, union_dependencies.size(), data_member_names.p, data_member_names.size(), 
-                                ASR::abiType::Source, dflt_access, nullptr, 0, parent_sym);
+
+        tmp = ASR::make_Union_t(al, x.base.base.loc, current_scope, 
+                                s2c(al, to_lower(x.m_name)), union_dependencies.p, union_dependencies.n,
+                                data_member_names.p, data_member_names.n, ASR::abiType::Source,
+                                dflt_access,  nullptr, 0, parent_sym);
 
         ASR::symbol_t* union_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         if (compiler_options.implicit_typing) {
@@ -2109,6 +2129,7 @@ public:
 
         current_scope = parent_scope;
         is_derived_type = false;
+        dflt_access = dflt_access_copy;
     }
 
     void visit_InterfaceProc(const AST::InterfaceProc_t &x) {

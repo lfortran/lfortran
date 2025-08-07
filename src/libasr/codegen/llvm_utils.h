@@ -464,9 +464,6 @@ namespace LCompilers {
             llvm::Type* getUnion(ASR::Union_t* union_type,
                 llvm::Module* module, bool is_pointer=false);
 
-            llvm::Type* getUnion(ASR::ttype_t* _type,
-                llvm::Module* module, bool is_pointer=false);
-
             llvm::Type* getClassType(ASR::Struct_t* der_type, bool is_pointer=false);
 
             llvm::Type* getFPType(int a_kind, bool get_pointer=false);

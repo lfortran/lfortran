@@ -8778,9 +8778,8 @@ public:
                 break;
             }
             case ASR::ttypeType::UnionType: {
-                ASR::UnionType_t* der = ASR::down_cast<ASR::UnionType_t>(t2_);
                 ASR::Union_t* der_type = ASR::down_cast<ASR::Union_t>(
-                    ASRUtils::symbol_get_past_external(der->m_union_type));
+                    ASRUtils::symbol_get_past_external(x->m_type_declaration));
                 current_der_type_name = std::string(der_type->m_name);
                 uint32_t h = get_hash((ASR::asr_t*)x);
                 if( llvm_symtab.find(h) != llvm_symtab.end() ) {
