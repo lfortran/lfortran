@@ -301,7 +301,7 @@ jobs:
             cd integration_tests
             ./run_tests.py -b llvm_omp
       
-      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Target_Offload
+      - name: Test GFortran, Debug Build, Fortran, OpenMP, C/C++ backend, Upload Tarball, CPP Build, WASM - Test Target Offload
         shell: bash -e -l {0}
         if: contains(matrix.os, 'ubuntu') && contains(matrix.llvm-version, '11')
         run: |
