@@ -7,7 +7,7 @@ module fortuno_basetypes
   
   
     type :: test_ptr_item
-        class(test_base), pointer :: item
+      class(test_base), pointer :: item => null()                                 
     end type test_ptr_item
   
   
@@ -25,9 +25,6 @@ module fortuno_basetypes
     subroutine test_list_free(this)
       class(test_list), intent(inout) :: this                                     
   
-      type(test_ptr_item), target :: d(1)
-      this%storage_ => d
-
       select type (item => this%storage_(1)%item)                                 
       class default
       end select
