@@ -6542,7 +6542,7 @@ public:
                     ASR::call_arg_t arg = args[i];
                     ASR::ttype_t* expected_arg_type = ASRUtils::duplicate_type(al, array_arg_idx[i]);
                     ASR::expr_t* arg_expr = arg.m_value;
-                    if (ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
+                    if (arg_expr && ASR::is_a<ASR::ArrayItem_t>(*arg_expr)) {
                         ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(arg_expr);
                         ASR::expr_t* array_expr = array_item->m_v;
                         LCOMPILERS_ASSERT(array_item->n_args > 0);
