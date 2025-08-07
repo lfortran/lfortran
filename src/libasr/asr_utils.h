@@ -3924,17 +3924,14 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *u1 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *u2 = ASR::down_cast<ASR::UnionType_t>(b);
-                if (u1->n_data_member_types != u2->n_data_member_types) return false;
-                for (size_t i = 0; i < u1->n_data_member_types; i++) {
-                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i], nullptr,
-                        nullptr, false)) {
-                        return false;
-                    }
-                }
+                ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(a_expr)));
+                ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(b_expr)));
+                
+                if (x_union == y_union) return true;
 
-                return true;
+                return false;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
@@ -4070,18 +4067,14 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 return true;
             }
             case (ASR::ttypeType::UnionType) : {
-                ASR::UnionType_t *u1 = ASR::down_cast<ASR::UnionType_t>(a);
-                ASR::UnionType_t *u2 = ASR::down_cast<ASR::UnionType_t>(b);
+                ASR::Union_t* x_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(a_expr)));
+                ASR::Union_t* y_union = ASR::down_cast<ASR::Union_t>(ASRUtils::symbol_get_past_external(
+                    ASRUtils::get_union_sym_from_union_expr(b_expr)));
                 
-                if (u1->n_data_member_types != u2->n_data_member_types) return false;
-                for (size_t i = 0; i < u1->n_data_member_types; i++) {
-                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i], nullptr,
-                        nullptr, false)) {
-                        return false;
-                    }
-                }
+                if (x_union == y_union) return true;
 
-                return true;
+                return false;
             }
             case ASR::ttypeType::FunctionType: {
                 ASR::FunctionType_t* a2 = ASR::down_cast<ASR::FunctionType_t>(a);
