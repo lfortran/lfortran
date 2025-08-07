@@ -708,7 +708,7 @@ within character string edit descriptor
 
 E.g.; "('Number : ', I 2, 5 X, A)" becomes '('Number : ', I2, 5X, A)'
 */
-char* remove_spaces_except_quotes(const char* format, const int64_t len, int* cleaned_format_len) {
+char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* cleaned_format_len) {
     char* cleaned_format = malloc(len + 1);   // +1 for optional '\0' at end
 
     int j = 0;
