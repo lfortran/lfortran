@@ -3928,7 +3928,8 @@ inline bool types_equal(ASR::ttype_t *a, ASR::ttype_t *b, ASR::expr_t* a_expr, A
                 ASR::UnionType_t *u2 = ASR::down_cast<ASR::UnionType_t>(b);
                 if (u1->n_data_member_types != u2->n_data_member_types) return false;
                 for (size_t i = 0; i < u1->n_data_member_types; i++) {
-                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i])) {
+                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i], nullptr,
+                        nullptr, false)) {
                         return false;
                     }
                 }
@@ -4074,7 +4075,8 @@ inline bool types_equal_with_substitution(ASR::ttype_t *a, ASR::ttype_t *b,
                 
                 if (u1->n_data_member_types != u2->n_data_member_types) return false;
                 for (size_t i = 0; i < u1->n_data_member_types; i++) {
-                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i])) {
+                    if (!types_equal(u1->m_data_member_types[i], u2->m_data_member_types[i], nullptr,
+                        nullptr, false)) {
                         return false;
                     }
                 }
