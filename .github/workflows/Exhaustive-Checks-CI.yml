@@ -7,6 +7,8 @@ on:
     tags:
       - 'v*'
   pull_request:
+    types: 
+      - labeled
     branches:
       - main
 
@@ -29,6 +31,7 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -88,6 +91,7 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -191,6 +195,7 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ${{ matrix.os }}
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     strategy:
       fail-fast: false
       matrix:
@@ -485,6 +490,7 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -519,6 +525,7 @@ jobs:
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -539,6 +546,7 @@ jobs:
   test_mlir:
     name: Test MLIR backend
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -587,6 +595,7 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -637,6 +646,7 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
+    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
     permissions:
       contents: read
       packages: write
