@@ -3523,9 +3523,10 @@ public:
             if (init_value == nullptr && x.m_type->type == ASR::ttypeType::StructType) {
                 ASR::Struct_t* struct_sym = ASR::down_cast<ASR::Struct_t>(ASRUtils::symbol_get_past_external(x.m_type_declaration));
                 std::vector<llvm::Constant*> field_values;
-                for (auto& member : struct_sym->m_symtab->get_scope()) {
-                    ASR::symbol_t* sym = member.second;
-                    if (!ASR::is_a<ASR::Variable_t>(*sym))
+                for (size_t i = 0; i < struct_sym->n_members; i++) {
+                    std::string member_name = struct_sym->m_members[i];
+                    ASR::symbol_t* sym = struct_sym->m_symtab->get_symbol(member_name);
+                    if (!sym || !ASR::is_a<ASR::Variable_t>(*sym))
                         continue;
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                     if (var->m_value != nullptr) {
