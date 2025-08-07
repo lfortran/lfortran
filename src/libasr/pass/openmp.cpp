@@ -2534,6 +2534,10 @@ class ParallelRegionVisitor :
                 visit_OMPParallelSections(x);
                 break;
 
+                case ASR::omp_region_typeType::TeamsDistribute:
+                visit_OMPTeamsDistribute(x);
+                break;
+
                 case ASR::omp_region_typeType::Single:
                 case ASR::omp_region_typeType::Master:
                 visit_OMPSingleThread(x);
@@ -3699,8 +3703,14 @@ class ParallelRegionVisitor :
             }
             nested_lowered_body = body_copy;
             // Handle nested regions
-            if (x.m_region == ASR::omp_region_typeType::Teams) {
-                // Process body - could contain parallel, distribute, etc.
+            if (x.m_region == ASR::omp_region_typeType::TeamsDistribute) {
+                std::vector<ASR::stmt_t*> body_copy = nested_lowered_body;
+                visit_OMPDistribute(x);
+                for (size_t i=0; i<nested_lowered_body.size(); i++) {
+                    fn_body.push_back(al,nested_lowered_body[i]);
+                }
+                nested_lowered_body = body_copy;
+            } else if(x.m_region == ASR::omp_region_typeType::Teams) {
                 visit_OMPBody(&x, fn_body);
             }
             thread_data_sym_copy = thread_data_sym;
@@ -4060,6 +4070,10 @@ class ParallelRegionVisitor :
                 loop_body, innermost_loop->m_head.m_increment);
             nested_lowered_body.push_back(do_loop_stmt);
             
+        }
+
+        void visit_OMPTeamsDistribute(const ASR::OMPRegion_t &x) {
+            visit_OMPTeams(x);
         }
 
 };
