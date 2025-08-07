@@ -3296,6 +3296,18 @@ static inline bool is_deferredLength_string(ASR::ttype_t* t){
     return false;
 }
 
+static inline bool is_allocatable_descriptor_string(ASR::ttype_t* t) {
+    if (!ASR::is_a<ASR::Allocatable_t>(*t))
+        return false;
+
+    ASR::ttype_t* t1 = ASR::down_cast<ASR::Allocatable_t>(t)->m_type;
+
+    if (!ASR::is_a<ASR::String_t>(*t1))
+        return false;
+    ASR::String_t* string = ASR::down_cast<ASR::String_t>(t1);
+    return string->m_physical_type == ASR::string_physical_typeType::DescriptorString &&
+            string->m_len_kind == ASR::string_length_kindType::DeferredLength;
+}
 
 static inline ASR::String_t* get_string_type(ASR::ttype_t* s){
     LCOMPILERS_ASSERT(is_character(*s))
