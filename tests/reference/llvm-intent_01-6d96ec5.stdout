@@ -39,12 +39,13 @@ define float @foo.__module_dflt_intent_f(float* %x) {
   %8 = load i8*, i8** %7, align 8
   %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %10 = load i64, i64* %9, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i64 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1)
+  %11 = trunc i64 %10 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   br label %return
 
 return:                                           ; preds = %.entry
-  %11 = load float, float* %f, align 4
-  ret float %11
+  %12 = load float, float* %f, align 4
+  ret float %12
 }
 
 declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i32, i32, ...)
@@ -53,7 +54,7 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:

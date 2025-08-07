@@ -53,6 +53,7 @@ define i32 @main(i32 %0, i8** %1) {
   store i32 93, i32* %boz_11, align 4
   store i32 1255, i32* %boz_22, align 4
   store i32 2748, i32* %boz_33, align 4
+<<<<<<< HEAD
   store i32 180150001, i32* %boz_44, align 4
   store i32 180150001, i32* %boz_55, align 4
   %2 = load i32, i32* %boz_44, align 4
@@ -159,6 +160,22 @@ ifcont20:                                         ; preds = %else19, %then18
   %34 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %35 = load i64, i64* %34, align 4
   call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %33, i64 %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i64 1)
+=======
+  %2 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([9 x i8], [9 x i8]* @serialization_info, i32 0, i32 0), i32 0, i32 0, i32* %boz_11, i32* %boz_22, i32* %boz_33)
+  %3 = call i64 @_lfortran_str_len(i8* %2)
+  %4 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc = bitcast i8* %4 to %string_descriptor*
+  %5 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  store i8* %2, i8** %5, align 8
+  %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  store i64 %3, i64* %6, align 4
+  %7 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
+  %8 = load i8*, i8** %7, align 8
+  %9 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %10 = load i64, i64* %9, align 4
+  %11 = trunc i64 %10 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %8, i32 %11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+>>>>>>> 1eb14410d (tests: update references)
   call void @_lpython_free_argv()
   br label %return
 
@@ -178,6 +195,6 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()

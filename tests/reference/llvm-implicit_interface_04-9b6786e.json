@@ -6,7 +6,11 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-implicit_interface_04-9b6786e.stdout",
+<<<<<<< HEAD
     "stdout_hash": "d4ccbd49f0d1592a35000e395df0f2b447935e4cfa385754aa5452b4",
+=======
+    "stdout_hash": "5269e46c5fe074f3dc4df4bcfa4da68538572dfc22ffb079e52a3658",
+>>>>>>> 1eb14410d (tests: update references)
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0

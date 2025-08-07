@@ -10224,13 +10224,14 @@ public:
                 llvm::Value *str_data, *str_len;
                 // For empty output, use a space (like old behavior)
                 str_data = builder->CreateGlobalStringPtr(" ");
-                str_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 llvm::Value *end_data, *end_len;
                 if (x.m_end) {
                     std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
+                    end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
                 } else {
                     end_data = builder->CreateGlobalStringPtr("\n");
-                    end_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+                    end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
                 }
                 printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
             } else if (x.n_values == 1){

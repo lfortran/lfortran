@@ -6,8 +6,14 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-boz_01-def9db5.stdout",
+<<<<<<< HEAD
     "stdout_hash": "95411b9a8b90730efda07846a9ee502e0644c85be2c477f2018f6a80",
     "stderr": "llvm-boz_01-def9db5.stderr",
     "stderr_hash": "e47b37976e07fa74de67cbf8929d0974adaba30e067be31729bb6426",
+=======
+    "stdout_hash": "1fafdc419665cbe8d0306ed00cfd8a5e8a985f1068142ba45cc65d0e",
+    "stderr": null,
+    "stderr_hash": null,
+>>>>>>> 1eb14410d (tests: update references)
     "returncode": 0
 }

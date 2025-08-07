@@ -36,28 +36,30 @@ define i32 @main(i32 %0, i8** %1) {
   %13 = load i8*, i8** %12, align 8
   %14 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %15 = load i64, i64* %14, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i64 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1)
-  %16 = alloca i32, align 4
-  store i32 1, i32* %16, align 4
+  %16 = trunc i64 %15 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %13, i32 %16, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   %17 = alloca i32, align 4
-  store i32 3, i32* %17, align 4
-  %18 = load i32, i32* %x1, align 4
-  %19 = add i32 25, %18
-  %20 = alloca i32, align 4
-  store i32 %19, i32* %20, align 4
-  %21 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %x1, i32* %16, i32* %17, i32* %x1, i32* %20)
-  %22 = call i64 @_lfortran_str_len(i8* %21)
-  %23 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc2 = bitcast i8* %23 to %string_descriptor*
-  %24 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  store i8* %21, i8** %24, align 8
-  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  store i64 %22, i64* %25, align 4
-  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
-  %27 = load i8*, i8** %26, align 8
-  %28 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
-  %29 = load i64, i64* %28, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %27, i64 %29, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i64 1)
+  store i32 1, i32* %17, align 4
+  %18 = alloca i32, align 4
+  store i32 3, i32* %18, align 4
+  %19 = load i32, i32* %x1, align 4
+  %20 = add i32 25, %19
+  %21 = alloca i32, align 4
+  store i32 %20, i32* %21, align 4
+  %22 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([15 x i8], [15 x i8]* @serialization_info.1, i32 0, i32 0), i32 0, i32 0, i32* %x1, i32* %17, i32* %18, i32* %x1, i32* %21)
+  %23 = call i64 @_lfortran_str_len(i8* %22)
+  %24 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc2 = bitcast i8* %24 to %string_descriptor*
+  %25 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
+  store i8* %22, i8** %25, align 8
+  %26 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
+  store i64 %23, i64* %26, align 4
+  %27 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 0
+  %28 = load i8*, i8** %27, align 8
+  %29 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc2, i32 0, i32 1
+  %30 = load i64, i64* %29, align 4
+  %31 = trunc i64 %30 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %28, i32 %31, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -73,6 +75,6 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
