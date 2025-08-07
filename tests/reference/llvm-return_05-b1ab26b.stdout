@@ -23,7 +23,7 @@ define i32 @main(i32 %0, i8** %1) {
 
 unreachable_after_return:                         ; No predecessors!
   %2 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i64 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i64 1)
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %2, i32 11, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
@@ -33,6 +33,6 @@ return:                                           ; preds = %unreachable_after_r
 
 declare void @_lpython_call_initial_functions(i32, i8**)
 
-declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()

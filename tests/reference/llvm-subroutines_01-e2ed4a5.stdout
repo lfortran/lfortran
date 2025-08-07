@@ -101,15 +101,16 @@ ifcont:                                           ; preds = %else, %then
   %12 = load i8*, i8** %11, align 8
   %13 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
   %14 = load i64, i64* %13, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %12, i64 %14, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i64 1)
-  %15 = load i32, i32* %i1, align 4
-  %16 = icmp ne i32 %15, 1
-  br i1 %16, label %then3, label %else4
+  %15 = trunc i64 %14 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @2, i32 0, i32 0), i8* %12, i32 %15, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @1, i32 0, i32 0), i32 1)
+  %16 = load i32, i32* %i1, align 4
+  %17 = icmp ne i32 %16, 1
+  br i1 %17, label %then3, label %else4
 
 then3:                                            ; preds = %ifcont
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
-  %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %17, i8* %18)
+  %18 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.4, i32 0, i32 0), align 8
+  %19 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.6, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %18, i8* %19)
   call void @exit(i32 1)
   br label %ifcont5
 
@@ -117,14 +118,14 @@ else4:                                            ; preds = %ifcont
   br label %ifcont5
 
 ifcont5:                                          ; preds = %else4, %then3
-  %19 = load i32, i32* %j2, align 4
-  %20 = icmp ne i32 %19, 2
-  br i1 %20, label %then6, label %else7
+  %20 = load i32, i32* %j2, align 4
+  %21 = icmp ne i32 %20, 2
+  br i1 %21, label %then6, label %else7
 
 then6:                                            ; preds = %ifcont5
-  %21 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
-  %22 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %21, i8* %22)
+  %22 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.8, i32 0, i32 0), align 8
+  %23 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.10, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @4, i32 0, i32 0), i8* %22, i8* %23)
   call void @exit(i32 1)
   br label %ifcont8
 
@@ -133,14 +134,14 @@ else7:                                            ; preds = %ifcont5
 
 ifcont8:                                          ; preds = %else7, %then6
   store i32 1, i32* %j2, align 4
-  %23 = load i32, i32* %j2, align 4
-  %24 = icmp ne i32 %23, 1
-  br i1 %24, label %then9, label %else10
+  %24 = load i32, i32* %j2, align 4
+  %25 = icmp ne i32 %24, 1
+  br i1 %25, label %then9, label %else10
 
 then9:                                            ; preds = %ifcont8
-  %25 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
-  %26 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %25, i8* %26)
+  %26 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.12, i32 0, i32 0), align 8
+  %27 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @5, i32 0, i32 0), i8* %26, i8* %27)
   call void @exit(i32 1)
   br label %ifcont11
 
@@ -150,27 +151,28 @@ else10:                                           ; preds = %ifcont8
 ifcont11:                                         ; preds = %else10, %then9
   store i32 3, i32* %call_arg_value, align 4
   call void @f(i32* %call_arg_value, i32* %j2)
-  %27 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.15, i32 0, i32 0), i32 0, i32 0, i32* %j2)
-  %28 = call i64 @_lfortran_str_len(i8* %27)
-  %29 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc12 = bitcast i8* %29 to %string_descriptor*
-  %30 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 0
-  store i8* %27, i8** %30, align 8
-  %31 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 1
-  store i64 %28, i64* %31, align 4
-  %32 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 0
-  %33 = load i8*, i8** %32, align 8
-  %34 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 1
-  %35 = load i64, i64* %34, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %33, i64 %35, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i64 1)
-  %36 = load i32, i32* %j2, align 4
-  %37 = icmp ne i32 %36, 4
-  br i1 %37, label %then13, label %else14
+  %28 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.15, i32 0, i32 0), i32 0, i32 0, i32* %j2)
+  %29 = call i64 @_lfortran_str_len(i8* %28)
+  %30 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc12 = bitcast i8* %30 to %string_descriptor*
+  %31 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 0
+  store i8* %28, i8** %31, align 8
+  %32 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 1
+  store i64 %29, i64* %32, align 4
+  %33 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 0
+  %34 = load i8*, i8** %33, align 8
+  %35 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc12, i32 0, i32 1
+  %36 = load i64, i64* %35, align 4
+  %37 = trunc i64 %36 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @7, i32 0, i32 0), i8* %34, i32 %37, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @6, i32 0, i32 0), i32 1)
+  %38 = load i32, i32* %j2, align 4
+  %39 = icmp ne i32 %38, 4
+  br i1 %39, label %then13, label %else14
 
 then13:                                           ; preds = %ifcont11
-  %38 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.17, i32 0, i32 0), align 8
-  %39 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.19, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %38, i8* %39)
+  %40 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.17, i32 0, i32 0), align 8
+  %41 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.19, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @8, i32 0, i32 0), i8* %40, i8* %41)
   call void @exit(i32 1)
   br label %ifcont15
 
@@ -179,14 +181,14 @@ else14:                                           ; preds = %ifcont11
 
 ifcont15:                                         ; preds = %else14, %then13
   store i32 1, i32* %j2, align 4
-  %40 = load i32, i32* %j2, align 4
-  %41 = icmp ne i32 %40, 1
-  br i1 %41, label %then16, label %else17
+  %42 = load i32, i32* %j2, align 4
+  %43 = icmp ne i32 %42, 1
+  br i1 %43, label %then16, label %else17
 
 then16:                                           ; preds = %ifcont15
-  %42 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.21, i32 0, i32 0), align 8
-  %43 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.23, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %42, i8* %43)
+  %44 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.21, i32 0, i32 0), align 8
+  %45 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.23, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @9, i32 0, i32 0), i8* %44, i8* %45)
   call void @exit(i32 1)
   br label %ifcont18
 
@@ -196,27 +198,28 @@ else17:                                           ; preds = %ifcont15
 ifcont18:                                         ; preds = %else17, %then16
   store i32 3, i32* %call_arg_value19, align 4
   call void @f(i32* %call_arg_value19, i32* %j2)
-  %44 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.24, i32 0, i32 0), i32 0, i32 0, i32* %j2)
-  %45 = call i64 @_lfortran_str_len(i8* %44)
-  %46 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc20 = bitcast i8* %46 to %string_descriptor*
-  %47 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 0
-  store i8* %44, i8** %47, align 8
-  %48 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
-  store i64 %45, i64* %48, align 4
+  %46 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.24, i32 0, i32 0), i32 0, i32 0, i32* %j2)
+  %47 = call i64 @_lfortran_str_len(i8* %46)
+  %48 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc20 = bitcast i8* %48 to %string_descriptor*
   %49 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 0
-  %50 = load i8*, i8** %49, align 8
-  %51 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
-  %52 = load i64, i64* %51, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %50, i64 %52, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i64 1)
-  %53 = load i32, i32* %j2, align 4
-  %54 = icmp ne i32 %53, 4
-  br i1 %54, label %then21, label %else22
+  store i8* %46, i8** %49, align 8
+  %50 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
+  store i64 %47, i64* %50, align 4
+  %51 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 0
+  %52 = load i8*, i8** %51, align 8
+  %53 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc20, i32 0, i32 1
+  %54 = load i64, i64* %53, align 4
+  %55 = trunc i64 %54 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @11, i32 0, i32 0), i8* %52, i32 %55, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @10, i32 0, i32 0), i32 1)
+  %56 = load i32, i32* %j2, align 4
+  %57 = icmp ne i32 %56, 4
+  br i1 %57, label %then21, label %else22
 
 then21:                                           ; preds = %ifcont18
-  %55 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.26, i32 0, i32 0), align 8
-  %56 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.28, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* %55, i8* %56)
+  %58 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.26, i32 0, i32 0), align 8
+  %59 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.28, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @12, i32 0, i32 0), i8* %58, i8* %59)
   call void @exit(i32 1)
   br label %ifcont23
 
@@ -225,14 +228,14 @@ else22:                                           ; preds = %ifcont18
 
 ifcont23:                                         ; preds = %else22, %then21
   store i32 1, i32* %j2, align 4
-  %57 = load i32, i32* %j2, align 4
-  %58 = icmp ne i32 %57, 1
-  br i1 %58, label %then24, label %else25
+  %60 = load i32, i32* %j2, align 4
+  %61 = icmp ne i32 %60, 1
+  br i1 %61, label %then24, label %else25
 
 then24:                                           ; preds = %ifcont23
-  %59 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.30, i32 0, i32 0), align 8
-  %60 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.32, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %59, i8* %60)
+  %62 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.30, i32 0, i32 0), align 8
+  %63 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.32, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @13, i32 0, i32 0), i8* %62, i8* %63)
   call void @exit(i32 1)
   br label %ifcont26
 
@@ -240,31 +243,32 @@ else25:                                           ; preds = %ifcont23
   br label %ifcont26
 
 ifcont26:                                         ; preds = %else25, %then24
-  %61 = load i32, i32* %i1, align 4
-  %62 = add i32 %61, 2
-  store i32 %62, i32* %call_arg_value27, align 4
+  %64 = load i32, i32* %i1, align 4
+  %65 = add i32 %64, 2
+  store i32 %65, i32* %call_arg_value27, align 4
   call void @f(i32* %call_arg_value27, i32* %j2)
-  %63 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.33, i32 0, i32 0), i32 0, i32 0, i32* %j2)
-  %64 = call i64 @_lfortran_str_len(i8* %63)
-  %65 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc28 = bitcast i8* %65 to %string_descriptor*
-  %66 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
-  store i8* %63, i8** %66, align 8
-  %67 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
-  store i64 %64, i64* %67, align 4
-  %68 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
-  %69 = load i8*, i8** %68, align 8
+  %66 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.33, i32 0, i32 0), i32 0, i32 0, i32* %j2)
+  %67 = call i64 @_lfortran_str_len(i8* %66)
+  %68 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc28 = bitcast i8* %68 to %string_descriptor*
+  %69 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
+  store i8* %66, i8** %69, align 8
   %70 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
-  %71 = load i64, i64* %70, align 4
-  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %69, i64 %71, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i64 1)
-  %72 = load i32, i32* %j2, align 4
-  %73 = icmp ne i32 %72, 4
-  br i1 %73, label %then29, label %else30
+  store i64 %67, i64* %70, align 4
+  %71 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
+  %72 = load i8*, i8** %71, align 8
+  %73 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
+  %74 = load i64, i64* %73, align 4
+  %75 = trunc i64 %74 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @15, i32 0, i32 0), i8* %72, i32 %75, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @14, i32 0, i32 0), i32 1)
+  %76 = load i32, i32* %j2, align 4
+  %77 = icmp ne i32 %76, 4
+  br i1 %77, label %then29, label %else30
 
 then29:                                           ; preds = %ifcont26
-  %74 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.35, i32 0, i32 0), align 8
-  %75 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.37, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i8* %74, i8* %75)
+  %78 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.35, i32 0, i32 0), align 8
+  %79 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.37, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @16, i32 0, i32 0), i8* %78, i8* %79)
   call void @exit(i32 1)
   br label %ifcont31
 
@@ -302,6 +306,6 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, i8*, i64, i8*, i64)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lpython_free_argv()
