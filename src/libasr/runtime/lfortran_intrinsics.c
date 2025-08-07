@@ -191,7 +191,7 @@ LFORTRAN_API int _lfortran_random_int(int lower, int upper)
     return randint;
 }
 
-LFORTRAN_API void _lfortran_printf(const char* format, const char* str, size_t str_len, const char* end, size_t end_len)
+LFORTRAN_API void _lfortran_printf(const char* format, const char* str, uint32_t str_len, const char* end, uint32_t end_len)
 {
     if (str == NULL) {
         str = " "; // dummy output

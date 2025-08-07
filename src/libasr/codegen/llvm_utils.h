@@ -75,9 +75,9 @@ namespace LCompilers {
                 {
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
-                    llvm::Type::getInt64Ty(context),                               // str_len
+                    llvm::Type::getInt32Ty(context),                               // str_len
                     llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
-                    llvm::Type::getInt64Ty(context)                                // end_len
+                    llvm::Type::getInt32Ty(context)                                // end_len
                 },
                 false);
             fn_printf = llvm::Function::Create(function_type,

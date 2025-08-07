@@ -10649,9 +10649,10 @@ public:
         llvm::Value *end_data, *end_len;
         if (end_expr == nullptr) {
             end_data = builder->CreateGlobalStringPtr("\n");
-            end_len = llvm::ConstantInt::get(context, llvm::APInt(64, 1));
+            end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
             std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
+            end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
         }
 
         std::string fmt_str;
@@ -10659,13 +10660,14 @@ public:
         if (ASRUtils::is_character(*t)) {
             // --- String path ---
             std::tie(main_data, main_len) = get_string_data_and_length(arg);
+            main_len = builder->CreateTrunc(main_len, llvm::Type::getInt32Ty(context));
             fmt_str = "%s";
         } else {
             // --- Non-string path ---
             // Evaluate once
             this->visit_expr_wrapper(arg, true);
             llvm::Value* val = tmp;  // integer/real/etc value
-            main_len = llvm::ConstantInt::get(context, llvm::APInt(64, 0));  // no length for non-string
+            main_len = llvm::ConstantInt::get(context, llvm::APInt(32, 0));  // no length for non-string
 
             // Determine correct printf specifier
             std::vector<std::string> fmt_parts;
@@ -10676,8 +10678,8 @@ public:
             fmt_str.clear();
             for (auto& f : fmt_parts)
                 fmt_str += f;
-            llvm::Value* as_i64 = builder->CreateSExtOrBitCast(val, llvm::Type::getInt64Ty(context));
-            main_data = builder->CreateIntToPtr(as_i64, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
+            llvm::Value* as_i32 = builder->CreateSExtOrBitCast(val, llvm::Type::getInt32Ty(context));
+            main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
         fmt_str += "%s";
         llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
