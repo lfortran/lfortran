@@ -5132,7 +5132,7 @@ public:
                         type));
                 }
             }
-        } else if (sym_type->m_type == AST::decl_typeType::TypeLF_List) {
+        } else if (sym_type->m_type == AST::decl_typeType::TypeList) {
             ASR::ttype_t* type = determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
                     is_argument);
@@ -5144,7 +5144,7 @@ public:
                                 is_argument);
 
             return ASRUtils::TYPE(ASR::make_List_t(al, loc, type)); 
-        }  else if (sym_type->m_type == AST::decl_typeType::TypeLF_Set) {
+        }  else if (sym_type->m_type == AST::decl_typeType::TypeSet) {
             return ASRUtils::TYPE(ASR::make_Set_t(al, loc, determine_type(loc, sym, sym_type->m_attr,
                     is_pointer, is_allocatable, dims, var_sym, type_declaration, abi,
                     is_argument))); 
