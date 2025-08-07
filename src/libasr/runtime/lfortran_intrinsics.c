@@ -771,7 +771,7 @@ int find_matching_parentheses(const char* format, int index){
  * e.g. "(I5, F5.2, T10)" is split separately into "I5", "F5.2", "T10" as
  * format specifiers
 */
-char** parse_fortran_format(char* format, int64_t *count, int64_t *item_start) {
+char** parse_fortran_format(char* format, const int64_t format_len, int64_t *count, int64_t *item_start) {
     char** format_values_2 = (char**)malloc((*count + 1) * sizeof(char*));
     int format_values_count = *count;
     int index = 0 , start = 0;
@@ -1561,7 +1561,7 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
     strncpy(modified_input_string, cleaned_format, len);
     modified_input_string[len] = '\0';
     strip_outer_parenthesis(cleaned_format, len, modified_input_string);
-    format_values = parse_fortran_format(modified_input_string, &format_values_count, &item_start_idx);
+    format_values = parse_fortran_format(modified_input_string, strlen(modified_input_string), &format_values_count, &item_start_idx);
     /*
     is_SP_specifier = false  --> 'S' OR 'SS'
     is_SP_specifier = true  --> 'SP'
@@ -1578,10 +1578,12 @@ LFORTRAN_API char* _lcompilers_string_format_fortran(const char* format, int64_t
             char* value;
             if(format_values[i] == NULL) continue;
             value = format_values[i];
-            if (value[0] == '(' && value[strlen(value)-1] == ')') {
-                value[strlen(value)-1] = '\0';
+            int64_t value_len = strlen(value);
+            if (value_len >= 2 && value[0] == '(' && value[value_len - 1] == ')') {
+                value[value_len - 1] = '\0';
                 int64_t new_fmt_val_count = 0;
-                char** new_fmt_val = parse_fortran_format(++value, &new_fmt_val_count, &item_start_idx);
+                value += 1;
+                char** new_fmt_val = parse_fortran_format(value, value_len - 2, &new_fmt_val_count, &item_start_idx);
                 char** ptr = (char**)realloc(format_values, (format_values_count + new_fmt_val_count + 1) * sizeof(char*));
                 if (ptr == NULL) {
                     perror("Memory allocation failed.\n");
