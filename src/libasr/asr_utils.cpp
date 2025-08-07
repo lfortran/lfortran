@@ -198,17 +198,8 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
-            // `func_call->m_dt` will be non-null for Struct expressions
-            if ( func_call->m_dt != nullptr ){
-                // If `func_call->m_dt` is not null, it means that the function call
-                // is returning a struct type.
-                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func_call->m_dt));
-            } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(func_call->m_name))) {
-                ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(func_call->m_name));
-                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var));
-            } else {
-                return nullptr;
-            }
+            ASR::Function_t* func = get_function(func_call->m_name);
+            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var));
         }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
@@ -477,17 +468,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::OverloadedStringConcat: {
             ASR::OverloadedStringConcat_t* overloaded_string_concat = ASR::down_cast<ASR::OverloadedStringConcat_t>(expression);
-            ASR::symbol_t* left_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_left));
-            ASR::symbol_t* right_struct_sym = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_right));
-            if (left_struct_sym != nullptr) {
-                return left_struct_sym;
-            } else if (right_struct_sym != nullptr) {
-                return right_struct_sym;
-            } else if ( overloaded_string_concat->m_value != nullptr ) {
-                return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_value));
-            } else {
-                return nullptr; // If no struct symbol found in either side
-            }
+            return ASRUtils::get_struct_sym_from_struct_expr(overloaded_string_concat->m_overloaded);
         }
         case ASR::exprType::StringItem: {
             ASR::StringItem_t* string_item = ASR::down_cast<ASR::StringItem_t>(expression);
