@@ -2634,3 +2634,4 @@ RUN(NAME union_test_03 LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran
 
 # LFortran extensions (unsigned int)
 RUN(NAME test_unsigned LABELS llvm llvm_wasm llvm_wasm_emcc) # No gfortran 
+RUN(NAME associate_21 LABELS gfortran llvm)

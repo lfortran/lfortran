@@ -4066,12 +4066,53 @@ public:
                             }
 
                         } else {
-                            diag.add(Diagnostic(
-                                "Named initialization not supported with: " + sym_name,
-                                Level::Error, Stage::Semantic, {
-                                    Label("",{x.base.base.loc})
-                                }));
-                            throw SemanticAbort();
+                            ASR::symbol_t *target_sym = current_scope->resolve_symbol(sym_name);
+                            if (!target_sym) {
+                                diag.add(Diagnostic("Symbol '" + sym_name + "' for pointer initialization not found",
+                                    Level::Error, Stage::Semantic, {Label("not found", {s.m_initializer->base.loc})}));
+                                throw SemanticAbort();
+                            }
+
+                            ASR::symbol_t* target_sym_unwrapped = ASRUtils::symbol_get_past_external(target_sym);
+                            if (!ASR::is_a<ASR::Variable_t>(*target_sym_unwrapped)) {
+                                diag.add(Diagnostic("'" + sym_name + "' is not a variable and cannot be a pointer target",
+                                    Level::Error, Stage::Semantic, {Label("not a variable", {s.m_initializer->base.loc})}));
+                                throw SemanticAbort();
+                            }
+                            ASR::Variable_t *target_var = ASR::down_cast<ASR::Variable_t>(target_sym_unwrapped);
+
+                            if (!target_var->m_target_attr && !ASRUtils::is_pointer(target_var->m_type)) {
+                                diag.add(Diagnostic("The target of '=>' must have the TARGET or POINTER attribute",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("'" + sym_name + "' is not a valid target", {target_sym->base.loc})
+                                    }));
+                                throw SemanticAbort();
+                            }
+
+                            ASR::ttype_t* pointer_type = current_variable_type_;
+                            ASR::ttype_t* target_type = target_var->m_type;
+
+                            // Create dummy expressions to safely call the new check_equal_type function
+                            ASR::expr_t* pointer_expr = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, x.base.base.loc, current_scope->get_symbol(sym)));
+                            ASR::expr_t* target_expr = ASRUtils::EXPR(
+                                ASR::make_Var_t(al, s.m_initializer->base.loc, target_sym));
+
+                            // Call check_equal_type WITH the new expressions and WITHOUT type_get_past_pointer
+                            if (!ASRUtils::check_equal_type(pointer_type, target_type,
+                                                            pointer_expr, target_expr, false)) {
+                                std::string p_type_str = ASRUtils::type_to_str_fortran(pointer_type);
+                                std::string t_type_str = ASRUtils::type_to_str_fortran(target_type);
+                                diag.add(Diagnostic(
+                                    "Type mismatch in pointer initialization. The pointer and target must have the same type.",
+                                    Level::Error, Stage::Semantic, {
+                                        Label("pointer has type '" + p_type_str + "'", {x.base.base.loc}),
+                                        Label("but target '" + sym_name + "' has type '" + t_type_str + "'", {target_sym->base.loc}, false)
+                                    }));
+                                throw SemanticAbort();
+                            }
+
+                            init_expr = ASRUtils::EXPR(ASR::make_Var_t(al, s.m_initializer->base.loc, target_sym));
                         }
                     } else if (AST::is_a<AST::ArrayInitializer_t>(*s.m_initializer)) {
                         AST::ArrayInitializer_t *array_init = AST::down_cast<AST::ArrayInitializer_t>(s.m_initializer);
@@ -4104,10 +4145,11 @@ public:
                             }));
                         throw SemanticAbort();
                     }
-
+                    
                     value = ASRUtils::expr_value(init_expr);
                     if ( init_expr ) {
                         if( ASRUtils::is_value_constant(value) ) {
+                        } else if (is_pointer) {
                         } else if( ASRUtils::is_value_constant(init_expr) ) {
                             value = nullptr;
                         } else if (ASR::is_a<ASR::ArrayConstructor_t>(*init_expr)) {
