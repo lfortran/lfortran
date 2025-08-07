@@ -31,10 +31,21 @@ public:
 
     int counter;
 
+    bool target_offload_enabled;
+    std::vector<std::string> kernel_func_names;
+    int kernel_counter=0; // To generate unique kernel names
+    std::string current_kernel_name; // Track current kernel for wrapper
+    std::vector<std::pair<std::string, ASR::OMPMap_t*>> map_vars; // Track map vars for target offload
+    std::string indent() {
+        return std::string(indentation_level * indentation_spaces, ' ');
+    }
+    std ::string kernel_func_code;
+
     ASRToCVisitor(diag::Diagnostics &diag, CompilerOptions &co,
                   int64_t default_lower_bound)
          : BaseCCPPVisitor(diag, co.platform, co, false, false, true, default_lower_bound),
            counter{0} {
+            target_offload_enabled = co.target_offload_enabled;
            }
 
     std::string convert_dims_c(size_t n_dims, ASR::dimension_t *m_dims,
@@ -618,6 +629,15 @@ R"(
 #include <lfortran_intrinsics.h>
 
 )";
+        if(compiler_options.target_offload_enabled) {
+            head += R"(
+#ifdef USE_GPU
+#include<cuda_runtime.h>
+#else
+#include"cpu_impl.h"
+#endif
+)";
+        }
 
         std::string indent(indentation_level * indentation_spaces, ' ');
         std::string tab(indentation_spaces, ' ');
@@ -744,6 +764,13 @@ R"(
             intrinsic_module = false;
         }
 
+        if(to_lower(x.m_name) == "omp_lib") {
+            headers.insert("omp.h");
+            return;
+        } else if (to_lower(x.m_name) == "iso_c_binding" || to_lower(x.m_name) == "lfortran_intrinsic_iso_c_binding") {
+            return;
+        }
+
         std::string unit_src = "";
         for (auto &item : x.m_symtab->get_scope()) {
             if (ASR::is_a<ASR::Variable_t>(*item.second)) {
@@ -865,6 +892,25 @@ R"(    // Initialise Numpy
     }
 )";
             body += "\n";
+        }
+
+        if(compiler_options.target_offload_enabled) {
+            contains += kernel_func_code;
+        }
+
+        if (target_offload_enabled && !kernel_func_names.empty()) {
+            std::string dispatch_code = "#ifndef USE_GPU\n";
+            dispatch_code += "void compute_kernel_wrapper(void **args, void *func) {\n";
+            for (const auto &kname : kernel_func_names) {
+                dispatch_code += "    if (func == (void*)" + kname + ") {\n";
+                dispatch_code += "        " + kname + "_wrapper(args);\n";
+                dispatch_code += "        return;\n";
+                dispatch_code += "    }\n";
+            }
+            dispatch_code += "    fprintf(stderr, \"Unknown kernel function\\n\");\n";
+            dispatch_code += "    exit(1);\n";
+            dispatch_code += "}\n#endif\n";
+            contains += dispatch_code;
         }
 
         src = contains
@@ -1416,10 +1462,487 @@ R"(    // Initialise Numpy
         src = "_lfortran_str_item(" + str + ", " + idx + ")";
     }
 
+    std::string generate_map_clauses(ASR::OMPMap_t* m) {
+        std::string result = " map(";
+        
+        std::string map_type;
+        if (m->m_type == ASR::map_typeType::To) {
+            map_type = "to";
+        } else if (m->m_type == ASR::map_typeType::From) {
+            map_type = "from";
+        } else if (m->m_type == ASR::map_typeType::ToFrom) {
+            map_type = "tofrom";
+        } else if (m->m_type == ASR::map_typeType::Alloc) {
+            map_type = "alloc";
+        } else if (m->m_type == ASR::map_typeType::Release) {
+            map_type = "release";
+        } else if (m->m_type == ASR::map_typeType::Delete) {
+            map_type = "delete";
+        }
+        
+        std::vector<std::string> all_mappings;
+        
+        for (size_t j = 0; j < m->n_vars; j++) {
+            if (m->m_vars[j]->type == ASR::exprType::Var) {
+                ASR::Variable_t* var = ASRUtils::EXPR2VAR(m->m_vars[j]);
+                std::string var_name;
+                visit_expr(*m->m_vars[j]);
+                var_name = src;
+                
+                if (is_allocatable_array(var)) {
+                    std::vector<std::string> struct_mappings = generate_struct_mappings(var_name, var, map_type);
+                    all_mappings.insert(all_mappings.end(), struct_mappings.begin(), struct_mappings.end());
+                } else if (ASRUtils::is_array(var->m_type)) {
+                    all_mappings.push_back(generate_array_mapping(var_name, var, map_type));
+                } else {
+                    all_mappings.push_back(map_type + ": " + var_name);
+                }
+            } else {
+                throw CodeGenError("Unsupported OpenMP map variable type: " +
+                    std::to_string((int)m->m_vars[j]->type));
+            }
+        }
+        
+        if (all_mappings.size() == 1) {
+            result += all_mappings[0] + ")";
+        } else {
+            result = "";
+            for (size_t i = 0; i < all_mappings.size(); i++) {
+                result += " map(" + all_mappings[i] + ")";
+            }
+        }
+        
+        return result;
+    }
+
+    bool is_allocatable_array(ASR::Variable_t* var) {
+        return ASR::is_a<ASR::Allocatable_t>(*var->m_type) || 
+            (ASRUtils::is_array(var->m_type) && 
+                ASR::down_cast<ASR::Array_t>(ASRUtils::type_get_past_allocatable(var->m_type))->m_physical_type == ASR::array_physical_typeType::DescriptorArray);
+    }
+
+    std::vector<std::string> generate_struct_mappings(const std::string& var_name, ASR::Variable_t* var, const std::string& base_map_type) {
+        std::vector<std::string> mappings;
+        
+        ASR::ttype_t* type = ASRUtils::type_get_past_allocatable(var->m_type);
+        if (ASRUtils::is_array(type)) {
+            ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(type);
+            
+            // 1. Map the data array with proper slice notation
+            std::string data_mapping;
+            if (base_map_type == "to") {
+                data_mapping = "to: " + var_name + "->data[0:";
+            } else if (base_map_type == "from") {
+                data_mapping = "from: " + var_name + "->data[0:";
+            } else {
+                data_mapping = "tofrom: " + var_name + "->data[0:";
+            }
+            
+            if (arr_type->n_dims == 1) {
+                // For 1D arrays, we need to determine the size at runtime
+                data_mapping += var_name + "->dims[0].length-1]";
+            } else {
+                // Multi-dimensional arrays need more complex slice calculation
+                std::string total_size = var_name + "->dims[0].length";
+                for (size_t i = 1; i < arr_type->n_dims; i++) {
+                    total_size += "*" + var_name + "->dims[" + std::to_string(i) + "].length";
+                }
+                data_mapping += total_size + "-1]";
+            }
+            mappings.push_back(data_mapping);
+            
+            // 2. Map dimension descriptors (usually 'to' since they're metadata)
+            for (size_t i = 0; i < arr_type->n_dims; i++) {
+                std::string dim_mapping = "to: " + var_name + "->dims[" + std::to_string(i) + "].lower_bound, " +
+                                        var_name + "->dims[" + std::to_string(i) + "].length, " +
+                                        var_name + "->dims[" + std::to_string(i) + "].stride";
+                mappings.push_back(dim_mapping);
+            }
+            
+            // 3. Map other struct members as needed
+            mappings.push_back("to: " + var_name + "->n_dims");
+            
+            // Map offset - use 'from' if base is 'from' or 'tofrom', otherwise 'to'
+            if (base_map_type == "from" || base_map_type == "tofrom") {
+                mappings.push_back("from: " + var_name + "->offset");
+            } else {
+                mappings.push_back("to: " + var_name + "->offset");
+            }
+        }
+        
+        return mappings;
+    }
+
+    std::string generate_array_mapping(const std::string& var_name, ASR::Variable_t* var, const std::string& map_type) {
+        ASR::Array_t* arr_type = ASR::down_cast<ASR::Array_t>(var->m_type);
+        
+        std::string mapping = map_type + ": " + var_name+ "->data";
+        
+        if (arr_type->n_dims == 1 && arr_type->m_dims[0].m_start && arr_type->m_dims[0].m_length) {
+            mapping += "[";
+            visit_expr(*arr_type->m_dims[0].m_start);
+            std::string start = src;
+            visit_expr(*arr_type->m_dims[0].m_length);
+            std::string length = src;
+            mapping += start + ":" + length + "]";
+        }
+        
+        return mapping;
+    }
     void visit_StringLen(const ASR::StringLen_t &x) {
         CHECK_FAST_C(compiler_options, x)
         this->visit_expr(*x.m_arg);
         src = "strlen(" + src + ")";
+    }
+
+    void visit_OMPRegion(const ASR::OMPRegion_t &x) {
+        if (!target_offload_enabled) {
+            // Codegen for --show-c: Generate OpenMP pragmas
+            std::string opening_pragma;
+            if (x.m_region == ASR::omp_region_typeType::Parallel) {
+                opening_pragma = "#pragma omp parallel ";
+            } else if (x.m_region == ASR::omp_region_typeType::Do) {
+                opening_pragma = "#pragma omp for ";
+            } else if (x.m_region == ASR::omp_region_typeType::Sections) {
+                opening_pragma = "#pragma omp sections ";
+            } else if (x.m_region == ASR::omp_region_typeType::Single) {
+                opening_pragma = "#pragma omp single ";
+            } else if (x.m_region == ASR::omp_region_typeType::Critical) {
+                opening_pragma = "#pragma omp critical ";
+            } else if (x.m_region == ASR::omp_region_typeType::Atomic) {
+                opening_pragma = "#pragma omp atomic ";
+            } else if (x.m_region == ASR::omp_region_typeType::Barrier) {
+                opening_pragma = "#pragma omp barrier ";
+            } else if (x.m_region == ASR::omp_region_typeType::Task) {
+                opening_pragma = "#pragma omp task ";
+            } else if (x.m_region == ASR::omp_region_typeType::Taskwait) {
+                opening_pragma = "#pragma omp taskwait ";
+            } else if (x.m_region == ASR::omp_region_typeType::Master) {
+                opening_pragma = "#pragma omp master ";
+            } else if (x.m_region == ASR::omp_region_typeType::ParallelDo) {
+                opening_pragma = "#pragma omp parallel for ";
+            } else if (x.m_region == ASR::omp_region_typeType::ParallelSections) {
+                opening_pragma = "#pragma omp parallel sections ";
+            } else if (x.m_region == ASR::omp_region_typeType::Taskloop) {
+                opening_pragma = "#pragma omp taskloop ";
+            } else if (x.m_region == ASR::omp_region_typeType::Target) {
+                opening_pragma = "#pragma omp target ";
+            } else if (x.m_region == ASR::omp_region_typeType::Teams) {
+                opening_pragma = "#pragma omp teams ";
+            } else if (x.m_region == ASR::omp_region_typeType::DistributeParallelDo) {
+                opening_pragma = "#pragma omp distribute parallel for ";
+            } else if (x.m_region == ASR::omp_region_typeType::Distribute) {
+                opening_pragma = "#pragma omp distribute ";
+            } else {
+                throw CodeGenError("Unsupported OpenMP region type: " + std::to_string((int)x.m_region));
+            }
+
+            std::string clauses;
+            for(size_t i=0;i<x.n_clauses;i++) {
+                ASR::omp_clause_t* clause = x.m_clauses[i];
+                if (ASR::is_a<ASR::OMPPrivate_t>(*clause)) {
+                    ASR::OMPPrivate_t* c = ASR::down_cast<ASR::OMPPrivate_t>(clause);
+                    clauses += " private(";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPShared_t>(*clause)) {
+                    ASR::OMPShared_t* c = ASR::down_cast<ASR::OMPShared_t>(clause);
+                    clauses += " shared(";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPNumTeams_t>(*clause)) {
+                    ASR::OMPNumTeams_t* c = ASR::down_cast<ASR::OMPNumTeams_t>(clause);
+                    clauses += " num_teams(";
+                    visit_expr(*c->m_num_teams);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPThreadLimit_t>(*clause)) {
+                    ASR::OMPThreadLimit_t* c = ASR::down_cast<ASR::OMPThreadLimit_t>(clause);
+                    clauses += " thread_limit(";
+                    visit_expr(*c->m_thread_limit);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPSchedule_t>(*clause)) {
+                    ASR::OMPSchedule_t* c = ASR::down_cast<ASR::OMPSchedule_t>(clause);
+                    clauses += " schedule(";
+                    if (c->m_kind == ASR::schedule_typeType::Static) {
+                        clauses += "static";
+                    } else if (c->m_kind == ASR::schedule_typeType::Dynamic) {
+                        clauses += "dynamic";
+                    } else if (c->m_kind == ASR::schedule_typeType::Guided) {
+                        clauses += "guided";
+                    } else if (c->m_kind == ASR::schedule_typeType::Auto) {
+                        clauses += "auto";
+                    } else if (c->m_kind == ASR::schedule_typeType::Runtime) {
+                        clauses += "runtime";
+                    }
+                    if (c->m_chunk_size) {
+                        clauses += ", ";
+                        visit_expr(*c->m_chunk_size);
+                        clauses += src;
+                    }
+                    clauses += ")";
+                } else if (ASR::is_a<ASR::OMPReduction_t>(*clause)) {
+                    ASR::OMPReduction_t* c = ASR::down_cast<ASR::OMPReduction_t>(clause);
+                    clauses += " reduction(";
+                    std::string op;
+                    if(c->m_operator == ASR::reduction_opType::ReduceAdd) {
+                        op += "+";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMul) {
+                        op += "*";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceSub) {
+                        op += "-";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMAX) {
+                        op += "max";
+                    } else if(c->m_operator == ASR::reduction_opType::ReduceMIN) {
+                        op += "min";
+                    } else {
+                        throw CodeGenError("Unsupported OpenMP reduction operator: " +
+                            std::to_string((int)c->m_operator));
+                    }
+                    clauses += op + ": ";
+                    std::string vars;
+                    for (size_t j=0; j<c->n_vars; j++) {
+                        visit_expr(*c->m_vars[j]);
+                        vars += src;
+                        if (j < c->n_vars - 1) {
+                            vars += ", ";
+                        }
+                    }
+                    clauses += vars + ")";
+                } else if (ASR::is_a<ASR::OMPDevice_t>(*clause)) {
+                    ASR::OMPDevice_t* c = ASR::down_cast<ASR::OMPDevice_t>(clause);
+                    clauses += " device(";
+                    visit_expr(*c->m_device);
+                    clauses += src + ")";
+                } else if (ASR::is_a<ASR::OMPMap_t>(*clause)) {
+                    ASR::OMPMap_t* m = ASR::down_cast<ASR::OMPMap_t>(clause);
+                    std::string map_clauses = generate_map_clauses(m);
+                    clauses += map_clauses;
+                }
+            }
+            
+            opening_pragma += clauses;
+            
+            if (x.m_region == ASR::omp_region_typeType::Barrier || 
+                x.m_region == ASR::omp_region_typeType::Taskwait) {
+                // These are standalone directives
+                src = opening_pragma + "\n";
+                return;
+            }
+            
+
+            std::string body;
+            for(size_t i=0;i<x.n_body;i++) {
+                this->visit_stmt(*x.m_body[i]);
+                body += src;
+            }
+            if(x.m_region != ASR::omp_region_typeType::Target && x.m_region != ASR::omp_region_typeType::Teams &&
+               x.m_region != ASR::omp_region_typeType::DistributeParallelDo &&
+               x.m_region != ASR::omp_region_typeType::Distribute) {
+                src = opening_pragma + "{\n" + body + "}\n";
+            } else {
+                src =  opening_pragma + "\n" + body + "\n";
+            }
+        } else {
+            // CodeGen for --target-offload: Generate CUDA code
+            if (x.m_region == ASR::omp_region_typeType::Target) {
+                map_vars.clear();
+                std::string target_code;
+                std::string kernel_decls;
+                std::string kernel_wrappers;
+                std::string struct_copies;
+
+                // Collect map clauses
+                for (size_t i = 0; i < x.n_clauses; i++) {
+                    if (ASR::is_a<ASR::OMPMap_t>(*x.m_clauses[i])) {
+                        ASR::OMPMap_t* m = ASR::down_cast<ASR::OMPMap_t>(x.m_clauses[i]);
+                        for (size_t j = 0; j < m->n_vars; j++) {
+                            visit_expr(*m->m_vars[j]);
+                            map_vars.push_back({src, m});
+                        }
+                    }
+                }
+
+                // Declare device pointers for data
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "float *d_" + mv.first + "_data = NULL;\n";
+                }
+                target_code += indent() + "cudaError_t err;\n";
+                // Allocate device memory for data
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "size_t " + mv.first + "_data_size = " + mv.first + "->dims[0].length * sizeof(float);\n";
+                    target_code += indent() + "err = cudaMalloc((void**)&d_" + mv.first + "_data, " + mv.first + "_data_size);\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMalloc failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Copy data to device (based on map type)
+                for (const auto &mv : map_vars) {
+                    if (mv.second->m_type == ASR::map_typeType::To || mv.second->m_type == ASR::map_typeType::ToFrom) {
+                        target_code += indent() + "err = cudaMemcpy(d_" + mv.first + "_data, " + mv.first + "->data, " + mv.first + "_data_size, cudaMemcpyHostToDevice);\n";
+                        target_code += indent() + "if (err != cudaSuccess) {\n";
+                        target_code += indent() + "    fprintf(stderr, \"cudaMemcpy H2D failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                        target_code += indent() + "    exit(1);\n";
+                        target_code += indent() + "}\n";
+                    }
+                }
+
+                // Create host struct copies with device data pointers
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "struct r32 h_" + mv.first + "_copy = *" + mv.first + ";\n";
+                    target_code += indent() + "h_" + mv.first + "_copy.data = d_" + mv.first + "_data;\n";
+                }
+
+                // Declare and allocate device struct pointers
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "struct r32 *d_" + mv.first + "_struct = NULL;\n";
+                    target_code += indent() + "err = cudaMalloc((void**)&d_" + mv.first + "_struct, sizeof(struct r32));\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMalloc failed for d_" + mv.first + "_struct: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Copy host struct copies to device
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "err = cudaMemcpy(d_" + mv.first + "_struct, &h_" + mv.first + "_copy, sizeof(struct r32), cudaMemcpyHostToDevice);\n";
+                    target_code += indent() + "if (err != cudaSuccess) {\n";
+                    target_code += indent() + "    fprintf(stderr, \"cudaMemcpy H2D failed for d_" + mv.first + "_struct: %s\\n\", cudaGetErrorString(err));\n";
+                    target_code += indent() + "    exit(1);\n";
+                    target_code += indent() + "}\n";
+                }
+
+                // Process nested constructs (teams, distribute parallel do)
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    target_code += src;
+                }
+
+                // Copy back from device (data only, structs are metadata)
+                for (const auto &mv : map_vars) {
+                    if (mv.second->m_type == ASR::map_typeType::From || mv.second->m_type == ASR::map_typeType::ToFrom) {
+                        target_code += indent() + "err = cudaMemcpy(" + mv.first + "->data, d_" + mv.first + "_data, " + mv.first + "_data_size, cudaMemcpyDeviceToHost);\n";
+                        target_code += indent() + "if (err != cudaSuccess) {\n";
+                        target_code += indent() + "    fprintf(stderr, \"cudaMemcpy D2H failed for " + mv.first + "_data: %s\\n\", cudaGetErrorString(err));\n";
+                        target_code += indent() + "    exit(1);\n";
+                        target_code += indent() + "}\n";
+                    }
+                }
+
+                // Free device memory (data and structs)
+                for (const auto &mv : map_vars) {
+                    target_code += indent() + "cudaFree(d_" + mv.first + "_data);\n";
+                    target_code += indent() + "cudaFree(d_" + mv.first + "_struct);\n";
+                }
+
+                src = kernel_decls + "\n" + target_code + "\n" + kernel_wrappers;
+            } else if (x.m_region == ASR::omp_region_typeType::Teams) {
+                // Teams: Set up grid dimensions (handled in distribute parallel do)
+                std::string teams_code;
+                for (size_t i = 0; i < x.n_body; i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    teams_code += src;
+                }
+                src = teams_code;
+            } else if (x.m_region == ASR::omp_region_typeType::DistributeParallelDo ||
+                       x.m_region == ASR::omp_region_typeType::Distribute ||
+                       x.m_region == ASR::omp_region_typeType::ParallelDo) {
+                // Parallel Do: Generate kernel and launch
+                if (x.n_body != 1 || !ASR::is_a<ASR::DoLoop_t>(*x.m_body[0])) {
+                    throw CodeGenError("Distribute Parallel Do must contain a single DoLoop");
+                }
+
+                ASR::DoLoop_t* loop = ASR::down_cast<ASR::DoLoop_t>(x.m_body[0]);
+                std::string kernel_name = "compute_kernel_" + std::to_string(kernel_counter++);
+                current_kernel_name = kernel_name;
+                kernel_func_names.push_back(kernel_name);
+
+                // Extract loop head
+                std::string idx_var;
+                visit_expr(*loop->m_head.m_v);
+                idx_var = src;
+                std::string n;
+                visit_expr(*loop->m_head.m_end);
+                n = src;
+
+                // Generate kernel (pass struct pointers)
+                std::string kernel_code = "#ifdef USE_GPU\n__global__\n#endif\n";
+                kernel_code += "void " + kernel_name + "(";
+                for (const auto &mv : map_vars) {
+                    kernel_code += "struct r32 *" + mv.first + ", ";
+                }
+                kernel_code += "int " + idx_var + "_n) {\n";
+                kernel_code += "    int " + idx_var + " = blockIdx.x * blockDim.x + threadIdx.x + 1;\n";
+                kernel_code += "    if (" + idx_var + " <= " + idx_var + "_n) {\n";
+                for (size_t i = 0; i < loop->n_body; i++) {
+                    visit_stmt(*loop->m_body[i]);
+                    kernel_code += "        " + src;
+                }
+                kernel_code += "    }\n}\n";
+
+                // Generate CPU wrapper
+                std::string wrapper_code = "#ifndef USE_GPU\n";
+                wrapper_code += "void " + kernel_name + "_wrapper(void **args) {\n";
+                int arg_idx = 0;
+                for (const auto &mv : map_vars) {
+                    wrapper_code += "    struct r32 *" + mv.first + " = *(struct r32**)args[" + std::to_string(arg_idx++) + "];\n";
+                }
+                wrapper_code += "    int " + idx_var + "_n = *(int*)args[" + std::to_string(arg_idx++) + "];\n";
+                wrapper_code += "    " + kernel_name + "(";
+                for (const auto &mv : map_vars) {
+                    wrapper_code += mv.first + ", ";
+                }
+                wrapper_code += idx_var + "_n);\n";
+                wrapper_code += "}\n#endif\n";
+
+                // Generate kernel launch
+                std::string launch_code = indent() + "int " + idx_var + "_n = " + n + ";\n";
+                launch_code += indent() + "int threads_per_block = 256;\n";
+                launch_code += indent() + "int blocks = (" + idx_var + "_n + threads_per_block - 1) / threads_per_block;\n";
+                launch_code += indent() + "dim3 grid_dim = {blocks, 1, 1};\n";
+                launch_code += indent() + "dim3 block_dim = {threads_per_block, 1, 1};\n";
+                launch_code += indent() + "void *kernel_args[] = {";
+                for (const auto &mv : map_vars) {
+                    launch_code += "&d_" + mv.first + "_struct, ";
+                }
+                launch_code += "&" + idx_var + "_n};\n";
+                launch_code += indent() + "err = cudaLaunchKernel((void*)" + kernel_name + ", grid_dim, block_dim, kernel_args, 0, NULL);\n";
+                launch_code += indent() + "if (err != cudaSuccess) {\n";
+                launch_code += indent() + "    fprintf(stderr, \"cudaLaunchKernel failed: %s\\n\", cudaGetErrorString(err));\n";
+                launch_code += indent() + "    exit(1);\n";
+                launch_code += indent() + "}\n";
+                launch_code += indent() + "err = cudaDeviceSynchronize();\n";
+                launch_code += indent() + "if (err != cudaSuccess) {\n";
+                launch_code += indent() + "    fprintf(stderr, \"cudaDeviceSynchronize failed: %s\\n\", cudaGetErrorString(err));\n";
+                launch_code += indent() + "    exit(1);\n";
+                launch_code += indent() + "}\n";
+
+                kernel_func_code = kernel_code + "\n" + wrapper_code + "\n" ;
+                src = launch_code;
+            } else {
+                std::string body;
+                for(size_t i=0;i<x.n_body;i++) {
+                    this->visit_stmt(*x.m_body[i]);
+                    body += src;
+                }
+                src = body;
+            }
+        }
     }
 
 };

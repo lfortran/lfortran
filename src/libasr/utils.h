@@ -89,6 +89,7 @@ struct CompilerOptions {
     bool visualize = false;
     bool fast = false;
     bool openmp = false;
+    bool target_offload_enabled = false;
     std::string openmp_lib_dir = "";
     bool lookup_name = false;
     bool rename_symbol = false;

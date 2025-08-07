@@ -5350,11 +5350,12 @@ public:
         for (size_t i = 0; i < x.n_clauses; i++) {
             std::string clause = AST::down_cast<AST::String_t>(x.m_clauses[i])->m_s;
             std::string clause_name = clause.substr(0, clause.find('('));
-            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit" || clause_name == "schedule" || clause_name == "num_threads") {
+            if (clause_name == "private" || clause_name == "reduction" || clause_name == "shared" || clause_name == "firstprivate" || clause_name == "collapse" || clause_name == "num_teams" || clause_name == "thread_limit" || clause_name == "schedule" || clause_name == "num_threads" || clause_name == "map" || clause_name == "device") {
                 std::string list = clause.substr(clause.find('(') + 1, clause.size() - clause_name.size() - 2);
                 Vec<ASR::expr_t*> vars;
                 vars.reserve(al, 1);
                 ASR::reduction_opType op = ASR::reduction_opType::ReduceAdd;
+                ASR::map_typeType map_type = ASR::map_typeType::To;
                 if (clause_name == "reduction") {
                     std::string reduction_op = list.substr(0, list.find(':'));
                     if ( reduction_op == "+" ) {
@@ -5377,6 +5378,19 @@ public:
                         throw SemanticAbort();
                     }
                         list = list.substr(list.find(':')+1);
+                } else if (clause_name == "map") {
+                    std::string map_str = list.substr(0, list.find(':'));
+                    if (map_str == "to") {
+                        map_type = ASR::map_typeType::To;
+                    } else if (map_str == "from") {
+                        map_type = ASR::map_typeType::From;
+                    } else if (map_str == "tofrom") {
+                        map_type = ASR::map_typeType::ToFrom;
+                    } else {
+                        diag.add(Diagnostic("The map type `" + map_str + "` is not supported", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                        throw SemanticAbort();
+                    }
+                    list = list.substr(list.find(':')+1);
                 } else if (clause_name == "collapse") {
                     int collapse_value = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPCollapse_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, collapse_value, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
@@ -5392,6 +5406,10 @@ public:
                 } else if (clause_name == "num_teams") {
                     int num_teams = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPNumTeams_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, num_teams, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
+                    continue;
+                } else if (clause_name == "device") {
+                    int dev = std::stoi(list.erase(0, list.find_first_not_of(" "))); // Get the value of N
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(ASR::make_OMPDevice_t(al, loc, ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, loc, dev, ASRUtils::TYPE(ASR::make_Integer_t(al, loc, 4)))))));
                     continue;
                 } else if (clause_name == "schedule") {
                     ASR::schedule_typeType schedule_type;
@@ -5425,12 +5443,47 @@ public:
                 }
                 for (auto &s : LCompilers::string_split(list, ",", false)) {
                     s.erase(0, s.find_first_not_of(" "));
+                    bool is_array_section = false;
+                    std::string section;
+                    if(s[s.size()-1] == ')') {
+                        size_t pos = s.find('(');
+                        if(pos != s.size() - 1) {
+                            section = s.substr(pos + 1, s.size() - 2);
+                            s = s.substr(0, pos);
+                            is_array_section = true;
+                        } else {
+                            diag.add(Diagnostic("The clause variable `" + s + "` is not declared or not a variable", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                            throw SemanticAbort();
+                        }
+                    }
                     ASR::symbol_t *sym = current_scope->get_symbol(s);
                     if (!sym || !ASR::is_a<ASR::Variable_t>(*sym)) {
                         diag.add(Diagnostic("The clause variable `" + s + "` is not declared or not a variable", Level::Error, Stage::Semantic, {Label("", {loc})}));
                         throw SemanticAbort();
                     }
-                    vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+                    if(is_array_section) {
+                        ASR::Variable_t *var = ASR::down_cast<ASR::Variable_t>(sym);
+                        if (!ASRUtils::is_array(var->m_type)) {
+                            diag.add(Diagnostic("The clause variable `" + s + "` is not an array", Level::Error, Stage::Semantic, {Label("", {loc})}));
+                            throw SemanticAbort();
+                        } else {
+                            Vec<ASR::array_index_t> args;
+                            ASRUtils::ASRBuilder b(al, loc);
+                            args.reserve(al, 1);
+                            std::string start = section.substr(0, section.find(':'));
+                            std::string end = section.substr(section.find(':') + 1);
+                            ASR::array_index_t idx;
+                            idx.loc = loc;
+                            idx.m_left = b.i32(stoi(start));
+                            idx.m_right = b.i32(stoi(end));
+                            idx.m_step = b.i32(1);
+                            args.push_back(al, idx);
+                            vars.push_back(al, ASRUtils::EXPR(ASR::make_ArraySection_t(al, loc, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)),
+                                args.p, args.n, ASRUtils::type_get_past_allocatable(var->m_type), nullptr)));
+                        }
+                    } else {
+                        vars.push_back(al, ASRUtils::EXPR(ASR::make_Var_t(al, loc, sym)));
+                    }
                 }
                 if (clause_name == "private") {
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
@@ -5441,6 +5494,9 @@ public:
                 } else if (clause_name == "firstprivate") {
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
                         ASR::make_OMPFirstPrivate_t(al, loc, vars.p, vars.n)));
+                } else if (clause_name == "map") {
+                    clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
+                        ASR::make_OMPMap_t(al, loc, map_type, vars.p, vars.n)));
                 } else {
                     clauses.push_back(al, ASR::down_cast<ASR::omp_clause_t>(
                         ASR::make_OMPReduction_t(al, loc, op, vars.p, vars.n)));
@@ -5491,10 +5547,14 @@ public:
                     collect_omp_body(ASR::omp_region_typeType::Critical);
                 } else if (LCompilers::startswith(x.m_construct_name, "teams")) {
                     collect_omp_body(ASR::omp_region_typeType::Teams);
+                } else if (LCompilers::startswith(x.m_construct_name, "distribute parallel do")) {
+                    collect_omp_body(ASR::omp_region_typeType::DistributeParallelDo);
                 } else if (LCompilers::startswith(x.m_construct_name, "distribute")) {
                     collect_omp_body(ASR::omp_region_typeType::Distribute);
                 } else if (LCompilers::startswith(x.m_construct_name, "atomic")) {
                     collect_omp_body(ASR::omp_region_typeType::Atomic);
+                } else if (LCompilers::startswith(x.m_construct_name, "target")) {
+                    collect_omp_body(ASR::omp_region_typeType::Target);
                 }
                 pragma_in_block=false;
                 if((pragma_nesting_level_2 == 0 && omp_region_body.size()==1) || all_blocks_nesting>0) {
@@ -5649,7 +5709,23 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Atomic, clauses.p, clauses.n, body.p, body.n)));
-            } else {
+            } else if (to_lower(x.m_construct_name) == "target") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Target, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "distribute parallel do") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::DistributeParallelDo, clauses.p, clauses.n, body.p, body.n)));
+            }else {
                 diag.add(Diagnostic(
                     "The construct "+ std::string(x.m_construct_name)
                     +" is not supported yet",

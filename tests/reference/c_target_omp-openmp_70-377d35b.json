@@ -1,0 +1,13 @@
+{
+    "basename": "c_target_omp-openmp_70-377d35b",
+    "cmd": "lfortran --show-c --openmp {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/openmp_70.f90",
+    "infile_hash": "4373476b7ee3c1e7a9ebb78dac9ef920a5fdd07050ed2ed2315212d8",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c_target_omp-openmp_70-377d35b.stdout",
+    "stdout_hash": "9815679304f7f44d1d55eeecdd5857d44d7cbb9f589a80064d1feb12",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

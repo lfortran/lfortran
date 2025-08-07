@@ -1,0 +1,13 @@
+{
+    "basename": "c_target_cuda-openmp_72-c617edf",
+    "cmd": "lfortran --show-c --openmp --target-offload {infile} -o {outfile}",
+    "infile": "tests/../integration_tests/openmp_72.f90",
+    "infile_hash": "64bbe1fef035f476516ca9529c5898c21d8fa429b426a7ff8dee7411",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "c_target_cuda-openmp_72-c617edf.stdout",
+    "stdout_hash": "e748989aa162c1236e8b7254c93992bd167e8f59ad1206765870d778",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}

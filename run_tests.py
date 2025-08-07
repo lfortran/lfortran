@@ -66,6 +66,8 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
     asr_indent = is_included("asr_indent")
     asr_json = is_included("asr_json")
     asr_openmp = is_included("asr_openmp")
+    c_target_omp = is_included("c_target_omp")
+    c_target_cuda = is_included("c_target_cuda")
     asr_logical_casting = is_included("asr_logical_casting")
     mod_to_asr = is_included("mod_to_asr")
     llvm = is_included("llvm")
@@ -498,6 +500,26 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             filename,
             "asr_openmp",
             "lfortran --show-asr --no-color --openmp {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+        
+    if c_target_omp:
+        run_test(
+            filename,
+            "c_target_omp",
+            "lfortran --show-c --openmp {infile} -o {outfile}",
+            filename,
+            update_reference,
+            verify_hash,
+            extra_args)
+        
+    if c_target_cuda:
+        run_test(
+            filename,
+            "c_target_cuda",
+            "lfortran --show-c --openmp --target-offload {infile} -o {outfile}",
             filename,
             update_reference,
             verify_hash,
