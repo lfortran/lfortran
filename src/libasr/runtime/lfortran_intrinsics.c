@@ -741,9 +741,9 @@ char* remove_spaces_except_quotes(const fchar* format, const int64_t len, int* c
     return cleaned_format;
 }
 
-int find_matching_parentheses(const char* format, int index){
+int find_matching_parentheses(const fchar* format, const int64_t format_len, int index){
     int parenCount = 0;
-    while (format[index] != '\0') {
+    while (index < format_len) {
         if (format[index] == '(') {
             parenCount++;
         } else if (format[index] == ')'){
@@ -876,7 +876,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                 break;
             case '(' :
                 start = index;
-                index = find_matching_parentheses(cformat, index);
+                index = find_matching_parentheses(format, format_len, index);
                 format_values_2[format_values_count++] = substring(cformat, start, index);
                 *item_start = format_values_count;
                 break;
@@ -916,7 +916,7 @@ char** parse_fortran_format(const fchar* format, const int64_t format_len, int64
                     format_values_2 = (char**)realloc(format_values_2, (format_values_count + repeat + 1) * sizeof(char*));
                     if (cformat[index] == '(') {
                         start = index;
-                        index = find_matching_parentheses(cformat, index);
+                        index = find_matching_parentheses(format, format_len, index);
                         *item_start = format_values_count+1;
                         for (int i = 0; i < repeat; i++) {
                             format_values_2[format_values_count++] = substring(cformat, start, index);
