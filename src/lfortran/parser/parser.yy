@@ -1,3 +1,13 @@
+/*
+When you modify this file, use:
+
+    ci/generate_lalr1_patch.py
+
+to regenerate the `ci/parser.yy.patch` patch that makes this GLR parser an
+LALR(1) parser. The CI enforces this property using `ci/grammar_conflicts.sh`,
+see the documentation in that script for details and motivation.
+*/
+
 %require "3.0"
 %define api.pure
 %define api.value.type {LCompilers::LFortran::YYSTYPE}
