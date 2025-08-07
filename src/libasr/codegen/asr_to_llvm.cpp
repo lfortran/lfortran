@@ -10833,9 +10833,11 @@ public:
                                             // Local variable or Dummy out argument
                                             // of type CPtr is a void**, so we
                                             // have to load it
-                                            llvm::Type* cptr_type = llvm::PointerType::get(
-                                                llvm::Type::getInt8Ty(context), 0);
-                                            tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                            // TODO: Convert this into createload2
+                                            // llvm::Type* cptr_type = llvm::PointerType::get(
+                                            //         llvm::Type::getInt8Ty(context), 0);
+                                            // tmp = llvm_utils->CreateLoad2(cptr_type, tmp);
+                                            tmp = llvm_utils->CreateLoad(tmp);
                                         }
                                     } else {
                                         if (!arg->m_value_attr && !ASR::is_a<ASR::String_t>(*arg_type)) {
