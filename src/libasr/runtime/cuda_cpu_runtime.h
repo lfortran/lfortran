@@ -1,5 +1,5 @@
-#ifndef CPU_IMPL_H
-#define CPU_IMPL_H
+#ifndef CUDA_CPU_RUNTIME_H
+#define CUDA_CPU_RUNTIME_H
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -64,4 +64,4 @@ typedef struct {
 void cpu_runtime_init(void);
 void cpu_runtime_cleanup(void);
 
-#endif // CPU_IMPL_H
+#endif // CUDA_CPU_RUNTIME_H

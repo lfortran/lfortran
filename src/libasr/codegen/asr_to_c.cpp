@@ -633,7 +633,7 @@ R"(
 #ifdef USE_GPU
 #include<cuda_runtime.h>
 #else
-#include"cpu_impl.h"
+#include"cuda_cpu_runtime.h"
 #endif
 )";
         }

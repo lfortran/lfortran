@@ -1,4 +1,4 @@
-#include "cpu_impl.h"
+#include "cuda_cpu_runtime.h"
 
 // Thread-local storage for CUDA-like thread coordinates
 __thread uint3 threadIdx = {0, 0, 0};

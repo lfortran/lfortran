@@ -5545,6 +5545,8 @@ public:
                     collect_omp_body(ASR::omp_region_typeType::Do);
                 } else if (LCompilers::startswith(x.m_construct_name, "critical")) {
                     collect_omp_body(ASR::omp_region_typeType::Critical);
+                } else if (LCompilers::startswith(x.m_construct_name, "teams distribute")) {
+                    collect_omp_body(ASR::omp_region_typeType::TeamsDistribute);
                 } else if (LCompilers::startswith(x.m_construct_name, "teams")) {
                     collect_omp_body(ASR::omp_region_typeType::Teams);
                 } else if (LCompilers::startswith(x.m_construct_name, "distribute parallel do")) {
@@ -5701,6 +5703,14 @@ public:
                 body.reserve(al, 0);
                 omp_region_body.push_back(ASRUtils::STMT(
                     ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::Distribute, clauses.p, clauses.n, body.p, body.n)));
+            } else if (to_lower(x.m_construct_name) == "teams distribute") {
+                pragma_nesting_level_2++;
+                Vec<ASR::omp_clause_t*> clauses;
+                clauses = get_clauses(x);
+                Vec<ASR::stmt_t*> body;
+                body.reserve(al, 0);
+                omp_region_body.push_back(ASRUtils::STMT(
+                    ASR::make_OMPRegion_t(al, loc, ASR::omp_region_typeType::TeamsDistribute, clauses.p, clauses.n, body.p, body.n)));
             } else if (to_lower(x.m_construct_name) == "atomic") {
                 pragma_nesting_level_2++;
                 Vec<ASR::omp_clause_t*> clauses;

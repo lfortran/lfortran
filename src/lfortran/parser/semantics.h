@@ -1841,7 +1841,8 @@ static inline ast_t* OMP_PRAGMA2(Allocator &al,
             omp_stmt[i] == "sections" ||
             omp_stmt[i] == "workshare" ||
             omp_stmt[i] == "section" ||
-                omp_stmt[i] == "parallel") {
+                omp_stmt[i] == "parallel" ||
+                omp_stmt[i] == "distribute") {
             construct_name += " " + omp_stmt[i];
         } else {
             m_clauses.push_back(al, EXPR(make_String_t(al, loc,
