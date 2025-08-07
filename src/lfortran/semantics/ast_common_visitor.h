@@ -6297,10 +6297,14 @@ public:
                 }
                 ASRUtils::insert_module_dependency(cp_s, al, current_module_dependencies);
                 ASRUtils::insert_module_dependency(final_sym, al, current_module_dependencies);
+                Vec<ASR::call_arg_t> args_without_dt; args_without_dt.reserve(al, args.size() - 1);
+                for (size_t i = 1; i < args.size(); i++) {
+                    args_without_dt.push_back(al, args[i]);
+                }
                 ASRUtils::set_absent_optional_arguments_to_null(args, func, al);
                 return ASRUtils::make_FunctionCall_t_util(al, loc,
-                    cp_s, v, args.p, args.size(), type,
-                    nullptr, nullptr);
+                    cp_s, nullptr, args_without_dt.p, args_without_dt.size(), type,
+                    nullptr, args[0].m_value);
             } else {
                 if (ASRUtils::symbol_parent_symtab(final_sym)->get_counter() != current_scope->get_counter()) {
                     ADD_ASR_DEPENDENCIES(current_scope, final_sym, current_function_dependencies);
