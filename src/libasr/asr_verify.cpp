@@ -936,6 +936,49 @@ public:
                     "ArrayItem::m_type cannot be array.")
             }
         }
+        ASR::ttype_t *t = ASRUtils::expr_type(x.m_v);
+        ASR::dimension_t *dims = nullptr;
+        size_t ndims = ASRUtils::extract_dimensions_from_ttype(t, dims);
+
+        // Only proceed if we have dims and at least one dimension
+        if (ndims > 0 && dims != nullptr) {
+            // Iterate only up to min(number of provided indices, number of dims)
+            size_t ncheck = std::min((size_t)x.n_args, ndims);
+            for (size_t i = 0; i < ncheck; ++i) {
+                ASR::array_index_t arg = x.m_args[i];
+                if (!arg.m_right) continue; // no index expression -> skip
+
+                // Try to get a constant value for the index expression
+                ASR::expr_t *idx_val_expr = ASRUtils::expr_value(arg.m_right);
+                if (!idx_val_expr) continue;
+                int64_t idx_val = 0;
+                if (!ASRUtils::extract_value(idx_val_expr, idx_val)) continue;
+
+                // Get start and length expressions for this dimension
+                ASR::expr_t *start_expr = dims[i].m_start;
+                ASR::expr_t *len_expr   = dims[i].m_length;
+                if (!start_expr || !len_expr) continue; // bounds unknown -> skip
+
+                ASR::expr_t *start_val_expr = ASRUtils::expr_value(start_expr);
+                ASR::expr_t *len_val_expr   = ASRUtils::expr_value(len_expr);
+                if (!start_val_expr || !len_val_expr) continue;
+
+                int64_t start_val = 0, len_val = 0;
+                if (!ASRUtils::extract_value(start_val_expr, start_val)) continue;
+                if (!ASRUtils::extract_value(len_val_expr, len_val)) continue;
+
+                int64_t ubound = start_val + len_val - 1;
+                int64_t lbound = start_val;
+
+                if (idx_val < lbound || idx_val > ubound) {
+                    std::cerr << "Compile-time error: Array index " << idx_val
+                            << " is out of bounds for dimension " << (i+1)
+                            << " (allowed range: " << lbound << " to " << ubound << ").\n";
+                    // exit(1);  can someone provide an elegant way to throw the error?
+                    // without exit, prints multiple times, and exit(1) is causing some integration test failures
+                }
+            }
+        }
         handle_ArrayItemSection(x);
     }
 
