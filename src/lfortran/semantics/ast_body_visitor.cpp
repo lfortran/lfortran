@@ -1990,6 +1990,15 @@ public:
                            a_body_vec.size(), def_body.p, def_body.size(), false);
     }
 
+    void visit_SelectRank(const AST::SelectRank_t& x) {
+        diag.add(Diagnostic(
+            "`select rank` is not implemented yet",
+            Level::Error, Stage::Semantic, {
+                Label("",{x.base.base.loc})
+            }));
+        throw SemanticAbort();
+    }
+
     void visit_SelectType(const AST::SelectType_t& x) {
         // TODO: We might need to re-order all ASR::TypeStmtName
         // before ASR::ClassStmt as per GFortran's semantics
