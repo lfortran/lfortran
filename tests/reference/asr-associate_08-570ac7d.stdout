@@ -544,23 +544,25 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (StructType
-                                                                        [(Pointer
-                                                                            (Array
-                                                                                (StructType
-                                                                                    [(Integer 4)]
-                                                                                    []
-                                                                                    .true.
-                                                                                    .false.
+                                                                    (Pointer
+                                                                        (StructType
+                                                                            [(Pointer
+                                                                                (Array
+                                                                                    (StructType
+                                                                                        [(Integer 4)]
+                                                                                        []
+                                                                                        .true.
+                                                                                        .false.
+                                                                                    )
+                                                                                    [(()
+                                                                                    ())]
+                                                                                    DescriptorArray
                                                                                 )
-                                                                                [(()
-                                                                                ())]
-                                                                                DescriptorArray
-                                                                            )
-                                                                        )]
-                                                                        []
-                                                                        .false.
-                                                                        .false.
+                                                                            )]
+                                                                            []
+                                                                            .false.
+                                                                            .false.
+                                                                        )
                                                                     )
                                                                     2 t_2
                                                                     Source
@@ -575,7 +577,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(Assignment
+                                                    [(Associate
                                                         (Var 9 target)
                                                         (ArrayItem
                                                             (Var 6 progress)
@@ -603,8 +605,6 @@
                                                             ColMajor
                                                             ()
                                                         )
-                                                        ()
-                                                        .false.
                                                     )
                                                     (Assignment
                                                         (StructInstanceMember

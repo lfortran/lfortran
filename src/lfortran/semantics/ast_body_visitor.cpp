@@ -1435,10 +1435,10 @@ public:
                     }
                 }
                 tmp_type = ASRUtils::duplicate_type(al, variable->m_type, &tmp_dims);
-            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr) ||
-                ASR::is_a<ASR::StructInstanceMember_t>(*tmp_expr)) {
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
                 create_associate_stmt = true;
             }
+
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
