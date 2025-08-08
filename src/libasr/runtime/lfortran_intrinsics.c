@@ -5082,7 +5082,11 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    sscanf(str, format, i);
+    char* tmp = (char*)malloc(len + 1);
+    strncpy(tmp, str, len);
+    tmp[len] = '\0';
+    sscanf(tmp, format, i);
+    free(tmp);
 }
 
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
