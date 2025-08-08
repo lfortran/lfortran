@@ -135,7 +135,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             } else if (ASR::is_a<ASR::Function_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
                 ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v));
                 if (func->m_return_var != nullptr && ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var))) {
-                   return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var));
+                   return ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var);
                 } else {
                     for (size_t i = 0; i < func->n_args; i++) {
                         ASR::expr_t* arg = func->m_args[i];
@@ -150,7 +150,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 }
             } else if (ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v))) {
                 // If the Var is a Struct, we return the symbol of the Struct.
-                return ASRUtils::symbol_get_past_external(ASR::down_cast<ASR::Var_t>(expression)->m_v);
+                return ASR::down_cast<ASR::Var_t>(expression)->m_v;
             } else {
                 throw LCompilersException("Expected Var to be either Variable or Function type, but found: " +
                                     std::to_string(ASR::down_cast<ASR::Var_t>(expression)->m_v->type));
@@ -163,7 +163,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
                 // parent struct of the struct used to declare `var`.
                 // Please see assignment `c%parent_t = p` in
                 // `integration_tests/derived_types_73.f90` for an example.
-                return ASRUtils::symbol_get_past_external(struct_instance_member->m_m);
+                return struct_instance_member->m_m;
             } else {
                 LCOMPILERS_ASSERT(ASR::is_a<ASR::Variable_t>(*ASRUtils::symbol_get_past_external(struct_instance_member->m_m)));
                 ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(ASRUtils::symbol_get_past_external(struct_instance_member->m_m));
@@ -190,16 +190,16 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
         }
         case ASR::exprType::ArrayItem: {
             ASR::ArrayItem_t* array_item = ASR::down_cast<ASR::ArrayItem_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_item->m_v));
+            return ASRUtils::get_struct_sym_from_struct_expr(array_item->m_v);
         }
         case ASR::exprType::ArraySection: {
             ASR::ArraySection_t* array_section = ASR::down_cast<ASR::ArraySection_t>(expression);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_section->m_v));
+            return ASRUtils::get_struct_sym_from_struct_expr(array_section->m_v);
         }
         case ASR::exprType::FunctionCall: {
             ASR::FunctionCall_t* func_call = ASR::down_cast<ASR::FunctionCall_t>(expression);
             ASR::Function_t* func = get_function(func_call->m_name);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var));
+            return ASRUtils::get_struct_sym_from_struct_expr(func->m_return_var);
         }
         case ASR::exprType::StructConstant: {
             ASR::StructConstant_t* struct_constant = ASR::down_cast<ASR::StructConstant_t>(expression);
@@ -209,7 +209,7 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::ArrayPhysicalCast_t* array_physical_cast = ASR::down_cast<ASR::ArrayPhysicalCast_t>(expression);
             // `array_physical_cast->m_arg` will be non-null for Struct expressions
             LCOMPILERS_ASSERT(array_physical_cast->m_arg != nullptr);
-            return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(array_physical_cast->m_arg));
+            return ASRUtils::get_struct_sym_from_struct_expr(array_physical_cast->m_arg);
         }
         case ASR::exprType::IntegerCompare: {
             ASR::IntegerCompare_t* int_compare = ASR::down_cast<ASR::IntegerCompare_t>(expression);
