@@ -2,9 +2,9 @@
 source_filename = "LFortran"
 
 %string_descriptor = type <{ i8*, i64 }>
-%__vtab_myint = type { i64 }
 %myint = type <{ i32 }>
 
+@__vtab_myint = external global i64
 @string_const_data = private constant [11 x i8] c"ERROR STOP\00"
 @string_const = private global %string_descriptor <{ i8* getelementptr inbounds ([11 x i8], [11 x i8]* @string_const_data, i32 0, i32 0), i64 10 }>
 @string_const_data.1 = private constant [2 x i8] c"\0A\00"
@@ -14,41 +14,40 @@ source_filename = "LFortran"
 define i32 @main(i32 %0, i8** %1) {
 .entry:
   call void @_lpython_call_initial_functions(i32 %0, i8** %1)
-  %2 = alloca %__vtab_myint, align 8
-  %3 = getelementptr %__vtab_myint, %__vtab_myint* %2, i32 0, i32 0
-  store i64 0, i64* %3, align 4
+  %2 = alloca i64, align 8
+  store i64 0, i64* %2, align 4
   %ins = alloca %myint*, align 8
   store %myint* null, %myint** %ins, align 8
-  %4 = load %myint*, %myint** %ins, align 8
-  %5 = icmp eq %myint* %4, null
-  br i1 %5, label %then, label %else
+  %3 = load %myint*, %myint** %ins, align 8
+  %4 = icmp eq %myint* %3, null
+  br i1 %4, label %then, label %else
 
 then:                                             ; preds = %.entry
-  %6 = call i8* @_lfortran_malloc(i64 4)
-  call void @llvm.memset.p0i8.i32(i8* %6, i8 0, i32 4, i1 false)
-  %7 = bitcast i8* %6 to %myint*
-  store %myint* %7, %myint** %ins, align 8
-  %8 = load %myint*, %myint** %ins, align 8
-  %9 = getelementptr %myint, %myint* %8, i32 0, i32 0
+  %5 = call i8* @_lfortran_malloc(i64 4)
+  call void @llvm.memset.p0i8.i32(i8* %5, i8 0, i32 4, i1 false)
+  %6 = bitcast i8* %5 to %myint*
+  store %myint* %6, %myint** %ins, align 8
+  %7 = load %myint*, %myint** %ins, align 8
+  %8 = getelementptr %myint, %myint* %7, i32 0, i32 0
   br label %ifcont
 
 else:                                             ; preds = %.entry
   br label %ifcont
 
 ifcont:                                           ; preds = %else, %then
-  %10 = load %myint*, %myint** %ins, align 8
-  %11 = getelementptr %myint, %myint* %10, i32 0, i32 0
-  store i32 44, i32* %11, align 4
-  %12 = load %myint*, %myint** %ins, align 8
-  %13 = getelementptr %myint, %myint* %12, i32 0, i32 0
-  %14 = load i32, i32* %13, align 4
-  %15 = icmp ne i32 %14, 44
-  br i1 %15, label %then1, label %else2
+  %9 = load %myint*, %myint** %ins, align 8
+  %10 = getelementptr %myint, %myint* %9, i32 0, i32 0
+  store i32 44, i32* %10, align 4
+  %11 = load %myint*, %myint** %ins, align 8
+  %12 = getelementptr %myint, %myint* %11, i32 0, i32 0
+  %13 = load i32, i32* %12, align 4
+  %14 = icmp ne i32 %13, 44
+  br i1 %14, label %then1, label %else2
 
 then1:                                            ; preds = %ifcont
-  %16 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %17 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @0, i32 0, i32 0), i8* %16, i8* %17)
+  %15 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %16 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @0, i32 0, i32 0), i8* %15, i8* %16)
   call void @exit(i32 1)
   br label %ifcont3
 
@@ -56,17 +55,17 @@ else2:                                            ; preds = %ifcont
   br label %ifcont3
 
 ifcont3:                                          ; preds = %else2, %then1
-  %18 = load %myint*, %myint** %ins, align 8
-  %19 = ptrtoint %myint* %18 to i64
-  %20 = icmp ne i64 %19, 0
-  br i1 %20, label %then4, label %else5
+  %17 = load %myint*, %myint** %ins, align 8
+  %18 = ptrtoint %myint* %17 to i64
+  %19 = icmp ne i64 %18, 0
+  br i1 %19, label %then4, label %else5
 
 then4:                                            ; preds = %ifcont3
-  %21 = alloca i8*, align 8
-  %22 = bitcast %myint* %18 to i8*
-  store i8* %22, i8** %21, align 8
-  %23 = load i8*, i8** %21, align 8
-  call void @_lfortran_free(i8* %23)
+  %20 = alloca i8*, align 8
+  %21 = bitcast %myint* %17 to i8*
+  store i8* %21, i8** %20, align 8
+  %22 = load i8*, i8** %20, align 8
+  call void @_lfortran_free(i8* %22)
   store %myint* null, %myint** %ins, align 8
   br label %ifcont6
 

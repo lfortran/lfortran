@@ -4395,15 +4395,14 @@ public:
             return ;
         }
         if( type2vtabtype.find(struct_type_sym) == type2vtabtype.end() ) {
-            std::vector<llvm::Type*> type_vec = {llvm_utils->getIntType(8)};
-            type2vtabtype[struct_type_sym] = llvm::StructType::create(
-                                                context, type_vec,
-                                                std::string("__vtab_") +
-                                                std::string(struct_type_t->m_name));
+            // Create a global i64 vtab for struct type with name `__vtab_<struct_type_name>`
+            std::string vtab_name = "__vtab_" + std::string(struct_type_t->m_name);
+            /*llvm::Value* ptr=*/module->getOrInsertGlobal(vtab_name, llvm_utils->getIntType(8));
+            type2vtabtype[struct_type_sym] = llvm_utils->getIntType(8);
         }
         llvm::Type* vtab_type = type2vtabtype[struct_type_sym];
         llvm::Value* vtab_obj = llvm_utils->CreateAlloca(*builder, vtab_type);
-        llvm::Value* struct_type_hash_ptr = llvm_utils->create_gep2(vtab_type, vtab_obj, 0);
+        llvm::Value* struct_type_hash_ptr = vtab_obj;
         llvm::Value* struct_type_hash = llvm::ConstantInt::get(llvm_utils->getIntType(8),
             llvm::APInt(64, get_class_hash(struct_type_sym)));
         builder->CreateStore(struct_type_hash, struct_type_hash_ptr);
