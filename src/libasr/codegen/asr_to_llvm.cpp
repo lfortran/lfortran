@@ -4395,9 +4395,10 @@ public:
             return ;
         }
         if( type2vtabtype.find(struct_type_sym) == type2vtabtype.end() ) {
+            // Create a global i64 vtab for struct type with name `__vtab_<struct_type_name>`
             std::string vtab_name = "__vtab_" + std::string(struct_type_t->m_name);
-            llvm::Value* ptr = module->getOrInsertGlobal(vtab_name, llvm_utils->getIntType(8));
-            type2vtabtype[struct_type_sym] = ptr->getType()->getPointerElementType();
+            /*llvm::Value* ptr=*/module->getOrInsertGlobal(vtab_name, llvm_utils->getIntType(8));
+            type2vtabtype[struct_type_sym] = llvm_utils->getIntType(8);
         }
         llvm::Type* vtab_type = type2vtabtype[struct_type_sym];
         llvm::Value* vtab_obj = llvm_utils->CreateAlloca(*builder, vtab_type);
