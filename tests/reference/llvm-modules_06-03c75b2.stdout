@@ -15,7 +15,7 @@ define i32 @__module_modules_06_a_b() {
 .entry:
   %r = alloca i32, align 4
   %0 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %0, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %0, i32 3, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
   store i32 5, i32* %r, align 4
   br label %return
 
@@ -24,7 +24,7 @@ return:                                           ; preds = %.entry
   ret i32 %1
 }
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 define i32 @main(i32 %0, i8** %1) {
 .entry:
@@ -43,7 +43,10 @@ define i32 @main(i32 %0, i8** %1) {
   store i64 %4, i64* %7, align 4
   %8 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %9 = load i8*, i8** %8, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %9, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0))
+  %10 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %11 = load i64, i64* %10, align 4
+  %12 = trunc i64 %11 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @3, i32 0, i32 0), i8* %9, i32 %12, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @2, i32 0, i32 0), i32 1)
   call void @_lpython_free_argv()
   br label %return
 
