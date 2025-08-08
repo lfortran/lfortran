@@ -4842,12 +4842,13 @@ public:
                         break;
                     }
                     bool is_vtab_needed = false;
-                    while( !is_vtab_needed && struct_type ) {
-                        if( struct_type == class_sym ) {
+                    ASR::symbol_t* temp_struct_type = struct_type;
+                    while( !is_vtab_needed && temp_struct_type ) {
+                        if( temp_struct_type == class_sym ) {
                             is_vtab_needed = true;
                         } else {
-                            struct_type = ASR::down_cast<ASR::Struct_t>(
-                                ASRUtils::symbol_get_past_external(struct_type))->m_parent;
+                            temp_struct_type = ASR::down_cast<ASR::Struct_t>(
+                                ASRUtils::symbol_get_past_external(temp_struct_type))->m_parent;
                         }
                     }
                     if( is_vtab_needed ) {
