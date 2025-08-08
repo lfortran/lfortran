@@ -67,6 +67,51 @@
                                     t_2
                                     Public
                                 ),
+                            t_2_array:
+                                (Variable
+                                    7
+                                    t_2_array
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Allocatable
+                                        (Array
+                                            (StructType
+                                                [(Pointer
+                                                    (Array
+                                                        (StructType
+                                                            [(Integer 4)]
+                                                            []
+                                                            .true.
+                                                            .false.
+                                                        )
+                                                        [(()
+                                                        ())]
+                                                        DescriptorArray
+                                                    )
+                                                )]
+                                                []
+                                                .false.
+                                                .false.
+                                            )
+                                            [(()
+                                            ())]
+                                            DescriptorArray
+                                        )
+                                    )
+                                    7 t_2
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
                             type_1:
                                 (Variable
                                     7
@@ -115,6 +160,55 @@
                         ((IntegerConstant 123 (Integer 4) Decimal))]
                         ()
                     )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (StructInstanceMember
+                                (ArrayItem
+                                    (StructInstanceMember
+                                        (Var 7 type_1)
+                                        7 1_t_2_type_2
+                                        (Pointer
+                                            (Array
+                                                (StructType
+                                                    [(Integer 4)]
+                                                    []
+                                                    .true.
+                                                    .false.
+                                                )
+                                                [(()
+                                                ())]
+                                                DescriptorArray
+                                            )
+                                        )
+                                        ()
+                                    )
+                                    [(()
+                                    (IntegerConstant 1 (Integer 4) Decimal)
+                                    ())]
+                                    (StructType
+                                        [(Integer 4)]
+                                        []
+                                        .true.
+                                        .false.
+                                    )
+                                    ColMajor
+                                    ()
+                                )
+                                7 1_t_1_i
+                                (Integer 4)
+                                ()
+                            )
+                            NotEq
+                            (IntegerConstant 123 (Integer 4) Decimal)
+                            (Logical 4)
+                            ()
+                        )
+                        [(ErrorStop
+                            ()
+                        )]
+                        []
+                    )
                     (Print
                         (StringFormat
                             ()
@@ -139,7 +233,7 @@
                                         ()
                                     )
                                     [(()
-                                    (IntegerConstant 0 (Integer 4) Decimal)
+                                    (IntegerConstant 1 (Integer 4) Decimal)
                                     ())]
                                     (StructType
                                         [(Integer 4)]
@@ -206,7 +300,9 @@
                                                                     ()
                                                                     ()
                                                                     Default
-                                                                    (Integer 4)
+                                                                    (Pointer
+                                                                        (Integer 4)
+                                                                    )
                                                                     ()
                                                                     Source
                                                                     Private
@@ -220,7 +316,7 @@
                                                                 )
                                                         })
                                                     associate_block
-                                                    [(Assignment
+                                                    [(Associate
                                                         (Var 8 target)
                                                         (StructInstanceMember
                                                             (ArrayItem
@@ -243,7 +339,7 @@
                                                                     ()
                                                                 )
                                                                 [(()
-                                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     [(Integer 4)]
@@ -258,8 +354,6 @@
                                                             (Integer 4)
                                                             ()
                                                         )
-                                                        ()
-                                                        .false.
                                                     )
                                                     (Assignment
                                                         (Var 8 target)
@@ -384,7 +478,7 @@
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 0 (Integer 4) Decimal))]
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                         ()
                                         ())]
@@ -486,7 +580,7 @@
                                                         (ArrayItem
                                                             (Var 6 progress)
                                                             [(()
-                                                            (IntegerConstant 0 (Integer 4) Decimal)
+                                                            (IntegerConstant 1 (Integer 4) Decimal)
                                                             ())]
                                                             (StructType
                                                                 [(Pointer
@@ -534,7 +628,7 @@
                                                                     ()
                                                                 )
                                                                 [(()
-                                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                                 ())]
                                                                 (StructType
                                                                     [(Integer 4)]
@@ -642,11 +736,22 @@
                                     []
                                     [(Var 6 progress)]
                                     [(Allocate
+                                        [((Var 6 progress)
+                                        [((IntegerConstant 1 (Integer 4) Decimal)
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
+                                        ()
+                                        ()
+                                        ())]
+                                        ()
+                                        ()
+                                        ()
+                                    )
+                                    (Allocate
                                         [((StructInstanceMember
                                             (ArrayItem
                                                 (Var 6 progress)
                                                 [(()
-                                                (IntegerConstant 0 (Integer 4) Decimal)
+                                                (IntegerConstant 1 (Integer 4) Decimal)
                                                 ())]
                                                 (StructType
                                                     [(Pointer
@@ -686,7 +791,7 @@
                                             ()
                                         )
                                         [((IntegerConstant 1 (Integer 4) Decimal)
-                                        (IntegerConstant 0 (Integer 4) Decimal))]
+                                        (IntegerConstant 1 (Integer 4) Decimal))]
                                         ()
                                         ()
                                         ())]

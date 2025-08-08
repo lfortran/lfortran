@@ -424,7 +424,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
                 update_reference,
                 verify_hash,
                 extra_args)
-            
+
     if fixed_form_cc_asr:
         run_test(
                 filename,

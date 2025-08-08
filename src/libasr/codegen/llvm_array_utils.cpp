@@ -422,6 +422,12 @@ namespace LCompilers {
             llvm::Value* dim_des_first;
             dim_des_first = llvm_utils->CreateAlloca(*builder, dim_des,
                                     llvm_utils->CreateLoad(llvm_ndims));
+
+            // If unallocated, set lower bound and size to 1.
+            // This is for entering the loop array_op pass generates to check if array is allocated in ArrayItem at runtime.
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 1));
+            builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, 1)), llvm_utils->create_gep(dim_des_first, 2));
+
             builder->CreateStore(dim_des_first, dim_des_val);
             builder->CreateStore(llvm::ConstantInt::get(context, llvm::APInt(32, n_dims)), get_rank(arr, true));
         }
@@ -706,25 +712,38 @@ namespace LCompilers {
             return llvm_utils->CreateLoad2(i32, stride);
         }
 
-        // TODO: Uncomment and implement later
-        // void check_single_element(llvm::Value* curr_idx, llvm::Value* arr) {
-        // }
-
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element(
             llvm::Value* arr, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds) {
+            int n_args, bool check_for_bounds, std::string array_name) {
             llvm::Value* dim_des_arr_ptr = llvm_utils->CreateLoad2(dim_des->getPointerTo(), llvm_utils->create_gep(arr, 2));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             llvm::Type *i32 = llvm::Type::getInt32Ty(context);
             for( int r = 0; r < n_args; r++ ) {
-                llvm::Value* curr_llvm_idx = m_args[r];
+                llvm::Value* req_idx = m_args[r];
+                llvm::Value* curr_llvm_idx = req_idx;
                 llvm::Value* dim_des_ptr = llvm_utils->create_ptr_gep2(dim_des, dim_des_arr_ptr, r);
                 llvm::Value* lval = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 1));
-                // first cast curr_llvm_idx to 32 bit
-                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
-                curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
+                llvm::Value* length = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 2));
+                // first cast req_idx to 32 bit
+                req_idx = builder->CreateSExtOrTrunc(req_idx, llvm::Type::getInt32Ty(context));
+                curr_llvm_idx = builder->CreateSub(req_idx, lval);
                 if( check_for_bounds ) {
-                    // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
+                    llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
+                    llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, length),
+                                                            llvm::ConstantInt::get(i32, llvm::APInt(32, 1)));
+                    llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
+                    llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
+
+                    llvm_utils->generate_runtime_error(builder->CreateOr(
+                                                            lbound_check,
+                                                            ubound_check),
+                                            "Runtime error: Array '%s' index out of bounds.\n\n"
+                                                     "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                     builder->CreateGlobalStringPtr(array_name),
+                                                     req_idx,
+                                                     dimension,
+                                                     lval,
+                                                     ubound);
                 }
                 llvm::Value* stride = llvm_utils->CreateLoad2(i32, llvm_utils->create_gep2(dim_des, dim_des_ptr, 0));
                 idx = builder->CreateAdd(idx, builder->CreateMul(stride, curr_llvm_idx));
@@ -735,26 +754,42 @@ namespace LCompilers {
 
         llvm::Value* SimpleCMODescriptor::cmo_convertor_single_element_data_only(
             llvm::Value** llvm_diminfo, std::vector<llvm::Value*>& m_args,
-            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data) {
+            int n_args, bool check_for_bounds, bool is_unbounded_pointer_to_data, std::string array_name) {
             llvm::Value* prod = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
             llvm::Value* idx = llvm::ConstantInt::get(context, llvm::APInt(32, 0));
             for( int r = 0, r1 = 0; r < n_args; r++ ) {
-                llvm::Value* curr_llvm_idx = m_args[r];
+                llvm::Value* req_idx = m_args[r];
+                llvm::Value* curr_llvm_idx = req_idx;
                 llvm::Value* lval = llvm_diminfo[r1];
-                // first cast curr_llvm_idx to 32 bit
-                curr_llvm_idx = builder->CreateSExtOrTrunc(curr_llvm_idx, llvm::Type::getInt32Ty(context));
+                // first cast req_idx to 32 bit
+                req_idx = builder->CreateSExtOrTrunc(req_idx, llvm::Type::getInt32Ty(context));
                 lval = builder->CreateSExtOrTrunc(lval, llvm::Type::getInt32Ty(context));
-                curr_llvm_idx = builder->CreateSub(curr_llvm_idx, lval);
-                if( check_for_bounds ) {
-                    // check_single_element(curr_llvm_idx, arr); TODO: To be implemented
-                }
+                curr_llvm_idx = builder->CreateSub(req_idx, lval);
                 idx = builder->CreateAdd(idx, builder->CreateMul(prod, curr_llvm_idx));
                 if (is_unbounded_pointer_to_data) {
                     r1 += 1;
                 } else {
                     llvm::Value* dim_size = llvm_diminfo[r1 + 1];
                     dim_size = builder->CreateSExtOrTrunc(dim_size, llvm::Type::getInt32Ty(context));
+                    dim_size = builder->CreateSExtOrTrunc(dim_size, llvm::Type::getInt32Ty(context));
                     r1 += 2;
+                    if( check_for_bounds ) {
+                        llvm::Value* dimension = llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, r + 1));
+                        llvm::Value* ubound = builder->CreateSub(builder->CreateAdd(lval, dim_size),
+                                llvm::ConstantInt::get(llvm::Type::getInt32Ty(context), llvm::APInt(32, 1)));
+                        llvm::Value* lbound_check = builder->CreateICmpSLT(req_idx, lval);
+                        llvm::Value* ubound_check = builder->CreateICmpSGT(req_idx, ubound);
+                        llvm_utils->generate_runtime_error(builder->CreateOr(
+                                                                lbound_check,
+                                                                ubound_check),
+                                                "Runtime error: Array '%s' index out of bounds.\n\n"
+                                                        "Tried to access index %d of dimension %d, but valid range is %d to %d.\n",
+                                                        builder->CreateGlobalStringPtr(array_name),
+                                                        req_idx,
+                                                        dimension,
+                                                        lval,
+                                                        ubound);
+                    }
                     prod = builder->CreateMul(prod, dim_size);
                 }
             }
@@ -764,15 +799,12 @@ namespace LCompilers {
         llvm::Value* SimpleCMODescriptor::get_single_element(llvm::Type *type, llvm::Value* array,
             std::vector<llvm::Value*>& m_args, int n_args, ASR::ttype_t* asr_type, bool data_only,
             bool is_fixed_size, llvm::Value** llvm_diminfo, bool polymorphic,
-            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data) {
+            llvm::Type* polymorphic_type, bool is_unbounded_pointer_to_data, bool check_for_bounds, std::string array_name) {
             llvm::Value* tmp = nullptr;
-            // TODO: Uncomment later
-            // bool check_for_bounds = is_explicit_shape(v);
-            bool check_for_bounds = false;
             llvm::Value* idx = nullptr;
             if( data_only || is_fixed_size ) {
                 LCOMPILERS_ASSERT(llvm_diminfo);
-                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data);
+                idx = cmo_convertor_single_element_data_only(llvm_diminfo, m_args, n_args, check_for_bounds, is_unbounded_pointer_to_data, array_name);
                 if(ASRUtils::is_character(*asr_type)){// Special handling for array of strings.
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), array, idx);
                 } else {
@@ -783,7 +815,7 @@ namespace LCompilers {
                     }
                 }
             } else {
-                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds);
+                idx = cmo_convertor_single_element(array, m_args, n_args, check_for_bounds, array_name);
                 llvm::Value* full_array = llvm_utils->CreateLoad2(type->getPointerTo(), get_pointer_to_data(array));
                 if(ASRUtils::is_character(*asr_type)){
                     tmp = llvm_utils->get_string_element_in_array(ASR::down_cast<ASR::String_t>(ASRUtils::extract_type(asr_type)), full_array, idx);
