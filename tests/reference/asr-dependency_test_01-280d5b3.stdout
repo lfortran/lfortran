@@ -195,12 +195,11 @@
                                         (Var 6 id)
                                         (FunctionCall
                                             6 1_find_dependency
-                                            5 find
-                                            [((Var 6 self))
-                                            ((Var 6 dependency))]
+                                            ()
+                                            [((Var 6 dependency))]
                                             (Integer 4)
                                             ()
-                                            ()
+                                            (Var 6 self)
                                         )
                                         ()
                                         .false.

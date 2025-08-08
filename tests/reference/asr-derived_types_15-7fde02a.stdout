@@ -459,15 +459,14 @@
                         (RealCompare
                             (FunctionCall
                                 6 1_multiply
-                                3 compute
-                                [((Var 6 type_1))
-                                ((RealConstant
+                                ()
+                                [((RealConstant
                                     5.000000
                                     (Real 4)
                                 ))]
                                 (Real 4)
                                 ()
-                                ()
+                                (Var 6 type_1)
                             )
                             NotEq
                             (Cast
@@ -492,12 +491,11 @@
                         (RealCompare
                             (FunctionCall
                                 6 1_sqrt_subtract
-                                3 compute
-                                [((Var 6 type_1))
-                                ((IntegerConstant 2500 (Integer 4) Decimal))]
+                                ()
+                                [((IntegerConstant 2500 (Integer 4) Decimal))]
                                 (Real 4)
                                 ()
-                                ()
+                                (Var 6 type_1)
                             )
                             NotEq
                             (Cast
