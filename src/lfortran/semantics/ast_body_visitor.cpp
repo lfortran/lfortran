@@ -1632,7 +1632,7 @@ public:
         if ( mold_cond && !source_cond) {
             Vec<ASR::alloc_arg_t> new_alloc_args_vec;
             new_alloc_args_vec.reserve(al, alloc_args_vec.size());
-            ASR::ttype_t* mold_type = ASRUtils::type_get_past_pointer(ASRUtils::expr_type(mold));
+            ASR::ttype_t* mold_type = ASRUtils::type_get_past_allocatable_pointer(ASRUtils::expr_type(mold));
             for (size_t i = 0; i < alloc_args_vec.size(); i++) {
                 if ( alloc_args_vec[i].n_dims == 0 ) {
                     ASR::ttype_t* a_type = ASRUtils::type_get_past_allocatable(ASRUtils::expr_type(alloc_args_vec[i].m_a));
@@ -1672,6 +1672,16 @@ public:
                                 new_arg.n_dims = mold_dims_vec.size();
                                 new_alloc_args_vec.push_back(al, new_arg);
                             }
+                        } else if ( ASR::is_a<ASR::StructType_t>(*mold_type) ) {
+                            ASR::alloc_arg_t new_arg;
+                            new_arg.loc = alloc_args_vec[i].loc;
+                            new_arg.m_a = alloc_args_vec[i].m_a;
+                            new_arg.m_len_expr = nullptr;
+                            new_arg.m_type = mold_type;
+                            new_arg.m_sym_subclass = nullptr;
+                            new_arg.m_dims = nullptr;
+                            new_arg.n_dims = 0;
+                            new_alloc_args_vec.push_back(al, new_arg);
                         } else {
                             diag.add(Diagnostic("The type of the argument is not supported yet for mold.",
                                 Level::Error, Stage::Semantic, {
