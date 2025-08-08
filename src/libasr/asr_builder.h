@@ -340,7 +340,8 @@ class ASRBuilder {
             string_type = String(Add(Sub(end, start),i_t(1, expr_type(start))),
                 ASR::string_length_kindType::ExpressionLength);
         }
-        return EXPR(ASR::make_StringSection_t(al, loc, s, start, end, i32(1), string_type, nullptr));
+        return EXPR(ASR::make_StringSection_t(al, loc, s, ASR::string_index_kindType::IndexFortran,
+                                                start, end, i32(1), string_type, nullptr));
     }
 
     inline ASR::expr_t* StringItem(ASR::expr_t* x, ASR::expr_t* idx) {
