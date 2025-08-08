@@ -356,6 +356,7 @@ RUN(NAME print_arr_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc llvm2 fortra
 RUN(NAME print_arr_04 LABELS llvm llvm_wasm llvm_wasm_emcc fortran EXTRA_ARGS --apply-fortran-mangling)
 RUN(NAME print_arr_06 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME print_arr_07 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran mlir)
+RUN(NAME print_arr_08 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc c fortran)
 
 RUN(NAME include_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
 RUN(NAME include_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc wasm c fortran)
