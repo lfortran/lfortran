@@ -6646,7 +6646,10 @@ public:
             // bool visit_required = false;
             for ( auto it: array_arg_idx ) {
                 ASR::expr_t* func_arg = f->m_args[it.first];
-                if ( !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type) ) {
+                ASR::FunctionType_t* f_type =
+                    ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
+                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
                     // create array type with empty dimensions and physical type as PointerToDataArray
                     ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerToDataArray, true);
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
