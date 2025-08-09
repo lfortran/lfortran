@@ -844,3 +844,9 @@ semantic error: Arguments to min0 must be of real, integer or character type
     |
 458 |     print *, max(min_max, min_max)
     |              ^^^^^^^^^^^^^^^^^^^^^ 
+
+semantic error: Argument of 'size' must be an array
+   --> tests/errors/continue_compilation_2.f90:463:19
+    |
+463 |     print *, size(ichar_runtime)
+    |                   ^^^^^^^^^^^^^ 
