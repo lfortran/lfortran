@@ -69,6 +69,48 @@
                                     ()
                                     .false.
                                     .false.
+                                ),
+                            boz_4:
+                                (Variable
+                                    2
+                                    boz_4
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
+                                ),
+                            boz_5:
+                                (Variable
+                                    2
+                                    boz_5
+                                    []
+                                    Local
+                                    ()
+                                    ()
+                                    Default
+                                    (Integer 4)
+                                    ()
+                                    Source
+                                    Public
+                                    Required
+                                    .false.
+                                    .false.
+                                    .false.
+                                    ()
+                                    .false.
+                                    .false.
                                 )
                         })
                     boz_01
@@ -108,6 +150,44 @@
                         )
                         ()
                         .false.
+                    )
+                    (Assignment
+                        (Var 2 boz_4)
+                        (IntrinsicElementalFunction
+                            Int
+                            [(IntegerConstant 2541551403008843505 (Integer 4) Hex)]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 2541551403008843505 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                    )
+                    (Assignment
+                        (Var 2 boz_5)
+                        (IntrinsicElementalFunction
+                            Int
+                            [(IntegerConstant 2541551403008843505 (Integer 4) Hex)]
+                            0
+                            (Integer 4)
+                            (IntegerConstant 2541551403008843505 (Integer 4) Decimal)
+                        )
+                        ()
+                        .false.
+                    )
+                    (If
+                        ()
+                        (IntegerCompare
+                            (Var 2 boz_4)
+                            NotEq
+                            (Var 2 boz_5)
+                            (Logical 4)
+                            ()
+                        )
+                        [(Stop
+                            ()
+                        )]
+                        []
                     )
                     (Print
                         (StringFormat
