@@ -5082,35 +5082,165 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    char* tmp = (char*)malloc(len + 1);
-    strncpy(tmp, str, len);
-    tmp[len] = '\0';
-    sscanf(tmp, format, i);
-    free(tmp);
+    const char *p = str;
+    const char *end = str + len;
+
+    // skip leading spaces
+    while (p < end && isspace((unsigned char)*p)) p++;
+
+    // parse integer manually
+    int sign = 1;
+    if (p < end && *p == '-') { sign = -1; p++; }
+    else if (p < end && *p == '+') { p++; }
+
+    int32_t value = 0;
+    while (p < end && isdigit((unsigned char)*p)) {
+        value = value * 10 + (*p - '0');
+        p++;
+    }
+    *i = value * sign;
 }
 
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
-    char* tmp = (char*)malloc(len + 1);
-    strncpy(tmp, str, len);
-    tmp[len] = '\0';
-    sscanf(tmp, format, i);
-    free(tmp);
+    const char *p = str;
+    const char *end = str + len;
+
+    while (p < end && isspace((unsigned char)*p)) p++;
+
+    int sign = 1;
+    if (p < end && *p == '-') { sign = -1; p++; }
+    else if (p < end && *p == '+') { p++; }
+
+    int64_t value = 0;
+    while (p < end && isdigit((unsigned char)*p)) {
+        value = value * 10 + (*p - '0');
+        p++;
+    }
+    *i = value * sign;
+}
+
+static int strncasecmp_ascii(const char *a, const char *b, size_t n) {
+    for (size_t i = 0; i < n; i++) {
+        unsigned char ca = (unsigned char)a[i];
+        unsigned char cb = (unsigned char)b[i];
+        if (cb >= 'A' && cb <= 'Z') cb += 'a' - 'A';
+        if (ca >= 'A' && ca <= 'Z') ca += 'a' - 'A';
+        if (ca != cb) return (ca < cb) ? -1 : 1;
+    }
+    return 0;
 }
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
-    char* tmp = (char*)malloc(len + 1);
-    strncpy(tmp, str, len);
-    tmp[len] = '\0';
-    sscanf(tmp, format, f);
-    free(tmp);
+    const char *p = str;
+    const char *end = str + len;
+
+    while (p < end && isspace((unsigned char)*p)) p++;
+
+    size_t rem = end - p;
+
+    // Handle NaN and Inf
+    if (rem >= 3 && strncasecmp_ascii(p, "nan", 3) == 0) {
+        *f = NAN;
+        return;
+    }
+    if (rem >= 3 && strncasecmp_ascii(p, "inf", 3) == 0) {
+        *f = INFINITY;
+        return;
+    }
+    if (rem >= 8 && strncasecmp_ascii(p, "infinity", 8) == 0) {
+        *f = INFINITY;
+        return;
+    }
+    if (p < end && *p == '-') {
+        p++;
+        rem = end - p;
+        if (rem >= 3 && strncasecmp_ascii(p, "inf", 3) == 0) { *f = -INFINITY; return; }
+        if (rem >= 8 && strncasecmp_ascii(p, "infinity", 8) == 0) { *f = -INFINITY; return; }
+    }
+
+    // Manual numeric parse as before...
+    int sign = 1;
+    if (p < end && *p == '-') { sign = -1; p++; }
+    else if (p < end && *p == '+') { p++; }
+
+    double value = 0.0;
+    while (p < end && isdigit((unsigned char)*p)) {
+        value = value * 10.0 + (*p - '0');
+        p++;
+    }
+
+    if (p < end && *p == '.') {
+        p++;
+        double frac = 0.0;
+        double base = 0.1;
+        while (p < end && isdigit((unsigned char)*p)) {
+            frac += (*p - '0') * base;
+            base *= 0.1;
+            p++;
+        }
+        value += frac;
+    }
+
+    if (p < end && (*p == 'e' || *p == 'E')) {
+        p++;
+        int exp_sign = 1;
+        if (p < end && *p == '-') { exp_sign = -1; p++; }
+        else if (p < end && *p == '+') { p++; }
+
+        int exponent = 0;
+        while (p < end && isdigit((unsigned char)*p)) {
+            exponent = exponent * 10 + (*p - '0');
+            p++;
+        }
+        value *= pow(10.0, exp_sign * exponent);
+    }
+
+    *f = (float)(value * sign);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
-    char* tmp = (char*)malloc(len + 1);
-    strncpy(tmp, str, len);
-    tmp[len] = '\0';
-    sscanf(tmp, format, f);
-    free(tmp);
+    const char *p = str;
+    const char *end = str + len;
+
+    while (p < end && isspace((unsigned char)*p)) p++;
+
+    int sign = 1;
+    if (p < end && *p == '-') { sign = -1; p++; }
+    else if (p < end && *p == '+') { p++; }
+
+    double value = 0.0;
+    while (p < end && isdigit((unsigned char)*p)) {
+        value = value * 10.0 + (*p - '0');
+        p++;
+    }
+
+    if (p < end && *p == '.') {
+        p++;
+        double frac = 0.0;
+        double base = 0.1;
+        while (p < end && isdigit((unsigned char)*p)) {
+            frac += (*p - '0') * base;
+            base *= 0.1;
+            p++;
+        }
+        value += frac;
+    }
+
+    if (p < end && (*p == 'e' || *p == 'E')) {
+        p++;
+        int exp_sign = 1;
+        if (p < end && *p == '-') { exp_sign = -1; p++; }
+        else if (p < end && *p == '+') { p++; }
+
+        int exponent = 0;
+        while (p < end && isdigit((unsigned char)*p)) {
+            exponent = exponent * 10 + (*p - '0');
+            p++;
+        }
+        value *= pow(10.0, exp_sign * exponent);
+    }
+
+    *f = value * sign;
 }
 
 char *remove_whitespace(char *str) {
