@@ -4262,6 +4262,19 @@ inline bool check_class_assignment_compatibility(ASR::expr_t* target, ASR::expr_
     return is_class_same;
 }
 
+inline bool check_class_assignment_compatibility(ASR::symbol_t* target, ASR::symbol_t* value) {
+    target = ASRUtils::symbol_get_past_external(target);
+    value = ASRUtils::symbol_get_past_external(value);
+    bool is_class_same = false;
+    if (ASR::is_a<ASR::Struct_t>(*target) && ASR::is_a<ASR::Struct_t>(*value)) {
+        ASR::Struct_t* tar_struct = ASR::down_cast<ASR::Struct_t>(target);
+        ASR::Struct_t* val_struct = ASR::down_cast<ASR::Struct_t>(value);
+        is_class_same = (target == value);
+        is_class_same = is_class_same || ASRUtils::is_parent(tar_struct, val_struct);
+    }
+    return is_class_same;
+}
+
 static inline bool is_elemental(ASR::symbol_t* x) {
     ASR::symbol_t* proc = ASRUtils::symbol_get_past_external(x);
     if (ASR::is_a<ASR::StructMethodDeclaration_t>(*proc)) {
