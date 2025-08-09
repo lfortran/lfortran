@@ -113,6 +113,7 @@ struct CompilerOptions {
     bool generate_code_for_global_procedures = false;
     bool no_warnings = false;
     bool disable_style = false;
+    bool enable_style = false;
     bool logical_casting = false;
     bool no_error_banner = false;
     bool bounds_checking = true;
