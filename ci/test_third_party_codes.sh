@@ -252,9 +252,9 @@ time_section "🧪 Testing FPM" '
   git clone https://github.com/jinangshah21/fpm.git
   cd fpm
   export PATH="$(pwd)/../src/bin:$PATH"
-  git checkout lf-6
+  git checkout lf-7
   micromamba install -c conda-forge fpm
-  git checkout b946c489ef575e8103b6f5b07bfdfe0171e1dac5
+  git checkout 0495209655831f5a13f643feaa790e08851adf8a
   fpm --compiler=$FC build
   print_success "Done with FPM"
   cd ..
