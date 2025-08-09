@@ -705,7 +705,8 @@ public:
             } else {
                 require( (x.m_symbolic_value == nullptr && x.m_value == nullptr) ||
                         (x.m_symbolic_value != nullptr && x.m_value != nullptr) ||
-                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)),
+                        (x.m_symbolic_value != nullptr && ASRUtils::is_value_constant(x.m_symbolic_value)) ||
+                        (ASRUtils::is_pointer(x.m_type) && x.m_symbolic_value != nullptr && ASR::is_a<ASR::Var_t>(*x.m_symbolic_value)),
                         "Initialisation of " + std::string(x.m_name) +
                         " must reduce to a compile time constant.");
             }
