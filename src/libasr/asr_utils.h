@@ -149,6 +149,10 @@ class ExprStmtDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtDuplicator>
 
     ExprStmtDuplicator(Allocator &al): BaseExprStmtDuplicator(al) {}
 
+    ASR::asr_t* duplicate_StructType(ASR::StructType_t* x) {    
+        return &x->base.base;
+    }
+
 };
 
 static inline ASR::symbol_t *symbol_get_past_external(ASR::symbol_t *f)
@@ -3229,16 +3233,7 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             break;
         }
         case ASR::ttypeType::StructType: {
-            ASR::StructType_t* tnew = ASR::down_cast<ASR::StructType_t>(t);
-
-            t_ = ASRUtils::TYPE(ASR::make_StructType_t(al,
-                                                       t->base.loc,
-                                                       tnew->m_data_member_types,
-                                                       tnew->n_data_member_types,
-                                                       nullptr,
-                                                       0,
-                                                       tnew->m_is_cstruct,
-                                                       tnew->m_is_unlimited_polymorphic));
+            t_ = const_cast<ASR::ttype_t*>(t);
             break;
         }
         case ASR::ttypeType::UnionType: {
@@ -3485,14 +3480,7 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
                         ASR::string_physical_typeType::DescriptorString));
         }
         case ASR::ttypeType::StructType: {
-            ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
-            return ASRUtils::TYPE(ASR::make_StructType_t(al, t->base.loc,
-                tstruct->m_data_member_types,
-                tstruct->n_data_member_types,
-                nullptr,
-                0,
-                tstruct->m_is_cstruct,
-                tstruct->m_is_unlimited_polymorphic));
+            return const_cast<ASR::ttype_t*>(t);
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -4711,6 +4699,9 @@ class ExprStmtWithScopeDuplicator: public ASR::BaseExprStmtDuplicator<ExprStmtWi
         return ASR::make_Var_t(al, x->base.base.loc, m_v);
     }
 
+    ASR::asr_t* duplicate_StructType(ASR::StructType_t* x) {
+        return &x->base.base;
+    }
 };
 
 

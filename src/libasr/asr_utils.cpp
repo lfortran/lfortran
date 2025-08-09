@@ -65,6 +65,14 @@ public:
         ASRUtils::struct_names.insert(x.m_name);
         ASRUtils::map_struct_name_to_type(x.m_name, x.m_struct_signature, true);
         ASRUtils::map_struct_type_to_name(x.m_struct_signature, x.m_name);
+
+        for (auto& var : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*var.second)
+                && (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    ASR::down_cast<ASR::Variable_t>(var.second)->m_type)))) {
+                StructTypeToNameVisitor::visit_symbol(*var.second);
+            }
+        }
     }
 
     void visit_Variable(const ASR::Variable_t& x)
@@ -76,7 +84,7 @@ public:
             ASRUtils::map_struct_name_to_type(
                 ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)),
                 &struct_type->base,
-                true);
+                struct_type->m_is_cstruct);
             ASRUtils::map_struct_type_to_name(
                 &struct_type->base,
                 ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)));
@@ -3214,12 +3222,20 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
 
                 end module list_module
             */
-            ASR::StructType_t* new_struct_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::duplicate_type(al, (ASR::ttype_t*) struct_type));
-            new_struct_type->m_is_cstruct = is_cstruct;
-            st_type = &new_struct_type->base;
-            ASRUtils::map_struct_type_to_name(st_type, ASRUtils::symbol_name(
-                    ASRUtils::symbol_get_past_external(derived_type_sym)));
-            return st_type;
+           ASR::StructType_t* new_struct_type = ASR::down_cast<ASR::StructType_t>(
+               ASRUtils::TYPE(ASR::make_StructType_t(al,
+                                                     struct_type->base.base.loc,
+                                                     struct_type->m_data_member_types,
+                                                     struct_type->n_data_member_types,
+                                                     nullptr,
+                                                     0,
+                                                     is_cstruct,
+                                                     struct_type->m_is_unlimited_polymorphic)));
+           st_type = &new_struct_type->base;
+           ASRUtils::map_struct_type_to_name(
+               st_type,
+               ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(derived_type_sym)));
+           return st_type;
         }
         return derived_type->m_struct_signature;
     }
