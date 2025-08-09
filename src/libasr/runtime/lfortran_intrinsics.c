@@ -3552,85 +3552,118 @@ void get_unique_ID(char buffer[ID_LEN + 1]) {
     buffer[ID_LEN] = '\0';
 }
 
-LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
-    char* f_name, int64_t f_name_len,
-    char* status, int64_t status_len,
-    char* form, int64_t form_len,
-    char* access, int64_t access_len,
-    char* iomsg, int64_t iomsg_len,
-    int32_t *iostat,
-    char* action, int64_t action_len){
+static void
+trim_trailing_spaces(char** str, int64_t* len, bool init)
+{
+    if (!init)
+        return;  // If the string is initialized manually, we do not trim it
+    int64_t i = 0;
+    int64_t last_non_space = -1;
+    while (i < *len && (*str)[i] != '\0') {
+        if (!isspace((unsigned char) (*str)[i])) {
+            last_non_space = i;
+        }
+        i++;
+    }
+    *len = last_non_space + 1;
+    // Null terminate if there's room
+    if (*len < i) {
+        (*str)[*len] = '\0';
+    }
+}
+
+
+static char*
+to_c_string(char* src, int64_t len)
+{
+    char* buf = (char*) malloc(len + 1);
+    if (!buf)
+        return NULL;
+    memcpy(buf, src, len);
+    buf[len] = '\0';
+    return buf;
+}
+
+static void
+pad_with_spaces(char* dest, int64_t orig_len, int64_t total_len)
+{
+    for (int64_t i = orig_len; i < total_len; i++) {
+        dest[i] = ' ';
+    }
+    dest[total_len] = '\0';
+}
+
+LFORTRAN_API int64_t
+_lfortran_open(int32_t unit_num,
+               char* f_name,
+               int64_t f_name_len,
+               char* status,
+               int64_t status_len,
+               char* form,
+               int64_t form_len,
+               char* access,
+               int64_t access_len,
+               char* iomsg,
+               int64_t iomsg_len,
+               int32_t* iostat,
+               char* action,
+               int64_t action_len)
+{
     if (iostat != NULL) {
         *iostat = 0;
     }
-    if (f_name == NULL) { // Not Provided
+    bool ini_file = true;
+    if (f_name == NULL) {  // Not Provided
         char *prefix = "_lfortran_generated_file", *format = "txt";
         char unique_id[ID_LEN + 1];
         get_unique_ID(unique_id);
         int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
-        f_name = (char *)malloc(length);
+        f_name = (char*) malloc(length);
         snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        ini_file = false;
     }
-
+    bool ini_status = true;
     if (status == NULL) {
         status = "unknown";
+        status_len = 7;
+        ini_status = false;
     }
-
+    bool ini_form = true;
     if (form == NULL) {
         form = "formatted";
+        form_len = 9;
+        ini_form = false;
     }
-
+    bool ini_access = true;
     if (access == NULL) {
         access = "sequential";
-
-    } if (action == NULL) {
+        access_len = 10;
+        ini_access = false;
+    }
+    bool ini_action = true;
+    if (action == NULL) {
         action = "readwrite";
+        action_len = 9;
+        ini_action = false;
     }
-    bool file_exists[1] = {false};
-    FILE *already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL);
+    bool file_exists[1] = { false };
+    FILE* already_open = get_file_pointer_from_unit(unit_num, NULL, NULL, NULL, NULL);
 
-    size_t len = strlen(f_name);
-    if (*(f_name + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = f_name + len - 1;
-        while (end > f_name && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
+    trim_trailing_spaces(&f_name, &f_name_len, ini_file);
+    trim_trailing_spaces(&status, &status_len, ini_status);
+    trim_trailing_spaces(&form, &form_len, ini_form);
+    trim_trailing_spaces(&action, &action_len, ini_action);
 
-    len = strlen(status);
-    if (*(status + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = status + len - 1;
-        while (end > status && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
+    // Prepare null-terminated names for C APIs
+    char* f_name_c = to_c_string(f_name, f_name_len);
+    char* status_c = to_c_string(status, status_len);
+    char* form_c = to_c_string(form, form_len);
+    char* access_c = to_c_string(access, access_len);
+    char* action_c = to_c_string(action, action_len);
 
-    len = strlen(form);
-    if (*(form + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = form + len - 1;
-        while (end > form && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
-
-    len = strlen(action);
-    if (*(action + len - 1) == ' ') {
-        // trim trailing spaces
-        char* end = action + len - 1;
-        while (end > action && isspace((unsigned char) *end)) {
-            end--;
-        }
-        *(end + 1) = '\0';
-    }
-
-    _lfortran_inquire(f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
-    char *access_mode = NULL;
+    _lfortran_inquire(
+        f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+    char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
      The following are the available specifiers:
@@ -3645,16 +3678,15 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             if (iostat != NULL) {
                 *iostat = 2;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
-                    char *temp = "File `%s` does not exists! Cannot open a file with the `status=old`";
+                    char* temp
+                        = "File `%s` does not exists! Cannot open a file with the `status=old`";
                     snprintf(iomsg, iomsg_len + 1, temp, f_name);
-                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                        (iomsg)[i] = ' ';
-                    }
-                    (iomsg)[iomsg_len] = '\0';
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` does not exists!\nCannot open a "
-                    "file with the `status=old`\n", f_name);
+                       "file with the `status=old`\n",
+                       f_name);
                 exit(1);
             }
         }
@@ -3664,16 +3696,14 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
             if (iostat != NULL) {
                 *iostat = 17;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
-                    char *temp = "File `%s` exists! Cannot open a file with the `status=new`";
+                    char* temp = "File `%s` exists! Cannot open a file with the `status=new`";
                     snprintf(iomsg, iomsg_len + 1, temp, f_name);
-                    for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                        (iomsg)[i] = ' ';
-                    }
-                    (iomsg)[iomsg_len] = '\0';
+                    pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` exists!\nCannot open a file with "
-                    "the `status=new`\n", f_name);
+                       "the `status=new`\n",
+                       f_name);
                 exit(1);
             }
         }
@@ -3682,7 +3712,7 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         access_mode = "w+";
     } else if (streql(status, "unknown")) {
         if (!*file_exists && !already_open) {
-            FILE *fd = fopen(f_name, "w");
+            FILE* fd = fopen(f_name, "w");
             if (fd) {
                 fclose(fd);
             }
@@ -3692,16 +3722,14 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "STATUS specifier in OPEN statement has invalid value.";
+                char* temp = "STATUS specifier in OPEN statement has invalid value.";
                 snprintf(iomsg, iomsg_len + 1, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: STATUS specifier in OPEN statement has "
-                "invalid value '%s'\n", status);
+                   "invalid value '%s'\n",
+                   status);
             exit(1);
         }
     }
@@ -3718,16 +3746,14 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "FORM specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                char* temp = "FORM specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: FORM specifier in OPEN statement has "
-                "invalid value '%s'\n", form);
+                   "invalid value '%s'\n",
+                   form);
             exit(1);
         }
     }
@@ -3736,27 +3762,25 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         access_id = 1;
     } else if (streql(access, "sequential")) {
         access_id = 0;
-    } else if (streql(access, "direct")) { //TODO: Handle 'direct' as access while reading or writing
+    } else if (streql(access,
+                      "direct")) {  // TODO: Handle 'direct' as access while reading or writing
         access_id = 2;
     } else {
         if (iostat != NULL) {
             *iostat = 5002;
-            if ((iomsg != NULL)&& (iomsg_len > 0)) {
-                char *temp = "ACCESS specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+            if ((iomsg != NULL) && (iomsg_len > 0)) {
+                char* temp = "ACCESS specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACCESS specifier in OPEN statement has "
-                "invalid value '%s'\n", access);
+                   "invalid value '%s'\n",
+                   access);
             exit(1);
         }
     }
     if (streql(action, "readwrite")) {
-
     } else if (streql(action, "write")) {
         read_access = false;
     } else if (streql(action, "read")) {
@@ -3765,21 +3789,18 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) { // Pad
-                    (iomsg)[i] = ' ';
-                }
-                (iomsg)[iomsg_len] = '\0';
+                char* temp = "ACTION specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
-                "invalid value '%s'\n", action);
+                   "invalid value '%s'\n",
+                   action);
             exit(1);
         }
     }
     if (streql(action, "readwrite")) {
-
     } else if (streql(action, "write")) {
         read_access = false;
     } else if (streql(action, "read")) {
@@ -3788,21 +3809,20 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (iostat != NULL) {
             *iostat = 5002;
             if ((iomsg != NULL) && (iomsg_len > 0)) {
-                char *temp = "ACTION specifier in OPEN statement has invalid value.";
-                snprintf(iomsg, iomsg_len+1/*\0*/, "%s", temp);
-                for (size_t i = strlen(iomsg); i < iomsg_len; i++) {
-                    iomsg[i] = ' ';
-                }
-                iomsg[iomsg_len] = '\0';
+                char* temp = "ACTION specifier in OPEN statement has invalid value.";
+                snprintf(iomsg, iomsg_len + 1 /*\0*/, "%s", temp);
+                pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
             }
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
-                "invalid value '%s'\n", action);
+                   "invalid value '%s'\n",
+                   action);
             exit(1);
         }
     }
 
-    if (access_mode == NULL && iostat != NULL) {     // Case: when iostat is present we don't want to terminate
+    if (access_mode == NULL
+        && iostat != NULL) {  // Case: when iostat is present we don't want to terminate
         access_mode = "r";
     }
 
@@ -3810,16 +3830,20 @@ LFORTRAN_API int64_t _lfortran_open(int32_t unit_num,
         if (already_open) {
             return (int64_t) already_open;
         }
-        FILE *fd = fopen(f_name, access_mode);
-        if (!fd && iostat == NULL)
-        {
+        FILE* fd = fopen(f_name, access_mode);
+        if (!fd && iostat == NULL) {
             printf("Runtime error: Error in opening the file!\n");
             perror(f_name);
             exit(1);
         }
         store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id, read_access, write_access);
-        return (int64_t)fd;
+        return (int64_t) fd;
     }
+    free(f_name_c);
+    free(status_c);
+    free(form_c);
+    free(access_c);
+    free(action_c);
     return 0;
 }
 
@@ -5082,19 +5106,40 @@ LFORTRAN_API void _lfortran_string_write(char **str_holder, bool is_allocatable,
 }
 
 LFORTRAN_API void _lfortran_string_read_i32(char *str, int64_t len, char *format, int32_t *i) {
-    sscanf(str, format, i);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    free(buf);
 }
 
+
 LFORTRAN_API void _lfortran_string_read_i64(char *str, int64_t len, char *format, int64_t *i) {
-    sscanf(str, format, i);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return; // allocation failure
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f32(char *str, int64_t len, char *format, float *f) {
-    sscanf(str, format, f);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, f);
+    free(buf);
 }
 
 LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format, double *f) {
-    sscanf(str, format, f);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, f);
+    free(buf);
 }
 
 char *remove_whitespace(char *str) {
