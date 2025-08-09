@@ -19,6 +19,79 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
+std::map<ASR::ttype_t*, const std::string*> struct_type_to_struct_name;
+
+// A struct type variable can have 2 types - non-polymorphic and polymorphic, so
+// store both as value in an array. 
+// We use index 0 for `is_cstruct == false` and 1 for `true`.
+std::map<const std::string, ASR::ttype_t* [2]> struct_name_to_struct_type;
+
+// Stores names of all declared `ASR::Struct_t` objects.
+std::unordered_set<std::string> struct_names;
+
+// Map `ASR::StructType_t*` to address of `std::string` stored
+// in `std::unordered_set<std::string> struct_names`.
+// We do this to avoid creating new `std::string` objects for every
+// new addition to the map as we can have thousands of `ASR::StructType_t`
+// nodes in a large ASR.
+void map_struct_type_to_name(ASR::ttype_t* struct_type, const std::string& name)
+{
+    LCOMPILERS_ASSERT_MSG(ASR::is_a<ASR::StructType_t>(*struct_type),
+                          "Expected `ASR::StructType_t*`, got "
+                              + ASRUtils::type_to_str_fortran(struct_type));
+    struct_type_to_struct_name[struct_type] = &(*struct_names.find(name));
+}
+
+// Map the struct name to it's associated `ASR::ttype_t*` pointer on heap.
+void map_struct_name_to_type(const std::string& name, ASR::ttype_t* struct_type, bool is_cstruct)
+{
+    LCOMPILERS_ASSERT_MSG(ASR::is_a<ASR::StructType_t>(*struct_type),
+                        "Expected `ASR::StructType_t*`, got "
+                            + ASRUtils::type_to_str_fortran(struct_type));
+    struct_name_to_struct_type[name][is_cstruct] = struct_type;
+}
+
+ASR::ttype_t* get_struct_type(ASR::symbol_t* struct_sym, bool is_cstruct)
+{
+    return struct_name_to_struct_type.at(
+        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_sym)))[is_cstruct];
+}
+
+class StructTypeToNameVisitor : public ASR::BaseWalkVisitor<StructTypeToNameVisitor>
+{
+public:
+    void visit_Struct(const ASR::Struct_t& x)
+    {
+        ASRUtils::struct_names.insert(x.m_name);
+        ASRUtils::map_struct_name_to_type(x.m_name, x.m_struct_signature, true);
+        ASRUtils::map_struct_type_to_name(x.m_struct_signature, x.m_name);
+
+        for (auto& var : x.m_symtab->get_scope()) {
+            if (ASR::is_a<ASR::Variable_t>(*var.second)
+                && (ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(
+                    ASR::down_cast<ASR::Variable_t>(var.second)->m_type)))) {
+                StructTypeToNameVisitor::visit_symbol(*var.second);
+            }
+        }
+    }
+
+    void visit_Variable(const ASR::Variable_t& x)
+    {
+        if (x.m_type_declaration && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type))) {
+            ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(x.m_type));
+            ASRUtils::struct_names.insert(ASRUtils::symbol_name(
+                ASRUtils::symbol_get_past_external(x.m_type_declaration)));
+            ASRUtils::map_struct_name_to_type(
+                ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)),
+                &struct_type->base,
+                struct_type->m_is_cstruct);
+            ASRUtils::map_struct_type_to_name(
+                &struct_type->base,
+                ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)));
+        }
+    }
+};
+
 // depth-first graph traversal
 void visit(
     std::string const& a,
@@ -1025,6 +1098,9 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     fix_external_symbols(*tu, *symtab);
     PassUtils::UpdateDependenciesVisitor v(al);
     v.visit_TranslationUnit(*tu);
+    // Map all `StructType` nodes inside `Struct` to struct name
+    ASRUtils::StructTypeToNameVisitor struct_type_to_name_visitor;
+    struct_type_to_name_visitor.visit_TranslationUnit(*tu);
     if (run_verify) {
 #if defined(WITH_LFORTRAN_ASSERT)
         diag::Diagnostics diagnostics;
@@ -1176,8 +1252,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 nullptr, 0, member_variable->m_name, ASR::accessType::Public));
             current_scope->add_symbol(mem_name, mem_es);
         }
-        ASR::ttype_t* member_type = ASRUtils::make_StructType_t_util(al,
-            member_variable->base.base.loc, mem_es, true);
+        ASR::ttype_t* member_type = ASRUtils::get_struct_type(mem_es, true);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             mem_es, member_type, nullptr);
     } else {
@@ -3114,6 +3189,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                      ASR::symbol_t* derived_type_sym,
                                      bool is_cstruct)
 {
+    ASR::ttype_t* st_type = nullptr;
     ASR::Struct_t* derived_type = ASR::down_cast<ASR::Struct_t>(
         ASRUtils::symbol_get_past_external(derived_type_sym));
 
@@ -3146,9 +3222,20 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
 
                 end module list_module
             */
-            ASR::StructType_t* new_struct_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::duplicate_type(al, (ASR::ttype_t*) struct_type));
-            new_struct_type->m_is_cstruct = is_cstruct;
-            return (ASR::ttype_t*) new_struct_type;
+           ASR::StructType_t* new_struct_type = ASR::down_cast<ASR::StructType_t>(
+               ASRUtils::TYPE(ASR::make_StructType_t(al,
+                                                     struct_type->base.base.loc,
+                                                     struct_type->m_data_member_types,
+                                                     struct_type->n_data_member_types,
+                                                     nullptr,
+                                                     0,
+                                                     is_cstruct,
+                                                     struct_type->m_is_unlimited_polymorphic)));
+           st_type = &new_struct_type->base;
+           ASRUtils::map_struct_type_to_name(
+               st_type,
+               ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(derived_type_sym)));
+           return st_type;
         }
         return derived_type->m_struct_signature;
     }
@@ -3165,7 +3252,7 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
             if (ASRUtils::symbol_get_past_external(derived_type_sym) == ASRUtils::symbol_get_past_external(var->m_type_declaration)) {
                 // this is self referential, so we can directly take it
                 ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(var->m_type));
-                return ASRUtils::TYPE(
+                st_type = ASRUtils::TYPE(
                     ASR::make_StructType_t(al, loc, stype->m_data_member_types,
                                            stype->n_data_member_types,
                                            nullptr,
@@ -3174,11 +3261,14 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                            stype->m_is_unlimited_polymorphic
                                            )
                 );
+                ASRUtils::map_struct_type_to_name(st_type, ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(var->m_type_declaration)));
+                return st_type;
             }
             member_types.push_back(al, var->m_type);
         }
     }
-    return ASRUtils::TYPE(
+    st_type = ASRUtils::TYPE(
         ASR::make_StructType_t(al,
                                loc,
                                member_types.p,
@@ -3187,6 +3277,9 @@ ASR::ttype_t* make_StructType_t_util(Allocator& al,
                                0,
                                is_cstruct,
                                derived_type_name == "~unlimited_polymorphic_type" ? true : false));
+        ASRUtils::map_struct_type_to_name(st_type, ASRUtils::symbol_name(
+                    ASRUtils::symbol_get_past_external(derived_type_sym)));
+        return st_type;
 }
 
 ASR::expr_t* get_compile_time_array_size(Allocator& al, ASR::ttype_t* array_type){

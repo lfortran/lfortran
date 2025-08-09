@@ -1621,7 +1621,7 @@ public:
                         throw SemanticAbort();
 
                     }
-                    type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
+                    type = ASRUtils::get_struct_type(v, true);
                     type_decl = v;
                     break;
                 }
@@ -2015,6 +2015,9 @@ public:
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x.base.base.loc, derived_type_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(derived_type_sym);
         struct_->m_struct_signature = struct_signature;
+        ASRUtils::struct_names.insert(struct_->m_name);
+        ASRUtils::map_struct_name_to_type(struct_->m_name, struct_->m_struct_signature, true);
+        ASRUtils::map_struct_type_to_name(struct_->m_struct_signature, struct_->m_name);
         tmp = (ASR::asr_t*) derived_type_sym;
         derived_type_sym = ASR::down_cast<ASR::symbol_t>(tmp);
         if (compiler_options.implicit_typing) {
@@ -2034,7 +2037,7 @@ public:
                 if ( ASR::is_a<ASR::Pointer_t>(*var_type) ) {
                     ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(var_type);
                     ASR::StructType_t* stype = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(ptr->m_type));
-                    ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, ASR::down_cast<ASR::symbol_t>(tmp), stype->m_is_cstruct);
+                    ASR::ttype_t* type = ASRUtils::get_struct_type(derived_type_sym, stype->m_is_cstruct);
                     var->m_type = ASRUtils::make_Pointer_t_util(al, x.base.base.loc, type);
                     if ( var->m_symbolic_value && ASR::is_a<ASR::PointerNullConstant_t>(*var->m_symbolic_value) ) {
                         ASR::PointerNullConstant_t* ptr_null = ASR::down_cast<ASR::PointerNullConstant_t>(var->m_symbolic_value);
@@ -2376,7 +2379,7 @@ public:
 
                             ASR::symbol_t* struct_as_sym = mod_s->m_symtab->get_symbol(common_block_name);
                             ASR::Struct_t* struct_s = ASR::down_cast<ASR::Struct_t>(struct_as_sym);
-                            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, struct_as_sym->base.loc, struct_as_sym, true);
+                            ASR::ttype_t* type = ASRUtils::get_struct_type(struct_as_sym, true);
 
                             Vec<ASR::call_arg_t> vals;
                             auto member2sym = struct_s->m_symtab->get_scope();
@@ -3256,6 +3259,10 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+            if (ASR::is_a<ASR::StructType_t>(*mv->m_type)) {
+                ASRUtils::map_struct_type_to_name(mv->m_type, 
+                    ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(mv->m_type_declaration)));
+            }
         } else if( ASR::is_a<ASR::Struct_t>(*t) ) {
             // Check for any interface overriding a constructor for the struct
             ASR::symbol_t *interface_override_s = m->m_symtab->resolve_symbol("~" + remote_sym);
@@ -3293,6 +3300,8 @@ public:
                 dflt_access
                 );
             current_scope->add_symbol(local_sym, ASR::down_cast<ASR::symbol_t>(v));
+            ASRUtils::struct_names.insert(cname);
+            ASRUtils::map_struct_type_to_name(mv->m_struct_signature, cname);
         } else if (ASR::is_a<ASR::Requirement_t>(*t)) {
             ASR::Requirement_t *mreq = ASR::down_cast<ASR::Requirement_t>(t);
             ASR::asr_t *req = ASR::make_ExternalSymbol_t(
@@ -3963,7 +3972,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, x.m_args[i]->base.loc, arg_sym0, true);
+                            arg_type = ASRUtils::get_struct_type(arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);

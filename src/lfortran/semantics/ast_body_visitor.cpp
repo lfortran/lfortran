@@ -1546,7 +1546,7 @@ public:
                     AST::Name_t* name_t = AST::down_cast<AST::Name_t>(x.m_args[i].m_start);
                     ASR::symbol_t *v = current_scope->resolve_symbol(to_lower(name_t->m_id));
                     if (v) {
-                        ASR::ttype_t* struct_t = ASRUtils::make_StructType_t_util(al, x.base.base.loc, v, true);
+                        ASR::ttype_t* struct_t = ASRUtils::get_struct_type(v, true);
                         new_arg.m_type = struct_t;
                         new_arg.m_sym_subclass = v;
                     } else {
@@ -2083,7 +2083,7 @@ public:
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, true);
+                            selector_type = ASRUtils::get_struct_type(sym, true);
                             selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             selector_m_type_declaration = sym;
                         } else {
@@ -2136,7 +2136,7 @@ public:
                         ASR::symbol_t* selector_m_type_declaration = nullptr;
                         ASR::symbol_t* sym_underlying = ASRUtils::symbol_get_past_external(sym);
                         if( ASR::is_a<ASR::Struct_t>(*sym_underlying) ) {
-                            selector_type = ASRUtils::make_StructType_t_util(al, sym->base.loc, sym, true);
+                            selector_type = ASRUtils::get_struct_type(sym, true);
                             selector_type = ASRUtils::make_Pointer_t_util(al, sym->base.loc, ASRUtils::extract_type(selector_type));
                             selector_m_type_declaration = sym;
                         } else {
