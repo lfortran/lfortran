@@ -1435,7 +1435,10 @@ public:
                     }
                 }
                 tmp_type = ASRUtils::duplicate_type(al, variable->m_type, &tmp_dims);
+            } else if (ASR::is_a<ASR::ArrayItem_t>(*tmp_expr)) {
+                create_associate_stmt = true;
             }
+
             if ( create_associate_stmt && !ASR::is_a<ASR::Pointer_t>(*tmp_type) ) {
                 tmp_type = ASRUtils::duplicate_type_with_empty_dims(al, tmp_type);
                 tmp_type = ASRUtils::TYPE(ASR::make_Pointer_t(al, tmp_type->base.loc,
@@ -1447,9 +1450,10 @@ public:
             SetChar variable_dependencies_vec;
             variable_dependencies_vec.reserve(al, 1);
             ASRUtils::collect_variable_dependencies(al, variable_dependencies_vec, tmp_type, nullptr, nullptr, name);
+            ASR::symbol_t* struct_sym = ASRUtils::import_struct_sym_as_external(al, x.base.base.loc, tmp_expr, current_scope);
             ASR::asr_t *v = ASRUtils::make_Variable_t_util(al, x.base.base.loc, new_scope,
                                                  name_c, variable_dependencies_vec.p, variable_dependencies_vec.size(),
-                                                 ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, ASRUtils::get_struct_sym_from_struct_expr(tmp_expr),
+                                                 ASR::intentType::Local, nullptr, nullptr, tmp_storage, tmp_type, struct_sym,
                                                  ASR::abiType::Source, ASR::accessType::Private, ASR::presenceType::Required,
                                                  false);
             new_scope->add_symbol(name, ASR::down_cast<ASR::symbol_t>(v));
