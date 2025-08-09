@@ -337,11 +337,15 @@ public:
             data_member_names.p, data_member_names.size(), nullptr, 0,
             x->m_abi, x->m_access, x->m_is_packed, x->m_is_abstract,
             nullptr, 0, m_alignment, nullptr);
-        ASRUtils::struct_names.insert(new_sym_name);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_signature = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
         struct_->m_struct_signature = struct_signature;
+
+        ASRUtils::struct_names.insert(struct_->m_name);
+        ASRUtils::map_struct_name_to_type(struct_->m_name, struct_->m_struct_signature, true);
+        ASRUtils::map_struct_type_to_name(struct_->m_struct_signature, struct_->m_name);
+        
         result = (ASR::asr_t*) struct_sym;
 
         ASR::symbol_t *t = ASR::down_cast<ASR::symbol_t>(result);
@@ -713,7 +717,11 @@ public:
                 if (context_map.find(struct_name) != context_map.end()) {
                     std::string new_struct_name = context_map[struct_name];
                     ASR::symbol_t *sym = func_scope->resolve_symbol(new_struct_name);
-                    return ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct);
+                    ttype = ASRUtils::get_struct_type(sym, s->m_is_cstruct);
+                    if (!ttype) {
+                        ttype = ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct);
+                    }
+                    return ttype;
                 } else {
                     return ttype;
                 }
@@ -1214,11 +1222,15 @@ public:
             new_scope, s2c(al, new_sym_name), nullptr, nullptr, 0, data_member_names.p,
             data_member_names.size(), nullptr, 0, x->m_abi, x->m_access, x->m_is_packed,
             x->m_is_abstract, nullptr, 0, m_alignment, nullptr);
-        ASRUtils::struct_names.insert(new_sym_name);
         ASR::symbol_t* struct_sym = ASR::down_cast<ASR::symbol_t>(result);
         ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, x->base.base.loc, struct_sym, true);
         ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_sym);
         struct_->m_struct_signature = struct_type;
+
+        ASRUtils::struct_names.insert(struct_->m_name);
+        ASRUtils::map_struct_name_to_type(struct_->m_name, struct_->m_struct_signature, true);
+        ASRUtils::map_struct_type_to_name(struct_->m_struct_signature, struct_->m_name);
+
         result = (ASR::asr_t*) struct_;
 
         ASR::symbol_t* s = ASR::down_cast<ASR::symbol_t>(result);
@@ -1338,8 +1350,10 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    return ASRUtils::make_StructType_t_util(
-                        al, ttype->base.loc, sym, s->m_is_cstruct);
+                    ttype = ASRUtils::get_struct_type(sym, s->m_is_cstruct);
+                    if (!ttype) {
+                        ttype = ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct);
+                    }
                 }
                 return ttype;
             }
@@ -1749,8 +1763,10 @@ public:
                 std::string struct_name = ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(expr)));
                 if (symbol_subs.find(struct_name) != symbol_subs.end()) {
                     ASR::symbol_t *sym = symbol_subs[struct_name];
-                    ttype = ASRUtils::make_StructType_t_util(
-                        al, s->base.base.loc, sym, s->m_is_cstruct);
+                    ttype = ASRUtils::get_struct_type(sym, s->m_is_cstruct);
+                    if (!ttype) {
+                        ttype = ASRUtils::make_StructType_t_util(al, s->base.base.loc, sym, s->m_is_cstruct);
+                    }
                 }
                 return ttype;
             }

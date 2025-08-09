@@ -62,11 +62,19 @@ namespace LCompilers  {
 
     namespace ASRUtils  {
 
-extern std::map<ASR::ttype_t*, const std::string*> struct_type_name_map;
+extern std::map<ASR::ttype_t*, const std::string*> struct_type_to_struct_name;
+
+extern std::map<const std::string, ASR::ttype_t* [2]> struct_name_to_struct_type;
 
 extern std::unordered_set<std::string> struct_names;
 
+extern std::unordered_set<ASR::ttype_t*> struct_types;
+
 void map_struct_type_to_name(ASR::ttype_t* struct_type, const std::string& name);
+
+void map_struct_name_to_type(const std::string& name, ASR::ttype_t* struct_type, bool is_cstruct);
+
+ASR::ttype_t* get_struct_type(ASR::symbol_t* struct_sym, bool is_cstruct);
 
 ASR::symbol_t* import_class_procedure(Allocator &al, const Location& loc,
         ASR::symbol_t* original_sym, SymbolTable *current_scope);
@@ -916,7 +924,7 @@ static inline std::string type_to_str_fortran(const ASR::ttype_t *t)
             return "tuple";
         }
         case ASR::ttypeType::StructType: {
-            return *ASRUtils::struct_type_name_map[const_cast<ASR::ttype_t*>(t)];
+            return *ASRUtils::struct_type_to_struct_name.at(const_cast<ASR::ttype_t*>(t));
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* enum_type = ASR::down_cast<ASR::EnumType_t>(t);
@@ -2155,7 +2163,7 @@ static inline std::string type_to_str_python(const ASR::ttype_t *t, bool for_err
             return "CPtr";
         }
         case ASR::ttypeType::StructType: {
-            return *ASRUtils::struct_type_name_map[const_cast<ASR::ttype_t*>(t)];
+            return *ASRUtils::struct_type_to_struct_name.at(const_cast<ASR::ttype_t*>(t));
         }
         case ASR::ttypeType::EnumType: {
             ASR::EnumType_t* d = ASR::down_cast<ASR::EnumType_t>(t);
@@ -3221,7 +3229,16 @@ static inline ASR::ttype_t* duplicate_type(Allocator& al, const ASR::ttype_t* t,
             break;
         }
         case ASR::ttypeType::StructType: {
-            t_ = const_cast<ASR::ttype_t*>(t);
+            ASR::StructType_t* tnew = ASR::down_cast<ASR::StructType_t>(t);
+
+            t_ = ASRUtils::TYPE(ASR::make_StructType_t(al,
+                                                       t->base.loc,
+                                                       tnew->m_data_member_types,
+                                                       tnew->n_data_member_types,
+                                                       nullptr,
+                                                       0,
+                                                       tnew->m_is_cstruct,
+                                                       tnew->m_is_unlimited_polymorphic));
             break;
         }
         case ASR::ttypeType::UnionType: {
@@ -3468,8 +3485,14 @@ static inline ASR::ttype_t* duplicate_type_without_dims(Allocator& al, const ASR
                         ASR::string_physical_typeType::DescriptorString));
         }
         case ASR::ttypeType::StructType: {
-            ASR::ttype_t* struct_type = const_cast<ASR::ttype_t*>(t);
-            return struct_type;
+            ASR::StructType_t* tstruct = ASR::down_cast<ASR::StructType_t>(t);
+            return ASRUtils::TYPE(ASR::make_StructType_t(al, t->base.loc,
+                tstruct->m_data_member_types,
+                tstruct->n_data_member_types,
+                nullptr,
+                0,
+                tstruct->m_is_cstruct,
+                tstruct->m_is_unlimited_polymorphic));
         }
         case ASR::ttypeType::Pointer: {
             ASR::Pointer_t* ptr = ASR::down_cast<ASR::Pointer_t>(t);
@@ -5051,8 +5074,7 @@ class SymbolDuplicator {
         SymbolTable* destination_symtab) {
         SymbolTable* struct_type_symtab = al.make_new<SymbolTable>(destination_symtab);
         duplicate_SymbolTable(struct_type_t->m_symtab, struct_type_symtab);
-        ASRUtils::struct_names.insert(struct_type_t->m_name);
-        return ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(
+        ASR::symbol_t* struct_ = ASR::down_cast<ASR::symbol_t>(ASR::make_Struct_t(
             al, struct_type_t->base.base.loc, struct_type_symtab,
             struct_type_t->m_name, struct_type_t->m_struct_signature, struct_type_t->m_dependencies, struct_type_t->n_dependencies,
             struct_type_t->m_members, struct_type_t->n_members,
@@ -5060,6 +5082,12 @@ class SymbolDuplicator {
             struct_type_t->m_access, struct_type_t->m_is_packed, struct_type_t->m_is_abstract,
             struct_type_t->m_initializers, struct_type_t->n_initializers, struct_type_t->m_alignment,
             struct_type_t->m_parent));
+
+        ASRUtils::struct_names.insert(struct_type_t->m_name);
+        ASRUtils::map_struct_name_to_type(struct_type_t->m_name, struct_type_t->m_struct_signature, true);
+        ASRUtils::map_struct_type_to_name(struct_type_t->m_struct_signature, struct_type_t->m_name);
+
+        return struct_;
     }
     ASR::symbol_t* duplicate_GenericProcedure(ASR::GenericProcedure_t* genericProcedure, SymbolTable* destination_symtab){
         return ASR::down_cast<ASR::symbol_t>(ASR::make_GenericProcedure_t(
@@ -5794,7 +5822,7 @@ static inline void import_struct_t(Allocator& al,
             } else {
                 der_sym = current_scope->resolve_symbol(sym_name);
             }
-            var_type = ASRUtils::make_StructType_t_util(al, loc, der_sym, true);
+            var_type = ASRUtils::get_struct_type(der_sym, true);
             if( is_array ) {
                 var_type = ASRUtils::make_Array_t_util(al, loc, var_type, m_dims, n_dims,
                     ASR::abiType::Source, false, ptype, true);

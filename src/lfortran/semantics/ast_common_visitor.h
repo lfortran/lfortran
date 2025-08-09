@@ -2628,18 +2628,19 @@ public:
                 nullptr,
                 nullptr, 0, nullptr, 0, nullptr, 0, ASR::abiType::Source, ASR::accessType::Public, false, false,
                 nullptr, 0, nullptr, nullptr));
-            ASRUtils::struct_names.insert(common_block_name);
             ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
             struct_->m_struct_signature = struct_type;
             struct_symbol = ASR::down_cast<ASR::symbol_t>((ASR::asr_t*) struct_);
             current_scope->add_symbol(common_block_name, struct_symbol);
+            ASRUtils::struct_names.insert(struct_->m_name);
+            ASRUtils::map_struct_name_to_type(struct_->m_name, struct_->m_struct_signature, true);
+            ASRUtils::map_struct_type_to_name(struct_->m_struct_signature, struct_->m_name);
 
             // create a struct instance
-            ASR::ttype_t* type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, true);
             std::string struct_var_name = base_struct_instance_name + common_block_name;
             ASR::symbol_t* struct_var_sym = ASR::down_cast<ASR::symbol_t>(ASRUtils::make_Variable_t_util(al, loc, current_scope, s2c(al, struct_var_name), nullptr, 0,
-                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, type, struct_symbol,
+                                        ASR::intentType::Local, nullptr, nullptr, ASR::storage_typeType::Default, ASRUtils::get_struct_type(struct_symbol, true), struct_symbol,
                                         ASR::abiType::Source, ASR::accessType::Public, ASR::presenceType::Required, false));
             current_scope->add_symbol(struct_var_name, struct_var_sym);
 
@@ -5120,15 +5121,14 @@ public:
                            && ASR::is_a<ASR::Struct_t>(*ASRUtils::symbol_get_past_external(v))) {
                     // set the variable's type declaration to the derived type
                     type_declaration = v;
-                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
+                    type = ASRUtils::get_struct_type(v, true);
                 }
                 // set the variable's type declaration to the derived type
                 type_declaration = v;
-                // type = ASRUtils::TYPE(ASRUtils::make_StructType_t_util(al, loc, v));
                 if (v && ASRUtils::symbol_get_past_external(v) && ASR::is_a<ASR::Union_t>(*ASRUtils::symbol_get_past_external(v))) {    
                     type = ASRUtils::get_union_type(al, loc, ASRUtils::symbol_get_past_external(v));
                 } else if ( v && ASRUtils::symbol_get_past_external(v) ) {
-                    type = ASRUtils::make_StructType_t_util(al, loc, v, true);
+                    type = ASRUtils::get_struct_type(v, true);
                 }
                 type = ASRUtils::make_Array_t_util(
                     al, loc, type, dims.p, dims.size(), abi, is_argument);
@@ -5177,7 +5177,6 @@ public:
                                                 s2c(al, to_lower(derived_type_name)), nullptr, nullptr, 0, nullptr, 0,
                                                 nullptr, 0, ASR::abiType::Source, dflt_access, false, true,
                                                 nullptr, 0, nullptr, nullptr);
-                ASRUtils::struct_names.insert(derived_type_name);
                 ASR::symbol_t* struct_symbol = ASR::down_cast<ASR::symbol_t>(dtype);
                 ASR::ttype_t* struct_type = ASRUtils::make_StructType_t_util(al, loc, struct_symbol, false);
                 ASR::Struct_t* struct_ = ASR::down_cast<ASR::Struct_t>(struct_symbol);
@@ -5186,11 +5185,18 @@ public:
                 v = ASR::down_cast<ASR::symbol_t>(dtype);
                 parent_scope->add_symbol(derived_type_name, v);
                 current_scope = parent_scope;
+                ASRUtils::struct_names.insert(struct_->m_name);
+                ASRUtils::map_struct_name_to_type(struct_->m_name, struct_->m_struct_signature, true);
+                ASRUtils::map_struct_type_to_name(struct_->m_struct_signature, struct_->m_name);
             }
             // this is class variable declaration
             // set the variable's type declaration to the derived type
             type_declaration = v;
             type = ASRUtils::make_StructType_t_util(al, loc, v, false);
+            // This is the only place where we create a struct type for polymorphic variables, so
+            // store it in the map.
+            ASRUtils::map_struct_name_to_type(ASRUtils::symbol_name(v), type, false);
+            ASRUtils::map_struct_type_to_name(type, ASRUtils::symbol_name(v));
             type = ASRUtils::make_Array_t_util(
                 al, loc, type, dims.p, dims.size(), abi, is_argument);
             if (is_pointer) {
@@ -5236,7 +5242,7 @@ public:
         Vec<ASR::call_arg_t> vals;
         visit_expr_list(m_args, n_args, vals);
         visit_kwargs(vals, kwargs, n_kwargs, loc, v, diag);
-        ASR::ttype_t* der = ASRUtils::make_StructType_t_util(al, loc, v, true);
+        ASR::ttype_t* der = ASRUtils::get_struct_type(v, true);
 
         // Ensure all values are constant before creating StructConstant
         for (const auto& val : vals) {
@@ -5754,7 +5760,7 @@ public:
                     }));
                 throw SemanticAbort();
             } else if (ASR::is_a<ASR::Struct_t>(*type_declaration)) {
-                type = ASRUtils::make_StructType_t_util(al, x.base.base.loc, type_declaration, true);
+                type = ASRUtils::get_struct_type(type_declaration, true);
             }
         } else {
             if (x.n_args == 0) {
@@ -10539,7 +10545,7 @@ public:
                         ASR::symbol_t *arg_sym = ASRUtils::symbol_get_past_external(arg_sym0);
                         ASR::ttype_t *arg_type = nullptr;
                         if (ASR::is_a<ASR::Struct_t>(*arg_sym)) {
-                            arg_type = ASRUtils::make_StructType_t_util(al, args[i]->base.loc, arg_sym0, true);
+                            arg_type = ASRUtils::get_struct_type(arg_sym0, true);
                             type_subs[param].second = arg_sym0;
                         } else {
                             arg_type = ASRUtils::symbol_type(arg_sym);
@@ -11552,7 +11558,7 @@ public:
                     ASR::StructConstant_t *st = ASR::down_cast<ASR::StructConstant_t>(default_init);
                     ASR::symbol_t *ext_sym = current_scope->resolve_symbol(ASRUtils::symbol_name(st->m_dt_sym));
                     if (ASR::is_a<ASR::ExternalSymbol_t>(*ext_sym)) {
-                        ASR::ttype_t *type = ASRUtils::make_StructType_t_util(al, loc, ext_sym, true);
+                        ASR::ttype_t *type = ASRUtils::get_struct_type(ext_sym, true);
                         default_init = ASRUtils::EXPR(ASR::make_StructConstant_t(al, loc, ext_sym, st->m_args, st->n_args, type));
                     }
                 }

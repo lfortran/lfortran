@@ -19,7 +19,12 @@ namespace LCompilers {
 
     namespace ASRUtils  {
 
-std::map<ASR::ttype_t*, const std::string*> struct_type_name_map;
+std::map<ASR::ttype_t*, const std::string*> struct_type_to_struct_name;
+
+// A struct type variable can have 2 types - non-polymorphic and polymorphic, so
+// store both as value in an array. 
+// We use index 0 for `is_cstruct == false` and 1 for `true`.
+std::map<const std::string, ASR::ttype_t* [2]> struct_name_to_struct_type;
 
 // Stores names of all declared `ASR::Struct_t` objects.
 std::unordered_set<std::string> struct_names;
@@ -31,7 +36,25 @@ std::unordered_set<std::string> struct_names;
 // nodes in a large ASR.
 void map_struct_type_to_name(ASR::ttype_t* struct_type, const std::string& name)
 {
-    struct_type_name_map[struct_type] = &(*struct_names.find(name));
+    LCOMPILERS_ASSERT_MSG(ASR::is_a<ASR::StructType_t>(*struct_type),
+                          "Expected `ASR::StructType_t*`, got "
+                              + ASRUtils::type_to_str_fortran(struct_type));
+    struct_type_to_struct_name[struct_type] = &(*struct_names.find(name));
+}
+
+// Map the struct name to it's associated `ASR::ttype_t*` pointer on heap.
+void map_struct_name_to_type(const std::string& name, ASR::ttype_t* struct_type, bool is_cstruct)
+{
+    LCOMPILERS_ASSERT_MSG(ASR::is_a<ASR::StructType_t>(*struct_type),
+                        "Expected `ASR::StructType_t*`, got "
+                            + ASRUtils::type_to_str_fortran(struct_type));
+    struct_name_to_struct_type[name][is_cstruct] = struct_type;
+}
+
+ASR::ttype_t* get_struct_type(ASR::symbol_t* struct_sym, bool is_cstruct)
+{
+    return struct_name_to_struct_type.at(
+        ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(struct_sym)))[is_cstruct];
 }
 
 class StructTypeToNameVisitor : public ASR::BaseWalkVisitor<StructTypeToNameVisitor>
@@ -40,15 +63,22 @@ public:
     void visit_Struct(const ASR::Struct_t& x)
     {
         ASRUtils::struct_names.insert(x.m_name);
+        ASRUtils::map_struct_name_to_type(x.m_name, x.m_struct_signature, true);
         ASRUtils::map_struct_type_to_name(x.m_struct_signature, x.m_name);
     }
 
     void visit_Variable(const ASR::Variable_t& x)
     {
-        if (x.m_type_declaration && ASR::is_a<ASR::StructType_t>(*x.m_type)) {
+        if (x.m_type_declaration && ASR::is_a<ASR::StructType_t>(*ASRUtils::extract_type(x.m_type))) {
+            ASR::StructType_t* struct_type = ASR::down_cast<ASR::StructType_t>(ASRUtils::extract_type(x.m_type));
             ASRUtils::struct_names.insert(ASRUtils::symbol_name(
                 ASRUtils::symbol_get_past_external(x.m_type_declaration)));
-            ASRUtils::map_struct_type_to_name(x.m_type, 
+            ASRUtils::map_struct_name_to_type(
+                ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)),
+                &struct_type->base,
+                true);
+            ASRUtils::map_struct_type_to_name(
+                &struct_type->base,
                 ASRUtils::symbol_name(ASRUtils::symbol_get_past_external(x.m_type_declaration)));
         }
     }
@@ -1214,8 +1244,7 @@ ASR::asr_t* getStructInstanceMember_t(Allocator& al, const Location& loc,
                 nullptr, 0, member_variable->m_name, ASR::accessType::Public));
             current_scope->add_symbol(mem_name, mem_es);
         }
-        ASR::ttype_t* member_type = ASRUtils::make_StructType_t_util(al,
-            member_variable->base.base.loc, mem_es, true);
+        ASR::ttype_t* member_type = ASRUtils::get_struct_type(mem_es, true);
         return ASR::make_StructInstanceMember_t(al, loc, ASRUtils::EXPR(v_var),
             mem_es, member_type, nullptr);
     } else {
