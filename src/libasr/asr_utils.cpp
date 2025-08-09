@@ -494,6 +494,10 @@ ASR::symbol_t* get_struct_sym_from_struct_expr(ASR::expr_t* expression)
             ASR::Iachar_t* iachar = ASR::down_cast<ASR::Iachar_t>(expression);
             return ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(iachar->m_arg));
         }
+        case ASR::exprType::ListConstant:
+        case ASR::exprType::ListLen: {
+            return nullptr;
+        }
         default: {
             throw LCompilersException("get_struct_sym_from_struct_expr() not implemented for "
                                 + std::to_string(expression->type));
