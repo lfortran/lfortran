@@ -2159,6 +2159,35 @@ namespace LCompilers {
             rhs_data, rhs_len});
     }
 
+    llvm::Value* LLVMUtils::lfortran_str_copy_with_known_data(
+        llvm::Value *lhs_data, llvm::Value *lhs_len,
+        llvm::Value *rhs_data, llvm::Value *rhs_len,
+        bool is_dest_deferred, bool is_dest_allocatable) {
+        llvm::Value* is_lhs_deferred = llvm::ConstantInt::get(context, llvm::APInt(8, is_dest_deferred));
+        llvm::Value* is_lhs_allocatable= llvm::ConstantInt::get(context, llvm::APInt(8, is_dest_allocatable));
+
+
+        std::string runtime_func_name = "_lfortran_strcpy";
+        llvm::Function *fn = module->getFunction(runtime_func_name);
+        if (!fn) {
+            llvm::FunctionType *function_type = llvm::FunctionType::get(
+                    llvm::Type::getVoidTy(context),
+                    {
+                        llvm::Type::getInt8Ty(context)->getPointerTo()->getPointerTo(),
+                        llvm::Type::getInt64Ty(context)->getPointerTo(),
+                        llvm::Type::getInt8Ty(context), llvm::Type::getInt8Ty(context),
+                        llvm::Type::getInt8Ty(context)->getPointerTo(),
+                        llvm::Type::getInt64Ty(context)
+                    }, false);
+            fn = llvm::Function::Create(function_type,
+                    llvm::Function::ExternalLinkage, runtime_func_name, *module);
+        }
+        return builder->CreateCall(fn, {
+            lhs_data, lhs_len,
+            is_lhs_allocatable, is_lhs_deferred,
+            rhs_data, rhs_len});
+    }
+
     llvm::Value* LLVMUtils::declare_string_constant(const ASR::StringConstant_t* str_const){
 
         /*  Don't depend on null_char.
