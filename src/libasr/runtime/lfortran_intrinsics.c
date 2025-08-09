@@ -3880,7 +3880,21 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
+// Takes a fortran string and converts it to a c string by appending a '\0' to it
+static char *make_c_string(const fchar *src, int64_t len) {
+    char *str = malloc(len + 1);
+    if (!str) {
+        fprintf(stderr, "Failed to allocate memory.\n");
+        exit(1);
+    }
+
+    memcpy(str, src, len);
+    str[len] = '\0';
+
+    return str;
+}
+
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
@@ -3890,7 +3904,10 @@ LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool 
         exit(1);
     }
     if (f_name_data != NULL) {
-        FILE *fp = fopen(f_name_data, "r");
+        char *c_f_name_data = make_c_string(f_name_data, f_name_len);
+        FILE *fp = fopen(c_f_name_data, "r");
+        free(c_f_name_data);
+
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
