@@ -123,12 +123,6 @@ semantic error: Derived type `bspline_3d` is not defined
 117 |     type(bspline_3d) :: s3_in_program
     |     ^^^^^^^^^^^^^^^^ Type used here is not defined in any scope
 
-semantic error: BOZ literal constants with 'Z' prefix are only supported yet with at most '16' characters
-   --> tests/errors/continue_compilation_1.f90:118:27
-    |
-118 |     integer:: boz_1 = int(Z'1234567890ABCDEF1')
-    |                           ^^^^^^^^^^^^^^^^^^^^ 
-
 semantic error: Assignment to loop variable `i` is not allowed
    --> tests/errors/continue_compilation_1.f90:136:8
     |
