@@ -5142,20 +5142,26 @@ LFORTRAN_API void _lfortran_string_read_f64(char *str, int64_t len, char *format
     free(buf);
 }
 
-char *remove_whitespace(char *str) {
-    if (str == NULL || str[0] == '\0') {
-        return "(null)";
+char* remove_whitespace(char* str, int64_t* len) {
+    if (!str || *len <= 0) return str;
+    char* start = str;
+    char* end = str + (*len - 1);
+    // Trim leading spaces
+    while (*len > 0 && isspace((unsigned char) *start)) {
+        start++;
+        (*len)--;
     }
-    char *end;
-    // remove leading space
-    while(isspace((unsigned char)*str)) str++;
-    if(*str == 0) // All spaces?
-        return str;
-    // remove trailing space
-    end = str + strlen(str) - 1;
-    while(end > str && isspace((unsigned char)*end)) end--;
-    // Write new null terminator character
-    end[1] = '\0';
+    // Trim trailing spaces
+    while (*len > 0 && isspace((unsigned char) *end)) {
+        end--;
+        (*len)--;
+    }
+    // Shift if we trimmed from the front
+    if (start != str && *len > 0) {
+        memmove(str, start, *len);
+    }
+    // Null terminate for now, but length is already known
+    str[*len] = '\0';
     return str;
 }
 
@@ -5219,16 +5225,36 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
         exit(1);
     }
     // TODO: Support other `status` specifiers
-    char * file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
-    char* scratch_file = "_lfortran_generated_file";
-    bool is_temp_file = strncmp(file_name, scratch_file, strlen(scratch_file)) == 0;
-    if ((status && strcmp(status, "delete") == 0) || is_temp_file) {
+    char *file_name = get_file_name_from_unit(unit_num, &unit_file_bin);
+
+    const char *scratch_file = "_lfortran_generated_file";
+    const int64_t scratch_file_len = sizeof("_lfortran_generated_file") - 1; // exclude '\0'
+
+    bool is_temp_file =
+        (strncmp(file_name, scratch_file, scratch_file_len) == 0);
+
+    bool delete_requested = false;
+    if (status && status_len > 0) {
+        // Compare to "delete" without assuming null-termination
+        const char delete_str[] = "delete";
+        const int64_t delete_len = sizeof(delete_str) - 1;
+
+        if (status_len == delete_len &&
+            strncmp(status, delete_str, delete_len) == 0) {
+            delete_requested = true;
+        }
+    }
+
+    if (delete_requested || is_temp_file) {
         if (remove(file_name) != 0) {
             printf("Error in deleting file!\n");
             exit(1);
         }
     }
-    if (is_temp_file) free(file_name);
+
+    if (is_temp_file) {
+        free(file_name);
+    }
     remove_from_unit_to_file(unit_num);
 }
 
@@ -5555,17 +5581,28 @@ void get_local_info_dwarfdump(struct Stacktrace *d) {
     }
 }
 
-char *read_line_from_file(char *filename, uint32_t line_number) {
-    FILE *fp;
-    char *line = NULL;
-    size_t len = 0, n = 0;
+char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len) {
+    FILE *fp = fopen(filename, "r");
+    if (!fp) exit(1);
 
-    fp = fopen(filename, "r");
-    if (fp == NULL) exit(1);
-    while (n < line_number && (getline(&line, &len, fp) != -1)) n++;
+    char *line = NULL;
+    size_t cap = 0;
+    ssize_t read_len;
+    uint32_t n = 0;
+
+    while (n < line_number && (read_len = getline(&line, &cap, fp)) != -1) {
+        n++;
+    }
     fclose(fp);
 
-    return line;
+    if (read_len == -1) {
+        free(line);
+        *out_len = 0;
+        return NULL;
+    }
+
+    *out_len = read_len; // length includes '\n' if present
+    return line;         // caller knows length; can ignore '\0'
 }
 
 static inline uint64_t bisection(const uint64_t vec[],
@@ -5599,6 +5636,9 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
     for (int32_t i = d.local_pc_size-2; i >= 0; i--) {
 #endif
         uint64_t index = bisection(d.addresses, d.stack_size, d.local_pc[i]);
+        int64_t line_len;
+        char* line = read_line_from_file(source_filename, d.line_numbers[index], &line_len);
+        char* trimmed = remove_whitespace(line, &line_len);  // updated to be len-aware
         if(use_colors) {
             fprintf(stderr, DIM "  File " S_RESET
                 BOLD MAGENTA "\"%s\"" C_RESET S_RESET
@@ -5607,20 +5647,19 @@ LFORTRAN_API void print_stacktrace_addresses(char *filename, bool use_colors) {
 #else
                 DIM ", line %" PRIu64 "\n" S_RESET
 #endif
-                "    %s\n", source_filename, d.line_numbers[index],
-                remove_whitespace(read_line_from_file(source_filename,
-                d.line_numbers[index])));
+                "    %.*s\n", source_filename, d.line_numbers[index],
+                (int)line_len, trimmed);
         } else {
             fprintf(stderr, "  File \"%s\", "
 #ifdef HAVE_LFORTRAN_MACHO
-                "line %lld\n    %s\n",
+                "line %lld\n    %.*s\n",
 #else
-                "line %" PRIu64 "\n    %s\n",
+                "line %" PRIu64 "\n    %.*s\n",
 #endif
                 source_filename, d.line_numbers[index],
-                remove_whitespace(read_line_from_file(source_filename,
-                d.line_numbers[index])));
+                (int)line_len, trimmed);
         }
+        free(line);
 #ifdef HAVE_LFORTRAN_MACHO
     }
 #else
