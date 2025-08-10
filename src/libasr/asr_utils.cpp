@@ -1828,6 +1828,7 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
             switch(proc->type) {
                 case ASR::symbolType::Function: {
                     ASR::Function_t* func = ASR::down_cast<ASR::Function_t>(proc);
+                    bool is_elemental = ASRUtils::is_elemental(proc);
                     std::string matched_func_name = "";
                     if( func->n_args == 2 ) {
                         ASR::ttype_t* left_arg_type = ASRUtils::expr_type(func->m_args[0]);
@@ -1843,9 +1844,9 @@ bool use_overloaded(ASR::expr_t* left, ASR::expr_t* right,
                         ASR::ttype_t* right_arg_type2 = ASRUtils::type_get_past_allocatable_pointer(right_arg_type);
 
                         // Check for array type
-                        not_matching = not_matching ||
-                                       (left_arg_type2->type != left_type2->type) ||
-                                       (right_arg_type2->type != right_type2->type);
+                        not_matching = not_matching || (!is_elemental &&
+                                       ((left_arg_type2->type != left_type2->type) ||
+                                       (right_arg_type2->type != right_type2->type)));
 
                         // Get element type and compare
                         left_type2 = ASRUtils::type_get_past_array(left_type2);
