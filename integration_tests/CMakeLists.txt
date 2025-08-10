@@ -2419,6 +2419,7 @@ RUN(NAME elemental_11 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME elemental_12 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME elemental_13 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME elemental_14 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
+RUN(NAME elemental_15 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 
 RUN(NAME types_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME types_22 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
