@@ -3207,6 +3207,13 @@ public:
         ASR::Variable_t* member = down_cast<ASR::Variable_t>(symbol_get_past_external(x.m_m));
         std::string member_name = std::string(member->m_name);
         LCOMPILERS_ASSERT(current_der_type_name.size() != 0);
+
+        llvm::Type *xtype = name2dertype[current_der_type_name];
+        if (LLVM::is_llvm_pointer(*x_m_v_type) && ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
+            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
+            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
+        }
+        
         while( name2memidx[current_der_type_name].find(member_name) == name2memidx[current_der_type_name].end() ) {
             if( dertype2parent.find(current_der_type_name) == dertype2parent.end() ) {
                 throw CodeGenError(current_der_type_name + " doesn't have any member named " + member_name,
@@ -3217,12 +3224,7 @@ public:
         }
         int member_idx = name2memidx[current_der_type_name][member_name];
 
-        llvm::Type *xtype = name2dertype[current_der_type_name];
-        if ((ASRUtils::is_allocatable(x_m_v_type) || ASRUtils::is_pointer(x_m_v_type)) &&
-            ASR::is_a<ASR::StructInstanceMember_t>(*x.m_v) &&
-            !ASRUtils::is_class_type(ASRUtils::extract_type(x_m_v_type))) {
-            tmp = llvm_utils->CreateLoad2(xtype->getPointerTo(), tmp);
-        }
+        xtype = name2dertype[current_der_type_name];
         tmp = llvm_utils->create_gep2(xtype, tmp, member_idx);
         ASR::ttype_t* member_type = ASRUtils::type_get_past_pointer(
             ASRUtils::type_get_past_allocatable(member->m_type));
