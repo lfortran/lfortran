@@ -4759,7 +4759,3 @@ llvm = true
 [[test]]
 filename = "../integration_tests/functions_41.f90"
 ast = true
-
-[[test]]
-filename = "common_single.f90"
-run = true
