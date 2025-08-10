@@ -248,6 +248,30 @@ semantic error: Incompatible ranks 2 and 1 in assignment
 199 |     integer, dimension(3,2) :: m = [ 1, 0, 0, 2, 4, 6 ]
     |                                    ^^^^^^^^^^^^^^^^^^^^ 
 
+semantic error: Symbol `my_var_1` for pointer initialization not found
+   --> tests/errors/continue_compilation_2.f90:465:36
+    |
+465 |     type(my_type), pointer :: p => my_var_1
+    |                                    ^^^^^^^^ 
+
+semantic error: `my_type` is not a variable and cannot be a pointer target
+   --> tests/errors/continue_compilation_2.f90:466:37
+    |
+466 |     type(my_type), pointer :: p1 => my_type
+    |                                     ^^^^^^^ 
+
+semantic error: The target of '=>' must have the TARGET or POINTER attribute
+   --> tests/errors/continue_compilation_2.f90:215:22
+    |
+215 |     type(my_type) :: my_var
+    |                      ^^^^^^ 
+
+semantic error: Type mismatch in pointer initialization. The pointer and target must have the same type.
+   --> tests/errors/continue_compilation_2.f90:214:30
+    |
+214 |     type(my_type), target :: my_var_target
+    |                              ^^^^^^^^^^^^^ 
+
 semantic error: Unexpected args, SetExponent expects (real, int) as arguments
   --> tests/errors/continue_compilation_2.f90:36:18
    |

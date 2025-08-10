@@ -1692,6 +1692,7 @@ RUN(NAME associate_18 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES a
 RUN(NAME associate_19 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_20 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc)
 RUN(NAME associate_21 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc EXTRAFILES associate_21_mod.f90)
+RUN(NAME associate_22 LABELS gfortran llvm)
 RUN(NAME attr_dim_01 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_02 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)
 RUN(NAME attr_dim_03 LABELS gfortran llvm llvm_wasm llvm_wasm_emcc fortran)

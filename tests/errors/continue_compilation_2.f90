@@ -205,14 +205,14 @@ program continue_compilation_2
     real(8) :: ifix_runtime = 4.23
     logical :: min_max = .true.
     integer :: intent_bug_sub_x = 10
-
-
-
-
-
-
-
-
+    type :: my_type
+        integer :: x
+    end type my_type
+    type :: my_type_1
+        integer :: x
+    end type my_type_1
+    type(my_type), target :: my_var_target
+    type(my_type) :: my_var
 
 
 
@@ -461,6 +461,11 @@ program continue_compilation_2
     print *, outer_func(intent_bug_sub_x)
     !size_intrinsic_check
     print *, size(ichar_runtime)
+    !pointer_assignment_check
+    type(my_type), pointer :: p => my_var_1
+    type(my_type), pointer :: p1 => my_type
+    type(my_type), pointer :: p2 => my_var
+    type(my_type_1), pointer :: p3 => my_var_target
 
     contains
     logical function f(x)
