@@ -2,11 +2,11 @@
     "basename": "asr-boz_01-dedad59",
     "cmd": "lfortran --show-asr --no-color {infile} -o {outfile}",
     "infile": "tests/../integration_tests/boz_01.f90",
-    "infile_hash": "d5a7b36061a9a7bb3490bea4bfd60186c3994d1ea693309d59b0d0b7",
+    "infile_hash": "c39ee395eba975ffba7c003260ba1b67393a5b06bb519c9e3a5f2442",
     "outfile": null,
     "outfile_hash": null,
     "stdout": "asr-boz_01-dedad59.stdout",
-    "stdout_hash": "9b92a6b98789a4da034983d2f5819ca5a9d1818b876116c9785e3596",
+    "stdout_hash": "60b2c8ba3b98d1fb44ba5d85d49963f87c99d3de03a38d8caddaac81",
     "stderr": "asr-boz_01-dedad59.stderr",
     "stderr_hash": "e47b37976e07fa74de67cbf8929d0974adaba30e067be31729bb6426",
     "returncode": 0
