@@ -3573,8 +3573,7 @@ trim_trailing_spaces(char** str, int64_t* len, bool init)
 }
 
 
-static char*
-to_c_string(char* src, int64_t len)
+static char* to_c_string(const fchar* src, int64_t len)
 {
     char* buf = (char*) malloc(len + 1);
     if (!buf)
@@ -3656,11 +3655,11 @@ _lfortran_open(int32_t unit_num,
     trim_trailing_spaces(&action, &action_len, ini_action);
 
     // Prepare null-terminated names for C APIs
-    char* f_name_c = to_c_string(f_name, f_name_len);
-    char* status_c = to_c_string(status, status_len);
-    char* form_c = to_c_string(form, form_len);
-    char* access_c = to_c_string(access, access_len);
-    char* action_c = to_c_string(action, action_len);
+    char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
+    char* status_c = to_c_string((const fchar*)status, status_len);
+    char* form_c = to_c_string((const fchar*)form, form_len);
+    char* access_c = to_c_string((const fchar*)access, access_len);
+    char* action_c = to_c_string((const fchar*)action, action_len);
 
     _lfortran_inquire(
         (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
@@ -3891,7 +3890,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         exit(1);
     }
     if (f_name_data != NULL) {
-        char *c_f_name_data = to_c_string((char*)f_name_data, f_name_len);
+        char *c_f_name_data = to_c_string(f_name_data, f_name_len);
         FILE *fp = fopen(c_f_name_data, "r");
         free(c_f_name_data);
 
