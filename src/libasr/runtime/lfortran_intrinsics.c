@@ -3620,6 +3620,7 @@ _lfortran_open(int32_t unit_num,
         int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
         f_name = (char*) malloc(length);
         snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        f_name_len = strlen(f_name);
         ini_file = false;
     }
     bool ini_status = true;
@@ -3662,7 +3663,7 @@ _lfortran_open(int32_t unit_num,
     char* action_c = to_c_string(action, action_len);
 
     _lfortran_inquire(
-        f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3880,20 +3881,6 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-// Takes a fortran string and converts it to a c string by appending a '\0' to it
-static char *make_c_string(const fchar *src, int64_t len) {
-    char *str = malloc(len + 1);
-    if (!str) {
-        fprintf(stderr, "Failed to allocate memory.\n");
-        exit(1);
-    }
-
-    memcpy(str, src, len);
-    str[len] = '\0';
-
-    return str;
-}
-
 LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
@@ -3904,7 +3891,7 @@ LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len
         exit(1);
     }
     if (f_name_data != NULL) {
-        char *c_f_name_data = make_c_string(f_name_data, f_name_len);
+        char *c_f_name_data = to_c_string((char*)f_name_data, f_name_len);
         FILE *fp = fopen(c_f_name_data, "r");
         free(c_f_name_data);
 
