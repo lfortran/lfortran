@@ -264,7 +264,7 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
         run_test(
             filename,
             "asr_enable_style_warnings",
-            "lfortran --std=f23 --style-warnings --no-color {infile} -o {outfile}",
+            "lfortran --style-warnings --no-color {infile}",
             filename,
             update_reference,
             verify_hash,

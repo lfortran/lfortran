@@ -1,0 +1,13 @@
+{
+    "basename": "asr_enable_style_warnings-style1-a2e72d3",
+    "cmd": "lfortran --style-warnings --no-color {infile}",
+    "infile": "tests/style1.f90",
+    "infile_hash": "8ffd34f6aefc2b579f69c70946a0df6e4d979386f5e618bd6911cffc",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "asr_enable_style_warnings-style1-a2e72d3.stdout",
+    "stdout_hash": "0d4ba4bf257c1d58c3c49745aacd8d8edae4417871b8d054aa3ae9b9",
+    "stderr": "asr_enable_style_warnings-style1-a2e72d3.stderr",
+    "stderr_hash": "58767d8c022dbff59b88b112a18b1d29ede9c8234b07815228831a1b",
+    "returncode": 0
+}
