@@ -3685,6 +3685,10 @@ asr_no_warnings = true
 asr_disable_style_and_warnings = true
 
 [[test]]
+filename = "style1.f90"
+asr_enable_style_warnings = true
+
+[[test]]
 filename = "../integration_tests/c_ptr_02.f90"
 asr = true
 
