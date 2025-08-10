@@ -31,7 +31,7 @@ jobs:
   debug_outOfSource:
     name: Check Out-of-Source Debug build
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,7 +91,7 @@ jobs:
   release:
     name: Check Release build
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -195,7 +195,7 @@ jobs:
   test_llvm:
     name: Test LLVM ${{ matrix.llvm-version }}
     runs-on: ${{ matrix.os }}
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     strategy:
       fail-fast: false
       matrix:
@@ -490,7 +490,7 @@ jobs:
   upload_tarball:
     name: Upload Tarball
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -525,7 +525,7 @@ jobs:
   test_without_llvm:
     name: Test without LLVM Backend
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -546,7 +546,7 @@ jobs:
   test_mlir:
     name: Test MLIR backend
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -595,7 +595,7 @@ jobs:
   upload_docs:
     name: Documentation
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     steps:
       - uses: actions/checkout@v4
         with:
@@ -646,7 +646,7 @@ jobs:
 
   build-and-push-image:
     runs-on: ubuntu-latest
-    if: contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') || github.event_name == 'push'
+    if: ${{ github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'Tests::Run-Exhaustive') }}
     permissions:
       contents: read
       packages: write
