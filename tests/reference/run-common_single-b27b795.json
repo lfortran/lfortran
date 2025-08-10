@@ -1,0 +1,13 @@
+{
+    "basename": "run-common_single-b27b795",
+    "cmd": "lfortran --no-color {infile}",
+    "infile": "tests/common_single.f90",
+    "infile_hash": "341c9ce34771f2e08f4213d440339dc0741f0c0c194f8f9226313052",
+    "outfile": null,
+    "outfile_hash": null,
+    "stdout": "run-common_single-b27b795.stdout",
+    "stdout_hash": "618e9b9e1aeb31466e43bdb0d65c3ffc08d2f03e3495a9c511e04fdc",
+    "stderr": null,
+    "stderr_hash": null,
+    "returncode": 0
+}
