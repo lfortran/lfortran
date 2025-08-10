@@ -5172,8 +5172,13 @@ LFORTRAN_API void _lfortran_string_read_str(char *src_data, int64_t src_len, cha
 }
 
 LFORTRAN_API void _lfortran_string_read_bool(char *str, int64_t len, char *format, int32_t *i) {
-    sscanf(str, format, i);
-    printf("%s\n", str);
+    char *buf = (char*)malloc(len + 1);
+    if (!buf) return;
+    memcpy(buf, str, len);
+    buf[len] = '\0';
+    sscanf(buf, format, i);
+    printf("%s\n", buf);
+    free(buf);
 }
 
 void lfortran_error(const char *message) {
@@ -5252,9 +5257,7 @@ LFORTRAN_API void _lfortran_close(int32_t unit_num, char* status, int64_t status
         }
     }
 
-    if (is_temp_file) {
-        free(file_name);
-    }
+    if (is_temp_file) free(file_name);
     remove_from_unit_to_file(unit_num);
 }
 
@@ -5589,10 +5592,7 @@ char *read_line_from_file(char *filename, uint32_t line_number, int64_t *out_len
     size_t cap = 0;
     ssize_t read_len;
     uint32_t n = 0;
-
-    while (n < line_number && (read_len = getline(&line, &cap, fp)) != -1) {
-        n++;
-    }
+    while (n < line_number && (read_len = getline(&line, &cap, fp)) != -1) n++;
     fclose(fp);
 
     if (read_len == -1) {
