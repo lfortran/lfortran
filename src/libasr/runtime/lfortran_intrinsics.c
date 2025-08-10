@@ -4396,36 +4396,36 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num)
 {
-    const char SPACE = ' ';
     if (unit_num == -1) {
         // Read from stdin
-        (void)!fgets(*p, p_len + 1, stdin);
-        (*p)[strcspn(*p, "\n")] = 0;
-        size_t input_length = strlen(*p);
-        while (input_length < p_len) {
-            strncat(*p, &SPACE, 1);
-            input_length++;
+        if (!fgets(*p, p_len + 1, stdin)) {
+            printf("Runtime error: End of file!\n");
+            exit(1);
         }
-        (*p)[p_len] = '\0';
+        size_t len = strcspn(*p, "\n");
+        (*p)[len] = '\0';
+        pad_with_spaces(*p, len, p_len);
         return;
     }
 
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access);
+    FILE *filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+                                             &access_id, &read_access, &write_access);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
-        int32_t data_length;
-        // Only read header if not access=stream and is at start of file
-        if (access_id != 1 && ftell(filep) == 0 &&               
-                fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
-            printf("Error reading data length from file.\n");
-            exit(1);
+        int32_t data_length = 0;
+
+        if (access_id != 1 && ftell(filep) == 0) {
+            if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+                printf("Error reading data length from file.\n");
+                exit(1);
+            }
         }
 
         long current_pos = ftell(filep);
@@ -4434,32 +4434,41 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num)
         fseek(filep, current_pos, SEEK_SET);
 
         if (access_id != 1) {
-            data_length = end_pos - current_pos - 4;  // leave last 4 bits as record marker
+            data_length = (int32_t)(end_pos - current_pos - 4);
         } else {
-            data_length = end_pos - current_pos;  // For access=stream read till last
+            data_length = (int32_t)(end_pos - current_pos);
         }
 
+        if (data_length > p_len) data_length = (int32_t)p_len;
 
-        data_length = data_length > p_len ? p_len : data_length;
-
-        // read the actual data
-        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+        if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
             printf("Error reading data from file.\n");
             exit(1);
         }
-        (*p)[p_len] = '\0';
+
+        pad_with_spaces(*p, data_length, p_len);
+
     } else {
-        char *tmp_buffer = (char*)malloc((p_len + 1) * sizeof(char));
-        (void)!fscanf(filep, "%s", tmp_buffer);
-        size_t input_length = strlen(tmp_buffer);
-        strcpy(*p, tmp_buffer);
-        free(tmp_buffer);
-        while (input_length < p_len) {
-            strncat(*p, &SPACE, 1);
-            input_length++;
+        // formatted file read
+        char *tmp_buffer = (char *)malloc((p_len + 1) * sizeof(char));
+        if (!tmp_buffer) {
+            printf("Memory allocation failed\n");
+            exit(1);
         }
-        (*p)[p_len] = '\0';
+
+        if (fscanf(filep, "%s", tmp_buffer) != 1) {
+            free(tmp_buffer);
+            printf("Runtime error: End of file!\n");
+            exit(1);
+        }
+
+        size_t len = strlen(tmp_buffer);
+        memcpy(*p, tmp_buffer, len);
+        free(tmp_buffer);
+
+        pad_with_spaces(*p, len, p_len);
     }
+
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
         exit(1);
