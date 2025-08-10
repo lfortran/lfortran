@@ -6646,7 +6646,10 @@ public:
             // bool visit_required = false;
             for ( auto it: array_arg_idx ) {
                 ASR::expr_t* func_arg = f->m_args[it.first];
-                if ( !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type) ) {
+                ASR::FunctionType_t* f_type =
+                    ASR::down_cast<ASR::FunctionType_t>(f->m_function_signature);
+                bool is_elemental = (f_type->m_abi == ASR::abiType::Source && f_type->m_elemental);
+                if (!is_elemental && !ASRUtils::is_array(ASRUtils::EXPR2VAR(func_arg)->m_type)) {
                     // create array type with empty dimensions and physical type as PointerToDataArray
                     ASR::ttype_t* new_type = ASRUtils::duplicate_type_with_empty_dims(al, it.second, ASR::array_physical_typeType::PointerToDataArray, true);
                     ASRUtils::EXPR2VAR(func_arg)->m_type = new_type;
@@ -7241,7 +7244,19 @@ public:
         Vec<ASR::expr_t*> args;
         std::vector<std::string> kwarg_names = {"array", "dim", "kind"};
         handle_intrinsic_node_args(x, args, kwarg_names, 1, 3, std::string("size"));
-        ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];
+        ASR::expr_t *v_Var = args[0], *dim = args[1], *kind = args[2];  
+
+        // general check for all arguments other than array
+        if (!ASRUtils::is_array(ASRUtils::expr_type(v_Var))) {
+            diag.add(Diagnostic(
+                "Argument of 'size' must be an array",
+                Level::Error, Stage::Semantic, {
+                    Label("", {v_Var->base.loc})
+                }
+            ));
+            throw SemanticAbort();
+        }
+
         int64_t kind_const = handle_kind(kind);
         ASR::ttype_t *type = ASRUtils::TYPE(ASR::make_Integer_t(al, x.base.base.loc, kind_const));
         ASR::dimension_t* m_dims = nullptr;
@@ -7281,17 +7296,6 @@ public:
             size_compiletime = ASRUtils::EXPR(ASR::make_IntegerConstant_t(al, x.base.base.loc,
                                                 compile_time_size, type));
         }
-        //if v_Var is a Function, give error
-        if(ASR::is_a<ASR::Var_t>(*v_Var)) {
-            ASR::Var_t* var = ASR::down_cast<ASR::Var_t>(v_Var);
-            ASR::symbol_t* sym = var->m_v;
-            if(ASR::is_a<ASR::Function_t>(*sym)) {
-                diag.add(Diagnostic("Argument of `size` must be an array",
-                    Level::Error, Stage::Semantic, {Label("", {x.base.base.loc})}));
-                throw SemanticAbort();
-            }
-        }
-
         return ASRUtils::make_ArraySize_t_util(al, x.base.base.loc, v_Var, dim, type, size_compiletime, false);
     }
 

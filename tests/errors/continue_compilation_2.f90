@@ -459,6 +459,8 @@ program continue_compilation_2
     !nested intent
     call sub_a(intent_bug_sub_x)
     print *, outer_func(intent_bug_sub_x)
+    !size_intrinsic_check
+    print *, size(ichar_runtime)
 
     contains
     logical function f(x)

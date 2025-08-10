@@ -2214,7 +2214,14 @@ bool argument_types_match(const Vec<ASR::call_arg_t>& args,
                     s2 = ASRUtils::symbol_get_past_external(ASRUtils::get_struct_sym_from_struct_expr(sub.m_args[i]));
                 }
                 if (s1 && s2) {
-                    if (!ASRUtils::is_derived_type_similar(ASR::down_cast<ASR::Struct_t>(s1), ASR::down_cast<ASR::Struct_t>(s2))) return false;
+                    bool is_arg_class = ASRUtils::is_class_type(arg2_ext);
+                    if (!is_arg_class) {     // if argument is c_struct we need exact matching types
+                        if (s1 != s2) {
+                            return false;
+                        }
+                    } else if (!ASRUtils::check_class_assignment_compatibility(s2, s1)) {
+                        return false;
+                    }
                 } else if (!types_equal(arg1, arg2, args[i].m_value, sub.m_args[i], !ASRUtils::get_FunctionType(sub)->m_elemental)) {
                     return false;
                 }
