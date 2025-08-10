@@ -1,4 +1,4 @@
-program common_single
+program common_14
     implicit none
     real :: x, y
 
@@ -15,4 +15,4 @@ contains
         common /coords/ x, y
         print *, "x =", x, ", y =", y
     end subroutine show_coords
-end program common_single
+end program common_14

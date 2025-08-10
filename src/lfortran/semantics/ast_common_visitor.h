@@ -2756,7 +2756,6 @@ public:
 			common_block_variables.push_back(ASRUtils::EXPR(tmp));
 			common_variables_hash[hash] = common_block_struct_sym;
 			// add variable to struct
-			// add_sym_to_struct(var_, struct_type);
             if (struct_type->m_symtab->resolve_symbol(var_->m_name) == nullptr) {
                 add_sym_to_struct(var_, struct_type);
             }
