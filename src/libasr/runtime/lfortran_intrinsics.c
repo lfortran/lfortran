@@ -3595,8 +3595,7 @@ trim_trailing_spaces(char** str, int64_t* len, bool init)
 }
 
 
-static char*
-to_c_string(char* src, int64_t len)
+static char* to_c_string(const fchar* src, int64_t len)
 {
     char* buf = (char*) malloc(len + 1);
     if (!buf)
@@ -3642,6 +3641,7 @@ _lfortran_open(int32_t unit_num,
         int length = ID_LEN + strlen(prefix) + strlen(format) + 3;
         f_name = (char*) malloc(length);
         snprintf(f_name, length, "%s_%s.%s", prefix, unique_id, format);
+        f_name_len = strlen(f_name);
         ini_file = false;
     }
     bool ini_status = true;
@@ -3677,14 +3677,14 @@ _lfortran_open(int32_t unit_num,
     trim_trailing_spaces(&action, &action_len, ini_action);
 
     // Prepare null-terminated names for C APIs
-    char* f_name_c = to_c_string(f_name, f_name_len);
-    char* status_c = to_c_string(status, status_len);
-    char* form_c = to_c_string(form, form_len);
-    char* access_c = to_c_string(access, access_len);
-    char* action_c = to_c_string(action, action_len);
+    char* f_name_c = to_c_string((const fchar*)f_name, f_name_len);
+    char* status_c = to_c_string((const fchar*)status, status_len);
+    char* form_c = to_c_string((const fchar*)form, form_len);
+    char* access_c = to_c_string((const fchar*)access, access_len);
+    char* action_c = to_c_string((const fchar*)action, action_len);
 
     _lfortran_inquire(
-        f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
+        (const fchar*)f_name, f_name_len, file_exists, -1, NULL, NULL, NULL, NULL, 0, NULL, 0, NULL, 0);
     char* access_mode = NULL;
     /*
      STATUS=`specifier` in the OPEN statement
@@ -3695,46 +3695,46 @@ _lfortran_open(int32_t unit_num,
      * "replace" (file will be created, replacing any existing file)
      * "unknown" (it is not known whether the file exists)
      */
-    if (streql(status, "old")) {
+    if (streql(status_c, "old")) {
         if (!*file_exists) {
             if (iostat != NULL) {
                 *iostat = 2;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char* temp
                         = "File `%s` does not exists! Cannot open a file with the `status=old`";
-                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name_c);
                     pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` does not exists!\nCannot open a "
                        "file with the `status=old`\n",
-                       f_name);
+                       f_name_c);
                 exit(1);
             }
         }
         access_mode = "r+";
-    } else if (streql(status, "new")) {
+    } else if (streql(status_c, "new")) {
         if (*file_exists) {
             if (iostat != NULL) {
                 *iostat = 17;
                 if ((iomsg != NULL) && (iomsg_len > 0)) {
                     char* temp = "File `%s` exists! Cannot open a file with the `status=new`";
-                    snprintf(iomsg, iomsg_len + 1, temp, f_name);
+                    snprintf(iomsg, iomsg_len + 1, temp, f_name_c);
                     pad_with_spaces(iomsg, strlen(iomsg), iomsg_len);
                 }
             } else {
                 printf("Runtime error: File `%s` exists!\nCannot open a file with "
                        "the `status=new`\n",
-                       f_name);
+                       f_name_c);
                 exit(1);
             }
         }
         access_mode = "w+";
-    } else if (streql(status, "replace") || streql(status, "scratch")) {
+    } else if (streql(status_c, "replace") || streql(status_c, "scratch")) {
         access_mode = "w+";
-    } else if (streql(status, "unknown")) {
+    } else if (streql(status_c, "unknown")) {
         if (!*file_exists && !already_open) {
-            FILE* fd = fopen(f_name, "w");
+            FILE* fd = fopen(f_name_c, "w");
             if (fd) {
                 fclose(fd);
             }
@@ -3751,7 +3751,7 @@ _lfortran_open(int32_t unit_num,
         } else {
             printf("Runtime error: STATUS specifier in OPEN statement has "
                    "invalid value '%s'\n",
-                   status);
+                   status_c);
             exit(1);
         }
     }
@@ -3760,9 +3760,9 @@ _lfortran_open(int32_t unit_num,
     int access_id;
     bool read_access = true;
     bool write_access = true;
-    if (streql(form, "formatted")) {
+    if (streql(form_c, "formatted")) {
         unit_file_bin = false;
-    } else if (streql(form, "unformatted")) {
+    } else if (streql(form_c, "unformatted")) {
         unit_file_bin = true;
     } else {
         if (iostat != NULL) {
@@ -3775,16 +3775,16 @@ _lfortran_open(int32_t unit_num,
         } else {
             printf("Runtime error: FORM specifier in OPEN statement has "
                    "invalid value '%s'\n",
-                   form);
+                   form_c);
             exit(1);
         }
     }
 
-    if (streql(access, "stream")) {
+    if (streql(access_c, "stream")) {
         access_id = 1;
-    } else if (streql(access, "sequential")) {
+    } else if (streql(access_c, "sequential")) {
         access_id = 0;
-    } else if (streql(access,
+    } else if (streql(access_c,
                       "direct")) {  // TODO: Handle 'direct' as access while reading or writing
         access_id = 2;
     } else {
@@ -3798,14 +3798,14 @@ _lfortran_open(int32_t unit_num,
         } else {
             printf("Runtime error: ACCESS specifier in OPEN statement has "
                    "invalid value '%s'\n",
-                   access);
+                   access_c);
             exit(1);
         }
     }
-    if (streql(action, "readwrite")) {
-    } else if (streql(action, "write")) {
+    if (streql(action_c, "readwrite")) {
+    } else if (streql(action_c, "write")) {
         read_access = false;
-    } else if (streql(action, "read")) {
+    } else if (streql(action_c, "read")) {
         write_access = false;
     } else {
         if (iostat != NULL) {
@@ -3818,14 +3818,14 @@ _lfortran_open(int32_t unit_num,
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
                    "invalid value '%s'\n",
-                   action);
+                   action_c);
             exit(1);
         }
     }
-    if (streql(action, "readwrite")) {
-    } else if (streql(action, "write")) {
+    if (streql(action_c, "readwrite")) {
+    } else if (streql(action_c, "write")) {
         read_access = false;
-    } else if (streql(action, "read")) {
+    } else if (streql(action_c, "read")) {
         write_access = false;
     } else {
         if (iostat != NULL) {
@@ -3838,7 +3838,7 @@ _lfortran_open(int32_t unit_num,
         } else {
             printf("Runtime error: ACTION specifier in OPEN statement has "
                    "invalid value '%s'\n",
-                   action);
+                   action_c);
             exit(1);
         }
     }
@@ -3852,13 +3852,13 @@ _lfortran_open(int32_t unit_num,
         if (already_open) {
             return (int64_t) already_open;
         }
-        FILE* fd = fopen(f_name, access_mode);
+        FILE* fd = fopen(f_name_c, access_mode);
         if (!fd && iostat == NULL) {
             printf("Runtime error: Error in opening the file!\n");
-            perror(f_name);
+            perror(f_name_c);
             exit(1);
         }
-        store_unit_file(unit_num, f_name, fd, unit_file_bin, access_id, read_access, write_access);
+        store_unit_file(unit_num, f_name_c, fd, unit_file_bin, access_id, read_access, write_access);
         return (int64_t) fd;
     }
     free(f_name_c);
@@ -3902,7 +3902,7 @@ LFORTRAN_API void _lfortran_flush(int32_t unit_num)
     }
 }
 
-LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
+LFORTRAN_API void _lfortran_inquire(const fchar* f_name_data, int64_t f_name_len, bool *exists, int32_t unit_num,
                                     bool *opened, int32_t *size, int32_t *pos,
                                     char *write, int64_t write_len,
                                     char *read, int64_t read_len,
@@ -3912,7 +3912,10 @@ LFORTRAN_API void _lfortran_inquire(char* f_name_data, int64_t f_name_len, bool 
         exit(1);
     }
     if (f_name_data != NULL) {
-        FILE *fp = fopen(f_name_data, "r");
+        char *c_f_name_data = to_c_string(f_name_data, f_name_len);
+        FILE *fp = fopen(c_f_name_data, "r");
+        free(c_f_name_data);
+
         if (fp != NULL) {
             *exists = true;
             if (size != NULL) {
