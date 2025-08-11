@@ -14,5 +14,7 @@ contains
         real :: x, y
         common /coords/ x, y
         print *, "x =", x, ", y =", y
+        if ( abs(x - 5.0) > 1e-8 ) error stop
+        if ( abs(y - 10.0) > 1e-8 ) error stop
     end subroutine show_coords
 end program common_14
