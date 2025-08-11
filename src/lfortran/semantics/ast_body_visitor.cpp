@@ -3473,10 +3473,10 @@ public:
                     }
                 }
             }
+            std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
+            std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
             if (!ASRUtils::check_equal_type(ASRUtils::expr_type(target),
                                         ASRUtils::expr_type(value), target, value)) {
-                std::string ltype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(target));
-                std::string rtype = ASRUtils::type_to_str_fortran(ASRUtils::expr_type(value));
                 if(value->type == ASR::exprType::ArrayConstant) {
                     ASR::ArrayConstant_t *ac = ASR::down_cast<ASR::ArrayConstant_t>(value);
                     for (size_t i = 0; i < (size_t) ASRUtils::get_fixed_size_of_array(ac->m_type); i++) {
@@ -3521,13 +3521,22 @@ public:
                         throw SemanticAbort();
                     }
                 } else {
+                        diag.semantic_error_label(
+                            "Type mismatch in assignment, the types must be compatible",
+                            {target->base.loc, value->base.loc},
+                            "type mismatch (" + ltype + " and " + rtype + ")"
+                        );
+                        throw SemanticAbort();
+                }
+            }
+            if (ASRUtils::is_array(ASRUtils::expr_type(value)) &&
+                !ASRUtils::is_array(ASRUtils::expr_type(target))) {
                     diag.semantic_error_label(
                         "Type mismatch in assignment, the types must be compatible",
                         {target->base.loc, value->base.loc},
                         "type mismatch (" + ltype + " and " + rtype + ")"
                     );
                     throw SemanticAbort();
-                }
             }
         }
 
