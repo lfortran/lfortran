@@ -60,7 +60,29 @@ extern int dl_iterate_phdr (int (*__callback) (struct dl_phdr_info *,
 
 #ifdef HAVE_LFORTRAN_UNWIND
 // For _Unwind_Backtrace() function
-#  include <unwind.h>
+// This header file does not always contain _Unwind_Backtrace()
+//#  include <unwind.h>
+// So we define these defines manually
+typedef enum {
+    _URC_NO_REASON = 0,
+    _URC_FOREIGN_EXCEPTION_CAUGHT = 1,
+    _URC_FATAL_PHASE2_ERROR = 2,
+    _URC_FATAL_PHASE1_ERROR = 3,
+    _URC_NORMAL_STOP = 4,
+    _URC_END_OF_STACK = 5,
+    _URC_HANDLER_FOUND = 6,
+    _URC_INSTALL_CONTEXT = 7,
+    _URC_CONTINUE_UNWIND = 8,
+    _URC_FAILURE = 9
+} _Unwind_Reason_Code;
+
+struct _Unwind_Context;  // Opaque type, no need for full definition
+
+typedef _Unwind_Reason_Code (*_Unwind_Trace_Fn)(struct _Unwind_Context *, void *);
+
+extern _Unwind_Reason_Code _Unwind_Backtrace(_Unwind_Trace_Fn callback, void *data);
+
+extern uintptr_t _Unwind_GetIP(struct _Unwind_Context *context);
 #endif
 
 #ifdef HAVE_LFORTRAN_MACHO
