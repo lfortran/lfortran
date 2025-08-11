@@ -850,3 +850,9 @@ semantic error: Argument of 'size' must be an array
     |
 463 |     print *, size(ichar_runtime)
     |                   ^^^^^^^^^^^^^ 
+
+semantic error: Type mismatch in assignment, the types must be compatible
+   --> tests/errors/continue_compilation_2.f90:464:5
+    |
+464 |     lhs = rhs
+    |     ^^^   ^^^ type mismatch (string and string[:])
