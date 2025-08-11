@@ -1,5 +1,0 @@
-style suggestion: Use '==' instead of '.eq.'
- --> tests/style1.f90:4:11
-  |
-4 |     if (y .eq. 1) then
-  |           ^^^^ help: write this as '=='
