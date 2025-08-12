@@ -64,7 +64,7 @@ program intrinsics_211
     
     do i = 1, size(x)
         print *, bessel_yn(n(i), x(i)), "i = ", i
-        if (abs(bessel_yn(n(i), x(i)) - expected(i)) > 1e-12_dp) error stop
+        if (abs((bessel_yn(n(i), x(i)) - expected(i))/bessel_yn(n(i), x(i))) > 1e-12_dp) error stop
     end do
 
     y = [1036.462826483388272_sp, 1.7197292882018389_sp, 10.2368267382872828_sp, 1036.462826483388272_sp, &
@@ -79,6 +79,6 @@ program intrinsics_211
 
     do i = 1, size(y)
         print *, bessel_yn(n(i), y(i)), "i = ", i
-        if (abs(bessel_yn(n(i), y(i)) - expected_y(i)) > 1e-5) error stop
+        if (abs((bessel_yn(n(i), y(i)) - expected_y(i))/bessel_yn(n(i), y(i))) > 1e-5) error stop
     end do
 end program
