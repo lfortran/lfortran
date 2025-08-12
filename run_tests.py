@@ -261,14 +261,17 @@ def single_test(test: Dict, verbose: bool, no_llvm: bool, skip_run_with_dbg: boo
             extra_args)
     
     if asr_enable_style_warnings:
-        run_test(
-            filename,
-            "asr_enable_style_warnings",
-            "lfortran --style-warnings --no-color {infile}",
-            filename,
-            update_reference,
-            verify_hash,
-            extra_args)
+        if no_llvm:
+            log.info(f"{filename} * obj    SKIPPED as requested")
+        else:
+            run_test(
+                filename,
+                "asr_enable_style_warnings",
+                "lfortran --style-warnings --no-color {infile}",
+                filename,
+                update_reference,
+                verify_hash,
+                extra_args)
 
     if asr:
         # run fixed form
