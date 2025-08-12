@@ -3523,9 +3523,10 @@ public:
                 } else {
                         ASR::ttype_t *target_type = ASRUtils::expr_type(target);
                         if (ASR::is_a<ASR::StructType_t>(*target_type)) {
-                            ASR::Variable_t *target_Variable = ASRUtils::EXPR2VAR(target);
-                            LCOMPILERS_ASSERT(target_Variable->m_type_declaration)
-                            ASR::Struct_t *target_Struct = ASR::down_cast<ASR::Struct_t>(target_Variable->m_type_declaration);
+                            ASR::symbol_t *target_symbol = ASRUtils::get_struct_sym_from_struct_expr(target);
+                            LCOMPILERS_ASSERT(target_symbol);
+                            LCOMPILERS_ASSERT(ASR::is_a<ASR::Struct_t>(*target_symbol));
+                            ASR::Struct_t *target_Struct = ASR::down_cast<ASR::Struct_t>(target_symbol);
                             std::string target_struct_name = target_Struct->m_name;
                             ltype = "derived type '" + target_struct_name + "'";
                         }
