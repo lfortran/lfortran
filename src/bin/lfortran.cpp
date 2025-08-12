@@ -1,6 +1,7 @@
 #include "libasr/utils.h"
 #include <chrono>
 #include <iostream>
+#include <regex>
 #include <stdlib.h>
 #include <filesystem>
 #include <random>
@@ -126,6 +127,9 @@ std::string get_unique_ID() {
     }
     return res;
 }
+
+// The unique compilation ID for this invocation of the compiler.
+const std::string LFORTRAN_COMPILATION_ID = get_unique_ID();
 
 void print_one_component(std::string component) {
     std::istringstream ss(component);
@@ -1231,7 +1235,7 @@ int compile_src_to_object_file(const std::string &infile,
                 if (mlir_res.ok) {
                     mlir_res.result->mlir_to_llvm(*mlir_res.result->llvm_ctx);
                     std::string mlir_tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(infile)
-                        .filename().replace_extension(".mlir.tmp.o")).string();
+                        .filename().replace_extension(".mlir.tmp_" + LFORTRAN_COMPILATION_ID + ".o")).string();
                     e.save_object_file(*(mlir_res.result->llvm_m), mlir_tmp_o);
                 } else {
                     LCOMPILERS_ASSERT(diagnostics.has_error())
@@ -1961,9 +1965,10 @@ int link_executable(const std::vector<std::string> &infiles,
                 compile_cmd += s + " ";
                 if (backend == Backend::llvm &&
                         compiler_options.po.enable_gpu_offloading &&
-                        LCompilers::endswith(s, ".tmp.o")) {
-                    std::string mlir_tmp_o = s.substr(0, s.size() - 6) +
-                        ".mlir.tmp.o";
+                        std::regex_match(s, std::regex(R"(.*\.tmp_\w+\.o)"))) {
+                    std::string file_path = std::filesystem::path(s.substr(0, s.size() - 2)).string();    // strip ".o" from end
+                    std::string mlir_tmp_o = std::filesystem::path(file_path).replace_extension(
+                        ".mlir.tmp_" + LFORTRAN_COMPILATION_ID + ".o").string();
                     compile_cmd += mlir_tmp_o + " ";
                     mlir_temp_object_files.push_back(mlir_tmp_o);
                 }
@@ -2656,7 +2661,7 @@ int main_app(int argc, char *argv[]) {
     for (const auto &arg_file : opts.arg_files) {
         int err = 0;
         std::string tmp_o = (std::filesystem::path(LFORTRAN_TEMP_DIR) / std::filesystem::path(arg_file)
-                                .filename().replace_extension(".tmp.o")).string();
+                                .filename().replace_extension(".tmp_" + LFORTRAN_COMPILATION_ID + ".o")).string();
         temp_object_files.push_back(tmp_o);
         if (endswith(arg_file, ".f90") || endswith(arg_file, ".f") ||
             endswith(arg_file, ".F90") || endswith(arg_file, ".F")) {
