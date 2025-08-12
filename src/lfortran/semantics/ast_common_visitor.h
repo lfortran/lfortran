@@ -2967,6 +2967,7 @@ public:
 
     // pad (with ' ') or trim character string 'value'
     ASR::expr_t* adjust_character_length(ASR::expr_t* value, int64_t lhs_len, int64_t rhs_len, const Location& loc, Allocator& al) {
+        value = ASRUtils::expr_value(value);
         ASR::StringConstant_t* string_constant = ASR::down_cast<ASR::StringConstant_t>(value);
         char* original_str = string_constant->m_s;
         size_t new_length = static_cast<size_t>(lhs_len);
