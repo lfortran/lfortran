@@ -6,11 +6,7 @@
     "outfile": null,
     "outfile_hash": null,
     "stdout": "llvm-allocate_03-495d621.stdout",
-<<<<<<< HEAD
-    "stdout_hash": "8c32ff1ab224f48b016e756e1ab8744deea4bea0bd8779c5b8434e8d",
-=======
-    "stdout_hash": "464623ccc8f296e0c62a3e9301ea34c41f45121e5f59c1bfbb7a8373",
->>>>>>> 1eb14410d (tests: update references)
+    "stdout_hash": "07eb566ee9455874a1bb5980e2bf25ea3ba034374ad12c039462d974",
     "stderr": null,
     "stderr_hash": null,
     "returncode": 0
