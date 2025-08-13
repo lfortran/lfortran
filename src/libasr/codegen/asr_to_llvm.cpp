@@ -3607,7 +3607,6 @@ public:
                     ASR::Variable_t* var = ASR::down_cast<ASR::Variable_t>(sym);
                     if (var->m_value != nullptr) {
                         ASR::expr_t* value_expr = var->m_value;
-                        ASR::ttype_t* value_type = ASRUtils::expr_type(value_expr);
                         ASR::ttype_t* var_type = var->m_type;
                         int declared_len{};
                         if (ASR::is_a<ASR::String_t>(*var_type)) {
