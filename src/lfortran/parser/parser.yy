@@ -1401,15 +1401,14 @@ common_block_list_top
         PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
     | common_block_list_top "," common_block_object {
         $$ = $1;
-        // TODO: merge $3 with previous block:
-        // 1. Extract last element (of type common_block) from $$
-        // 2. Append $3 to it
+        LCompilers::LFortran::AST::common_block_t last = $$.back();
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
-        LIST_NEW(v); PLIST_ADD(v, $3);
-        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
+        v.from_pointer_n(last.m_objects, last.n_objects);
+        PLIST_ADD(v, $3);
+        last.m_objects = v.data();
+        last.n_objects = v.size(); }
     | common_block_list_top common_block_start common_block_object {
         $$ = $1;
-        // TODO: merge $3 with previous block
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
         LIST_NEW(v); PLIST_ADD(v, $3);
         PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
