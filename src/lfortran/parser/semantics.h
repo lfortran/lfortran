@@ -476,13 +476,29 @@ static inline common_block_t *make_common_block(Allocator &al, Location const &l
     r->m_objects = varsym.p;
     r->n_objects = varsym.n;
     for (size_t i = 0; i < varsym.n; ++i) {
-	r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
+        r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
+    }
+    return r;
+}
+
+static inline common_block_t *make_common_block2(Allocator &al, Location const &loc,
+        char *name, Vec<var_sym_t> const & varsym) {
+    common_block_t * r = al.allocate<common_block_t>(1);
+    r->loc = loc;
+	r->m_name = name;
+    r->m_objects = varsym.p;
+    r->n_objects = varsym.n;
+    for (size_t i = 0; i < varsym.n; ++i) {
+        r->m_objects[i].m_initializer = dims2expr(al, r->m_objects[i]);
     }
     return r;
 }
 
 #define COMMON_BLOCK(name, varsym, l) \
     make_common_block(p.m_a, l, name, varsym)
+
+#define COMMON_BLOCK2(name, varsym, l) \
+    make_common_block2(p.m_a, l, name, varsym)
 
 /* Add (name,varsym) to curr_list, then append other_list */
 static inline void  merge_common_block_lists(Allocator &al,
@@ -610,6 +626,8 @@ static inline var_sym_t* VARSYM(Allocator &al, Location &l,
 
 #define VAR_SYM_NAME(name, sym, loc) VARSYM(p.m_a, loc, \
         name2char(name), nullptr, 0, nullptr, 0, nullptr, nullptr, sym, nullptr)
+#define VAR_SYM_EMPTY(loc) VARSYM(p.m_a, loc, \
+        nullptr, nullptr, 0, nullptr, 0, nullptr, nullptr, None, nullptr)
 #define VAR_SYM_DIM_EXPR(exp, sym, loc) VARSYM(p.m_a, loc, nullptr, \
         nullptr, 0, nullptr, 0, nullptr, down_cast<expr_t>(exp), sym, nullptr)
 #define VAR_SYM_DIM_INIT(name, dim, n_dim, init, sym, loc) VARSYM(p.m_a, loc, \

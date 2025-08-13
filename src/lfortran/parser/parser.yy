@@ -549,6 +549,7 @@ void yyerror(YYLTYPE *yyloc, LCompilers::LFortran::Parser &p,
 %type <vec_var_sym> named_constant_def_list
 %type <var_sym> named_constant_def
 %type <vec_common_block> common_block_list_top
+%type <var_sym> common_block_start
 %type <var_sym> common_block_object
 %type <vec_ast> data_set_list
 %type <ast> data_set
@@ -1398,7 +1399,7 @@ common_block_list_top
         LIST_NEW($$);
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
         LIST_NEW(v); PLIST_ADD(v, $2);
-        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
+        PLIST_ADD($$, COMMON_BLOCK2($1->m_name, v, @$)); }
     | common_block_list_top "," common_block_object {
         $$ = $1;
         LCompilers::LFortran::AST::common_block_t last = $$.back();
@@ -1420,9 +1421,9 @@ common_block_list_top
     ;
 
 common_block_start
-    : "/" id "/" { }
-    | "/" "/" { }
-    | "//" { }
+    : "/" id "/" { $$ = VAR_SYM_NAME($2, None, @$); }
+    | "/" "/" { $$ = VAR_SYM_EMPTY(@$); }
+    | "//" { $$ = VAR_SYM_EMPTY(@$); }
     ;
 
 common_block_object
