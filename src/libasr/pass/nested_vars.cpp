@@ -530,14 +530,6 @@ class ReplaceNestedVisitor: public ASR::CallReplacerOnExpressionsVisitor<Replace
             this->visit_symbol(*a.second);
         }
         visit_ttype(*x.m_function_signature);
-        for (size_t i=0; i<x.n_args; i++) {
-            ASR::expr_t** current_expr_copy_0 = current_expr;
-            current_expr = const_cast<ASR::expr_t**>(&(x.m_args[i]));
-            call_replacer();
-            current_expr = current_expr_copy_0;
-            if( x.m_args[i] )
-            visit_expr(*x.m_args[i]);
-        }
         transform_stmts(xx.m_body, xx.n_body);
         if (x.m_return_var) {
             ASR::expr_t** current_expr_copy_1 = current_expr;
