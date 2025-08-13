@@ -500,6 +500,12 @@ static inline common_block_t *make_common_block2(Allocator &al, Location const &
 #define COMMON_BLOCK2(name, varsym, l) \
     make_common_block2(p.m_a, l, name, varsym)
 
+#define COMMON_BLOCK_5(out, one, three, four, l) \
+        out = one; \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        LIST_NEW(v); PLIST_ADD(v, four); \
+        PLIST_ADD(out, COMMON_BLOCK2(three->m_name, v, l)); \
+
 /* Add (name,varsym) to curr_list, then append other_list */
 static inline void  merge_common_block_lists(Allocator &al,
             Location const &loc,
