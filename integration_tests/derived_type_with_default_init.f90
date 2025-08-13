@@ -5,6 +5,9 @@ module module_derived_type_with_default_init
         private 
         logical :: a = .true.
         integer :: i = 2
+        character(len=10) :: s = "default"
+        integer :: arr(3) = [1, 2, 3]
+        character(2) :: c_array(2) = ["ab", "cd", "ef"]
 
         contains
             private
@@ -18,6 +21,8 @@ contains
         class(myType), intent(in) :: self
         if (self % a .neqv. .true.) error stop
         if (self % i .ne. 2) error stop
+        if (self % s .ne. "default") error stop
+        if (any(self % arr /= [1, 2, 3])) error stop
     end subroutine config
 
 end module module_derived_type_with_default_init
