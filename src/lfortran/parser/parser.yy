@@ -1412,12 +1412,12 @@ common_block_list_top
         $$ = $1;
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
         LIST_NEW(v); PLIST_ADD(v, $3);
-        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
+        PLIST_ADD($$, COMMON_BLOCK2($2->m_name, v, @$)); }
     | common_block_list_top "," common_block_start common_block_object {
         $$ = $1;
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
         LIST_NEW(v); PLIST_ADD(v, $4);
-        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
+        PLIST_ADD($$, COMMON_BLOCK2($3->m_name, v, @$)); }
     ;
 
 common_block_start
