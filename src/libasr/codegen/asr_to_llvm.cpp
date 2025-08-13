@@ -10220,10 +10220,20 @@ public:
 
         if (x.m_unit == nullptr) {
             if(x.n_values  == 0){ // TODO : We should remove any function that creates a `FileWrite` with no args
-                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s");
-                llvm::Value* end{};
-                if (x.m_end) { end = get_string_data(x.m_end); }
-                printf(context, *module, *builder, {fmt_ptr, end});
+                llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr("%s%s");
+                llvm::Value *str_data, *str_len;
+                // For empty output, use a space (like old behavior)
+                str_data = builder->CreateGlobalStringPtr(" ");
+                str_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                llvm::Value *end_data, *end_len;
+                if (x.m_end) {
+                    std::tie(end_data, end_len) = get_string_data_and_length(x.m_end);
+                    end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
+                } else {
+                    end_data = builder->CreateGlobalStringPtr("\n");
+                    end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
+                }
+                printf(context, *module, *builder, { fmt_ptr, str_data, str_len, end_data, end_len });
             } else if (x.n_values == 1){
                 handle_print(x.m_values[0], x.m_end);
             } else {
@@ -10630,27 +10640,53 @@ public:
         }
     }
 
-    void handle_print(ASR::expr_t* arg, ASR::expr_t* end_expr) {
-        std::vector<llvm::Value *> args;
-        args.push_back(nullptr); // reserve space for fmt_str
-        std::vector<std::string> fmt;
-        llvm::Value* end{};
-        if(end_expr == nullptr){
-            end = builder->CreateGlobalStringPtr("\n");
+    void handle_print(ASR::expr_t* arg, ASR::expr_t* end_expr)
+    {
+        ASR::ttype_t* t = ASRUtils::expr_type(arg);
+        llvm::Value* main_data = nullptr;
+        llvm::Value* main_len = nullptr;
+
+        // End string (always computed once)
+        llvm::Value *end_data, *end_len;
+        if (end_expr == nullptr) {
+            end_data = builder->CreateGlobalStringPtr("\n");
+            end_len = llvm::ConstantInt::get(context, llvm::APInt(32, 1));
         } else {
-            end = get_string_data(end_expr);
+            std::tie(end_data, end_len) = get_string_data_and_length(end_expr);
+            end_len = builder->CreateTrunc(end_len, llvm::Type::getInt32Ty(context));
         }
-        compute_fmt_specifier_and_arg(fmt, args, arg, arg->base.loc);
-        fmt.push_back("%s");
-        args.push_back(end);
+
         std::string fmt_str;
-        for (size_t i=0; i<fmt.size(); i++) {
-            fmt_str += fmt[i];
+
+        if (ASRUtils::is_character(*t)) {
+            // --- String path ---
+            std::tie(main_data, main_len) = get_string_data_and_length(arg);
+            main_len = builder->CreateTrunc(main_len, llvm::Type::getInt32Ty(context));
+            fmt_str = "%s";
+        } else {
+            // --- Non-string path ---
+            // Evaluate once
+            this->visit_expr_wrapper(arg, true);
+            llvm::Value* val = tmp;  // integer/real/etc value
+            main_len = llvm::ConstantInt::get(context, llvm::APInt(32, 0));  // no length for non-string
+
+            // Determine correct printf specifier
+            std::vector<std::string> fmt_parts;
+            std::vector<llvm::Value*> dummy_args;
+            dummy_args.push_back(nullptr);
+            compute_fmt_specifier_and_arg(fmt_parts, dummy_args, arg, arg->base.loc);
+
+            fmt_str.clear();
+            for (auto& f : fmt_parts)
+                fmt_str += f;
+            llvm::Value* as_i32 = builder->CreateSExtOrBitCast(val, llvm::Type::getInt32Ty(context));
+            main_data = builder->CreateIntToPtr(as_i32, llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)));
         }
-        llvm::Value *fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
-        args[0] = fmt_ptr;
-        printf(context, *module, *builder, args);
+        fmt_str += "%s";
+        llvm::Value* fmt_ptr = builder->CreateGlobalStringPtr(fmt_str);
+        printf(context, *module, *builder, { fmt_ptr, main_data, main_len, end_data, end_len });
     }
+
 
     void construct_stop(llvm::Value* exit_code, std::string stop_msg, ASR::expr_t* stop_code, Location loc) {
         std::string fmt_str;

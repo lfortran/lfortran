@@ -70,8 +70,16 @@ namespace LCompilers {
     {
         llvm::Function *fn_printf = module.getFunction("_lfortran_printf");
         if (!fn_printf) {
-            llvm::FunctionType *function_type = llvm::FunctionType::get(
-                    llvm::Type::getVoidTy(context), {llvm::Type::getInt8Ty(context)->getPointerTo()}, true);
+            llvm::FunctionType* function_type = llvm::FunctionType::get(
+                llvm::Type::getVoidTy(context),
+                {
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // format
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // str
+                    llvm::Type::getInt32Ty(context),                               // str_len
+                    llvm::PointerType::getUnqual(llvm::Type::getInt8Ty(context)),  // end
+                    llvm::Type::getInt32Ty(context)                                // end_len
+                },
+                false);
             fn_printf = llvm::Function::Create(function_type,
                     llvm::Function::ExternalLinkage, "_lfortran_printf", &module);
         }

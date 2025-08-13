@@ -574,24 +574,27 @@ ifcont35:                                         ; preds = %ifcont33
   store i64 %243, i64* %246, align 4
   %247 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %248 = load i8*, i8** %247, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @109, i32 0, i32 0), i8* %248, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @100, i32 0, i32 0))
-  %249 = load %array*, %array** %c, align 8
-  %250 = getelementptr %array, %array* %249, i32 0, i32 0
-  %251 = load i32*, i32** %250, align 8
-  %252 = ptrtoint i32* %251 to i64
-  %253 = icmp ne i64 %252, 0
-  br i1 %253, label %then36, label %else37
+  %249 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %250 = load i64, i64* %249, align 4
+  %251 = trunc i64 %250 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @109, i32 0, i32 0), i8* %248, i32 %251, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @100, i32 0, i32 0), i32 1)
+  %252 = load %array*, %array** %c, align 8
+  %253 = getelementptr %array, %array* %252, i32 0, i32 0
+  %254 = load i32*, i32** %253, align 8
+  %255 = ptrtoint i32* %254 to i64
+  %256 = icmp ne i64 %255, 0
+  br i1 %256, label %then36, label %else37
 
 then36:                                           ; preds = %ifcont35
-  %254 = getelementptr %array, %array* %249, i32 0, i32 0
-  %255 = load i32*, i32** %254, align 8
-  %256 = alloca i8*, align 8
-  %257 = bitcast i32* %255 to i8*
-  store i8* %257, i8** %256, align 8
-  %258 = load i8*, i8** %256, align 8
-  call void @_lfortran_free(i8* %258)
-  %259 = getelementptr %array, %array* %249, i32 0, i32 0
-  store i32* null, i32** %259, align 8
+  %257 = getelementptr %array, %array* %252, i32 0, i32 0
+  %258 = load i32*, i32** %257, align 8
+  %259 = alloca i8*, align 8
+  %260 = bitcast i32* %258 to i8*
+  store i8* %260, i8** %259, align 8
+  %261 = load i8*, i8** %259, align 8
+  call void @_lfortran_free(i8* %261)
+  %262 = getelementptr %array, %array* %252, i32 0, i32 0
+  store i32* null, i32** %262, align 8
   br label %ifcont38
 
 else37:                                           ; preds = %ifcont35
@@ -872,14 +875,17 @@ ifcont6:                                          ; preds = %ifcont4
   store i64 %62, i64* %65, align 4
   %66 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %67 = load i8*, i8** %66, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %67, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0))
-  %68 = load %array*, %array** %x, align 8
-  %69 = getelementptr %array, %array* %68, i32 0, i32 0
-  %70 = load i32*, i32** %69, align 8
-  %71 = ptrtoint i32* %70 to i64
-  %72 = icmp ne i64 %71, 0
-  %73 = xor i1 %72, true
-  br i1 %73, label %then7, label %ifcont8
+  %68 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %69 = load i64, i64* %68, align 4
+  %70 = trunc i64 %69 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @17, i32 0, i32 0), i8* %67, i32 %70, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @8, i32 0, i32 0), i32 1)
+  %71 = load %array*, %array** %x, align 8
+  %72 = getelementptr %array, %array* %71, i32 0, i32 0
+  %73 = load i32*, i32** %72, align 8
+  %74 = ptrtoint i32* %73 to i64
+  %75 = icmp ne i64 %74, 0
+  %76 = xor i1 %75, true
+  br i1 %76, label %then7, label %ifcont8
 
 then7:                                            ; preds = %ifcont6
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @19, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @18, i32 0, i32 0))
@@ -887,91 +893,91 @@ then7:                                            ; preds = %ifcont6
   unreachable
 
 ifcont8:                                          ; preds = %ifcont6
-  %74 = getelementptr %array, %array* %68, i32 0, i32 2
-  %75 = load %dimension_descriptor*, %dimension_descriptor** %74, align 8
-  %76 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %75, i32 0
-  %77 = getelementptr %dimension_descriptor, %dimension_descriptor* %76, i32 0, i32 1
-  %78 = load i32, i32* %77, align 4
-  %79 = getelementptr %dimension_descriptor, %dimension_descriptor* %76, i32 0, i32 2
-  %80 = load i32, i32* %79, align 4
-  %81 = sub i32 1, %78
-  %82 = add i32 %78, %80
-  %83 = sub i32 %82, 1
-  %84 = icmp slt i32 1, %78
-  %85 = icmp sgt i32 1, %83
-  %86 = or i1 %84, %85
-  br i1 %86, label %then9, label %ifcont10
+  %77 = getelementptr %array, %array* %71, i32 0, i32 2
+  %78 = load %dimension_descriptor*, %dimension_descriptor** %77, align 8
+  %79 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %78, i32 0
+  %80 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 1
+  %81 = load i32, i32* %80, align 4
+  %82 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 2
+  %83 = load i32, i32* %82, align 4
+  %84 = sub i32 1, %81
+  %85 = add i32 %81, %83
+  %86 = sub i32 %85, 1
+  %87 = icmp slt i32 1, %81
+  %88 = icmp sgt i32 1, %86
+  %89 = or i1 %87, %88
+  br i1 %89, label %then9, label %ifcont10
 
 then9:                                            ; preds = %ifcont8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 1, i32 1, i32 %78, i32 %83)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @21, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @20, i32 0, i32 0), i32 1, i32 1, i32 %81, i32 %86)
   call void @exit(i32 1)
   unreachable
 
 ifcont10:                                         ; preds = %ifcont8
-  %87 = getelementptr %dimension_descriptor, %dimension_descriptor* %76, i32 0, i32 0
-  %88 = load i32, i32* %87, align 4
-  %89 = mul i32 %88, %81
-  %90 = add i32 0, %89
-  %91 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %75, i32 1
-  %92 = getelementptr %dimension_descriptor, %dimension_descriptor* %91, i32 0, i32 1
-  %93 = load i32, i32* %92, align 4
-  %94 = getelementptr %dimension_descriptor, %dimension_descriptor* %91, i32 0, i32 2
-  %95 = load i32, i32* %94, align 4
-  %96 = sub i32 1, %93
-  %97 = add i32 %93, %95
-  %98 = sub i32 %97, 1
-  %99 = icmp slt i32 1, %93
-  %100 = icmp sgt i32 1, %98
-  %101 = or i1 %99, %100
-  br i1 %101, label %then11, label %ifcont12
+  %90 = getelementptr %dimension_descriptor, %dimension_descriptor* %79, i32 0, i32 0
+  %91 = load i32, i32* %90, align 4
+  %92 = mul i32 %91, %84
+  %93 = add i32 0, %92
+  %94 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %78, i32 1
+  %95 = getelementptr %dimension_descriptor, %dimension_descriptor* %94, i32 0, i32 1
+  %96 = load i32, i32* %95, align 4
+  %97 = getelementptr %dimension_descriptor, %dimension_descriptor* %94, i32 0, i32 2
+  %98 = load i32, i32* %97, align 4
+  %99 = sub i32 1, %96
+  %100 = add i32 %96, %98
+  %101 = sub i32 %100, 1
+  %102 = icmp slt i32 1, %96
+  %103 = icmp sgt i32 1, %101
+  %104 = or i1 %102, %103
+  br i1 %104, label %then11, label %ifcont12
 
 then11:                                           ; preds = %ifcont10
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1, i32 2, i32 %93, i32 %98)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @23, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @22, i32 0, i32 0), i32 1, i32 2, i32 %96, i32 %101)
   call void @exit(i32 1)
   unreachable
 
 ifcont12:                                         ; preds = %ifcont10
-  %102 = getelementptr %dimension_descriptor, %dimension_descriptor* %91, i32 0, i32 0
-  %103 = load i32, i32* %102, align 4
-  %104 = mul i32 %103, %96
-  %105 = add i32 %90, %104
-  %106 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %75, i32 2
-  %107 = getelementptr %dimension_descriptor, %dimension_descriptor* %106, i32 0, i32 1
-  %108 = load i32, i32* %107, align 4
-  %109 = getelementptr %dimension_descriptor, %dimension_descriptor* %106, i32 0, i32 2
-  %110 = load i32, i32* %109, align 4
-  %111 = sub i32 1, %108
-  %112 = add i32 %108, %110
-  %113 = sub i32 %112, 1
-  %114 = icmp slt i32 1, %108
-  %115 = icmp sgt i32 1, %113
-  %116 = or i1 %114, %115
-  br i1 %116, label %then13, label %ifcont14
+  %105 = getelementptr %dimension_descriptor, %dimension_descriptor* %94, i32 0, i32 0
+  %106 = load i32, i32* %105, align 4
+  %107 = mul i32 %106, %99
+  %108 = add i32 %93, %107
+  %109 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %78, i32 2
+  %110 = getelementptr %dimension_descriptor, %dimension_descriptor* %109, i32 0, i32 1
+  %111 = load i32, i32* %110, align 4
+  %112 = getelementptr %dimension_descriptor, %dimension_descriptor* %109, i32 0, i32 2
+  %113 = load i32, i32* %112, align 4
+  %114 = sub i32 1, %111
+  %115 = add i32 %111, %113
+  %116 = sub i32 %115, 1
+  %117 = icmp slt i32 1, %111
+  %118 = icmp sgt i32 1, %116
+  %119 = or i1 %117, %118
+  br i1 %119, label %then13, label %ifcont14
 
 then13:                                           ; preds = %ifcont12
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1, i32 3, i32 %108, i32 %113)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @25, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @24, i32 0, i32 0), i32 1, i32 3, i32 %111, i32 %116)
   call void @exit(i32 1)
   unreachable
 
 ifcont14:                                         ; preds = %ifcont12
-  %117 = getelementptr %dimension_descriptor, %dimension_descriptor* %106, i32 0, i32 0
-  %118 = load i32, i32* %117, align 4
-  %119 = mul i32 %118, %111
-  %120 = add i32 %105, %119
-  %121 = getelementptr %array, %array* %68, i32 0, i32 1
-  %122 = load i32, i32* %121, align 4
-  %123 = add i32 %120, %122
-  %124 = getelementptr %array, %array* %68, i32 0, i32 0
-  %125 = load i32*, i32** %124, align 8
-  %126 = getelementptr inbounds i32, i32* %125, i32 %123
-  %127 = load i32, i32* %126, align 4
-  %128 = icmp ne i32 %127, 8
-  br i1 %128, label %then15, label %else
+  %120 = getelementptr %dimension_descriptor, %dimension_descriptor* %109, i32 0, i32 0
+  %121 = load i32, i32* %120, align 4
+  %122 = mul i32 %121, %114
+  %123 = add i32 %108, %122
+  %124 = getelementptr %array, %array* %71, i32 0, i32 1
+  %125 = load i32, i32* %124, align 4
+  %126 = add i32 %123, %125
+  %127 = getelementptr %array, %array* %71, i32 0, i32 0
+  %128 = load i32*, i32** %127, align 8
+  %129 = getelementptr inbounds i32, i32* %128, i32 %126
+  %130 = load i32, i32* %129, align 4
+  %131 = icmp ne i32 %130, 8
+  br i1 %131, label %then15, label %else
 
 then15:                                           ; preds = %ifcont14
-  %129 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
-  %130 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @26, i32 0, i32 0), i8* %129, i8* %130)
+  %132 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const, i32 0, i32 0), align 8
+  %133 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.2, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @26, i32 0, i32 0), i8* %132, i8* %133)
   call void @exit(i32 1)
   br label %ifcont16
 
@@ -979,23 +985,23 @@ else:                                             ; preds = %ifcont14
   br label %ifcont16
 
 ifcont16:                                         ; preds = %else, %then15
-  %131 = load %array*, %array** %x, align 8
-  %132 = getelementptr %array, %array* %131, i32 0, i32 0
-  %133 = load i32*, i32** %132, align 8
-  %134 = ptrtoint i32* %133 to i64
-  %135 = icmp ne i64 %134, 0
-  br i1 %135, label %then17, label %else18
+  %134 = load %array*, %array** %x, align 8
+  %135 = getelementptr %array, %array* %134, i32 0, i32 0
+  %136 = load i32*, i32** %135, align 8
+  %137 = ptrtoint i32* %136 to i64
+  %138 = icmp ne i64 %137, 0
+  br i1 %138, label %then17, label %else18
 
 then17:                                           ; preds = %ifcont16
-  %136 = getelementptr %array, %array* %131, i32 0, i32 0
-  %137 = load i32*, i32** %136, align 8
-  %138 = alloca i8*, align 8
-  %139 = bitcast i32* %137 to i8*
-  store i8* %139, i8** %138, align 8
-  %140 = load i8*, i8** %138, align 8
-  call void @_lfortran_free(i8* %140)
-  %141 = getelementptr %array, %array* %131, i32 0, i32 0
-  store i32* null, i32** %141, align 8
+  %139 = getelementptr %array, %array* %134, i32 0, i32 0
+  %140 = load i32*, i32** %139, align 8
+  %141 = alloca i8*, align 8
+  %142 = bitcast i32* %140 to i8*
+  store i8* %142, i8** %141, align 8
+  %143 = load i8*, i8** %141, align 8
+  call void @_lfortran_free(i8* %143)
+  %144 = getelementptr %array, %array* %134, i32 0, i32 0
+  store i32* null, i32** %144, align 8
   br label %ifcont19
 
 else18:                                           ; preds = %ifcont16
@@ -1003,13 +1009,13 @@ else18:                                           ; preds = %ifcont16
 
 ifcont19:                                         ; preds = %else18, %then17
   call void @f(%array** %x)
-  %142 = load %array*, %array** %x, align 8
-  %143 = getelementptr %array, %array* %142, i32 0, i32 0
-  %144 = load i32*, i32** %143, align 8
-  %145 = ptrtoint i32* %144 to i64
-  %146 = icmp ne i64 %145, 0
-  %147 = xor i1 %146, true
-  br i1 %147, label %then20, label %ifcont21
+  %145 = load %array*, %array** %x, align 8
+  %146 = getelementptr %array, %array* %145, i32 0, i32 0
+  %147 = load i32*, i32** %146, align 8
+  %148 = ptrtoint i32* %147 to i64
+  %149 = icmp ne i64 %148, 0
+  %150 = xor i1 %149, true
+  br i1 %150, label %then20, label %ifcont21
 
 then20:                                           ; preds = %ifcont19
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @29, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @28, i32 0, i32 0))
@@ -1017,104 +1023,107 @@ then20:                                           ; preds = %ifcont19
   unreachable
 
 ifcont21:                                         ; preds = %ifcont19
-  %148 = getelementptr %array, %array* %142, i32 0, i32 2
-  %149 = load %dimension_descriptor*, %dimension_descriptor** %148, align 8
-  %150 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %149, i32 0
-  %151 = getelementptr %dimension_descriptor, %dimension_descriptor* %150, i32 0, i32 1
-  %152 = load i32, i32* %151, align 4
-  %153 = getelementptr %dimension_descriptor, %dimension_descriptor* %150, i32 0, i32 2
-  %154 = load i32, i32* %153, align 4
-  %155 = sub i32 1, %152
-  %156 = add i32 %152, %154
-  %157 = sub i32 %156, 1
-  %158 = icmp slt i32 1, %152
-  %159 = icmp sgt i32 1, %157
-  %160 = or i1 %158, %159
-  br i1 %160, label %then22, label %ifcont23
+  %151 = getelementptr %array, %array* %145, i32 0, i32 2
+  %152 = load %dimension_descriptor*, %dimension_descriptor** %151, align 8
+  %153 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %152, i32 0
+  %154 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 1
+  %155 = load i32, i32* %154, align 4
+  %156 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 2
+  %157 = load i32, i32* %156, align 4
+  %158 = sub i32 1, %155
+  %159 = add i32 %155, %157
+  %160 = sub i32 %159, 1
+  %161 = icmp slt i32 1, %155
+  %162 = icmp sgt i32 1, %160
+  %163 = or i1 %161, %162
+  br i1 %163, label %then22, label %ifcont23
 
 then22:                                           ; preds = %ifcont21
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), i32 1, i32 1, i32 %152, i32 %157)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @31, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @30, i32 0, i32 0), i32 1, i32 1, i32 %155, i32 %160)
   call void @exit(i32 1)
   unreachable
 
 ifcont23:                                         ; preds = %ifcont21
-  %161 = getelementptr %dimension_descriptor, %dimension_descriptor* %150, i32 0, i32 0
-  %162 = load i32, i32* %161, align 4
-  %163 = mul i32 %162, %155
-  %164 = add i32 0, %163
-  %165 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %149, i32 1
-  %166 = getelementptr %dimension_descriptor, %dimension_descriptor* %165, i32 0, i32 1
-  %167 = load i32, i32* %166, align 4
-  %168 = getelementptr %dimension_descriptor, %dimension_descriptor* %165, i32 0, i32 2
-  %169 = load i32, i32* %168, align 4
-  %170 = sub i32 1, %167
-  %171 = add i32 %167, %169
-  %172 = sub i32 %171, 1
-  %173 = icmp slt i32 1, %167
-  %174 = icmp sgt i32 1, %172
-  %175 = or i1 %173, %174
-  br i1 %175, label %then24, label %ifcont25
+  %164 = getelementptr %dimension_descriptor, %dimension_descriptor* %153, i32 0, i32 0
+  %165 = load i32, i32* %164, align 4
+  %166 = mul i32 %165, %158
+  %167 = add i32 0, %166
+  %168 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %152, i32 1
+  %169 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 1
+  %170 = load i32, i32* %169, align 4
+  %171 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 2
+  %172 = load i32, i32* %171, align 4
+  %173 = sub i32 1, %170
+  %174 = add i32 %170, %172
+  %175 = sub i32 %174, 1
+  %176 = icmp slt i32 1, %170
+  %177 = icmp sgt i32 1, %175
+  %178 = or i1 %176, %177
+  br i1 %178, label %then24, label %ifcont25
 
 then24:                                           ; preds = %ifcont23
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 1, i32 2, i32 %167, i32 %172)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @33, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @32, i32 0, i32 0), i32 1, i32 2, i32 %170, i32 %175)
   call void @exit(i32 1)
   unreachable
 
 ifcont25:                                         ; preds = %ifcont23
-  %176 = getelementptr %dimension_descriptor, %dimension_descriptor* %165, i32 0, i32 0
-  %177 = load i32, i32* %176, align 4
-  %178 = mul i32 %177, %170
-  %179 = add i32 %164, %178
-  %180 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %149, i32 2
-  %181 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 1
-  %182 = load i32, i32* %181, align 4
-  %183 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 2
-  %184 = load i32, i32* %183, align 4
-  %185 = sub i32 1, %182
-  %186 = add i32 %182, %184
-  %187 = sub i32 %186, 1
-  %188 = icmp slt i32 1, %182
-  %189 = icmp sgt i32 1, %187
-  %190 = or i1 %188, %189
-  br i1 %190, label %then26, label %ifcont27
+  %179 = getelementptr %dimension_descriptor, %dimension_descriptor* %168, i32 0, i32 0
+  %180 = load i32, i32* %179, align 4
+  %181 = mul i32 %180, %173
+  %182 = add i32 %167, %181
+  %183 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %152, i32 2
+  %184 = getelementptr %dimension_descriptor, %dimension_descriptor* %183, i32 0, i32 1
+  %185 = load i32, i32* %184, align 4
+  %186 = getelementptr %dimension_descriptor, %dimension_descriptor* %183, i32 0, i32 2
+  %187 = load i32, i32* %186, align 4
+  %188 = sub i32 1, %185
+  %189 = add i32 %185, %187
+  %190 = sub i32 %189, 1
+  %191 = icmp slt i32 1, %185
+  %192 = icmp sgt i32 1, %190
+  %193 = or i1 %191, %192
+  br i1 %193, label %then26, label %ifcont27
 
 then26:                                           ; preds = %ifcont25
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 1, i32 3, i32 %182, i32 %187)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @35, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @34, i32 0, i32 0), i32 1, i32 3, i32 %185, i32 %190)
   call void @exit(i32 1)
   unreachable
 
 ifcont27:                                         ; preds = %ifcont25
-  %191 = getelementptr %dimension_descriptor, %dimension_descriptor* %180, i32 0, i32 0
-  %192 = load i32, i32* %191, align 4
-  %193 = mul i32 %192, %185
-  %194 = add i32 %179, %193
-  %195 = getelementptr %array, %array* %142, i32 0, i32 1
-  %196 = load i32, i32* %195, align 4
-  %197 = add i32 %194, %196
-  %198 = getelementptr %array, %array* %142, i32 0, i32 0
-  %199 = load i32*, i32** %198, align 8
-  %200 = getelementptr inbounds i32, i32* %199, i32 %197
-  %201 = load i32, i32* %200, align 4
-  %202 = alloca i32, align 4
-  store i32 %201, i32* %202, align 4
-  %203 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i32 0, i32 0, i32* %202)
-  %204 = call i64 @_lfortran_str_len(i8* %203)
-  %205 = call i8* @_lfortran_malloc(i64 16)
-  %stringFormat_desc28 = bitcast i8* %205 to %string_descriptor*
-  %206 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
-  store i8* %203, i8** %206, align 8
-  %207 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
-  store i64 %204, i64* %207, align 4
-  %208 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
-  %209 = load i8*, i8** %208, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @36, i32 0, i32 0), i8* %209, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @27, i32 0, i32 0))
-  %210 = load %array*, %array** %x, align 8
-  %211 = getelementptr %array, %array* %210, i32 0, i32 0
-  %212 = load i32*, i32** %211, align 8
-  %213 = ptrtoint i32* %212 to i64
-  %214 = icmp ne i64 %213, 0
-  %215 = xor i1 %214, true
-  br i1 %215, label %then29, label %ifcont30
+  %194 = getelementptr %dimension_descriptor, %dimension_descriptor* %183, i32 0, i32 0
+  %195 = load i32, i32* %194, align 4
+  %196 = mul i32 %195, %188
+  %197 = add i32 %182, %196
+  %198 = getelementptr %array, %array* %145, i32 0, i32 1
+  %199 = load i32, i32* %198, align 4
+  %200 = add i32 %197, %199
+  %201 = getelementptr %array, %array* %145, i32 0, i32 0
+  %202 = load i32*, i32** %201, align 8
+  %203 = getelementptr inbounds i32, i32* %202, i32 %200
+  %204 = load i32, i32* %203, align 4
+  %205 = alloca i32, align 4
+  store i32 %204, i32* %205, align 4
+  %206 = call i8* (i8*, i64, i8*, i32, i32, ...) @_lcompilers_string_format_fortran(i8* null, i64 0, i8* getelementptr inbounds ([3 x i8], [3 x i8]* @serialization_info.3, i32 0, i32 0), i32 0, i32 0, i32* %205)
+  %207 = call i64 @_lfortran_str_len(i8* %206)
+  %208 = call i8* @_lfortran_malloc(i64 16)
+  %stringFormat_desc28 = bitcast i8* %208 to %string_descriptor*
+  %209 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
+  store i8* %206, i8** %209, align 8
+  %210 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
+  store i64 %207, i64* %210, align 4
+  %211 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 0
+  %212 = load i8*, i8** %211, align 8
+  %213 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc28, i32 0, i32 1
+  %214 = load i64, i64* %213, align 4
+  %215 = trunc i64 %214 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @36, i32 0, i32 0), i8* %212, i32 %215, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @27, i32 0, i32 0), i32 1)
+  %216 = load %array*, %array** %x, align 8
+  %217 = getelementptr %array, %array* %216, i32 0, i32 0
+  %218 = load i32*, i32** %217, align 8
+  %219 = ptrtoint i32* %218 to i64
+  %220 = icmp ne i64 %219, 0
+  %221 = xor i1 %220, true
+  br i1 %221, label %then29, label %ifcont30
 
 then29:                                           ; preds = %ifcont27
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @38, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @37, i32 0, i32 0))
@@ -1122,91 +1131,91 @@ then29:                                           ; preds = %ifcont27
   unreachable
 
 ifcont30:                                         ; preds = %ifcont27
-  %216 = getelementptr %array, %array* %210, i32 0, i32 2
-  %217 = load %dimension_descriptor*, %dimension_descriptor** %216, align 8
-  %218 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %217, i32 0
-  %219 = getelementptr %dimension_descriptor, %dimension_descriptor* %218, i32 0, i32 1
-  %220 = load i32, i32* %219, align 4
-  %221 = getelementptr %dimension_descriptor, %dimension_descriptor* %218, i32 0, i32 2
-  %222 = load i32, i32* %221, align 4
-  %223 = sub i32 1, %220
-  %224 = add i32 %220, %222
-  %225 = sub i32 %224, 1
-  %226 = icmp slt i32 1, %220
-  %227 = icmp sgt i32 1, %225
-  %228 = or i1 %226, %227
-  br i1 %228, label %then31, label %ifcont32
+  %222 = getelementptr %array, %array* %216, i32 0, i32 2
+  %223 = load %dimension_descriptor*, %dimension_descriptor** %222, align 8
+  %224 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %223, i32 0
+  %225 = getelementptr %dimension_descriptor, %dimension_descriptor* %224, i32 0, i32 1
+  %226 = load i32, i32* %225, align 4
+  %227 = getelementptr %dimension_descriptor, %dimension_descriptor* %224, i32 0, i32 2
+  %228 = load i32, i32* %227, align 4
+  %229 = sub i32 1, %226
+  %230 = add i32 %226, %228
+  %231 = sub i32 %230, 1
+  %232 = icmp slt i32 1, %226
+  %233 = icmp sgt i32 1, %231
+  %234 = or i1 %232, %233
+  br i1 %234, label %then31, label %ifcont32
 
 then31:                                           ; preds = %ifcont30
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @40, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @39, i32 0, i32 0), i32 1, i32 1, i32 %220, i32 %225)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @40, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @39, i32 0, i32 0), i32 1, i32 1, i32 %226, i32 %231)
   call void @exit(i32 1)
   unreachable
 
 ifcont32:                                         ; preds = %ifcont30
-  %229 = getelementptr %dimension_descriptor, %dimension_descriptor* %218, i32 0, i32 0
-  %230 = load i32, i32* %229, align 4
-  %231 = mul i32 %230, %223
-  %232 = add i32 0, %231
-  %233 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %217, i32 1
-  %234 = getelementptr %dimension_descriptor, %dimension_descriptor* %233, i32 0, i32 1
-  %235 = load i32, i32* %234, align 4
-  %236 = getelementptr %dimension_descriptor, %dimension_descriptor* %233, i32 0, i32 2
-  %237 = load i32, i32* %236, align 4
-  %238 = sub i32 1, %235
-  %239 = add i32 %235, %237
-  %240 = sub i32 %239, 1
-  %241 = icmp slt i32 1, %235
-  %242 = icmp sgt i32 1, %240
-  %243 = or i1 %241, %242
-  br i1 %243, label %then33, label %ifcont34
+  %235 = getelementptr %dimension_descriptor, %dimension_descriptor* %224, i32 0, i32 0
+  %236 = load i32, i32* %235, align 4
+  %237 = mul i32 %236, %229
+  %238 = add i32 0, %237
+  %239 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %223, i32 1
+  %240 = getelementptr %dimension_descriptor, %dimension_descriptor* %239, i32 0, i32 1
+  %241 = load i32, i32* %240, align 4
+  %242 = getelementptr %dimension_descriptor, %dimension_descriptor* %239, i32 0, i32 2
+  %243 = load i32, i32* %242, align 4
+  %244 = sub i32 1, %241
+  %245 = add i32 %241, %243
+  %246 = sub i32 %245, 1
+  %247 = icmp slt i32 1, %241
+  %248 = icmp sgt i32 1, %246
+  %249 = or i1 %247, %248
+  br i1 %249, label %then33, label %ifcont34
 
 then33:                                           ; preds = %ifcont32
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @41, i32 0, i32 0), i32 1, i32 2, i32 %235, i32 %240)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @42, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @41, i32 0, i32 0), i32 1, i32 2, i32 %241, i32 %246)
   call void @exit(i32 1)
   unreachable
 
 ifcont34:                                         ; preds = %ifcont32
-  %244 = getelementptr %dimension_descriptor, %dimension_descriptor* %233, i32 0, i32 0
-  %245 = load i32, i32* %244, align 4
-  %246 = mul i32 %245, %238
-  %247 = add i32 %232, %246
-  %248 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %217, i32 2
-  %249 = getelementptr %dimension_descriptor, %dimension_descriptor* %248, i32 0, i32 1
-  %250 = load i32, i32* %249, align 4
-  %251 = getelementptr %dimension_descriptor, %dimension_descriptor* %248, i32 0, i32 2
-  %252 = load i32, i32* %251, align 4
-  %253 = sub i32 1, %250
-  %254 = add i32 %250, %252
-  %255 = sub i32 %254, 1
-  %256 = icmp slt i32 1, %250
-  %257 = icmp sgt i32 1, %255
-  %258 = or i1 %256, %257
-  br i1 %258, label %then35, label %ifcont36
+  %250 = getelementptr %dimension_descriptor, %dimension_descriptor* %239, i32 0, i32 0
+  %251 = load i32, i32* %250, align 4
+  %252 = mul i32 %251, %244
+  %253 = add i32 %238, %252
+  %254 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %223, i32 2
+  %255 = getelementptr %dimension_descriptor, %dimension_descriptor* %254, i32 0, i32 1
+  %256 = load i32, i32* %255, align 4
+  %257 = getelementptr %dimension_descriptor, %dimension_descriptor* %254, i32 0, i32 2
+  %258 = load i32, i32* %257, align 4
+  %259 = sub i32 1, %256
+  %260 = add i32 %256, %258
+  %261 = sub i32 %260, 1
+  %262 = icmp slt i32 1, %256
+  %263 = icmp sgt i32 1, %261
+  %264 = or i1 %262, %263
+  br i1 %264, label %then35, label %ifcont36
 
 then35:                                           ; preds = %ifcont34
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @43, i32 0, i32 0), i32 1, i32 3, i32 %250, i32 %255)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @44, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @43, i32 0, i32 0), i32 1, i32 3, i32 %256, i32 %261)
   call void @exit(i32 1)
   unreachable
 
 ifcont36:                                         ; preds = %ifcont34
-  %259 = getelementptr %dimension_descriptor, %dimension_descriptor* %248, i32 0, i32 0
-  %260 = load i32, i32* %259, align 4
-  %261 = mul i32 %260, %253
-  %262 = add i32 %247, %261
-  %263 = getelementptr %array, %array* %210, i32 0, i32 1
-  %264 = load i32, i32* %263, align 4
-  %265 = add i32 %262, %264
-  %266 = getelementptr %array, %array* %210, i32 0, i32 0
-  %267 = load i32*, i32** %266, align 8
-  %268 = getelementptr inbounds i32, i32* %267, i32 %265
-  %269 = load i32, i32* %268, align 4
-  %270 = icmp ne i32 %269, 99
-  br i1 %270, label %then37, label %else38
+  %265 = getelementptr %dimension_descriptor, %dimension_descriptor* %254, i32 0, i32 0
+  %266 = load i32, i32* %265, align 4
+  %267 = mul i32 %266, %259
+  %268 = add i32 %253, %267
+  %269 = getelementptr %array, %array* %216, i32 0, i32 1
+  %270 = load i32, i32* %269, align 4
+  %271 = add i32 %268, %270
+  %272 = getelementptr %array, %array* %216, i32 0, i32 0
+  %273 = load i32*, i32** %272, align 8
+  %274 = getelementptr inbounds i32, i32* %273, i32 %271
+  %275 = load i32, i32* %274, align 4
+  %276 = icmp ne i32 %275, 99
+  br i1 %276, label %then37, label %else38
 
 then37:                                           ; preds = %ifcont36
-  %271 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.5, i32 0, i32 0), align 8
-  %272 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.7, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @45, i32 0, i32 0), i8* %271, i8* %272)
+  %277 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.5, i32 0, i32 0), align 8
+  %278 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.7, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @45, i32 0, i32 0), i8* %277, i8* %278)
   call void @exit(i32 1)
   br label %ifcont39
 
@@ -1214,13 +1223,13 @@ else38:                                           ; preds = %ifcont36
   br label %ifcont39
 
 ifcont39:                                         ; preds = %else38, %then37
-  %273 = load %array*, %array** %x, align 8
-  %274 = getelementptr %array, %array* %273, i32 0, i32 0
-  %275 = load i32*, i32** %274, align 8
-  %276 = ptrtoint i32* %275 to i64
-  %277 = icmp ne i64 %276, 0
-  %278 = xor i1 %277, true
-  br i1 %278, label %then40, label %ifcont41
+  %279 = load %array*, %array** %x, align 8
+  %280 = getelementptr %array, %array* %279, i32 0, i32 0
+  %281 = load i32*, i32** %280, align 8
+  %282 = ptrtoint i32* %281 to i64
+  %283 = icmp ne i64 %282, 0
+  %284 = xor i1 %283, true
+  br i1 %284, label %then40, label %ifcont41
 
 then40:                                           ; preds = %ifcont39
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @47, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @46, i32 0, i32 0))
@@ -1228,90 +1237,90 @@ then40:                                           ; preds = %ifcont39
   unreachable
 
 ifcont41:                                         ; preds = %ifcont39
-  %279 = getelementptr %array, %array* %273, i32 0, i32 2
-  %280 = load %dimension_descriptor*, %dimension_descriptor** %279, align 8
-  %281 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %280, i32 0
-  %282 = getelementptr %dimension_descriptor, %dimension_descriptor* %281, i32 0, i32 1
-  %283 = load i32, i32* %282, align 4
-  %284 = getelementptr %dimension_descriptor, %dimension_descriptor* %281, i32 0, i32 2
-  %285 = load i32, i32* %284, align 4
-  %286 = sub i32 1, %283
-  %287 = add i32 %283, %285
-  %288 = sub i32 %287, 1
-  %289 = icmp slt i32 1, %283
-  %290 = icmp sgt i32 1, %288
-  %291 = or i1 %289, %290
-  br i1 %291, label %then42, label %ifcont43
+  %285 = getelementptr %array, %array* %279, i32 0, i32 2
+  %286 = load %dimension_descriptor*, %dimension_descriptor** %285, align 8
+  %287 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %286, i32 0
+  %288 = getelementptr %dimension_descriptor, %dimension_descriptor* %287, i32 0, i32 1
+  %289 = load i32, i32* %288, align 4
+  %290 = getelementptr %dimension_descriptor, %dimension_descriptor* %287, i32 0, i32 2
+  %291 = load i32, i32* %290, align 4
+  %292 = sub i32 1, %289
+  %293 = add i32 %289, %291
+  %294 = sub i32 %293, 1
+  %295 = icmp slt i32 1, %289
+  %296 = icmp sgt i32 1, %294
+  %297 = or i1 %295, %296
+  br i1 %297, label %then42, label %ifcont43
 
 then42:                                           ; preds = %ifcont41
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 1, i32 1, i32 %283, i32 %288)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @49, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @48, i32 0, i32 0), i32 1, i32 1, i32 %289, i32 %294)
   call void @exit(i32 1)
   unreachable
 
 ifcont43:                                         ; preds = %ifcont41
-  %292 = getelementptr %dimension_descriptor, %dimension_descriptor* %281, i32 0, i32 0
-  %293 = load i32, i32* %292, align 4
-  %294 = mul i32 %293, %286
-  %295 = add i32 0, %294
-  %296 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %280, i32 1
-  %297 = getelementptr %dimension_descriptor, %dimension_descriptor* %296, i32 0, i32 1
-  %298 = load i32, i32* %297, align 4
-  %299 = getelementptr %dimension_descriptor, %dimension_descriptor* %296, i32 0, i32 2
-  %300 = load i32, i32* %299, align 4
-  %301 = sub i32 1, %298
-  %302 = add i32 %298, %300
-  %303 = sub i32 %302, 1
-  %304 = icmp slt i32 1, %298
-  %305 = icmp sgt i32 1, %303
-  %306 = or i1 %304, %305
-  br i1 %306, label %then44, label %ifcont45
+  %298 = getelementptr %dimension_descriptor, %dimension_descriptor* %287, i32 0, i32 0
+  %299 = load i32, i32* %298, align 4
+  %300 = mul i32 %299, %292
+  %301 = add i32 0, %300
+  %302 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %286, i32 1
+  %303 = getelementptr %dimension_descriptor, %dimension_descriptor* %302, i32 0, i32 1
+  %304 = load i32, i32* %303, align 4
+  %305 = getelementptr %dimension_descriptor, %dimension_descriptor* %302, i32 0, i32 2
+  %306 = load i32, i32* %305, align 4
+  %307 = sub i32 1, %304
+  %308 = add i32 %304, %306
+  %309 = sub i32 %308, 1
+  %310 = icmp slt i32 1, %304
+  %311 = icmp sgt i32 1, %309
+  %312 = or i1 %310, %311
+  br i1 %312, label %then44, label %ifcont45
 
 then44:                                           ; preds = %ifcont43
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0), i32 1, i32 2, i32 %298, i32 %303)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @51, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @50, i32 0, i32 0), i32 1, i32 2, i32 %304, i32 %309)
   call void @exit(i32 1)
   unreachable
 
 ifcont45:                                         ; preds = %ifcont43
-  %307 = getelementptr %dimension_descriptor, %dimension_descriptor* %296, i32 0, i32 0
-  %308 = load i32, i32* %307, align 4
-  %309 = mul i32 %308, %301
-  %310 = add i32 %295, %309
-  %311 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %280, i32 2
-  %312 = getelementptr %dimension_descriptor, %dimension_descriptor* %311, i32 0, i32 1
-  %313 = load i32, i32* %312, align 4
-  %314 = getelementptr %dimension_descriptor, %dimension_descriptor* %311, i32 0, i32 2
-  %315 = load i32, i32* %314, align 4
-  %316 = sub i32 1, %313
-  %317 = add i32 %313, %315
-  %318 = sub i32 %317, 1
-  %319 = icmp slt i32 1, %313
-  %320 = icmp sgt i32 1, %318
-  %321 = or i1 %319, %320
-  br i1 %321, label %then46, label %ifcont47
+  %313 = getelementptr %dimension_descriptor, %dimension_descriptor* %302, i32 0, i32 0
+  %314 = load i32, i32* %313, align 4
+  %315 = mul i32 %314, %307
+  %316 = add i32 %301, %315
+  %317 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %286, i32 2
+  %318 = getelementptr %dimension_descriptor, %dimension_descriptor* %317, i32 0, i32 1
+  %319 = load i32, i32* %318, align 4
+  %320 = getelementptr %dimension_descriptor, %dimension_descriptor* %317, i32 0, i32 2
+  %321 = load i32, i32* %320, align 4
+  %322 = sub i32 1, %319
+  %323 = add i32 %319, %321
+  %324 = sub i32 %323, 1
+  %325 = icmp slt i32 1, %319
+  %326 = icmp sgt i32 1, %324
+  %327 = or i1 %325, %326
+  br i1 %327, label %then46, label %ifcont47
 
 then46:                                           ; preds = %ifcont45
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @53, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0), i32 1, i32 3, i32 %313, i32 %318)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @53, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @52, i32 0, i32 0), i32 1, i32 3, i32 %319, i32 %324)
   call void @exit(i32 1)
   unreachable
 
 ifcont47:                                         ; preds = %ifcont45
-  %322 = getelementptr %dimension_descriptor, %dimension_descriptor* %311, i32 0, i32 0
-  %323 = load i32, i32* %322, align 4
-  %324 = mul i32 %323, %316
-  %325 = add i32 %310, %324
-  %326 = getelementptr %array, %array* %273, i32 0, i32 1
-  %327 = load i32, i32* %326, align 4
-  %328 = add i32 %325, %327
-  %329 = getelementptr %array, %array* %273, i32 0, i32 0
-  %330 = load i32*, i32** %329, align 8
-  %331 = getelementptr inbounds i32, i32* %330, i32 %328
-  store i32 8, i32* %331, align 4
+  %328 = getelementptr %dimension_descriptor, %dimension_descriptor* %317, i32 0, i32 0
+  %329 = load i32, i32* %328, align 4
+  %330 = mul i32 %329, %322
+  %331 = add i32 %316, %330
+  %332 = getelementptr %array, %array* %279, i32 0, i32 1
+  %333 = load i32, i32* %332, align 4
+  %334 = add i32 %331, %333
+  %335 = getelementptr %array, %array* %279, i32 0, i32 0
+  %336 = load i32*, i32** %335, align 8
+  %337 = getelementptr inbounds i32, i32* %336, i32 %334
+  store i32 8, i32* %337, align 4
   store i32 0, i32* %r, align 4
   br label %return
 
 return:                                           ; preds = %ifcont47
-  %332 = load i32, i32* %r, align 4
-  ret i32 %332
+  %338 = load i32, i32* %r, align 4
+  ret i32 %338
 }
 
 define void @h(%array** %c) {
@@ -1463,14 +1472,17 @@ ifcont11:                                         ; preds = %ifcont9
   store i64 %81, i64* %84, align 4
   %85 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %86 = load i8*, i8** %85, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @64, i32 0, i32 0), i8* %86, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @55, i32 0, i32 0))
-  %87 = load %array*, %array** %c, align 8
-  %88 = getelementptr %array, %array* %87, i32 0, i32 0
-  %89 = load i32*, i32** %88, align 8
-  %90 = ptrtoint i32* %89 to i64
-  %91 = icmp ne i64 %90, 0
-  %92 = xor i1 %91, true
-  br i1 %92, label %then12, label %ifcont13
+  %87 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %88 = load i64, i64* %87, align 4
+  %89 = trunc i64 %88 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @64, i32 0, i32 0), i8* %86, i32 %89, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @55, i32 0, i32 0), i32 1)
+  %90 = load %array*, %array** %c, align 8
+  %91 = getelementptr %array, %array* %90, i32 0, i32 0
+  %92 = load i32*, i32** %91, align 8
+  %93 = ptrtoint i32* %92 to i64
+  %94 = icmp ne i64 %93, 0
+  %95 = xor i1 %94, true
+  br i1 %95, label %then12, label %ifcont13
 
 then12:                                           ; preds = %ifcont11
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @66, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @65, i32 0, i32 0))
@@ -1478,91 +1490,91 @@ then12:                                           ; preds = %ifcont11
   unreachable
 
 ifcont13:                                         ; preds = %ifcont11
-  %93 = getelementptr %array, %array* %87, i32 0, i32 2
-  %94 = load %dimension_descriptor*, %dimension_descriptor** %93, align 8
-  %95 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %94, i32 0
-  %96 = getelementptr %dimension_descriptor, %dimension_descriptor* %95, i32 0, i32 1
-  %97 = load i32, i32* %96, align 4
-  %98 = getelementptr %dimension_descriptor, %dimension_descriptor* %95, i32 0, i32 2
-  %99 = load i32, i32* %98, align 4
-  %100 = sub i32 1, %97
-  %101 = add i32 %97, %99
-  %102 = sub i32 %101, 1
-  %103 = icmp slt i32 1, %97
-  %104 = icmp sgt i32 1, %102
-  %105 = or i1 %103, %104
-  br i1 %105, label %then14, label %ifcont15
+  %96 = getelementptr %array, %array* %90, i32 0, i32 2
+  %97 = load %dimension_descriptor*, %dimension_descriptor** %96, align 8
+  %98 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %97, i32 0
+  %99 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 1
+  %100 = load i32, i32* %99, align 4
+  %101 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 2
+  %102 = load i32, i32* %101, align 4
+  %103 = sub i32 1, %100
+  %104 = add i32 %100, %102
+  %105 = sub i32 %104, 1
+  %106 = icmp slt i32 1, %100
+  %107 = icmp sgt i32 1, %105
+  %108 = or i1 %106, %107
+  br i1 %108, label %then14, label %ifcont15
 
 then14:                                           ; preds = %ifcont13
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @68, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @67, i32 0, i32 0), i32 1, i32 1, i32 %97, i32 %102)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @68, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @67, i32 0, i32 0), i32 1, i32 1, i32 %100, i32 %105)
   call void @exit(i32 1)
   unreachable
 
 ifcont15:                                         ; preds = %ifcont13
-  %106 = getelementptr %dimension_descriptor, %dimension_descriptor* %95, i32 0, i32 0
-  %107 = load i32, i32* %106, align 4
-  %108 = mul i32 %107, %100
-  %109 = add i32 0, %108
-  %110 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %94, i32 1
-  %111 = getelementptr %dimension_descriptor, %dimension_descriptor* %110, i32 0, i32 1
-  %112 = load i32, i32* %111, align 4
-  %113 = getelementptr %dimension_descriptor, %dimension_descriptor* %110, i32 0, i32 2
-  %114 = load i32, i32* %113, align 4
-  %115 = sub i32 1, %112
-  %116 = add i32 %112, %114
-  %117 = sub i32 %116, 1
-  %118 = icmp slt i32 1, %112
-  %119 = icmp sgt i32 1, %117
-  %120 = or i1 %118, %119
-  br i1 %120, label %then16, label %ifcont17
+  %109 = getelementptr %dimension_descriptor, %dimension_descriptor* %98, i32 0, i32 0
+  %110 = load i32, i32* %109, align 4
+  %111 = mul i32 %110, %103
+  %112 = add i32 0, %111
+  %113 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %97, i32 1
+  %114 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 1
+  %115 = load i32, i32* %114, align 4
+  %116 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 2
+  %117 = load i32, i32* %116, align 4
+  %118 = sub i32 1, %115
+  %119 = add i32 %115, %117
+  %120 = sub i32 %119, 1
+  %121 = icmp slt i32 1, %115
+  %122 = icmp sgt i32 1, %120
+  %123 = or i1 %121, %122
+  br i1 %123, label %then16, label %ifcont17
 
 then16:                                           ; preds = %ifcont15
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @70, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @69, i32 0, i32 0), i32 1, i32 2, i32 %112, i32 %117)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @70, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @69, i32 0, i32 0), i32 1, i32 2, i32 %115, i32 %120)
   call void @exit(i32 1)
   unreachable
 
 ifcont17:                                         ; preds = %ifcont15
-  %121 = getelementptr %dimension_descriptor, %dimension_descriptor* %110, i32 0, i32 0
-  %122 = load i32, i32* %121, align 4
-  %123 = mul i32 %122, %115
-  %124 = add i32 %109, %123
-  %125 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %94, i32 2
-  %126 = getelementptr %dimension_descriptor, %dimension_descriptor* %125, i32 0, i32 1
-  %127 = load i32, i32* %126, align 4
-  %128 = getelementptr %dimension_descriptor, %dimension_descriptor* %125, i32 0, i32 2
-  %129 = load i32, i32* %128, align 4
-  %130 = sub i32 1, %127
-  %131 = add i32 %127, %129
-  %132 = sub i32 %131, 1
-  %133 = icmp slt i32 1, %127
-  %134 = icmp sgt i32 1, %132
-  %135 = or i1 %133, %134
-  br i1 %135, label %then18, label %ifcont19
+  %124 = getelementptr %dimension_descriptor, %dimension_descriptor* %113, i32 0, i32 0
+  %125 = load i32, i32* %124, align 4
+  %126 = mul i32 %125, %118
+  %127 = add i32 %112, %126
+  %128 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %97, i32 2
+  %129 = getelementptr %dimension_descriptor, %dimension_descriptor* %128, i32 0, i32 1
+  %130 = load i32, i32* %129, align 4
+  %131 = getelementptr %dimension_descriptor, %dimension_descriptor* %128, i32 0, i32 2
+  %132 = load i32, i32* %131, align 4
+  %133 = sub i32 1, %130
+  %134 = add i32 %130, %132
+  %135 = sub i32 %134, 1
+  %136 = icmp slt i32 1, %130
+  %137 = icmp sgt i32 1, %135
+  %138 = or i1 %136, %137
+  br i1 %138, label %then18, label %ifcont19
 
 then18:                                           ; preds = %ifcont17
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @72, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @71, i32 0, i32 0), i32 1, i32 3, i32 %127, i32 %132)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @72, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @71, i32 0, i32 0), i32 1, i32 3, i32 %130, i32 %135)
   call void @exit(i32 1)
   unreachable
 
 ifcont19:                                         ; preds = %ifcont17
-  %136 = getelementptr %dimension_descriptor, %dimension_descriptor* %125, i32 0, i32 0
-  %137 = load i32, i32* %136, align 4
-  %138 = mul i32 %137, %130
-  %139 = add i32 %124, %138
-  %140 = getelementptr %array, %array* %87, i32 0, i32 1
-  %141 = load i32, i32* %140, align 4
-  %142 = add i32 %139, %141
-  %143 = getelementptr %array, %array* %87, i32 0, i32 0
-  %144 = load i32*, i32** %143, align 8
-  %145 = getelementptr inbounds i32, i32* %144, i32 %142
-  %146 = load i32, i32* %145, align 4
-  %147 = icmp ne i32 %146, 99
-  br i1 %147, label %then20, label %else21
+  %139 = getelementptr %dimension_descriptor, %dimension_descriptor* %128, i32 0, i32 0
+  %140 = load i32, i32* %139, align 4
+  %141 = mul i32 %140, %133
+  %142 = add i32 %127, %141
+  %143 = getelementptr %array, %array* %90, i32 0, i32 1
+  %144 = load i32, i32* %143, align 4
+  %145 = add i32 %142, %144
+  %146 = getelementptr %array, %array* %90, i32 0, i32 0
+  %147 = load i32*, i32** %146, align 8
+  %148 = getelementptr inbounds i32, i32* %147, i32 %145
+  %149 = load i32, i32* %148, align 4
+  %150 = icmp ne i32 %149, 99
+  br i1 %150, label %then20, label %else21
 
 then20:                                           ; preds = %ifcont19
-  %148 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
-  %149 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.16, i32 0, i32 0), align 8
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @73, i32 0, i32 0), i8* %148, i8* %149)
+  %151 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.14, i32 0, i32 0), align 8
+  %152 = load i8*, i8** getelementptr inbounds (%string_descriptor, %string_descriptor* @string_const.16, i32 0, i32 0), align 8
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @73, i32 0, i32 0), i8* %151, i8* %152)
   call void @exit(i32 1)
   br label %ifcont22
 
@@ -1570,13 +1582,13 @@ else21:                                           ; preds = %ifcont19
   br label %ifcont22
 
 ifcont22:                                         ; preds = %else21, %then20
-  %150 = load %array*, %array** %c, align 8
-  %151 = getelementptr %array, %array* %150, i32 0, i32 0
-  %152 = load i32*, i32** %151, align 8
-  %153 = ptrtoint i32* %152 to i64
-  %154 = icmp ne i64 %153, 0
-  %155 = xor i1 %154, true
-  br i1 %155, label %then23, label %ifcont24
+  %153 = load %array*, %array** %c, align 8
+  %154 = getelementptr %array, %array* %153, i32 0, i32 0
+  %155 = load i32*, i32** %154, align 8
+  %156 = ptrtoint i32* %155 to i64
+  %157 = icmp ne i64 %156, 0
+  %158 = xor i1 %157, true
+  br i1 %158, label %then23, label %ifcont24
 
 then23:                                           ; preds = %ifcont22
   call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([45 x i8], [45 x i8]* @75, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @74, i32 0, i32 0))
@@ -1584,84 +1596,84 @@ then23:                                           ; preds = %ifcont22
   unreachable
 
 ifcont24:                                         ; preds = %ifcont22
-  %156 = getelementptr %array, %array* %150, i32 0, i32 2
-  %157 = load %dimension_descriptor*, %dimension_descriptor** %156, align 8
-  %158 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %157, i32 0
-  %159 = getelementptr %dimension_descriptor, %dimension_descriptor* %158, i32 0, i32 1
-  %160 = load i32, i32* %159, align 4
-  %161 = getelementptr %dimension_descriptor, %dimension_descriptor* %158, i32 0, i32 2
-  %162 = load i32, i32* %161, align 4
-  %163 = sub i32 1, %160
-  %164 = add i32 %160, %162
-  %165 = sub i32 %164, 1
-  %166 = icmp slt i32 1, %160
-  %167 = icmp sgt i32 1, %165
-  %168 = or i1 %166, %167
-  br i1 %168, label %then25, label %ifcont26
+  %159 = getelementptr %array, %array* %153, i32 0, i32 2
+  %160 = load %dimension_descriptor*, %dimension_descriptor** %159, align 8
+  %161 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %160, i32 0
+  %162 = getelementptr %dimension_descriptor, %dimension_descriptor* %161, i32 0, i32 1
+  %163 = load i32, i32* %162, align 4
+  %164 = getelementptr %dimension_descriptor, %dimension_descriptor* %161, i32 0, i32 2
+  %165 = load i32, i32* %164, align 4
+  %166 = sub i32 1, %163
+  %167 = add i32 %163, %165
+  %168 = sub i32 %167, 1
+  %169 = icmp slt i32 1, %163
+  %170 = icmp sgt i32 1, %168
+  %171 = or i1 %169, %170
+  br i1 %171, label %then25, label %ifcont26
 
 then25:                                           ; preds = %ifcont24
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @77, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @76, i32 0, i32 0), i32 1, i32 1, i32 %160, i32 %165)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @77, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @76, i32 0, i32 0), i32 1, i32 1, i32 %163, i32 %168)
   call void @exit(i32 1)
   unreachable
 
 ifcont26:                                         ; preds = %ifcont24
-  %169 = getelementptr %dimension_descriptor, %dimension_descriptor* %158, i32 0, i32 0
-  %170 = load i32, i32* %169, align 4
-  %171 = mul i32 %170, %163
-  %172 = add i32 0, %171
-  %173 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %157, i32 1
-  %174 = getelementptr %dimension_descriptor, %dimension_descriptor* %173, i32 0, i32 1
-  %175 = load i32, i32* %174, align 4
-  %176 = getelementptr %dimension_descriptor, %dimension_descriptor* %173, i32 0, i32 2
-  %177 = load i32, i32* %176, align 4
-  %178 = sub i32 1, %175
-  %179 = add i32 %175, %177
-  %180 = sub i32 %179, 1
-  %181 = icmp slt i32 1, %175
-  %182 = icmp sgt i32 1, %180
-  %183 = or i1 %181, %182
-  br i1 %183, label %then27, label %ifcont28
+  %172 = getelementptr %dimension_descriptor, %dimension_descriptor* %161, i32 0, i32 0
+  %173 = load i32, i32* %172, align 4
+  %174 = mul i32 %173, %166
+  %175 = add i32 0, %174
+  %176 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %160, i32 1
+  %177 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 1
+  %178 = load i32, i32* %177, align 4
+  %179 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 2
+  %180 = load i32, i32* %179, align 4
+  %181 = sub i32 1, %178
+  %182 = add i32 %178, %180
+  %183 = sub i32 %182, 1
+  %184 = icmp slt i32 1, %178
+  %185 = icmp sgt i32 1, %183
+  %186 = or i1 %184, %185
+  br i1 %186, label %then27, label %ifcont28
 
 then27:                                           ; preds = %ifcont26
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0), i32 1, i32 2, i32 %175, i32 %180)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @79, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @78, i32 0, i32 0), i32 1, i32 2, i32 %178, i32 %183)
   call void @exit(i32 1)
   unreachable
 
 ifcont28:                                         ; preds = %ifcont26
-  %184 = getelementptr %dimension_descriptor, %dimension_descriptor* %173, i32 0, i32 0
-  %185 = load i32, i32* %184, align 4
-  %186 = mul i32 %185, %178
-  %187 = add i32 %172, %186
-  %188 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %157, i32 2
-  %189 = getelementptr %dimension_descriptor, %dimension_descriptor* %188, i32 0, i32 1
-  %190 = load i32, i32* %189, align 4
-  %191 = getelementptr %dimension_descriptor, %dimension_descriptor* %188, i32 0, i32 2
-  %192 = load i32, i32* %191, align 4
-  %193 = sub i32 1, %190
-  %194 = add i32 %190, %192
-  %195 = sub i32 %194, 1
-  %196 = icmp slt i32 1, %190
-  %197 = icmp sgt i32 1, %195
-  %198 = or i1 %196, %197
-  br i1 %198, label %then29, label %ifcont30
+  %187 = getelementptr %dimension_descriptor, %dimension_descriptor* %176, i32 0, i32 0
+  %188 = load i32, i32* %187, align 4
+  %189 = mul i32 %188, %181
+  %190 = add i32 %175, %189
+  %191 = getelementptr inbounds %dimension_descriptor, %dimension_descriptor* %160, i32 2
+  %192 = getelementptr %dimension_descriptor, %dimension_descriptor* %191, i32 0, i32 1
+  %193 = load i32, i32* %192, align 4
+  %194 = getelementptr %dimension_descriptor, %dimension_descriptor* %191, i32 0, i32 2
+  %195 = load i32, i32* %194, align 4
+  %196 = sub i32 1, %193
+  %197 = add i32 %193, %195
+  %198 = sub i32 %197, 1
+  %199 = icmp slt i32 1, %193
+  %200 = icmp sgt i32 1, %198
+  %201 = or i1 %199, %200
+  br i1 %201, label %then29, label %ifcont30
 
 then29:                                           ; preds = %ifcont28
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @81, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @80, i32 0, i32 0), i32 1, i32 3, i32 %190, i32 %195)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @81, i32 0, i32 0), i8* getelementptr inbounds ([2 x i8], [2 x i8]* @80, i32 0, i32 0), i32 1, i32 3, i32 %193, i32 %198)
   call void @exit(i32 1)
   unreachable
 
 ifcont30:                                         ; preds = %ifcont28
-  %199 = getelementptr %dimension_descriptor, %dimension_descriptor* %188, i32 0, i32 0
-  %200 = load i32, i32* %199, align 4
-  %201 = mul i32 %200, %193
-  %202 = add i32 %187, %201
-  %203 = getelementptr %array, %array* %150, i32 0, i32 1
-  %204 = load i32, i32* %203, align 4
-  %205 = add i32 %202, %204
-  %206 = getelementptr %array, %array* %150, i32 0, i32 0
-  %207 = load i32*, i32** %206, align 8
-  %208 = getelementptr inbounds i32, i32* %207, i32 %205
-  store i32 8, i32* %208, align 4
+  %202 = getelementptr %dimension_descriptor, %dimension_descriptor* %191, i32 0, i32 0
+  %203 = load i32, i32* %202, align 4
+  %204 = mul i32 %203, %196
+  %205 = add i32 %190, %204
+  %206 = getelementptr %array, %array* %153, i32 0, i32 1
+  %207 = load i32, i32* %206, align 4
+  %208 = add i32 %205, %207
+  %209 = getelementptr %array, %array* %153, i32 0, i32 0
+  %210 = load i32*, i32** %209, align 8
+  %211 = getelementptr inbounds i32, i32* %210, i32 %208
+  store i32 8, i32* %211, align 4
   br label %return
 
 return:                                           ; preds = %ifcont30
@@ -1678,7 +1690,7 @@ declare i8* @_lcompilers_string_format_fortran(i8*, i64, i8*, i32, i32, ...)
 
 declare i64 @_lfortran_str_len(i8*)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lfortran_free(i8*)
 

@@ -141,23 +141,26 @@ define void @driver(void (i32*, i32*, i32*)* %fnc, i32* %arr, i32* %m) {
   store i64 %2, i64* %5, align 4
   %6 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 0
   %7 = load i8*, i8** %6, align 8
-  call void (i8*, ...) @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0))
-  %8 = load i32, i32* %m, align 4
-  %9 = add i32 1, %8
-  %10 = sub i32 %9, 1
-  %11 = icmp sgt i32 3, %10
-  %12 = or i1 false, %11
-  br i1 %12, label %then, label %ifcont
+  %8 = getelementptr %string_descriptor, %string_descriptor* %stringFormat_desc, i32 0, i32 1
+  %9 = load i64, i64* %8, align 4
+  %10 = trunc i64 %9 to i32
+  call void @_lfortran_printf(i8* getelementptr inbounds ([5 x i8], [5 x i8]* @1, i32 0, i32 0), i8* %7, i32 %10, i8* getelementptr inbounds ([2 x i8], [2 x i8]* @0, i32 0, i32 0), i32 1)
+  %11 = load i32, i32* %m, align 4
+  %12 = add i32 1, %11
+  %13 = sub i32 %12, 1
+  %14 = icmp sgt i32 3, %13
+  %15 = or i1 false, %14
+  br i1 %15, label %then, label %ifcont
 
 then:                                             ; preds = %.entry
-  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %10)
+  call void (i8*, ...) @_lcompilers_print_error(i8* getelementptr inbounds ([120 x i8], [120 x i8]* @3, i32 0, i32 0), i8* getelementptr inbounds ([4 x i8], [4 x i8]* @2, i32 0, i32 0), i32 3, i32 1, i32 1, i32 %13)
   call void @exit(i32 1)
   unreachable
 
 ifcont:                                           ; preds = %.entry
-  %13 = mul i32 1, %8
-  %14 = getelementptr inbounds i32, i32* %arr, i32 2
-  call void %fnc(i32* %arr, i32* %m, i32* %14)
+  %16 = mul i32 1, %11
+  %17 = getelementptr inbounds i32, i32* %arr, i32 2
+  call void %fnc(i32* %arr, i32* %m, i32* %17)
   br label %return
 
 return:                                           ; preds = %ifcont
@@ -300,7 +303,7 @@ declare i64 @_lfortran_str_len(i8*)
 
 declare i8* @_lfortran_malloc(i64)
 
-declare void @_lfortran_printf(i8*, ...)
+declare void @_lfortran_printf(i8*, i8*, i32, i8*, i32)
 
 declare void @_lcompilers_print_error(i8*, ...)
 
