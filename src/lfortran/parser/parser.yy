@@ -1395,14 +1395,7 @@ common_block_list_top
     | common_block_start common_block_object {
         COMMON_BLOCK_2($$, $1, $2, @$) }
     | common_block_list_top "," common_block_object {
-        $$ = $1;
-        LCompilers::LFortran::AST::common_block_t last = $$.back();
-        Vec<LCompilers::LFortran::AST::var_sym_t> v;
-        v.from_pointer_n(last.m_objects, last.n_objects);
-        PLIST_ADD(v, $3);
-        v.back().m_initializer = dims2expr(p.m_a, v.back());
-        $$.back().m_objects = v.data();
-        $$.back().n_objects = v.size(); }
+        COMMON_BLOCK_3($$, $1, $3, @$) }
     | common_block_list_top common_block_start common_block_object {
         COMMON_BLOCK_5($$, $1, $2, $3, @$) }
     | common_block_list_top "," common_block_start common_block_object {
