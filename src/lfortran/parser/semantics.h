@@ -485,18 +485,20 @@ static inline common_block_t *make_common_block(Allocator &al, Location const &l
     make_common_block(p.m_a, l, name, varsym)
 
 /* Add (name,varsym) to curr_list, then append other_list */
-static inline void  merge_common_block_lists(Allocator &al, Location const &loc,
-        Vec<common_block_t> &curr_list, ast_t const *name, Vec<var_sym_t> const & varsym,
-	Vec<common_block_t> const &other_list) {
+static inline void  merge_common_block_lists(Allocator &al,
+            Location const &loc,
+            Vec<common_block_t> &curr_list, ast_t const *name,
+            Vec<var_sym_t> const & varsym,
+            Vec<common_block_t> const &other_list) {
     curr_list.reserve(al, 1+other_list.size());
     curr_list.push_back(al, *make_common_block(al, loc, name, varsym));
     for(common_block_t const & o : other_list) {
-	curr_list.push_back(al, o);
+        curr_list.push_back(al, o);
     }
 }
 
-#define COMMON_BLOCK_MERGE(list, name, varsym, other_list, loc) \
-    merge_common_block_lists(p.m_a, loc, list, name, varsym, other_list)
+#define COMMON_BLOCK_MERGE(curr_list, name, varsym, other_list, loc) \
+    merge_common_block_lists(p.m_a, loc, curr_list, name, varsym, other_list)
 
 ast_t* data_implied_do(Allocator &al, Location &loc,
         Vec<ast_t*> obj_list,
