@@ -1295,7 +1295,7 @@ public:
             require(ASR::is_a<ASR::Integer_t>(*ASRUtils::expr_type(x.m_len)),
                 "String length must be of type INTEGER,"
                 "found " + 
-                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len)));
+                ASRUtils::type_to_str_fortran(ASRUtils::expr_type(x.m_len), x.m_len));
         }
 // Check Positive Length
         if(x.m_len && ASRUtils::is_value_constant(x.m_len)){

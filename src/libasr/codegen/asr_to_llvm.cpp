@@ -9487,7 +9487,7 @@ public:
                 if( !ASR::is_a<ASR::List_t>(*ASRUtils::expr_type(x.m_arg)) ) {
                     throw CodeGenError("The argument of ListToArray cast should "
                         "be a list/std::vector, found, " + ASRUtils::type_to_str_fortran(
-                            ASRUtils::expr_type(x.m_arg)));
+                            ASRUtils::expr_type(x.m_arg), x.m_arg));
                 }
                 int64_t ptr_loads_copy = ptr_loads;
                 ptr_loads = 0;
@@ -9681,7 +9681,7 @@ public:
                 break;
             }
             default: {
-                std::string s_type = ASRUtils::type_to_str_fortran(type);
+                std::string s_type = ASRUtils::type_to_str_fortran(type, nullptr);
                 throw CodeGenError("Read function not implemented for: " + s_type);
             }
         }
@@ -10498,7 +10498,7 @@ public:
             res += "CPtr";
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran(type) + "` type.");
+                ASRUtils::type_to_str_fortran(type, nullptr) + "` type.");
         }
         return res;
     }
@@ -10657,7 +10657,7 @@ public:
             args.push_back(tmp);
         } else {
             throw CodeGenError("Printing support is not available for `" +
-                ASRUtils::type_to_str_fortran(t) + "` type.", loc);
+                ASRUtils::type_to_str_fortran(t, v) + "` type.", loc);
         }
     }
 
@@ -11176,7 +11176,7 @@ public:
                         break;
                     }
                     default :
-                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran(arg_type) + " not implemented yet.");
+                        throw CodeGenError("Type " + ASRUtils::type_to_str_fortran(arg_type, x.m_args[i].m_value) + " not implemented yet.");
                 }
                 if( ASR::is_a<ASR::EnumValue_t>(*x.m_args[i].m_value) ) {
                     target_type = llvm::Type::getInt32Ty(context);

@@ -1839,7 +1839,7 @@ bool check_restriction(std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbo
                 std::string rtype = ASRUtils::type_to_str_with_substitution(f_param, type_subs);
                 std::string rvar = ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(f->m_args[i])->m_v);
-                std::string atype = ASRUtils::type_to_str_fortran(arg_param);
+                std::string atype = ASRUtils::type_to_str_fortran(arg_param, arg->m_args[i]);
                 std::string avar = ASRUtils::symbol_name(
                                     ASR::down_cast<ASR::Var_t>(arg->m_args[i])->m_v);
                 diagnostics.add(diag::Diagnostic(
@@ -1873,7 +1873,7 @@ bool check_restriction(std::map<std::string, std::pair<ASR::ttype_t*, ASR::symbo
         if (!ASRUtils::types_equal_with_substitution(f_ret, arg_ret, type_subs, f->m_return_var, arg->m_return_var)) {
             if (report) {
                 std::string rtype = ASRUtils::type_to_str_with_substitution(f_ret, type_subs);
-                std::string atype = ASRUtils::type_to_str_fortran(arg_ret);
+                std::string atype = ASRUtils::type_to_str_fortran(arg_ret, arg->m_return_var);
                 diagnostics.add(diag::Diagnostic(
                     "Restriction type mismatch with provided function argument",
                     diag::Level::Error, diag::Stage::Semantic, {
