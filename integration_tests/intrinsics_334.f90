@@ -58,7 +58,7 @@ program intrinsics_334
 
     select type(struct_to3)
     type is (toml_value)
-        ! if (struct_to3%x /= 123) error stop   !! TODO: casting of class types
+        if (struct_to3%x /= 123) error stop
     end select
 
     allocate(struct_from)

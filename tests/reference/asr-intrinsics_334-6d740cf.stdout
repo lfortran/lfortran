@@ -367,10 +367,37 @@
                                     (SymbolTable
                                         5
                                         {
-                                            
+                                            1_toml_value_x:
+                                                (ExternalSymbol
+                                                    5
+                                                    1_toml_value_x
+                                                    4 x
+                                                    toml_value
+                                                    []
+                                                    x
+                                                    Public
+                                                )
                                         })
                                     ~select_type_block_
-                                    []
+                                    [(If
+                                        ()
+                                        (IntegerCompare
+                                            (StructInstanceMember
+                                                (Var 2 struct_to3)
+                                                5 1_toml_value_x
+                                                (Integer 4)
+                                                ()
+                                            )
+                                            NotEq
+                                            (IntegerConstant 123 (Integer 4) Decimal)
+                                            (Logical 4)
+                                            ()
+                                        )
+                                        [(ErrorStop
+                                            ()
+                                        )]
+                                        []
+                                    )]
                                 ),
                             ~select_type_block_1:
                                 (Block
