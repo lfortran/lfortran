@@ -949,6 +949,7 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
             submod->m_symtab->parent = symtab;
             submod->m_loaded_from_mod = true;
         }
+        mod2->m_has_submodules = false;
     }
 
     // Create a temporary TranslationUnit just for fixing the symbols
@@ -1037,6 +1038,37 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
     symtab->asr_owner = orig_asr_owner;
 
     return mod2;
+}
+
+void load_dependant_submodules(Allocator &al, SymbolTable *symtab,
+                               ASR::Module_t* m, const Location &loc,
+                               LCompilers::PassOptions& pass_options,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               LCompilers::LocationManager &lm) {
+    for (size_t i=0;i<m->n_dependencies;i++) {
+        ASR::Module_t* dep_mod = ASR::down_cast<ASR::Module_t>(symtab->get_symbol(std::string(m->m_dependencies[i])));
+        load_dependant_submodules(al, symtab, dep_mod, loc,
+                                  pass_options, err, lm);
+    }
+
+    if (m->m_has_submodules) {
+        std::vector<ASR::TranslationUnit_t*> submods;
+        Result<std::vector<ASR::TranslationUnit_t*>, ErrorMessage> res
+            = ASRUtils::find_and_load_submodules(al, std::string(m->m_name), *symtab, pass_options, lm);
+        if (res.ok) {
+            submods = res.result;
+        } else {
+            std::string error_message = res.error.message;
+            err(error_message, loc);
+        }
+        for (size_t i=0;i<submods.size();i++) {
+            ASR::Module_t *submod = ASRUtils::extract_module(*submods[i]);
+            symtab->add_symbol(std::string(submod->m_name), (ASR::symbol_t*)submod);
+            submod->m_symtab->parent = symtab;
+            submod->m_loaded_from_mod = true;
+        }
+        m->m_has_submodules = false;
+    }
 }
 
 ASR::asr_t* make_Assignment_t_util(Allocator &al, const Location &a_loc,

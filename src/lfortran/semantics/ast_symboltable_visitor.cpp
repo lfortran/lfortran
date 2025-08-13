@@ -12,6 +12,7 @@
 #include <lfortran/semantics/asr_implicit_cast_rules.h>
 #include <lfortran/semantics/ast_common_visitor.h>
 #include <lfortran/semantics/ast_to_asr.h>
+#include <libasr/serialization.h>
 #include <lfortran/parser/parser_stype.h>
 #include <libasr/string_utils.h>
 #include <lfortran/utils.h>
@@ -3352,12 +3353,9 @@ public:
         current_module_dependencies.push_back(al, msym_cc);
 
         ASR::symbol_t *t = current_scope->resolve_symbol(msym);
+        SymbolTable *tu_symtab = current_scope->get_global_scope();
+        bool load_submodules = (!compiler_options.separate_compilation && in_program);
         if (!t) {
-            SymbolTable *tu_symtab = current_scope;
-            while (tu_symtab->parent != nullptr) {
-                tu_symtab = tu_symtab->parent;
-            }
-            bool load_submodules = (!compiler_options.separate_compilation && in_program);
             t = (ASR::symbol_t*)(ASRUtils::load_module(al, tu_symtab,
                 msym, x.base.base.loc, false, compiler_options.po, true,
                 [&](const std::string &msg, const Location &loc) {
@@ -3375,6 +3373,35 @@ public:
             throw SemanticAbort();
         }
         ASR::Module_t *m = ASR::down_cast<ASR::Module_t>(t);
+        if (load_submodules) {
+            ASRUtils::load_dependant_submodules(al, tu_symtab, m, x.base.base.loc,
+                                                compiler_options.po,
+                                                [&](const std::string &msg, const Location &loc) { 
+                                                    diag.add(diag::Diagnostic(
+                                                        msg, diag::Level::Error, diag::Stage::Semantic, {
+                                                            diag::Label("", {loc})}));
+                                                    throw SemanticAbort();
+                                                }, lm);
+
+            // Create a temporary TranslationUnit just for fixing the symbols
+            ASR::asr_t *orig_asr_owner = tu_symtab->asr_owner;
+            ASR::TranslationUnit_t *tu
+                = ASR::down_cast2<ASR::TranslationUnit_t>(ASR::make_TranslationUnit_t(al, x.base.base.loc,
+                    tu_symtab, nullptr, 0));
+
+            // Fix all external symbols
+            fix_external_symbols(*tu, *tu_symtab);
+            PassUtils::UpdateDependenciesVisitor v(al);
+            v.visit_TranslationUnit(*tu);
+            #if defined(WITH_LFORTRAN_ASSERT)
+                diag::Diagnostics diagnostics;
+                if (!asr_verify(*tu, true, diagnostics)) {
+                    std::cerr << diagnostics.render2();
+                    throw LCompilersException("Verify failed");
+                };
+            #endif
+            tu_symtab->asr_owner = orig_asr_owner;
+        }
         if (x.n_symbols == 0) {
             std::string unsupported_sym_name = import_all(m);
             if( !unsupported_sym_name.empty() ) {

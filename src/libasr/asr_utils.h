@@ -2451,6 +2451,12 @@ ASR::Module_t* load_module(Allocator &al, SymbolTable *symtab,
                             bool generate_object_code = false,
                             bool load_submodules = false);
 
+void load_dependant_submodules(Allocator &al, SymbolTable *symtab,
+                               ASR::Module_t* m, const Location &loc,
+                               LCompilers::PassOptions& pass_options,
+                               const std::function<void (const std::string &, const Location &)> err,
+                               LCompilers::LocationManager &lm);
+
 Result<ASR::TranslationUnit_t*, ErrorMessage> find_and_load_module(Allocator &al, const std::string &msym,
                                                 SymbolTable &symtab, bool intrinsic,
                                                 LCompilers::PassOptions& pass_options,
