@@ -4422,36 +4422,36 @@ LFORTRAN_API void _lfortran_read_array_int64(int64_t *p, int array_size, int32_t
 
 LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num)
 {
-    const char SPACE = ' ';
     if (unit_num == -1) {
         // Read from stdin
-        (void)!fgets(*p, p_len + 1, stdin);
-        (*p)[strcspn(*p, "\n")] = 0;
-        size_t input_length = strlen(*p);
-        while (input_length < p_len) {
-            strncat(*p, &SPACE, 1);
-            input_length++;
+        if (!fgets(*p, p_len + 1, stdin)) {
+            printf("Runtime error: End of file!\n");
+            exit(1);
         }
-        (*p)[p_len] = '\0';
+        size_t len = strcspn(*p, "\n");
+        (*p)[len] = '\0';
+        pad_with_spaces(*p, len, p_len);
         return;
     }
 
     bool unit_file_bin;
     int access_id;
     bool read_access, write_access;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, &access_id, &read_access, &write_access);
+    FILE *filep = get_file_pointer_from_unit(unit_num, &unit_file_bin,
+                                             &access_id, &read_access, &write_access);
     if (!filep) {
         printf("No file found with given unit\n");
         exit(1);
     }
 
     if (unit_file_bin) {
-        int32_t data_length;
-        // Only read header if not access=stream and is at start of file
-        if (access_id != 1 && ftell(filep) == 0 &&               
-                fread(&data_length, sizeof(int32_t), 1, filep) != 1) {   
-            printf("Error reading data length from file.\n");
-            exit(1);
+        int32_t data_length = 0;
+
+        if (access_id != 1 && ftell(filep) == 0) {
+            if (fread(&data_length, sizeof(int32_t), 1, filep) != 1) {
+                printf("Error reading data length from file.\n");
+                exit(1);
+            }
         }
 
         long current_pos = ftell(filep);
@@ -4460,32 +4460,41 @@ LFORTRAN_API void _lfortran_read_char(char **p, int64_t p_len, int32_t unit_num)
         fseek(filep, current_pos, SEEK_SET);
 
         if (access_id != 1) {
-            data_length = end_pos - current_pos - 4;  // leave last 4 bits as record marker
+            data_length = (int32_t)(end_pos - current_pos - 4);
         } else {
-            data_length = end_pos - current_pos;  // For access=stream read till last
+            data_length = (int32_t)(end_pos - current_pos);
         }
 
+        if (data_length > p_len) data_length = (int32_t)p_len;
 
-        data_length = data_length > p_len ? p_len : data_length;
-
-        // read the actual data
-        if (fread(*p, sizeof(char), data_length, filep) != data_length) {
+        if (fread(*p, sizeof(char), data_length, filep) != (size_t)data_length) {
             printf("Error reading data from file.\n");
             exit(1);
         }
-        (*p)[p_len] = '\0';
+
+        pad_with_spaces(*p, data_length, p_len);
+
     } else {
-        char *tmp_buffer = (char*)malloc((p_len + 1) * sizeof(char));
-        (void)!fscanf(filep, "%s", tmp_buffer);
-        size_t input_length = strlen(tmp_buffer);
-        strcpy(*p, tmp_buffer);
-        free(tmp_buffer);
-        while (input_length < p_len) {
-            strncat(*p, &SPACE, 1);
-            input_length++;
+        // formatted file read
+        char *tmp_buffer = (char *)malloc((p_len + 1) * sizeof(char));
+        if (!tmp_buffer) {
+            printf("Memory allocation failed\n");
+            exit(1);
         }
-        (*p)[p_len] = '\0';
+
+        if (fscanf(filep, "%s", tmp_buffer) != 1) {
+            free(tmp_buffer);
+            printf("Runtime error: End of file!\n");
+            exit(1);
+        }
+
+        size_t len = strlen(tmp_buffer);
+        memcpy(*p, tmp_buffer, len);
+        free(tmp_buffer);
+
+        pad_with_spaces(*p, len, p_len);
     }
+
     if (streql(*p, "")) {
         printf("Runtime error: End of file!\n");
         exit(1);
@@ -4790,22 +4799,18 @@ LFORTRAN_API void _lfortran_read_double(double *p, int32_t unit_num)
 
 LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, int32_t* chunk, char* advance, int64_t advance_length, char* fmt, int32_t no_of_args, ...)
 {
-    int width = -1; // default is -1, if length not mentioned
-
-    // Supported format are (a) and (aw)
+    int width = -1;
+    // Parse format string: supports (a) and (aw)
     if (streql(fmt, "(a)")) {
         width = -1;
-    }
-    else if(fmt[0] == '(' && (fmt[1] == 'a' || fmt[1] == 'A')) {
+    } else if (fmt[0] == '(' && (fmt[1] == 'a' || fmt[1] == 'A')) {
         int i = 2;
-        while (isdigit(fmt[i])) i++;
-
+        while (isdigit((unsigned char)fmt[i])) i++;
         if (fmt[i] == ')' && i > 2) {
             char width_str[16];
             strncpy(width_str, fmt + 2, i - 2);
             width_str[i - 2] = '\0';
             width = atoi(width_str);
-
             if (width <= 0) {
                 printf("Invalid format width in '%s'\n", fmt);
                 exit(1);
@@ -4814,149 +4819,78 @@ LFORTRAN_API void _lfortran_formatted_read(int32_t unit_num, int32_t* iostat, in
             printf("Only (a) and (aw) are supported.\n");
             exit(1);
         }
-    }
-    else{
+    } else {
         printf("Only (a) and (aw) are supported.\n");
         exit(1);
     }
 
-    // For now, this supports reading a single argument of type string
-    // TODO: Support more arguments and other types
-
+    // Get string pointer and length from varargs
     va_list args;
     va_start(args, no_of_args);
-    char* str_data = va_arg(args, char*);
+    char *str_data = va_arg(args, char*);
     int64_t str_len = va_arg(args, int64_t);
+    va_end(args);
 
-    if (width == -1) width = str_len;
+    if (width == -1) width = (int)str_len;
 
-    const char SPACE = ' ';
-
-    if (unit_num == -1) {
-        // Block for reading from standard input (stdin)
-        char *buffer = (char*)malloc((width + 1) * sizeof(char));
-        if (fgets(buffer, width + 1, stdin) == NULL) {
-            *iostat = -1;
-            va_end(args);
-            free(buffer);
-            return;
-        } else {
-            if (streql(buffer, "\n")) {
-                *iostat = -2;
-            } else {
-                *iostat = 0;
-            }
-
-            size_t input_length = strcspn(buffer, "\n");
-            *chunk = input_length;
-
-            char *output = (char*)malloc(str_len + 1);
-            memset(output, SPACE, str_len); // Initialize with spaces
-            output[str_len] = '\0';
-            
-            if (width > 0) {
-                char *padded_buffer = (char*)malloc(width + 1);
-                strncpy(padded_buffer, buffer, input_length);
-                for (size_t i = input_length; i < width; ++i) {
-                    padded_buffer[i] = SPACE;
-                }
-                padded_buffer[width] = '\0';
-
-                if (width > str_len) {
-                    if (input_length >= width) {
-                        strncpy(output, padded_buffer + (width - str_len), str_len);
-                    } else if (input_length >= str_len) {
-                        strncpy(output, buffer + (input_length - str_len), str_len);
-                    } else {
-                        strncpy(output, buffer, input_length);
-                    }
-                } else { // width <= n
-                    strncpy(output, padded_buffer, width);
-                    for(size_t i = width; i < str_len; ++i) {
-                        output[i] = SPACE;
-                    }
-                    output[str_len] = '\0';
-                }
-                free(padded_buffer);
-            } else { // For (a) format (width == str_len)
-                strncpy(output, buffer, str_len);
-            }
-
-            strncpy(str_data, output, str_len);         
-
-            free(output);
-            va_end(args);
-            free(buffer);
-            return;
-        }
-    }
-
-    bool unit_file_bin;
-    FILE* filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL);
-    if (!filep) {
-        printf("No file found with given unit\n");
+    char *buffer = (char*)malloc((width + 2) * sizeof(char)); // +2 for safety
+    if (!buffer) {
+        printf("Memory allocation failed\n");
         exit(1);
-    } else {
-        // Block for reading from a file
-        char *buffer = (char*)malloc((width + 1) * sizeof(char));
-        if (fgets(buffer, width + 1, filep) == NULL) {
-            *iostat = -1;
-            *chunk=0;
-            va_end(args);
+    }
+
+    FILE *filep = NULL;
+    bool unit_file_bin;
+
+    if (unit_num != -1) {
+        filep = get_file_pointer_from_unit(unit_num, &unit_file_bin, NULL, NULL, NULL);
+        if (!filep) {
+            printf("No file found with given unit\n");
             free(buffer);
-            return;
-        } else {
-            // If we have advance="no" specified and we also have '\n' in buffer, iostat = -2 (end of record)
-            // (strcspn(buffer, "\n") != n) checks if '\n' is present in buffer or not
-            if (streql(buffer, "\n") || (streql(advance, "no") && strcspn(buffer, "\n") != str_len)) {
-                *iostat = -2;
-            } else {
-                *iostat = 0;
-            }
-
-            (buffer)[strcspn(buffer, "\n")] = 0;
-
-            size_t input_length = strlen(buffer);
-            *chunk = input_length;
-
-            char *output = (char*)malloc(str_len + 1);
-            memset(output, SPACE, str_len);
-            output[str_len] = '\0';
-
-            if (width > 0) { // For (aw) format
-                char *padded_buffer = (char*)malloc(width + 1);
-                strncpy(padded_buffer, buffer, width);
-                for (size_t i = input_length; i < width; ++i) {
-                    padded_buffer[i] = SPACE;
-                }
-                padded_buffer[width] = '\0';
-
-                if (width > str_len) {
-                    if (input_length >= width) {
-                        strncpy(output, padded_buffer + (width - str_len), str_len);
-                    } else if (input_length >= str_len) {
-                        strncpy(output, buffer + (input_length - str_len), str_len);
-                    } else {
-                        strncpy(output, buffer, input_length);
-                    }
-                } else { // width <= str_len
-                    strncpy(output, padded_buffer, width);
-                    for(size_t i = width; i < str_len; ++i) {
-                        output[i] = SPACE;
-                    }
-                    output[str_len] = '\0';
-                }
-            } else { // For (a) format
-                strncpy(output, buffer, str_len);
-            }
-            
-            strncpy(str_data, output, str_len);
-
-            free(output);
-            va_end(args);
-            free(buffer);
+            exit(1);
         }
     }
+
+    // Read from stdin or file
+    if (fgets(buffer, width + 1, (unit_num == -1) ? stdin : filep) == NULL) {
+        *iostat = -1;
+        *chunk = 0;
+        free(buffer);
+        return;
+    }
+
+    // Handle newline trimming
+    buffer[strcspn(buffer, "\n")] = '\0';
+    size_t input_length = strlen(buffer);
+    *chunk = (int32_t)input_length;
+
+    // Determine iostat
+    if (streql(buffer, "\n") ||
+        (streql(advance, "no") && strcspn(buffer, "\n") != (size_t)str_len)) {
+        *iostat = -2;
+    } else {
+        *iostat = 0;
+    }
+
+    // Fill output with spaces
+    pad_with_spaces(str_data, 0, str_len);
+
+    // Copy and pad appropriately
+    if (width > (int)str_len) {
+        // Copy rightmost str_len chars if width > str_len
+        if (input_length >= (size_t)width) {
+            memcpy(str_data, buffer + (width - str_len), str_len);
+        } else if (input_length >= (size_t)str_len) {
+            memcpy(str_data, buffer + (input_length - str_len), str_len);
+        } else {
+            memcpy(str_data, buffer, input_length);
+        }
+    } else {
+        // width <= str_len
+        memcpy(str_data, buffer, (input_length < (size_t)width) ? input_length : (size_t)width);
+    }
+
+    free(buffer);
 }
 
 LFORTRAN_API void _lfortran_empty_read(int32_t unit_num, int32_t* iostat) {
