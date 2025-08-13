@@ -1399,8 +1399,18 @@ common_block_list_top
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
         LIST_NEW(v); PLIST_ADD(v, $2);
         PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
-//    | common_block_list_top "," common_block_object { $$ = $1; }
-//    | common_block_list_top common_block_start common_block_object { $$ = $1; }
+    | common_block_list_top "," common_block_object {
+        $$ = $1;
+        // TODO: merge $3 with previous block
+        Vec<LCompilers::LFortran::AST::var_sym_t> v;
+        LIST_NEW(v); PLIST_ADD(v, $3);
+        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
+    | common_block_list_top common_block_start common_block_object {
+        $$ = $1;
+        // TODO: merge $3 with previous block
+        Vec<LCompilers::LFortran::AST::var_sym_t> v;
+        LIST_NEW(v); PLIST_ADD(v, $3);
+        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
     | common_block_list_top "," common_block_start common_block_object {
         $$ = $1;
         Vec<LCompilers::LFortran::AST::var_sym_t> v;
