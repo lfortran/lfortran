@@ -3392,9 +3392,9 @@ public:
         auto& ctx = M->getContext();
         std::string val = s.str();
         if (declared_len != -1) {
-            if (val.size() < declared_len)
+            if ((int)val.size() < declared_len)
                 val.append(declared_len - val.size(), ' ');
-            else if (val.size() > declared_len)
+            else if ((int)val.size() > declared_len)
                 val.resize(declared_len);
         }
         // Fortran CHARACTER doesn’t require NUL; pad/truncate happens at the semantic level
