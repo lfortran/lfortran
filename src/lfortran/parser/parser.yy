@@ -1401,8 +1401,11 @@ common_block_list_top
         PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
 //    | common_block_list_top "," common_block_object { $$ = $1; }
 //    | common_block_list_top common_block_start common_block_object { $$ = $1; }
-//    | common_block_list_top "," common_block_start common_block_object {
-//        $$ = $1; PLIST_ADD($$, COMMON_BLOCK(nullptr, $4, @$)); }
+    | common_block_list_top "," common_block_start common_block_object {
+        $$ = $1;
+        Vec<LCompilers::LFortran::AST::var_sym_t> v;
+        LIST_NEW(v); PLIST_ADD(v, $4);
+        PLIST_ADD($$, COMMON_BLOCK(nullptr, v, @$)); }
     ;
 
 common_block_start
