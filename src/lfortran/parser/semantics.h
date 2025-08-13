@@ -506,6 +506,12 @@ static inline common_block_t *make_common_block2(Allocator &al, Location const &
         LIST_NEW(v); PLIST_ADD(v, one); \
         PLIST_ADD(out, COMMON_BLOCK(nullptr, v, l));
 
+#define COMMON_BLOCK_2(out, one, two, l) \
+        LIST_NEW(out); \
+        Vec<LCompilers::LFortran::AST::var_sym_t> v; \
+        LIST_NEW(v); PLIST_ADD(v, two); \
+        PLIST_ADD(out, COMMON_BLOCK2(one->m_name, v, l));
+
 #define COMMON_BLOCK_5(out, one, three, four, l) \
         out = one; \
         Vec<LCompilers::LFortran::AST::var_sym_t> v; \

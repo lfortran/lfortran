@@ -1393,10 +1393,7 @@ common_block_list_top
     : common_block_object {
         COMMON_BLOCK_1($$, $1, @$) }
     | common_block_start common_block_object {
-        LIST_NEW($$);
-        Vec<LCompilers::LFortran::AST::var_sym_t> v;
-        LIST_NEW(v); PLIST_ADD(v, $2);
-        PLIST_ADD($$, COMMON_BLOCK2($1->m_name, v, @$)); }
+        COMMON_BLOCK_2($$, $1, $2, @$) }
     | common_block_list_top "," common_block_object {
         $$ = $1;
         LCompilers::LFortran::AST::common_block_t last = $$.back();
