@@ -1149,15 +1149,16 @@ public:
                 }
 
                 for( size_t igp = 0; igp < gp->n_procs; igp++ ) {
-                    if( ASRUtils::symbol_get_past_external(gp->m_procs[igp]) ==
-                        ASRUtils::symbol_get_past_external(parent_scope->resolve_symbol(sym_name)) ) {
+                    if( std::string(ASRUtils::symbol_name(gp->m_procs[igp])) == sym_name ) {
                         gp_index_to_be_updated = igp;
                         break;
                     }
                 }
 
                 // Any import from parent module will be shadowed
-                parent_scope->erase_symbol(sym_name);
+                if (!in_submodule) {
+                    parent_scope->erase_symbol(sym_name);
+                }
             } else if (compiler_options.implicit_typing && ASR::is_a<ASR::Variable_t>(*f1)) {
                 // function previously added as variable due to implicit typing
                 parent_scope->erase_symbol(sym_name);
@@ -2880,8 +2881,10 @@ public:
             // TODO: only import "public" symbols from the module
             if (ASR::is_a<ASR::Function_t>(*item.second)) {
                 ASR::Function_t *mfn = ASR::down_cast<ASR::Function_t>(item.second);
-                if (mfn->m_access == ASR::accessType::Private &&
-                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) {
+                if ((mfn->m_access == ASR::accessType::Private &&
+                     indirect_public_symbols.find(item.first) == indirect_public_symbols.end()) || 
+                    (ASRUtils::get_FunctionType(mfn)->m_deftype == ASR::deftypeType::Interface &&
+                     to_submodule)) {
                     continue;
                 }
                 ASR::asr_t *fn = ASR::make_ExternalSymbol_t(
